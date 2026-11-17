@@ -33,3 +33,10 @@
   animation: shimmer 1.2s infinite;
   border-radius: 8px;
 }
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton-shimmer,
+  .skeleton-line {
+    animation: none;
+  }
+}

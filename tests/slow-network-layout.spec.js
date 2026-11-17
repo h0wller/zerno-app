@@ -284,7 +284,7 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
       await route.continue();
     });
 
-    for (const width of [320, 390, 480, 519, 520, 690, 691, 820, 821, 1023, 1024, 1180, 1181, 1599, 1600]) {
+    for (const width of [320, 390, 480, 519, 520, 690, 691, 820, 821, 1023, 1024, 1180, 1181, 1399, 1400, 1440, 1599, 1600]) {
       let releaseThemeCss;
       themeCssGate = new Promise((resolve) => { releaseThemeCss = resolve; });
       await page.setViewportSize({ width, height: 844 });
@@ -295,7 +295,7 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
         window.DMENU.length === 6 &&
         document.querySelectorAll('#deliveryGrid > .card[data-product-id]').length === 6
       );
-      const expectedGridColumns = width >= 1600 ? 4 : width >= 1181 ? 3 : width >= 520 ? 2 : 1;
+      const expectedGridColumns = width >= 1400 ? 4 : width >= 1181 ? 3 : width >= 520 ? 2 : 1;
       await page.waitForFunction((expectedColumns) => {
         const cards = Array.from(document.querySelectorAll('#deliveryGrid > .card[data-product-id]'));
         if (cards.length !== 6) return false;
@@ -1096,6 +1096,21 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
     await page.goto('/?brand=delivery',{waitUntil:'commit'});
     await page.locator('#modeSeg').waitFor({state:'attached'});
     await waitForDeferredTheme(page);
+    await page.waitForFunction(() => document.querySelector('#deliveryGrid')?.dataset.catalogReady === '1');
+    await page.evaluate(() => {
+      window.__staffHydrationSkeletonAdds = [];
+      const grid = document.querySelector('#deliveryGrid');
+      new MutationObserver(records => {
+        for (const record of records) {
+          for (const node of record.addedNodes) {
+            if (node.nodeType !== Node.ELEMENT_NODE) continue;
+            const count = (node.matches?.('.skeleton-card') ? 1 : 0)
+              + (node.querySelectorAll?.('.skeleton-card').length || 0);
+            if (count) window.__staffHydrationSkeletonAdds.push(count);
+          }
+        }
+      }).observe(grid, { childList:true, subtree:true });
+    });
     const before=await page.evaluate(()=>{
       const rect=selector=>{
         const el=document.querySelector(selector);
@@ -1239,7 +1254,8 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
       staffHeader:after.staffHeaderCls,
       shifts:after.shifts
     }));
-    // Staff-header CLS is isolated from independent profile/sidebar and footer hydration.
+    expect(await page.evaluate(() => window.__staffHydrationSkeletonAdds)).toEqual([]);
+    expect(after.cls).toBeLessThan(0.01);
     expect(after.staffHeaderCls).toBeLessThan(0.01);
   });
 
@@ -1370,5 +1386,44 @@ test.describe('API request cancellation', () => {
     });
 
     expect(result).toBe('AbortError');
+  });
+});
+
+
+test('static coffee menu skeleton shimmer is disabled under reduced motion', async ({ page }, testInfo) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.addInitScript(() => {
+    localStorage.clear();
+    sessionStorage.clear();
+  });
+  // Keep the server-rendered first-frame skeleton in place so this checks the
+  // .skeleton-shimmer/.skeleton-line path, not delivery's dynamic .skeleton-pulse.
+  await page.route('**/dist/main.bundle.js*', (route) => route.abort());
+  await page.goto('/?brand=coffee', { waitUntil: 'commit' });
+
+  const skeleton = page.locator('#grid .card.skeleton-card').first();
+  await expect(skeleton).toBeVisible();
+  await expect(skeleton.locator('.skeleton-shimmer')).toBeVisible();
+  await expect(skeleton.locator('.skeleton-line').first()).toBeVisible();
+
+  await page.waitForFunction(() => {
+    const link = Array.from(document.querySelectorAll('link[rel="stylesheet"]'))
+      .find((item) => item.href.includes('40-catalog.css'));
+    return link && link.media === 'all' && Array.from(document.styleSheets)
+      .some((sheet) => sheet.href === link.href);
+  });
+
+  const animations = await skeleton.evaluate((element) => ({
+    shimmer: getComputedStyle(element.querySelector('.skeleton-shimmer')).animationName,
+    lines: Array.from(element.querySelectorAll('.skeleton-line'))
+      .map((line) => getComputedStyle(line).animationName),
+  }));
+  expect(animations.shimmer).toBe('none');
+  expect(animations.lines.every((name) => name === 'none')).toBe(true);
+
+  await testInfo.attach('coffee-static-skeleton-reduced-390x844.png', {
+    body: await page.screenshot({ fullPage: false }),
+    contentType: 'image/png',
   });
 });

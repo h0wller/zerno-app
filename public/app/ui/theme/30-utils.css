@@ -13,22 +13,6 @@
 :root{
   --shadow-sheet: 0 -10px 40px -12px rgba(16, 20, 24, .25);
 }
-@keyframes ping{
-  0% {
-    transform: scale(1);
-    opacity: .6;
-  }
-
-  70% {
-    transform: scale(1.25);
-    opacity: 0;
-  }
-
-  100% {
-    transform: scale(1.25);
-    opacity: 0;
-  }
-}
 @keyframes stampin{
   from {
     transform: scale(.4);

@@ -258,3 +258,151 @@ test('legacy staff_chat deep link opens the requested conversation', async ({ pa
   await expect.poll(() => requestedKey).toBe(key);
   await expect(page.locator('#scDialog')).toContainText('Нужен заказ');
 });
+
+test('chat motion uses short spatial transitions and no permanent ambient pulse', async ({ page }) => {
+  const viewports = [
+    { width: 390, height: 844 },
+    { width: 667, height: 375 }
+  ];
+
+  for (const brand of ['coffee', 'delivery']) {
+    for (const viewport of viewports) {
+      await page.setViewportSize(viewport);
+      await page.emulateMedia({ reducedMotion: 'no-preference' });
+      await prepare(page, '/?brand=' + brand);
+
+      const fab = page.locator('#chatFab');
+      const panel = page.locator('#chatPanel');
+      await expect(fab).toBeVisible();
+
+      const idlePulse = await fab.evaluate((element) =>
+        getComputedStyle(element, '::before').animationName
+      );
+      expect(idlePulse).toBe('none');
+
+      await fab.click();
+      await expect(panel).toHaveClass(/open/);
+      await expect.poll(() => panel.evaluate((element) => {
+        const value = getComputedStyle(element).transitionDuration.split(',')[0].trim();
+        const duration = Number.parseFloat(value);
+        return value.endsWith('ms') ? duration / 1000 : duration;
+      })).toBeCloseTo(0.3, 3);
+
+      await page.evaluate(() => window.addMsg('bot', 'Проверка сообщения для motion system'));
+      const message = page.locator('#chatMsgs .msg').last();
+      await expect(message).toBeVisible();
+      const messageDuration = await message.evaluate((element) => {
+        const value = getComputedStyle(element).animationDuration.split(',')[0].trim();
+        const duration = Number.parseFloat(value);
+        return value.endsWith('ms') ? duration : duration * 1000;
+      });
+      expect(messageDuration).toBe(180);
+
+      const hint = page.locator('#chatHintsBar .chatHint').first();
+      await expect(hint).toBeVisible();
+      await hint.evaluate((element) => element.classList.add('pulse'));
+      const hintAnimation = await hint.evaluate((element) => getComputedStyle(element).animationName);
+      expect(hintAnimation).toBe('hintPulse');
+
+      await page.emulateMedia({ reducedMotion: 'reduce' });
+      await expect.poll(() => panel.evaluate((element) => getComputedStyle(element).transitionDuration))
+        .toBe('0s');
+      await expect.poll(() => fab.evaluate((element) =>
+        getComputedStyle(element, '::before').animationName
+      )).toBe('none');
+      await expect.poll(() => message.evaluate((element) =>
+        getComputedStyle(element).animationName
+      )).toBe('none');
+      await expect.poll(() => hint.evaluate((element) =>
+        getComputedStyle(element).animationName
+      )).toBe('none');
+
+      const finalState = await panel.evaluate((element) => {
+        const rect = element.getBoundingClientRect();
+        return {
+          opacity: getComputedStyle(element).opacity,
+          pointerEvents: getComputedStyle(element).pointerEvents,
+          width: rect.width,
+          height: rect.height,
+          documentWidth: document.documentElement.scrollWidth,
+          viewportWidth: window.innerWidth
+        };
+      });
+      expect(finalState.opacity).toBe('1');
+      expect(finalState.pointerEvents).toBe('auto');
+      expect(finalState.width).toBeGreaterThan(0);
+      expect(finalState.height).toBeGreaterThan(0);
+      expect(finalState.documentWidth).toBeLessThanOrEqual(finalState.viewportWidth + 1);
+
+      await page.locator('#chatClose').click();
+      await expect(panel).not.toHaveClass(/open/);
+    }
+  }
+});
+
+
+test('toast motion uses the shared short feedback timing in both brands', async ({ page }) => {
+  const toast = page.locator('#toasts .toast');
+
+  for (const brand of ['coffee', 'delivery']) {
+    await page.emulateMedia({ reducedMotion: 'no-preference' });
+    await prepare(page, '/?brand=' + brand);
+    await page.waitForFunction(() => typeof window.toast === 'function');
+    await page.evaluate(() => window.toast('Motion feedback test', 'ℹ️'));
+    await expect(toast).toHaveCount(1);
+
+    const entry = await toast.evaluate((element) => {
+      const style = getComputedStyle(element);
+      return {
+        animationName: style.animationName,
+        duration: style.animationDuration,
+        easing: style.animationTimingFunction,
+      };
+    });
+    expect(entry.animationName).toBe('tin');
+    expect(entry.duration).toBe('0.18s');
+    expect(entry.easing).toBe('cubic-bezier(0.2, 0.8, 0.2, 1)');
+
+    // .out is intentionally transient (300ms); sample faster than its lifetime.
+    await expect.poll(() => toast.evaluate((element) => element.classList.contains('out')), {
+      timeout: 3000,
+      intervals: [50, 100],
+    }).toBe(true);
+    const exit = await toast.evaluate((element) => {
+      const style = getComputedStyle(element);
+      return {
+        animationName: style.animationName,
+        duration: style.animationDuration,
+        easing: style.animationTimingFunction,
+      };
+    });
+    expect(exit.animationName).toBe('tout');
+    expect(exit.duration).toBe('0.12s');
+    expect(exit.easing).toBe('cubic-bezier(0.2, 0.8, 0.2, 1)');
+    await expect(toast).toHaveCount(0, { timeout: 1000 });
+  }
+});
+
+test('toast feedback becomes immediate under reduced motion in both brands', async ({ page }) => {
+  const toast = page.locator('#toasts .toast');
+
+  for (const brand of ['coffee', 'delivery']) {
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await prepare(page, '/?brand=' + brand);
+    await page.waitForFunction(() => typeof window.toast === 'function');
+    await page.evaluate(() => window.toast('Reduced motion feedback test', 'ℹ️'));
+    await expect(toast).toHaveCount(1);
+    await expect(toast).toHaveCSS('animation-name', 'none');
+    await expect(toast).toHaveCSS('animation-duration', '0s');
+    await expect(toast).toHaveCSS('opacity', '1');
+
+    // .out is intentionally transient (300ms); sample faster than its lifetime.
+    await expect.poll(() => toast.evaluate((element) => element.classList.contains('out')), {
+      timeout: 3000,
+      intervals: [50, 100],
+    }).toBe(true);
+    await expect(toast).toHaveCSS('animation-name', 'none');
+    await expect(toast).toHaveCSS('opacity', '0');
+    await expect(toast).toHaveCount(0, { timeout: 1000 });
+  }
+});

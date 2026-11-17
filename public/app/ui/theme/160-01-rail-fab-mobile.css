@@ -320,6 +320,11 @@ html body .auth-badge-confirmed.auth-badge-confirmed{
   from { opacity: 0; transform: translateY(-8px) scale(0.98); }
   to { opacity: 1; transform: translateY(0) scale(1); }
 }
+@media (prefers-reduced-motion: reduce) {
+  html body .auth-badge-confirmed.auth-badge-confirmed {
+    animation: none;
+  }
+}
 /* Упрощённый вид формы внутри Telegram Mini App */
 html body #authModal.tg-mode #regTgBtn,
 html body #authModal.tg-mode .mhint{
@@ -339,11 +344,15 @@ html body #authModal.tg-mode .mhint{
   bottom: calc(16px + env(safe-area-inset-bottom, 0px));
   left: 50%;
   right: auto;
-  transform: translateX(-50%) scale(0.92);
+  /* Keep the interactive box stationary: visibility is communicated by opacity only. */
+  transform: translateX(-50%);
   z-index: 90;
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 10px;
+  width: min(208px, calc(100vw - 24px));
+  box-sizing: border-box;
   padding: 8px 16px;
   min-height: 48px;
   max-height: 64px;
@@ -356,20 +365,22 @@ html body #authModal.tg-mode .mhint{
   cursor: pointer;
   opacity: 0;
   pointer-events: none;
-  transition: opacity 0.3s cubic-bezier(0.2, 1, 0.3, 1),
-              transform 0.3s cubic-bezier(0.2, 1, 0.3, 1);
+  transition: opacity var(--motion-duration-state, 180ms) var(--motion-ease-standard, cubic-bezier(.2,.8,.2,1));
 }
 .cartFab.visible{
   opacity: 1;
   pointer-events: auto;
-  transform: translateX(-50%) scale(1);
 }
 .cartFab:hover{
   background: #8B2A21;
-  transform: translateX(-50%) scale(1.03);
 }
 .cartFab:active{
-  transform: translateX(-50%) scale(0.97);
+  filter: brightness(.92);
+}
+@media (prefers-reduced-motion: reduce) {
+  .cartFab {
+    transition: none;
+  }
 }
 .cartFab .cf-icon{
   font-size: 18px;
@@ -808,6 +819,13 @@ html body #authModal.tg-mode .mhint{
   color: var(--status-alert, #B26A05);
   border: 1.5px dashed var(--amber, #F2D9A5);
   animation: preorder-timer-in 0.3s both, preorder-pulse 2s ease-in-out infinite;
+}
+
+/* The mobile profile drawer is offscreen while closed; keep its waiting badge static there. */
+@media (max-width: 1180px) and (prefers-reduced-motion: no-preference) {
+  #panel:not(.open) .preorder-timer-waiting {
+    animation: preorder-timer-in 0.3s both;
+  }
 }
 .preorder-timer-active {
   background: var(--tint-success, #E4EFE2);

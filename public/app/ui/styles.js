@@ -22,6 +22,7 @@
     "@keyframes chatHintPulse{0%,100%{transform:scale(1);box-shadow:0 0 0 0 rgba(180,85,45,.45)}50%{transform:scale(1.05);box-shadow:0 0 0 10px rgba(180,85,45,0)}}" +
     "#chatHintsBar .chatHint.pulse{animation:hintPulse 1.2s ease-in-out 3}" +
     "@keyframes hintPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.06);background:#FDE8E8;border-color:var(--status-danger)}}" +
-    '#chatHintsBar .chatHint.armed,#chatHintsBar .chatHint[data-arm="1"]{background:var(--tint-danger)!important;border-color:var(--status-danger)!important;color:var(--status-danger)!important;font-weight:700}';
+    '#chatHintsBar .chatHint.armed,#chatHintsBar .chatHint[data-arm="1"]{background:var(--tint-danger)!important;border-color:var(--status-danger)!important;color:var(--status-danger)!important;font-weight:700}' +
+    '@media(prefers-reduced-motion:reduce){.pulse,#chatHintsBar .chatHint.pulse{animation:none!important}}';
   document.head.appendChild(cssChat);
 })();

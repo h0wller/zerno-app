@@ -14,6 +14,14 @@
     grid-template-columns: repeat(4, 1fr);
   }
 }
+
+/* Delivery has a narrower content column beside the rail/profile panel.
+   Switch only the delivery catalog to four columns at desktop-wide widths. */
+@media (min-width: 1400px) {
+  #deliveryGrid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
 .card{
   background: var(--card-bg, #FFFFFF);
   border: var(--card-border, 1.5px solid rgba(62, 143, 208, 0.25));

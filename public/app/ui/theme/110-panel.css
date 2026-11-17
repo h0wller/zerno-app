@@ -617,6 +617,9 @@
 #profileBox .myOrderCard {
   margin-top: 0;
 }
+#profileBox #myOrders {
+  min-height: 64px;
+}
 #profileBox > #fridayInfo {
   line-height: 1.55;
   border-color: rgba(62, 143, 208, 0.28);
@@ -675,3 +678,24 @@
 
 
 
+
+
+@media (prefers-reduced-motion: reduce) {
+  .stamp {
+    transition: none;
+  }
+
+  .stamp.n,
+  .freeCard .fe,
+  .hmini {
+    animation: none;
+  }
+
+  .stats .stat {
+    transition: none;
+  }
+
+  .stats .stat:hover {
+    transform: none;
+  }
+}

@@ -345,3 +345,17 @@ button.cta,
     padding: 9px 12px 12px;
   }
 }
+
+
+@media (prefers-reduced-motion: reduce) {
+  .cashier,
+  .cust.show,
+  .cdot.last,
+  .logrow {
+    animation: none;
+  }
+
+  .staff-guide summary::after {
+    transition: none;
+  }
+}

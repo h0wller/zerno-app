@@ -168,7 +168,7 @@
   }
 }
 @keyframes spRise {
-  from { opacity: 0; transform: translateY(16px); }
+  from { opacity: 1; transform: translateY(16px); }
   to { opacity: 1; transform: none; }
 }
 @keyframes spFloat {

@@ -73,6 +73,8 @@ for (const brand of CASES) {
           headRight: headRect.right,
           railTop: railRect.top,
           railPosition: getComputedStyle(railEl).position,
+          railAlignSelf: getComputedStyle(railEl).alignSelf,
+          railTransform: getComputedStyle(railEl).transform,
           headBottom: headRect.bottom,
           contentLeft: wrapRect.left + parseFloat(wrapStyle.borderLeftWidth) + parseFloat(wrapStyle.paddingLeft),
           contentRight: wrapRect.right - parseFloat(wrapStyle.borderRightWidth) - parseFloat(wrapStyle.paddingRight),
@@ -81,6 +83,9 @@ for (const brand of CASES) {
         };
       }, { headSelector: brand.head, railSelector: brand.rail });
 
+      expect(layout.railTransform, 'rail keeps layout-owned positioning without visual transform offsets').toBe('none');
+      expect(layout.railAlignSelf, 'mobile and desktop keep their original grid alignment contract')
+        .toBe(viewport.width <= 820 ? 'start' : 'stretch');
       if (viewport.width <= 820) {
         expect(layout.railPosition, 'mobile rail stays in its catalog position before scrolling').toBe('relative');
         expect(Math.abs(layout.headLeft - layout.contentLeft), 'mobile menu-head starts at the left edge of the complete menu area').toBeLessThanOrEqual(1);
@@ -272,6 +277,26 @@ test('coffee rail aligns to its menu card and delivery rail aligns to product ca
   }
 });
 
+
+test('delivery desktop catalog uses four columns at 1440px without changing the coffee grid', async ({ page }) => {
+  for (const brand of ['delivery', 'coffee']) {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.addInitScript(() => sessionStorage.setItem('splashDone', '1'));
+    await page.goto('/?brand=' + brand, { waitUntil: 'domcontentloaded' });
+
+    const selector = brand === 'delivery' ? '#deliveryGrid' : '#grid';
+    await expect(page.locator(selector + ' .card').first()).toBeVisible({ timeout: 15000 });
+    const columns = await page.locator(selector).evaluate(element =>
+      getComputedStyle(element).gridTemplateColumns.trim().split(/\s+/).length
+    );
+
+    if (brand === 'delivery') {
+      expect(columns, 'delivery cards use four desktop columns at 1440px').toBe(4);
+    } else {
+      expect(columns, 'coffee card grid keeps its existing three-column desktop layout').toBe(3);
+    }
+  }
+});
 
 test('both brand rails align to the catalog row on desktop', async ({page}) => {
   for (const brand of CASES) {

@@ -309,7 +309,7 @@ test('staff menu header is exactly two rows for both brands and mobile widths', 
           }),
           supportInsideRow: host.parentElement === rowTwo && fab.parentElement === host,
           documentWidth: document.documentElement.scrollWidth,
-          viewportWidth: document.documentElement.clientWidth,
+          viewportWidth: window.innerWidth,
         };
       }, view);
 
@@ -663,7 +663,7 @@ test('desktop staff menu keeps title, role switcher and edit inside the menu hea
   }
 });
 
-test('desktop staff toast never covers role or edit controls on both brands', async ({ page }, testInfo) => {
+test('desktop staff toast never covers role, edit, or floating support controls on both brands', async ({ page }, testInfo) => {
   await mockStaffSession(page);
 
   for (const brand of ['coffee', 'delivery']) {
@@ -683,25 +683,40 @@ test('desktop staff toast never covers role or edit controls on both brands', as
       const toast = page.locator('#toasts .toast').filter({ hasText: 'Режим администратора активен' }).first();
       await expect(page.locator('#toasts .toast').filter({ hasText: 'Режим администратора активен' })).toHaveCount(1);
       await expect(toast).toBeVisible();
-      const overlap = await page.evaluate(() => {
+      const toastLayout = await page.evaluate(() => {
         const toast = [...document.querySelectorAll('#toasts .toast')]
           .find(element => element.textContent.includes('Режим администратора активен'));
         const controls = [
           document.querySelector('#modeSeg'),
-          document.querySelector('#editToggle')
+          document.querySelector('#editToggle'),
+          document.querySelector('#chatFab')
         ];
         const rect = element => {
           const box = element.getBoundingClientRect();
           return { left: box.left, right: box.right, top: box.top, bottom: box.bottom };
         };
         const a = rect(toast);
-        return controls.map(element => {
-          const b = rect(element);
-          return Math.min(a.right, b.right) > Math.max(a.left, b.left) &&
-            Math.min(a.bottom, b.bottom) > Math.max(a.top, b.top);
-        });
+        return {
+          overlap: controls.map(element => {
+            const b = rect(element);
+            return Math.min(a.right, b.right) > Math.max(a.left, b.left) &&
+              Math.min(a.bottom, b.bottom) > Math.max(a.top, b.top);
+          }),
+          placement: {
+            position: getComputedStyle(document.getElementById('toasts')).position,
+            bottom: getComputedStyle(document.getElementById('toasts')).bottom,
+            transform: getComputedStyle(document.getElementById('toasts')).transform
+          },
+          viewportWidth: window.innerWidth,
+          toast: a
+        };
       });
-      expect(overlap).toEqual([false, false]);
+      expect(toastLayout.placement.position).toBe('fixed');
+      expect(toastLayout.placement.bottom).toBe('24px');
+      expect(toastLayout.placement.transform).not.toBe('none');
+      expect(toastLayout.overlap).toEqual([false, false, false]);
+      expect(toastLayout.toast.left).toBeGreaterThanOrEqual(0);
+      expect(toastLayout.toast.right).toBeLessThanOrEqual(toastLayout.viewportWidth);
 
       await testInfo.attach('staff-toast-' + brand + '-' + width + 'px', {
         body: await page.screenshot({ fullPage: false }),
@@ -921,4 +936,326 @@ test('work modes keep the role switcher in the topbar and preserve the support l
   expect(ordersLayout.topbarPosition).toBe('sticky');
   await expect(page.locator('#adminBar')).toBeVisible();
   await expect(page.locator('#chatsToggle2')).toBeHidden();
+});
+
+
+test('cashier entrance, stamp and log feedback are static under reduced motion', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
+  await mockStaffSession(page, 'cashier');
+  await page.goto('/?brand=coffee');
+  await page.waitForFunction(() => window.me && window.me.role === 'cashier');
+  await page.waitForFunction(() => {
+    const link = Array.from(document.querySelectorAll('link[rel="stylesheet"]'))
+      .find((item) => item.href.includes('120-cashier.css'));
+    return link && link.media === 'all' && Array.from(document.styleSheets)
+      .some((sheet) => sheet.href === link.href);
+  });
+
+  await page.evaluate(() => {
+    const host = document.createElement('div');
+    host.id = 'cashierMotionFixtures';
+    host.innerHTML = [
+      '<section class="cashier"></section>',
+      '<section class="cust show"></section>',
+      '<span class="cdot last"></span>',
+      '<div class="logrow"></div>',
+      '<details class="staff-guide" open><summary>Инструкции</summary></details>'
+    ].join('');
+    document.body.appendChild(host);
+  });
+
+  const normal = await page.evaluate(() => {
+    const host = document.getElementById('cashierMotionFixtures');
+    return {
+      cashier: getComputedStyle(host.querySelector('.cashier')).animationName,
+      customer: getComputedStyle(host.querySelector('.cust')).animationName,
+      stamp: getComputedStyle(host.querySelector('.cdot')).animationName,
+      log: getComputedStyle(host.querySelector('.logrow')).animationName,
+      guide: getComputedStyle(host.querySelector('.staff-guide summary'), '::after').transitionDuration
+    };
+  });
+  expect(normal.cashier).toBe('rise');
+  expect(normal.customer).toBe('rise');
+  expect(normal.stamp).toBe('stampin');
+  expect(normal.log).toBe('rise');
+  expect(normal.guide).toBe('0.18s');
+
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await expect.poll(() => page.evaluate(() => {
+    const host = document.getElementById('cashierMotionFixtures');
+    return {
+      cashier: getComputedStyle(host.querySelector('.cashier')).animationName,
+      customer: getComputedStyle(host.querySelector('.cust')).animationName,
+      stamp: getComputedStyle(host.querySelector('.cdot')).animationName,
+      log: getComputedStyle(host.querySelector('.logrow')).animationName,
+      guide: getComputedStyle(host.querySelector('.staff-guide summary'), '::after').transitionDuration
+    };
+  })).toEqual({
+    cashier: 'none',
+    customer: 'none',
+    stamp: 'none',
+    log: 'none',
+    guide: '0s'
+  });
+});
+
+
+test('topbar controls stop hover travel and state transitions under reduced motion', async ({ page }) => {
+  // Hover travel is a desktop pointer interaction; mobile layout deliberately suppresses transforms.
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
+  await mockStaffSession(page, 'admin');
+  await page.goto('/?brand=delivery');
+  await page.waitForFunction(() =>
+    window.me && window.me.role === 'admin' &&
+    document.documentElement.hasAttribute('data-staff-ready') &&
+    typeof window.syncBrandViews === 'function'
+  );
+  await page.evaluate(() => window.setMode('admin'));
+
+  const modeButton = page.locator('#modeSeg button').first();
+  const avatar = page.locator('#profileTopBtn');
+  const edit = page.locator('#editToggle');
+  await expect(modeButton).toBeVisible();
+  await expect(avatar).toBeVisible();
+  await expect(edit).toBeVisible();
+  await expect(modeButton).toHaveCSS('transition-duration', '0.25s');
+  await expect(avatar).toHaveCSS('transition-duration', '0.25s');
+  await expect(edit).toHaveCSS('transition-duration', '0.25s');
+
+  await avatar.hover();
+  await expect.poll(() => avatar.evaluate((element) => getComputedStyle(element).transform))
+    .not.toBe('none');
+  await edit.hover();
+  await expect.poll(() => edit.evaluate((element) => getComputedStyle(element).transform))
+    .not.toBe('none');
+
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await expect.poll(() => modeButton.evaluate((element) => getComputedStyle(element).transitionDuration))
+    .toBe('0s');
+  await expect(avatar).toHaveCSS('transition-duration', '0s');
+  await expect(edit).toHaveCSS('transition-duration', '0s');
+  await expect(avatar).toHaveCSS('transform', 'none');
+  await expect(edit).toHaveCSS('transform', 'none');
+});
+
+
+test('cashier redeem/scanner and staff-chat overlays keep their owned motion contracts for both brands', async ({ page, browser }, testInfo) => {
+  for (const brand of ['coffee', 'delivery']) {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.emulateMedia({ reducedMotion: 'no-preference' });
+    await mockStaffSession(page, 'cashier');
+    await page.addInitScript(() => {
+      Object.defineProperty(navigator, 'mediaDevices', {
+        configurable: true,
+        value: {
+          getUserMedia: () => Promise.reject(new Error('Camera permission denied by visual test'))
+        }
+      });
+    });
+    await page.goto('/?brand=' + brand);
+    await page.waitForFunction(() =>
+      window.me && window.me.role === 'cashier' &&
+      typeof window.setMode === 'function' &&
+      typeof window.showCust === 'function'
+    );
+    await page.evaluate(() => {
+      window.setMode('cashier');
+      window.showCust({
+        id: 'staff-overlay-motion-test',
+        name: 'Motion Test Guest',
+        phone: '+70000000000',
+        stamps: 9,
+        free: 1,
+        history: [],
+        qr: 'staff-overlay-motion-test'
+      });
+    });
+
+    const redeem = page.locator('#redeemPick');
+    const redeemCard = redeem.locator('.omCard');
+    await expect(page.locator('#redeemBtn')).toBeVisible();
+    await page.locator('#redeemBtn').click();
+    await expect(redeem).toHaveClass(/show/);
+    await expect(redeemCard).toBeVisible();
+    const redeemNormal = await redeemCard.evaluate((element) => {
+      const style = getComputedStyle(element);
+      return { animationName: style.animationName, transitionDuration: style.transitionDuration };
+    });
+    expect(redeemNormal).toEqual({ animationName: 'none', transitionDuration: '0s' });
+    await expect(page.locator('#toasts .toast')).toHaveCount(0, { timeout: 5000 });
+    await testInfo.attach('cashier-redeem-' + brand + '-normal-390x844.png', {
+      body: await page.screenshot({ fullPage: false }),
+      contentType: 'image/png',
+    });
+
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await expect(redeemCard).toHaveCSS('animation-name', 'none');
+    await expect(redeemCard).toHaveCSS('transition-duration', '0s');
+    await expect(redeem).toBeVisible();
+    await testInfo.attach('cashier-redeem-' + brand + '-reduced-390x844.png', {
+      body: await page.screenshot({ fullPage: false }),
+      contentType: 'image/png',
+    });
+    await redeem.locator('.omClose').click();
+    await expect(redeem).toBeHidden();
+
+    await page.emulateMedia({ reducedMotion: 'no-preference' });
+    await expect(page.locator('#scanFab')).toBeVisible();
+    await page.locator('#scanFab').click();
+    const scan = page.locator('#scanModal');
+    await expect(scan).toBeVisible();
+    await expect(page.locator('#scanStatus')).toContainText('Камера недоступна');
+    const scanNormal = await scan.evaluate((element) => {
+      const style = getComputedStyle(element);
+      return { animationName: style.animationName, transitionDuration: style.transitionDuration, display: style.display };
+    });
+    expect(scanNormal).toEqual({ animationName: 'none', transitionDuration: '0s', display: 'flex' });
+    await expect(page.locator('#toasts .toast')).toHaveCount(0, { timeout: 5000 });
+    await testInfo.attach('cashier-scanner-' + brand + '-normal-390x844.png', {
+      body: await page.screenshot({ fullPage: false }),
+      contentType: 'image/png',
+    });
+
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await expect(scan).toBeVisible();
+    await expect(scan).toHaveCSS('animation-name', 'none');
+    await expect(scan).toHaveCSS('transition-duration', '0s');
+    await testInfo.attach('cashier-scanner-' + brand + '-reduced-390x844.png', {
+      body: await page.screenshot({ fullPage: false }),
+      contentType: 'image/png',
+    });
+    await page.locator('#scanClose').click();
+    await expect(scan).toBeHidden();
+  }
+
+  const cashierDocumentTimeOrigin = await page.evaluate(() => performance.timeOrigin);
+  const appOrigin = new URL(page.url()).origin;
+
+  // auth-session.js reloads other tabs when the active role changes. Keep the
+  // cashier and admin visual sessions in separate BrowserContexts.
+  for (const brand of ['coffee', 'delivery']) {
+    const staffChatContext = await browser.newContext({ serviceWorkers: 'block' });
+    const staffChatPage = await staffChatContext.newPage();
+    try {
+      await staffChatPage.setViewportSize({ width: 390, height: 844 });
+      await staffChatPage.emulateMedia({ reducedMotion: 'no-preference' });
+      await mockStaffSession(staffChatPage, 'admin');
+      await staffChatPage.goto(appOrigin + '/?brand=' + brand);
+      await staffChatPage.waitForFunction((expectedBrand) =>
+        window.me && window.me.role === 'admin' &&
+        document.documentElement.hasAttribute('data-staff-ready') &&
+        document.documentElement.getAttribute('data-brand') === expectedBrand &&
+        typeof window.openStaffChat === 'function'
+      , brand);
+
+      await staffChatPage.evaluate((activeBrand) => window.openStaffChat(activeBrand), brand);
+
+      const modal = staffChatPage.locator('#staffChatModal');
+      const card = modal.locator('.modal-card');
+      await expect(modal).toHaveClass(/show/);
+      await expect(card).toBeVisible();
+      await expect.poll(() => card.evaluate((element) => getComputedStyle(element).opacity)).toBe('1');
+      const normalDuration = await card.evaluate((element) => getComputedStyle(element).transitionDuration);
+      expect(normalDuration).not.toBe('0s');
+      await expect(staffChatPage.locator('#toasts .toast')).toHaveCount(0, { timeout: 5000 });
+      await testInfo.attach('staff-chat-' + brand + '-normal-390x844.png', {
+        body: await staffChatPage.screenshot({ fullPage: false }),
+        contentType: 'image/png',
+      });
+
+      await staffChatPage.emulateMedia({ reducedMotion: 'reduce' });
+      await expect(card).toHaveCSS('transition-duration', '0s');
+      await expect(card).toHaveCSS('transform', 'none');
+      await expect(modal).toBeVisible();
+      await testInfo.attach('staff-chat-' + brand + '-reduced-390x844.png', {
+        body: await staffChatPage.screenshot({ fullPage: false }),
+        contentType: 'image/png',
+      });
+      await staffChatPage.evaluate(() => window.closeStaffChat());
+      await expect(modal).not.toHaveClass(/show/);
+    } finally {
+      await staffChatContext.close();
+    }
+
+    // The independent admin pass must not reload or demote the cashier document.
+    await expect.poll(() => page.evaluate(() => performance.timeOrigin))
+      .toBe(cashierDocumentTimeOrigin);
+    await expect(page.locator('html')).toHaveAttribute('data-staff-role', 'cashier');
+  }
+});
+
+
+test('staff chat overlay closes on Escape and releases the overlay for both brands and viewports', async ({ browser }, testInfo) => {
+  test.setTimeout(90_000);
+  const viewports = [
+    { name: 'portrait', width: 390, height: 844 },
+    { name: 'compact-landscape', width: 844, height: 390 },
+    { name: 'desktop', width: 1280, height: 900 },
+  ];
+
+  for (const brand of ['coffee', 'delivery']) {
+    for (const viewport of viewports) {
+      const context = await browser.newContext({
+        viewport: { width: viewport.width, height: viewport.height },
+        serviceWorkers: 'block',
+      });
+      const page = await context.newPage();
+      try {
+        await page.emulateMedia({ reducedMotion: 'no-preference' });
+        await mockStaffSession(page, 'admin');
+        await page.goto('/?brand=' + brand);
+        await page.waitForFunction(() =>
+          window.me && window.me.role === 'admin' &&
+          document.documentElement.hasAttribute('data-staff-ready') &&
+          typeof window.openStaffChat === 'function' &&
+          typeof window.setMode === 'function'
+        );
+        await page.evaluate(() => {
+          // Suppress the transient mode toast; this suite exercises the staff-chat overlay, not toast timing.
+          window.toast = () => null;
+          window.setMode('admin');
+        });
+        const trigger = page.locator('#chatsToggle2');
+        await expect(trigger).toBeVisible();
+        await trigger.focus();
+        await page.keyboard.press('Enter');
+
+        const modal = page.locator('#staffChatModal');
+        const card = modal.locator('.modal-card');
+        const overlay = page.locator('#overlay');
+        await expect(modal).toHaveClass(/show/);
+        await expect(card).toBeVisible();
+        await expect.poll(() => card.evaluate((element) => getComputedStyle(element).opacity)).toBe('1');
+        await expect(overlay).toHaveAttribute('aria-hidden', 'false');
+        await expect(page.locator('#scClose')).toBeFocused();
+
+        const geometry = await card.boundingBox();
+        expect(geometry).not.toBeNull();
+        expect(geometry.x).toBeGreaterThanOrEqual(0);
+        expect(geometry.y).toBeGreaterThanOrEqual(0);
+        expect(geometry.x + geometry.width).toBeLessThanOrEqual(viewport.width + 0.5);
+        expect(geometry.y + geometry.height).toBeLessThanOrEqual(viewport.height + 0.5);
+
+        await testInfo.attach('staff-chat-' + brand + '-' + viewport.name + '-open.png', {
+          body: await page.screenshot({ fullPage: false }),
+          contentType: 'image/png',
+        });
+
+        await page.keyboard.press('Escape');
+        await expect(modal).not.toHaveClass(/show/);
+        await expect(overlay).toHaveAttribute('aria-hidden', 'true');
+        await expect(overlay).toHaveCSS('pointer-events', 'none');
+        await expect(trigger).toBeFocused();
+
+        await testInfo.attach('staff-chat-' + brand + '-' + viewport.name + '-closed.png', {
+          body: await page.screenshot({ fullPage: false }),
+          contentType: 'image/png',
+        });
+      } finally {
+        await context.close();
+      }
+    }
+  }
 });
