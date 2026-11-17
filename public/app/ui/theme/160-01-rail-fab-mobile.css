@@ -845,8 +845,8 @@ html body #authModal.tg-mode .mhint{
 
   body.cart-open #cartFab,
   body:has(#cartPanel.open) #cartFab {
-    visibility: hidden;
-    pointer-events: none;
+    visibility: hidden !important;
+    pointer-events: none !important;
   }
 
   html body #mbonusBtn,
