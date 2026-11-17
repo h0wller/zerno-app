@@ -984,3 +984,42 @@ test('cashier entrance, stamp and log feedback are static under reduced motion',
     guide: '0s'
   });
 });
+
+
+test('topbar controls stop hover travel and state transitions under reduced motion', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
+  await mockStaffSession(page, 'admin');
+  await page.goto('/?brand=delivery');
+  await page.waitForFunction(() =>
+    window.me && window.me.role === 'admin' &&
+    document.documentElement.hasAttribute('data-staff-ready') &&
+    typeof window.syncBrandViews === 'function'
+  );
+  await page.evaluate(() => window.setMode('admin'));
+
+  const modeButton = page.locator('#modeSeg button').first();
+  const avatar = page.locator('#profileTopBtn');
+  const edit = page.locator('#editToggle');
+  await expect(modeButton).toBeVisible();
+  await expect(avatar).toBeVisible();
+  await expect(edit).toBeVisible();
+  await expect(modeButton).toHaveCSS('transition-duration', '0.25s');
+  await expect(avatar).toHaveCSS('transition-duration', '0.25s');
+  await expect(edit).toHaveCSS('transition-duration', '0.25s');
+
+  await avatar.hover();
+  await expect.poll(() => avatar.evaluate((element) => getComputedStyle(element).transform))
+    .not.toBe('none');
+  await edit.hover();
+  await expect.poll(() => edit.evaluate((element) => getComputedStyle(element).transform))
+    .not.toBe('none');
+
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await expect.poll(() => modeButton.evaluate((element) => getComputedStyle(element).transitionDuration))
+    .toBe('0s');
+  await expect(avatar).toHaveCSS('transition-duration', '0s');
+  await expect(edit).toHaveCSS('transition-duration', '0s');
+  await expect(avatar).toHaveCSS('transform', 'none');
+  await expect(edit).toHaveCSS('transform', 'none');
+});
