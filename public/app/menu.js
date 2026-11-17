@@ -27,6 +27,9 @@ function renderRail() {
   });
 }
 
+// Synchronize the default category before the first user interaction.
+renderRail();
+
 $('#rail').addEventListener('click', e => {
   const b = e.target.closest('[data-cat]');
   if (!b) return;
