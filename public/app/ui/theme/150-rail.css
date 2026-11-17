@@ -55,8 +55,8 @@ sticky слева на весь скролл
     --rail-total-h: calc(var(--rail-h) + var(--rail-edge-gap) + env(safe-area-inset-bottom, 0px));
   }
 
-  html body .wrap #menuView #rail,
-  html body .wrap #deliveryView #deliveryRail {
+  html body div.wrap > nav.rail#rail,
+  html body div.wrap > div.rail#deliveryRail {
     box-sizing: border-box;
     position: fixed;
     top: auto;
@@ -91,8 +91,8 @@ sticky слева на весь скролл
     transition: opacity 180ms ease;
   }
 
-  html body .wrap #menuView #rail button,
-  html body .wrap #deliveryView #deliveryRail button {
+  html body div.wrap > nav.rail#rail button,
+  html body div.wrap > div.rail#deliveryRail button {
     appearance: none;
     box-sizing: border-box;
     display: flex;
@@ -122,8 +122,8 @@ sticky слева на весь скролл
     transition: background-color 180ms ease, color 180ms ease;
   }
 
-  html body .wrap #menuView #rail .re,
-  html body .wrap #deliveryView #deliveryRail .re {
+  html body div.wrap > nav.rail#rail .re,
+  html body div.wrap > div.rail#deliveryRail .re {
     display: grid;
     flex: 0 0 22px;
     place-items: center;
@@ -136,8 +136,8 @@ sticky слева на весь скролл
     transition: none;
   }
 
-  html body .wrap #menuView #rail .category-label,
-  html body .wrap #deliveryView #deliveryRail .category-label {
+  html body div.wrap > nav.rail#rail .category-label,
+  html body div.wrap > div.rail#deliveryRail .category-label {
     display: block;
     width: 100%;
     min-width: 0;
@@ -150,35 +150,35 @@ sticky слева на весь скролл
     letter-spacing: -0.25px;
   }
 
-  html body .wrap #menuView #rail button.on,
-  html body .wrap #deliveryView #deliveryRail button.on {
+  html body div.wrap > nav.rail#rail button.on,
+  html body div.wrap > div.rail#deliveryRail button.on {
     background: var(--flame, #123A6B);
     color: var(--c-text-on-accent, #FFFFFF);
     font-weight: 800;
   }
 
-  html body .wrap #menuView #rail button:active,
-  html body .wrap #deliveryView #deliveryRail button:active {
+  html body div.wrap > nav.rail#rail button:active,
+  html body div.wrap > div.rail#deliveryRail button:active {
     transform: none;
   }
 
-  html body .wrap #menuView #rail button:focus-visible,
-  html body .wrap #deliveryView #deliveryRail button:focus-visible {
+  html body div.wrap > nav.rail#rail button:focus-visible,
+  html body div.wrap > div.rail#deliveryRail button:focus-visible {
     outline: 2px solid var(--focus, var(--flame, #1A6DDF));
     outline-offset: -2px;
     z-index: 2;
   }
 
   @media (max-width: 340px) {
-    html body .wrap #menuView #rail .category-label,
-    html body .wrap #deliveryView #deliveryRail .category-label {
+    html body div.wrap > nav.rail#rail .category-label,
+    html body div.wrap > div.rail#deliveryRail .category-label {
       display: none;
     }
   }
 
   @supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-    html body .wrap #menuView #rail,
-    html body .wrap #deliveryView #deliveryRail {
+    html body div.wrap > nav.rail#rail,
+    html body div.wrap > div.rail#deliveryRail {
       background: color-mix(in srgb, var(--card, var(--panel, #FFFFFF)) 88%, transparent);
       -webkit-backdrop-filter: blur(20px) saturate(165%);
       backdrop-filter: blur(20px) saturate(165%);
@@ -186,18 +186,18 @@ sticky слева на весь скролл
   }
 
   @media (prefers-reduced-transparency: reduce) {
-    html body .wrap #menuView #rail,
-    html body .wrap #deliveryView #deliveryRail {
+    html body div.wrap > nav.rail#rail,
+    html body div.wrap > div.rail#deliveryRail {
       background: var(--card, var(--panel, #FFFFFF));
       -webkit-backdrop-filter: none;
       backdrop-filter: none;
     }
   }
 
-  body.cart-open .wrap #menuView #rail,
-  body.cart-open .wrap #deliveryView #deliveryRail,
-  body:has(#cartPanel.open) .wrap #menuView #rail,
-  body:has(#cartPanel.open) .wrap #deliveryView #deliveryRail {
+  body.cart-open .wrap > #rail,
+  body.cart-open .wrap > #deliveryRail,
+  body:has(#cartPanel.open) .wrap > #rail,
+  body:has(#cartPanel.open) .wrap > #deliveryRail {
     visibility: hidden;
     pointer-events: none;
   }
@@ -216,13 +216,13 @@ sticky слева на весь скролл
     --rail-total-h: calc(var(--rail-h) + var(--rail-edge-gap) + env(safe-area-inset-bottom, 0px));
   }
 
-  html body .wrap #menuView #rail,
-  html body .wrap #deliveryView #deliveryRail {
+  html body div.wrap > nav.rail#rail,
+  html body div.wrap > div.rail#deliveryRail {
     padding: 2px 6px;
   }
 
-  html body .wrap #menuView #rail .re,
-  html body .wrap #deliveryView #deliveryRail .re {
+  html body div.wrap > nav.rail#rail .re,
+  html body div.wrap > div.rail#deliveryRail .re {
     flex-basis: 20px;
     width: 20px;
     min-width: 20px;
@@ -232,10 +232,10 @@ sticky слева на весь скролл
 }
 
 @media (prefers-reduced-motion: reduce) {
-  html body .wrap #menuView #rail,
-  html body .wrap #deliveryView #deliveryRail,
-  html body .wrap #menuView #rail button,
-  html body .wrap #deliveryView #deliveryRail button {
+  html body div.wrap > nav.rail#rail,
+  html body div.wrap > div.rail#deliveryRail,
+  html body div.wrap > nav.rail#rail button,
+  html body div.wrap > div.rail#deliveryRail button {
     transition: none;
   }
 }
