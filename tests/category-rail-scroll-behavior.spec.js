@@ -116,3 +116,24 @@ for (const brand of BRANDS) {
     });
   }
 }
+
+
+test('delivery subfilters remain visible while the primary category rail fades during scroll', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.addInitScript(() => sessionStorage.setItem('splashDone', '1'));
+  await page.goto('/?brand=delivery', { waitUntil: 'domcontentloaded' });
+
+  const pizza = page.locator('#deliveryRail [data-dcat="pizza"]');
+  if (!(await pizza.evaluate(element => element.classList.contains('on')))) {
+    await pizza.click();
+  }
+  const subfilters = page.locator('#deliverySubFilterViewport:not([hidden])');
+  await expect(subfilters).toBeVisible({ timeout: 10000 });
+  const firstSubfilter = subfilters.locator('button').first();
+  await expect(firstSubfilter).toBeVisible();
+
+  await page.evaluate(() => window.scrollTo(0, 500));
+  await expect(page.locator('#deliveryRail')).toHaveCSS('opacity', '0');
+  await expect(subfilters).toHaveCSS('opacity', '1');
+  await expect(firstSubfilter).toHaveCSS('opacity', '1');
+});
