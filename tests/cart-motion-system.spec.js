@@ -217,6 +217,8 @@ test('cart FAB fades without moving or resizing its hit target', async ({ page }
       width: initial.width,
       height: initial.height,
     });
+    // Release outside the button so this interaction probe does not open the cart.
+    await page.mouse.move(0, 0);
     await page.mouse.up();
   }
 });
