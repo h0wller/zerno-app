@@ -318,18 +318,42 @@ test.describe('Спринт 2 — Сетка опций пиццы, отступ
     await expect(firstOpt).toHaveCSS('color', 'rgb(255, 255, 255)');
     await expect(firstOpt).toHaveCSS('background-color', 'rgb(192, 59, 42)');
 
-    // ── Задача 2: Безопасный нижний отступ #deliveryGrid (>= 88px под плавающую корзину) ──
-    const padBottom = await page.locator('#deliveryGrid').evaluate((el) => parseFloat(window.getComputedStyle(el).paddingBottom));
-    expect(padBottom).toBeGreaterThanOrEqual(88);
+    // Empty cart reserves exactly the floating rail total (capsule + edge gap + safe-area) plus 16px.
+    const reserve = await page.evaluate(() => {
+      const grid = document.querySelector('#deliveryGrid');
+      const probe = document.createElement('div');
+      probe.style.cssText = 'position:fixed;visibility:hidden;pointer-events:none;width:0;height:var(--rail-total-h)';
+      document.body.appendChild(probe);
+      const railTotal = probe.getBoundingClientRect().height;
+      probe.remove();
+      return {
+        padding: parseFloat(getComputedStyle(grid).paddingBottom),
+        railTotal
+      };
+    });
+    expect(reserve.padding, 'empty-cart reserve is rail total + exactly 16px')
+      .toBeCloseTo(reserve.railTotal + 16, 0);
 
     // ── Задача 3: delivery rail starts aligned to the first product-card row ──
     const railGeometry = await page.evaluate(() => {
       const element = document.querySelector('#deliveryRail');
       const rail = element.getBoundingClientRect();
+      const safeAreaProbe = document.createElement('div');
+      safeAreaProbe.style.cssText = 'position:fixed;visibility:hidden;padding-bottom:env(safe-area-inset-bottom,0px)';
+      document.body.appendChild(safeAreaProbe);
+      const safeAreaInset = parseFloat(getComputedStyle(safeAreaProbe).paddingBottom) || 0;
+      safeAreaProbe.remove();
+      const totalProbe = document.createElement('div');
+      totalProbe.style.cssText = 'position:fixed;visibility:hidden;pointer-events:none;width:0;height:var(--rail-total-h)';
+      document.body.appendChild(totalProbe);
+      const railTotalHeight = totalProbe.getBoundingClientRect().height;
+      totalProbe.remove();
       return {
         position: getComputedStyle(element).position,
         height: rail.height,
         bottomGap: window.innerHeight - rail.bottom,
+        railTotalHeight,
+        safeAreaInset,
         left: rail.left,
         right: rail.right,
         viewportWidth: window.innerWidth,
@@ -337,8 +361,11 @@ test.describe('Спринт 2 — Сетка опций пиццы, отступ
     });
     expect(railGeometry.position).toBe('fixed');
     expect(railGeometry.height).toBe(56);
-    expect(railGeometry.bottomGap).toBeGreaterThanOrEqual(10);
-    expect(railGeometry.bottomGap).toBeLessThanOrEqual(12);
+    expect(railGeometry.bottomGap).toBeGreaterThanOrEqual(10 + railGeometry.safeAreaInset);
+    expect(railGeometry.bottomGap).toBeLessThanOrEqual(12 + railGeometry.safeAreaInset);
+    expect(railGeometry.railTotalHeight).toBeCloseTo(
+      railGeometry.height + railGeometry.bottomGap, 0
+    );
     expect(railGeometry.left).toBeGreaterThanOrEqual(12);
     expect(railGeometry.right).toBeLessThanOrEqual(railGeometry.viewportWidth - 12);
 
