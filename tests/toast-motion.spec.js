@@ -14,7 +14,7 @@ async function prepareToastPage(page, brand, reducedMotion) {
   await page.waitForFunction(() => typeof window.toast === 'function');
 }
 
-test('toast uses short non-overshooting entry and exit motion in both brands', async ({ page }) => {
+test('toast uses short non-overshooting entry and exit motion in both brands', async ({ page }, testInfo) => {
   const toast = page.locator('#toasts .toast');
 
   for (const brand of ['coffee', 'delivery']) {
@@ -33,6 +33,10 @@ test('toast uses short non-overshooting entry and exit motion in both brands', a
     expect(entry.animationName).toBe('tin');
     expect(entry.duration).toBe('0.18s');
     expect(entry.easing).toBe('cubic-bezier(0.2, 0.8, 0.2, 1)');
+    await testInfo.attach('toast-normal-' + brand + '-entry-390x844.png', {
+      body: await page.screenshot({ fullPage: false }),
+      contentType: 'image/png',
+    });
 
     // .out is intentionally transient (300ms); sample faster than its lifetime.
     await expect.poll(() => toast.evaluate((element) => element.classList.contains('out')), {
@@ -50,12 +54,16 @@ test('toast uses short non-overshooting entry and exit motion in both brands', a
     expect(exit.animationName).toBe('tout');
     expect(exit.duration).toBe('0.12s');
     expect(exit.easing).toBe('cubic-bezier(0.2, 0.8, 0.2, 1)');
+    await testInfo.attach('toast-normal-' + brand + '-exit-390x844.png', {
+      body: await page.screenshot({ fullPage: false }),
+      contentType: 'image/png',
+    });
 
     await expect(toast).toHaveCount(0, { timeout: 1000 });
   }
 });
 
-test('toast appears and disappears without animation under reduced motion', async ({ page }) => {
+test('toast appears and disappears without animation under reduced motion', async ({ page }, testInfo) => {
   const toast = page.locator('#toasts .toast');
 
   for (const brand of ['coffee', 'delivery']) {
@@ -65,6 +73,10 @@ test('toast appears and disappears without animation under reduced motion', asyn
     await expect(toast).toHaveCSS('animation-name', 'none');
     await expect(toast).toHaveCSS('animation-duration', '0s');
     await expect(toast).toHaveCSS('opacity', '1');
+    await testInfo.attach('toast-reduced-' + brand + '-entry-390x844.png', {
+      body: await page.screenshot({ fullPage: false }),
+      contentType: 'image/png',
+    });
 
     // .out is intentionally transient (300ms); sample faster than its lifetime.
     await expect.poll(() => toast.evaluate((element) => element.classList.contains('out')), {
@@ -73,6 +85,10 @@ test('toast appears and disappears without animation under reduced motion', asyn
     }).toBe(true);
     await expect(toast).toHaveCSS('animation-name', 'none');
     await expect(toast).toHaveCSS('opacity', '0');
+    await testInfo.attach('toast-reduced-' + brand + '-exit-390x844.png', {
+      body: await page.screenshot({ fullPage: false }),
+      contentType: 'image/png',
+    });
     await expect(toast).toHaveCount(0, { timeout: 1000 });
   }
 });
