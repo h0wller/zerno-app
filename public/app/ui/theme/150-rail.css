@@ -114,7 +114,7 @@ sticky слева на весь скролл
     background: transparent;
     box-shadow: none;
     color: var(--category-icon-color, var(--ink, #101418));
-    font: 700 clamp(8px, 2.3vw, 10px)/1.1 "Golos Text", system-ui, sans-serif;
+    font: var(--category-label-weight, 700) var(--category-label-size, 10px)/1.1 var(--category-label-font, "Golos Text"), system-ui, sans-serif;
     text-align: center;
     white-space: nowrap;
     overflow: hidden;
@@ -131,6 +131,8 @@ sticky слева на весь скролл
     min-width: 22px;
     height: 22px;
     margin: 0;
+    border-radius: var(--category-icon-radius, 8px);
+    background: var(--category-icon-bg, transparent);
     font-size: 20px;
     line-height: 1;
     transition: none;
@@ -153,8 +155,8 @@ sticky слева на весь скролл
   html body div.wrap > nav.rail#rail button.on,
   html body div.wrap > div.rail#deliveryRail button.on {
     /* Delivery's primary terracotta needs its darker accessible tone with white text. */
-    background: var(--flame-d, var(--flame, #123A6B));
-    color: #FFFFFF;
+    background: var(--category-icon-active-bg, var(--category-tab-active-color, var(--flame, #123A6B)));
+    color: var(--category-icon-active-color, #FFFFFF);
     font-weight: 800;
   }
 
