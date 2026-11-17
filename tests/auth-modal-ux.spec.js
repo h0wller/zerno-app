@@ -1032,3 +1032,60 @@ test('active confetti loop stops on a live switch to reduced motion', async ({ p
   await page.evaluate(() => window.__motionRafCallback());
   expect(await page.evaluate(() => window.__motionRafCalls)).toBe(1);
 });
+
+
+test('ambient service hints stop pulsing and entering under reduced motion', async ({ page }) => {
+  await page.addInitScript(() => {
+    localStorage.setItem('zt_onb', '1');
+    sessionStorage.setItem('splashDone', '1');
+  });
+  await page.goto('/?brand=coffee');
+  await page.waitForFunction(() => {
+    const link = Array.from(document.querySelectorAll('link[rel="stylesheet"]'))
+      .find((item) => item.href.includes('130-service.css'));
+    return link && link.media === 'all' && Array.from(document.styleSheets)
+      .some((sheet) => sheet.href === link.href);
+  });
+
+  await page.evaluate(() => {
+    const host = document.createElement('div');
+    host.id = 'motionAmbientFixtures';
+    host.innerHTML = [
+      '<div class="mbonus"><span class="mb-free">Подарок</span></div>',
+      '<button type="button" class="demoBtn glow">Подсказка</button>',
+      '<span class="ava pulse-hint">A</span>',
+      '<div class="pushHint">Подсказка</div>',
+      '<div class="freeBanner">Бесплатная доставка</div>'
+    ].join('');
+    document.body.appendChild(host);
+  });
+
+  const names = await page.evaluate(() => {
+    const host = document.getElementById('motionAmbientFixtures');
+    const read = (selector) => {
+      const style = getComputedStyle(host.querySelector(selector));
+      return { animation: style.animationName, transition: style.transitionDuration };
+    };
+    return {
+      gift: read('.mb-free'),
+      demo: read('.demoBtn'),
+      avatar: read('.ava'),
+      pushHint: read('.pushHint'),
+      freeBanner: read('.freeBanner'),
+      mbonus: read('.mbonus')
+    };
+  });
+  expect(names.gift.animation).toBe('freePulse');
+  expect(names.demo.animation).toBe('glowPulse');
+  expect(names.avatar.animation).toBe('pulse-hint');
+  expect(names.pushHint.animation).toBe('tin');
+  expect(names.freeBanner.animation).toBe('rise');
+
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await expect.poll(() => page.evaluate(() => {
+    const host = document.getElementById('motionAmbientFixtures');
+    return Array.from(host.querySelectorAll('.mb-free, .demoBtn, .ava, .pushHint, .freeBanner'))
+      .map((element) => getComputedStyle(element).animationName);
+  })).toEqual(['none', 'none', 'none', 'none', 'none']);
+  await expect(page.locator('#motionAmbientFixtures .mbonus')).toHaveCSS('transition-duration', '0s');
+});
