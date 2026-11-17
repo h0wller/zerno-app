@@ -440,9 +440,19 @@ html[data-brand="delivery"] #menuView {
 #redeemPick:not(.show),
 #ordersModal:not(.show),
 #qrModal:not(.show),
-#cartPanel:not(.open),
 #chatPanel:not(.open) {
   display: none !important;
+}
+
+/* First-frame mirror: keep the cart in the render tree so its owner can animate
+   both directions; visibility also removes closed sheet controls from focus order. */
+#cartPanel:not(.open) {
+  visibility: hidden;
+  pointer-events: none;
+}
+#cartPanel.open {
+  visibility: visible;
+  pointer-events: auto;
 }
 
 /* ─── 4. critical FOUC-guard: первый кадр шапки, сетки .wrap и марки (стабилизация CLS) ─── */
