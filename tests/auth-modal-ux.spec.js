@@ -830,3 +830,43 @@ test('registration exposes the SMS control only after the server opts in', async
     contentType: 'image/png',
   });
 });
+
+test('reduced motion disables the shared auth overlay fade and preserves focus restoration', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.addInitScript(() => {
+    localStorage.setItem('zt_onb', '1');
+    sessionStorage.setItem('splashDone', '1');
+  });
+  await page.goto('/?brand=delivery');
+  await page.waitForFunction(() => typeof window.openAuth === 'function');
+
+  await page.evaluate(() => {
+    const trigger = document.createElement('button');
+    trigger.id = 'reducedMotionAuthTrigger';
+    trigger.type = 'button';
+    trigger.textContent = 'Open account';
+    trigger.addEventListener('click', () => window.openAuth(false));
+    document.body.appendChild(trigger);
+  });
+
+  const trigger = page.locator('#reducedMotionAuthTrigger');
+  const modal = page.locator('#authModal');
+  const card = modal.locator('.modal-card');
+  const overlay = page.locator('#overlay');
+
+  await trigger.click();
+  await expect(modal).toBeVisible();
+  await expect(modal.locator('#regName')).toBeFocused();
+  await expect(overlay).toHaveAttribute('aria-hidden', 'false');
+
+  await expect.poll(() => overlay.evaluate((element) => getComputedStyle(element).transitionDuration))
+    .toBe('0s');
+  await expect.poll(() => card.evaluate((element) => getComputedStyle(element).transitionDuration))
+    .toBe('0s');
+
+  await page.keyboard.press('Escape');
+  await expect(modal).not.toHaveClass(/show/);
+  await expect(trigger).toBeFocused();
+  await expect(overlay).toHaveAttribute('aria-hidden', 'true');
+  await expect(overlay).toHaveCSS('pointer-events', 'none');
+});
