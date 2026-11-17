@@ -352,3 +352,35 @@ Baseline evidence:
 - Отдельный аудит hidden/offscreen CSS loops не завершён. Не вводить общий lifecycle manager или глобальный reduced-motion override.
 
 **Следующий шаг:** закрыть оставшиеся staff overlays/role matrix, проверить interruption + resize и расследовать document-level CLS `0.0511`. PR остаётся Draft; не мерджить до полного visual gate.
+
+
+## 11. Продолжение Stage 5 — 2026-11-17
+
+**Текущий срез ветки:** PR #268 остаётся Draft, base `pizza` SHA `dacb424bdff9d073b3b9a4e13d723db1da92d078`, без конфликтов. Последний application/test HEAD с полным зелёным CI — `2365b3be7b4613d63acaca9f280dba3f199ce11e`, run [44125051592](https://github.com/h0wller/zerno-app/actions/runs/44125051592), 13/13 jobs. Последующий диагностический run [44128635061](https://github.com/h0wller/zerno-app/actions/runs/44128635061) также прошёл 13/13; в нём runtime-код не менялся, а временная телеметрия в `tests/slow-network-layout.spec.js` после анализа удалена отдельным revert-коммитом.
+
+### Закрытые проверки этой сессии
+
+- [x] Staff chat: Escape закрывает `#staffChatModal` через публичный owner-контракт `window.closeStaffChat`; focus capture/restore остаётся у `chat.js`; закрытие очищает shared overlay. Тест проверяет keyboard open/close, focus на Close, возврат к opener, overlay `aria-hidden`/pointer-events и границы карточки для coffee/delivery × portrait 390×844, compact landscape 844×390, desktop 1280×900.
+- [x] Открыты и осмотрены 12 staff-chat кадров open/closed для обеих марок и трёх viewport. На mobile используется нижняя sheet, на landscape и desktop — центрированная карточка; явного overflow или потери контекста не обнаружено.
+- [x] Preorder waiting pulse: на мобильной/планшетной закрытой profile drawer бесконечный `preorder-pulse` отключён локальным правилом owner CSS; конечный entrance сохраняется, при открытии pulse возвращается, reduced motion оставляет анимацию выключенной. RED/GREEN подтверждены Profile E2E в run `44125051592`.
+- [x] Повторная проверка всех 13 CI-групп на application/test HEAD `2365b3b` прошла успешно.
+
+### CLS follow-up — установленная причина, исправление отложено
+
+Диагностика desktop staff hydration на delivery при viewport 1440×900 воспроизвела document CLS `0.0510983`, при этом staff-header CLS остаётся `0`.
+
+Первый LayoutShift (`0.0205804`) зафиксирован, когда `#deliveryRail` имеет высоту/scrollHeight `784px`, основной `section` — `941.2px`, `.wrap` — `985.2px`, а footer оказывается на y=`1110.2px` за пределами viewport. Во втором LayoutShift (`0.0305179`) rail становится `360.9px`, section — `387.7px`, wrap — `562.1px`, footer возвращается на y=`810.5px`. Это точно объясняет оба скачка footer через grid-row и `.siteFooter { margin-top:auto }`.
+
+Затрагиваемые owners — `delivery.js` (рендер `#deliveryRail`) и `ui/category-rail.js` (позиционирование rail через `alignRailWithCard`), с CSS в rail/grid layers. Но эти файлы и критические rail-правила пересекаются с открытой stacked dependency PR #266 и изменениями #269. **В PR #268 rail runtime/CSS не исправлялись намеренно**: изменение без синхронизации dependency может вернуть regressions category navigation/layout.
+
+Отдельный меньший shift на `21px` подтверждён внутри profile sidebar: `#myOrders` меняется с loading placeholder высотой `43px` на empty state `64px`; вслед за ним `#fridayInfo` и `.profile-history-section` смещаются вниз на `21px`. Owner контента — `profile-orders.js`. Это отдельный профильный follow-up; он не является причиной большого скачка footer.
+
+Временный диагностический instrumentation в `slow-network-layout.spec.js` был удалён после получения данных. Существующие CLS assertions не ослаблялись, screenshot baselines не обновлялись.
+
+### Оставшиеся цели Stage 5
+
+- [ ] Разрешить зависимость #266 и после этого исправить/покрыть стабильность desktop delivery rail во время staff hydration; сохранить assertions на document CLS и геометрию.
+- [ ] Устранить независимый 21px profile-order placeholder shift, если он воспроизводится на актуальном owner после отдельного RED-теста.
+- [ ] Довести interruption + rapid reopen + resize одновременно с keyboard/focus/scroll для generic modal и оставшихся staff overlays.
+- [ ] Завершить role/viewport matrix для cashier, dispatcher и admin overlays. Нынешний staff-chat matrix закрывает только admin staff-chat.
+- [ ] Не переводить PR в Ready и не мержить до закрытия зависимых rail findings, полного CI и обязательного visual gate.
