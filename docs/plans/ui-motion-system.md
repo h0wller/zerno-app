@@ -239,7 +239,9 @@ Baseline evidence:
 - [x] Добавлен chat motion spec для coffee/delivery × portrait/short landscape: FAB без idle ping, panel timing, message timing, hint pulse normal/reduced, geometry и overflow.
 - [x] RED получен на `::before` animationName=`ping`; GREEN — Responsive UI 129/129, Mobile Chrome 130/130.
 - [ ] Разрешить #268 rail/base dependency до category/rail motion; не переносить #266/#269 в текущую ветку без согласования.
-- [ ] Test press/selected, stepper, add-product, card image и cart FAB.
+- [x] Cart FAB: opacity-only show/hide, фиксированная ширина/позиция, без scale на hover/press; `prefers-reduced-motion` отключает transition.
+- [x] Cart FAB regression test: стабильные bounds/transform, hover/pressed hit-target в normal и reduced motion; Cart/checkout 32/32.
+- [ ] Test category selected, stepper, add-product и card image.
 - [ ] Сохранить grid geometry и неизменность hit-target.
 
 ### Stage 4 — feedback/ambient
@@ -272,9 +274,8 @@ Baseline evidence:
 
 Пробелы:
 - Нет специальных тестов timing tokens.
-- Нет cart sheet reduced-motion coverage.
-- Нет rapid open-close-reopen во время активного перехода.
-- Нет generic modal/overlay reduced/interruption tests.
+- Cart sheet reduced-motion open/close и interruption close/reopen покрыты `tests/cart-motion-system.spec.js`; общий Cart/checkout проходит на проверенном SHA.
+- Generic modal/overlay reduced/interruption coverage остаётся неполной.
 - Не проверены chat FAB pseudo ping, hint pulse, confetti, order flash и smooth scroll в reduce.
 - Нет проверки resize во время перехода с фокусом/scroll.
 - Большинство visual tests фиксируют stable states, а не промежуточные кадры.
@@ -295,14 +296,14 @@ Baseline evidence:
 
 ## 10. Текущий статус
 
-Срез на 2026-11-17, PR #268, branch `design/ui-animation-system-20261116`, base `pizza`, HEAD до документационного обновления: `b599c835d9dda95463515cc588ea262cf8c8722a`.
+Срез на 2026-11-17, PR #268, branch `design/ui-animation-system-20261116`, base `pizza`, проверенный application HEAD: `7b2b78683194ef8ae24860eb9cf3d56bac3cec45`.
 
-Stage 0 завершён. Stage 1 (cart sheet) завершён. Stage 2 частично завершён: auth modal/overlay реализованы и визуально проверены; address book/staff overlays остаются. Stage 3 частично завершён только для chat panel/FAB/hints; category rail, product cards, category selection и cart FAB ещё не реализованы. Stage 4 частично закрывает chat hint и постоянный FAB ping; validation/toast/order flash/confetti и остальные ambient циклы остаются.
+Stage 0 завершён. Stage 1 (cart sheet) завершён. Stage 2 частично завершён: auth modal/overlay реализованы и визуально проверены; address book/staff overlays остаются. Stage 3 частично завершён: chat panel/FAB/hints и cart FAB реализованы; category rail, product cards, category selection, stepper и add-product ещё не закрыты. Stage 4 частично закрывает chat hint и постоянный FAB ping; validation/toast/order flash/confetti и остальные ambient циклы остаются.
 
-Последний полный CI run `44039724343` на `b599c835`: 13/13 jobs successful. Ключевые группы: Cart/checkout 31 passed, Auth 36 passed, Responsive UI 129 passed, Mobile Chrome 130 passed. В CI client build штатный `npm run build:client` запустил `npm run bump:sw` и сообщил `v649 → v650`; результат зафиксирован в commit `179be0e` (`public/sw.js`, `public/index.html`), проверены `STATIC_CACHE=zerno-static-v650` и 69 asset refs `?v=650`.
+Полный CI run `44045981670` на `7b2b786`: 13/13 jobs successful. Cart/checkout — 32/32; Responsive UI, Mobile Chrome, Visual Stability, Visual UX capture и остальные jobs — success. Штатный client build запустил `npm run bump:sw`; commit `7b2b786` содержит сгенерированный cache-busting `v651`: `STATIC_CACHE=zerno-static-v651`, в `public/index.html` 69 ссылок `?v=651` (ещё одна историческая ссылка `?v=2` не является asset cache version).
 
-Visual review: cart normal/reduced recordings и геометрия осмотрены в mobile portrait, compact landscape и desktop; auth reduced-motion 12 кадров (2 бренда × 3 viewport × open/closed) осмотрены; chat motion проверен в двух брендах и portrait/short landscape через Playwright. Baselines не обновлялись.
+Visual review cart FAB: сохранена запись Playwright `test-results/cart-motion-system-cart-FA-a8d5f--or-resizing-its-hit-target-chromium/video.webm` из run `44045981670`; открыты и осмотрены кадры 0.25/0.8/1.5/2.0s. Delivery guest, 390×844: пилюля остаётся центрированной у нижнего края, не растёт/не сжимается и не сдвигает hit-target на hover/press. Нормальный и reduced варианты проверены Playwright assertions. Baselines не обновлялись.
 
 Rail/category/card motion отложен: PR #266 остаётся отдельной stacked-зависимостью, #269 уже находится в pizza; #268 base не менялся. Не объединять и не переносить ветки без согласования.
 
-Следующий этап: завершить cache-busting v650, затем micro-interactions карточек/категорий только после повторной проверки статуса #266; отдельно покрыть cart FAB, profile/address book/staff overlays и оставшиеся feedback/ambient effects.
+Следующий этап: исправить и проверить lifecycle address book sheet (`core/address-book.js`) и связанные staff overlays; затем — category/card micro-interactions после проверки branch dependency, validation/toast/order/confetti/ambient. PR остаётся Draft до полного покрытия и visual acceptance.
