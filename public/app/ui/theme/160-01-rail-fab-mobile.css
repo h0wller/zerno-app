@@ -820,6 +820,13 @@ html body #authModal.tg-mode .mhint{
   border: 1.5px dashed var(--amber, #F2D9A5);
   animation: preorder-timer-in 0.3s both, preorder-pulse 2s ease-in-out infinite;
 }
+
+/* The mobile profile drawer is offscreen while closed; keep its waiting badge static there. */
+@media (max-width: 1180px) and (prefers-reduced-motion: no-preference) {
+  #panel:not(.open) .preorder-timer-waiting {
+    animation: preorder-timer-in 0.3s both;
+  }
+}
 .preorder-timer-active {
   background: var(--tint-success, #E4EFE2);
   color: var(--status-success, #1E7A4E);
