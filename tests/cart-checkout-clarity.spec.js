@@ -1171,7 +1171,11 @@ test('continue-shopping navigation uses instant scroll under reduced motion', as
     sessionStorage.setItem('splashDone', '1');
   });
   await page.goto('/?brand=delivery');
-  await page.waitForFunction(() => typeof window.renderCart === 'function');
+  await page.waitForFunction(() =>
+    window.brand === 'delivery' &&
+    typeof window.renderCart === 'function' &&
+    typeof window.renderDeliveryMenu === 'function'
+  );
 
   await page.evaluate(() => {
     const grid = document.getElementById('deliveryGrid');
