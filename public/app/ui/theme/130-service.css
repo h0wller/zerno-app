@@ -30,11 +30,11 @@
   display: flex;
   gap: 9px;
   align-items: center;
-  animation: tin 0.35s cubic-bezier(0.2, 1.4, 0.4, 1) both;
+  animation: tin var(--motion-duration-state) var(--motion-ease-standard) both;
   max-width: 330px;
 }
 .toast.out{
-  animation: tout 0.3s forwards;
+  animation: tout var(--motion-duration-micro) var(--motion-ease-standard) forwards;
 }
 @keyframes tin{
   from {
@@ -46,6 +46,17 @@
   to {
     opacity: 0;
     transform: translateX(60px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .toast {
+    animation: none;
+  }
+
+  .toast.out {
+    animation: none;
+    opacity: 0;
   }
 }
 #fx{
