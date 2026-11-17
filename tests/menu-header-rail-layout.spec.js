@@ -440,7 +440,7 @@ test('mobile category tabs match the catalog width and distribute evenly for bot
         const filter = brandName === 'delivery' ? document.querySelector('#deliverySubFilterViewport') : null;
         const filterRect = filter && !filter.hidden ? filter.getBoundingClientRect() : null;
         return {
-          parentIsView: rail.parentElement === document.querySelector(brandName === 'coffee' ? '#menuView' : '#deliveryView'),
+          parentIsWrap: rail.parentElement === document.querySelector('.wrap'),
           direction: railStyle.flexDirection,
           background: railStyle.backgroundColor,
           border: railStyle.borderTopWidth,
@@ -488,7 +488,7 @@ test('mobile category tabs match the catalog width and distribute evenly for bot
         brandName: brand.brand,
       });
 
-      expect(geometry.parentIsView, brand.brand + ' rail stays below the search in its menu view').toBe(true);
+      expect(geometry.parentIsWrap, brand.brand + ' rail remains a static direct child of .wrap').toBe(true);
       expect(geometry.direction, brand.brand + ' categories form one horizontal row').toBe('row');
       expect(geometry.railLeft, brand.brand + ' capsule keeps a 12px viewport inset').toBeGreaterThanOrEqual(12);
       expect(geometry.railRight, brand.brand + ' capsule keeps a 12px viewport inset').toBeLessThanOrEqual(geometry.viewportWidth - 12);
@@ -655,7 +655,7 @@ test('short landscape category tabs use a detached floating capsule', async ({ p
         const gridRect = grid.getBoundingClientRect();
         const style = getComputedStyle(rail);
         return {
-          parentIsMenu: rail.parentElement.id === (railSelector === '#rail' ? 'menuView' : 'deliveryView'),
+          parentIsWrap: rail.parentElement.classList.contains('wrap'),
           direction: style.flexDirection,
           railLeft: railRect.left,
           railRight: railRect.right,
@@ -682,7 +682,7 @@ test('short landscape category tabs use a detached floating capsule', async ({ p
         };
       }, { railSelector: brand.rail, gridSelector: brand.brand === 'coffee' ? '#grid' : '#deliveryGrid' });
 
-      expect(layout.parentIsMenu).toBe(true);
+      expect(layout.parentIsWrap, 'short-landscape rail remains a static direct child of .wrap').toBe(true);
       expect(layout.direction).toBe('row');
       expect(layout.railLeft).toBeGreaterThanOrEqual(12);
       expect(layout.railRight).toBeLessThanOrEqual(layout.viewportWidth - 12);
