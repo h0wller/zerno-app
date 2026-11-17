@@ -278,6 +278,26 @@ test('coffee rail aligns to its menu card and delivery rail aligns to product ca
 });
 
 
+test('delivery desktop catalog uses four columns at 1440px without changing the coffee grid', async ({ page }) => {
+  for (const brand of ['delivery', 'coffee']) {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.addInitScript(() => sessionStorage.setItem('splashDone', '1'));
+    await page.goto('/?brand=' + brand, { waitUntil: 'domcontentloaded' });
+
+    const selector = brand === 'delivery' ? '#deliveryGrid' : '#grid';
+    await expect(page.locator(selector + ' .card').first()).toBeVisible({ timeout: 15000 });
+    const columns = await page.locator(selector).evaluate(element =>
+      getComputedStyle(element).gridTemplateColumns.trim().split(/\s+/).length
+    );
+
+    if (brand === 'delivery') {
+      expect(columns, 'delivery cards use four desktop columns at 1440px').toBe(4);
+    } else {
+      expect(columns, 'coffee card grid keeps its existing three-column desktop layout').toBe(3);
+    }
+  }
+});
+
 test('both brand rails align to the catalog row on desktop', async ({page}) => {
   for (const brand of CASES) {
     await page.setViewportSize({width:1440,height:900});
