@@ -10,13 +10,17 @@
   gap: 8px;
 }
 
-/* Keep short-lived feedback clear of the staff menu controls on desktop. */
+/* Staff feedback uses the centered lower edge: keep the menu controls above
+   it and reserve the fixed support launcher at the lower-right corner. */
 @media (min-width: 821px) {
-  html[data-staff-role] body :is(#menuView, #deliveryView) .menu-head ~ #toasts,
   html[data-staff-role] body #toasts {
     top: auto;
-    right: 24px;
+    right: auto;
     bottom: 24px;
+    left: 50%;
+    width: max-content;
+    max-width: min(330px, calc(100vw - 48px));
+    transform: translateX(-50%);
   }
 }
 .toast{
