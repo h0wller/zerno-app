@@ -80,7 +80,10 @@ for (const viewport of viewports) {
     expect(layout.contentScrollWidth).toBeLessThanOrEqual(layout.contentWidth + 1);
 
     const submit = card.locator('#regBtn');
-    if (viewport.height <= 560) {
+    const cardCanScroll = await card.evaluate((element) => element.scrollHeight > element.clientHeight + 1);
+    if (cardCanScroll) {
+      // Scroll the actual overflow container with a user-like wheel gesture.
+      // A fixed viewport-height threshold misses compact phones whose form is taller than the card.
       await card.hover();
       await page.mouse.wheel(0, 800);
       await expect.poll(() => card.evaluate((element) => element.scrollTop)).toBeGreaterThan(0);
@@ -100,7 +103,7 @@ for (const viewport of viewports) {
     });
     expect(submitGeometry.top, JSON.stringify(submitGeometry)).toBeGreaterThanOrEqual(-1);
     expect(submitGeometry.bottom, JSON.stringify(submitGeometry)).toBeLessThanOrEqual(submitGeometry.viewportHeight + 1);
-    if (viewport.height <= 560) {
+    if (cardCanScroll) {
       expect(submitGeometry.cardScrollTop, JSON.stringify(submitGeometry)).toBeGreaterThan(0);
     }
     await expect(submit).toBeInViewport();
