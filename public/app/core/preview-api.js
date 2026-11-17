@@ -51,81 +51,206 @@ export function isReadOnlyPreviewHost(hostname = '') {
     || host === 'zerno-motion-preview.vercel.app';
 }
 
+function previewSummary(orders, revenue, statusCounts = {}) {
+  return {
+    orders,
+    revenue,
+    cancelled: statusCounts.cancel || 0,
+    pickup: Math.round(orders / 3),
+    delivery: orders - Math.round(orders / 3),
+    preorders: Math.round(orders / 5),
+    byStatus: { new: statusCounts.new || 0, accept: statusCounts.accept || 0, cook: statusCounts.cook || 0, way: statusCounts.way || 0, done: statusCounts.done || 0 },
+    top: [{ name: 'Пицца Маргарита', qty: Math.max(1, Math.round(orders / 2)) }, { name: 'Филадельфия', qty: Math.max(1, Math.round(orders / 3)) }],
+    recent: [],
+  };
+}
+
+function previewOrders() {
+  return [{
+    id: 'preview-order-1042',
+    no: 1042,
+    cid: 'preview-guest-01',
+    name: 'Демо-гость',
+    phone: '+7 900 000-00-01',
+    status: 'accept',
+    created: new Date().toISOString(),
+    updated: new Date().toISOString(),
+    method: 'delivery',
+    place: 'Янтарный',
+    addr: 'Советская, 10',
+    slot: 'asap',
+    pay: 'card',
+    items: [{ id: 'pz-marg', name: 'Маргарита', qty: 1, opt: '35 см, тонкое', price: 635, modifiers: [] }],
+    gifts: [],
+    total: 635,
+    discount: 0,
+    fee: 0,
+    is_preorder: 0,
+    by_staff: 0,
+    comment: 'Демо-заказ для проверки интерфейса',
+  }];
+}
+
+function previewCustomers() {
+  return [
+    { id: 'preview-customer-01', name: 'Анна Демо', phone: '+7 900 000-00-01', stamps: 7, free: 1, cups: 67, qr: 'PREVIEW-GUEST-01', role: 'guest', verified: 1, welcome: 0, tg: 0, notify_tg: 0, notify_web: 0, history: [] },
+    { id: 'preview-customer-02', name: 'Иван Пример', phone: '+7 900 000-00-02', stamps: 3, free: 0, cups: 23, qr: 'PREVIEW-GUEST-02', role: 'guest', verified: 1, welcome: 0, tg: 0, notify_tg: 0, notify_web: 0, history: [] },
+  ];
+}
+
+function previewStats() {
+  const days = Array.from({ length: 14 }, (_, index) => ({
+    label: new Date(Date.now() - (13 - index) * 86400000).toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit' }),
+    c: (index * 7 + 3) % 19,
+  }));
+  return {
+    total: 248,
+    staffCount: 5,
+    newWeek: 14,
+    newMonth: 47,
+    stampsToday: 18,
+    stampsWeek: 96,
+    stampsMonth: 382,
+    redeemed: 12,
+    returning: 83,
+    avgCups: 4.8,
+    promoUses: 9,
+    days,
+  };
+}
+
+function previewOrdersStats() {
+  const guest = previewSummary(18, 12450, { new: 3, accept: 4, cook: 3, way: 2, done: 6, cancel: 1 });
+  const staff = previewSummary(4, 2850, { accept: 1, cook: 1, done: 2 });
+  guest.avg = 692;
+  staff.avg = 712;
+  staff.recent = [{ no: 1042, name: 'Демо-сотрудник', total: 635, ts: new Date().toISOString() }];
+  const todayGuest = { ...guest, orders: 3, revenue: 1960 };
+  const todayStaff = { ...staff, orders: 1, revenue: 635 };
+  return {
+    today: { guest: todayGuest, staff: todayStaff },
+    week: { guest, staff },
+    days: Array.from({ length: 14 }, (_, index) => ({
+      label: new Date(Date.now() - (13 - index) * 86400000).toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit' }),
+      guest: (index * 3 + 2) % 9,
+      staff: index % 3,
+      revenue: ((index * 3 + 2) % 9) * 650,
+    })),
+  };
+}
+
+function previewReadResponse(url, role) {
+  const path = url.pathname;
+  const updatedAt = new Date().toISOString();
+  const allMenu = COFFEE_MENU.concat(DELIVERY_MENU);
+
+  switch (path) {
+    case '/api/me':
+      if (!PREVIEW_ROLES.has(role) || role === 'guest') return jsonResponse({ error: 'Демо-гость без авторизации' }, 401);
+      return jsonResponse({
+        customer: {
+          id: 'preview-' + role,
+          name: role === 'cashier' ? 'Демо-кассир' : role === 'dispatch' ? 'Демо-диспетчер' : 'Демо-администратор',
+          phone: '+7 900 000-00-00',
+          role,
+          verified: 1,
+          stamps: 7,
+          free: 1,
+          cups: 67,
+          qr: 'PREVIEW-' + role.toUpperCase(),
+          notify_tg: 0,
+          notify_web: 0,
+          history: [],
+        },
+      });
+    case '/api/menu':
+      return jsonResponse({ items: COFFEE_MENU, updatedAt });
+    case '/api/dmenu':
+      return jsonResponse({ items: DELIVERY_MENU, updatedAt });
+    case '/api/menu/all':
+      return jsonResponse({ items: allMenu, updatedAt });
+    case '/api/config':
+      return jsonResponse({ tgUsername: '', smsAuthEnabled: false, preview: true });
+    case '/api/delivery/info': {
+      const days = [0, 1].map((offset) => ({
+        offset,
+        date: kaliningradDate(offset),
+        open: 11,
+        close: 22,
+      }));
+      return jsonResponse({
+        slotStep: 30,
+        eta: 45,
+        schedule: { open: 11, close: 22 },
+        today: { date: days[0].date, isOpen: true, canAcceptAsap: true, open: 11, close: 22 },
+        days,
+        busySlots: [],
+        zones: [
+          { name: 'Янтарный', fee: 0, places: ['Янтарный'] },
+          { name: 'Светлогорск', fee: 250, places: ['Светлогорск', 'Отрадное'] },
+        ],
+        weekPromo: { text: '', threshold: 0, gift: '', until: null },
+        pizzaMonth: { name: '', on: false },
+      });
+    }
+    case '/api/delivery/addr':
+      return jsonResponse({ suggestions: [] });
+    case '/api/promo/info':
+      return jsonResponse({ ok: false, error: 'Промокоды отключены в preview' });
+    case '/api/me/free-delivery':
+      return jsonResponse({ ok: false, free: false });
+    case '/api/orders':
+      return jsonResponse({ orders: role === 'dispatch' || role === 'admin' ? previewOrders() : [] });
+    case '/api/orders/mine':
+      return jsonResponse({ orders: [] });
+    case '/api/chat/thread':
+    case '/api/chat/dialog':
+      return jsonResponse({ msgs: [] });
+    case '/api/chat/list':
+      return jsonResponse({ threads: [] });
+    case '/api/staff/customers':
+      return jsonResponse({ customers: previewCustomers() });
+    case '/api/staff/log':
+      return jsonResponse({ log: [{ t: 'Сегодня, 10:42', w: 'Демо-кассир', a: 'Профиль открыт для проверки интерфейса' }] });
+    case '/api/staff/pending':
+      return jsonResponse({ pending: [{ id: 'preview-pending-01', name: 'Гость для демо', phone: '+7 900 000-00-03', actcode: '1234', created_at: updatedAt }] });
+    case '/api/promos':
+      return jsonResponse({ promos: [{ id: 'preview-promo-01', code: 'DEMO', kind: 'stamp', value: 1, active: 1, uses: 3, maxuses: 50, scope: 'coffee' }] });
+    case '/api/admin/bonuses':
+      return jsonResponse({ customers: previewCustomers(), items: [], history: [] });
+    case '/api/admin/weekpromo':
+      return jsonResponse({ weekPromo: { text: 'Демо-предложение', threshold: 1500, gift: 'Соус', until: null }, pizzaMonth: { name: 'Демо-пицца', on: true } });
+    case '/api/stats':
+      return jsonResponse(previewStats());
+    case '/api/stats/redeems':
+      return jsonResponse({ total: 12, byItem: { Капучино: 8, Американо: 4 }, recent: [{ action: 'Подарок списан: Капучино', by: 'Демо-кассир', time: updatedAt }] });
+    case '/api/stats/orders':
+      return jsonResponse(previewOrdersStats());
+    case '/api/push/subs':
+      return jsonResponse({ subs: [{ name: 'Демо-гость', phone: '+7 900 000-00-01', created: updatedAt }], tg: [] });
+    case '/api/vapid':
+      return jsonResponse({ publicKey: '' });
+    case '/api/health':
+      return jsonResponse({ ok: true, preview: true });
+    default:
+      return jsonResponse({ error: 'API endpoint is not mapped in read-only preview.' }, 404);
+  }
+}
+
 export function createPreviewApiResponse(inputUrl, init = {}, role = 'guest') {
   const url = inputUrl instanceof URL ? inputUrl : new URL(String(inputUrl), 'https://zerno-motion-preview.vercel.app');
   const method = String(init.method || 'GET').toUpperCase();
-  const path = url.pathname;
 
   if (method === 'OPTIONS') return new Response(null, { status: 204 });
-  if (!path.startsWith('/api/')) return jsonResponse({ error: 'Not found' }, 404);
+  if (!url.pathname.startsWith('/api/')) return jsonResponse({ error: 'Not found' }, 404);
 
+  if (method === 'POST' && (url.pathname === '/api/chat/send' || url.pathname === '/api/chat/botlog')) {
+    return jsonResponse({ ok: true, preview: true, persisted: false });
+  }
   if (method !== 'GET') {
-    if (method === 'POST' && (path === '/api/chat/send' || path === '/api/chat/botlog')) {
-      return jsonResponse({ ok: true, preview: true, persisted: false });
-    }
     return jsonResponse({ error: 'Это read-only preview: запись и реальные действия отключены.' }, 403);
   }
-
-  const updatedAt = new Date().toISOString();
-  const allMenu = COFFEE_MENU.concat(DELIVERY_MENU);
-  if (path === '/api/me') {
-    if (!PREVIEW_ROLES.has(role) || role === 'guest') return jsonResponse({ error: 'Демо-гость без авторизации' }, 401);
-    return jsonResponse({
-      customer: {
-        id: 'preview-' + role,
-        name: role === 'cashier' ? 'Демо-кассир' : role === 'dispatch' ? 'Демо-диспетчер' : 'Демо-администратор',
-        phone: '+7 900 000-00-00',
-        role,
-        verified: 1,
-        stamps: 7,
-        free: 1,
-        cups: 67,
-        qr: 'PREVIEW-' + role.toUpperCase(),
-        notify_tg: 0,
-        notify_web: 0,
-        history: [],
-      },
-    });
-  }
-  if (path === '/api/menu') return jsonResponse({ items: COFFEE_MENU, updatedAt });
-  if (path === '/api/dmenu') return jsonResponse({ items: DELIVERY_MENU, updatedAt });
-  if (path === '/api/menu/all') return jsonResponse({ items: allMenu, updatedAt });
-  if (path === '/api/config') return jsonResponse({ tgUsername: '', smsAuthEnabled: false, preview: true });
-  if (path === '/api/delivery/info') {
-    const days = [0, 1].map((offset) => ({
-      offset,
-      date: kaliningradDate(offset),
-      open: 11,
-      close: 22,
-    }));
-    return jsonResponse({
-      slotStep: 30,
-      eta: 45,
-      schedule: { open: 11, close: 22 },
-      today: { date: days[0].date, isOpen: true, canAcceptAsap: true, open: 11, close: 22 },
-      days,
-      busySlots: [],
-      zones: [
-        { name: 'Янтарный', fee: 0, places: ['Янтарный'] },
-        { name: 'Светлогорск', fee: 250, places: ['Светлогорск', 'Отрадное'] },
-      ],
-      weekPromo: { text: '', threshold: 0, gift: '', until: null },
-      pizzaMonth: { name: '', on: false },
-    });
-  }
-  if (path === '/api/delivery/addr') return jsonResponse({ suggestions: [] });
-  if (path === '/api/promo/info') return jsonResponse({ ok: false, error: 'Промокоды отключены в preview' });
-  if (path === '/api/me/free-delivery') return jsonResponse({ ok: false, free: false });
-  if (path === '/api/orders' || path === '/api/orders/mine') return jsonResponse({ orders: [] });
-  if (path === '/api/chat/thread' || path === '/api/chat/dialog') return jsonResponse({ msgs: [] });
-  if (path === '/api/chat/list') return jsonResponse({ threads: [] });
-  if (path === '/api/promos') return jsonResponse({ promos: [] });
-  if (path === '/api/admin/bonuses') return jsonResponse({ customers: [], items: [], history: [] });
-  if (path === '/api/admin/weekpromo') return jsonResponse({ weekPromo: { text: '', threshold: 0, gift: '' }, pizzaMonth: { name: '', on: false } });
-  if (path === '/api/vapid') return jsonResponse({ publicKey: '' });
-  if (path === '/api/health') return jsonResponse({ ok: true, preview: true });
-
-  return jsonResponse({ error: 'API endpoint is not mapped in read-only preview.' }, 404);
+  return previewReadResponse(url, role);
 }
 
 export function installReadOnlyPreviewApi(win = window) {
