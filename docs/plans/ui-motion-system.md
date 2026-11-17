@@ -214,31 +214,39 @@ Baseline evidence:
 
 ### Stage 1 — tokens + cart sheet
 
-- [ ] Добавить Playwright тесты до CSS изменений: mobile/desktop cart open-close, fast close/reopen during active transition, stable final geometry, focus/overlay correctness, no horizontal overflow/CLS, reduced motion opens/closes without travel.
-- [ ] Получить RED в CI на текущей ветке.
-- [ ] Записать короткое видео normal/reduced cart transitions и открыть его для timing review.
-- [ ] Добавить timing/easing tokens один раз в Layer 1 owner 00-head.css.
-- [ ] Применить spatial tokens только в cart component owner CSS.
-- [ ] Проверить cascade/computed style и устранить дублирующий .cartPanel declaration только при доказанной избыточности.
-- [ ] Добавить локальный prefers-reduced-motion для cart panel; не скрывать/не задерживать конечное состояние.
-- [ ] Не менять cart data, render, price, checkout, API/network, overlay lifecycle или DOM ownership.
+- [x] Добавлены Playwright сценарии reduced-motion open/close для 390×844, 844×390 и 1024×768; normal-motion interruption close/reopen; visibility during exit; final geometry, overlay cleanup и отсутствие horizontal overflow.
+- [x] RED получен на закрытой геометрии и reduced-motion cart state; strict offscreen geometry восстановлена, существующие assertions сохранены.
+- [x] Записаны и осмотрены normal/reduced cart recordings: exit около 300 мс, sheet уходит вниз, повторное открытие после interruption возвращается к нижней привязке; reduced motion меняет состояние синхронно.
+- [x] Добавлены единые timing/easing tokens в Layer 1 owner `00-head.css`.
+- [x] Spatial tokens применены в owner `60-cart.css`; DOM/lifecycle owner не менялся.
+- [x] Локальный reduced-motion путь проверен вместе с visibility, pointer-events, overlay и body scroll-lock cleanup.
+- [x] Cart and checkout E2E: 31/31; общий CI run 44039724343 — success.
+- [x] Cart sheet geometry визуально осмотрена в portrait, compact landscape и desktop; baseline не обновлялся.
+- [x] Cart data/render/price/checkout/API/network и DOM ownership не менялись.
 
 ### Stage 2 — modal/drawer and context
 
-- [ ] Test generic modal/overlay open-close, interruption, Escape/backdrop, focus restore.
-- [ ] Нормализовать только component-owned CSS; core/overlay-core.js и core/panel.js остаются lifecycle owners.
-- [ ] Проверить profile, address book, chat и staff overlays на двух брендах и обязательных ориентациях.
+- [x] Добавлен reduced-motion auth modal/overlay test: open, Escape, focus restore, aria-hidden и pointer-events cleanup.
+- [x] RED подтверждён на overlay fade; после CSS-фикса computed duration карточки проверяется численно с учётом Chromium serialization (`0.01ms` → `1e-05s`).
+- [x] Reduced-motion auth visual matrix: coffee/delivery × portrait/compact landscape/desktop × open/closed; 12 кадров открыты и осмотрены.
+- [x] Component-owned CSS модалки использует spatial tokens и локальный reduced-motion; `core/overlay-core.js`, `core/panel.js` и JS focus lifecycle не менялись.
+- [ ] Отдельно проверить address book и staff overlays; это остаётся в Stage 2.
 
 ### Stage 3 — micro/component
 
+- [x] Chat FAB idle ping удалён как постоянный ambient loop; pulse hints отключаются под reduced motion.
+- [x] Chat panel использует spatial tokens; message entrance — 180 мс opacity/translate без scale bounce.
+- [x] Добавлен chat motion spec для coffee/delivery × portrait/short landscape: FAB без idle ping, panel timing, message timing, hint pulse normal/reduced, geometry и overflow.
+- [x] RED получен на `::before` animationName=`ping`; GREEN — Responsive UI 129/129, Mobile Chrome 130/130.
 - [ ] Разрешить #268 rail/base dependency до category/rail motion; не переносить #266/#269 в текущую ветку без согласования.
 - [ ] Test press/selected, stepper, add-product, card image и cart FAB.
 - [ ] Сохранить grid geometry и неизменность hit-target.
 
 ### Stage 4 — feedback/ambient
 
-- [ ] Сделать validation, toast, order flash, chat hint и confetti reduced-motion safe.
-- [ ] Удалить неоправданные perpetual pulse/ping.
+- [x] Chat hint pulse отключается при reduced motion; конечный pulse в normal motion сохранён как event-bound feedback.
+- [x] Необоснованный постоянный chat FAB ping удалён.
+- [ ] Сделать validation, toast, order flash и confetti reduced-motion safe.
 - [ ] Останавливать декоративные циклы у hidden/offscreen surface, где безопасно.
 - [ ] Сохранить ticker manual fallback и splash first-frame parity.
 
@@ -287,4 +295,14 @@ Baseline evidence:
 
 ## 10. Текущий статус
 
-Stage 0 завершён: полный inventory и первичная спецификация зафиксированы. Application behavior не менялся. Следующая безопасная реализация — cart sheet motion. Rail/category/card motion отложен из-за зависимости веток. Timing tokens пока candidate и должны быть откалиброваны по Stage 1 recordings.
+Срез на 2026-11-17, PR #268, branch `design/ui-animation-system-20261116`, base `pizza`, HEAD до документационного обновления: `b599c835d9dda95463515cc588ea262cf8c8722a`.
+
+Stage 0 завершён. Stage 1 (cart sheet) завершён. Stage 2 частично завершён: auth modal/overlay реализованы и визуально проверены; address book/staff overlays остаются. Stage 3 частично завершён только для chat panel/FAB/hints; category rail, product cards, category selection и cart FAB ещё не реализованы. Stage 4 частично закрывает chat hint и постоянный FAB ping; validation/toast/order flash/confetti и остальные ambient циклы остаются.
+
+Последний полный CI run `44039724343` на `b599c835`: 13/13 jobs successful. Ключевые группы: Cart/checkout 31 passed, Auth 36 passed, Responsive UI 129 passed, Mobile Chrome 130 passed. В каждом CI client build штатный `npm run build:client` запустил `npm run bump:sw` и сообщил `v649 → v650`; сгенерированные public cache-busting файлы должны быть зафиксированы в том же PR перед следующим полным визуальным gate.
+
+Visual review: cart normal/reduced recordings и геометрия осмотрены в mobile portrait, compact landscape и desktop; auth reduced-motion 12 кадров (2 бренда × 3 viewport × open/closed) осмотрены; chat motion проверен в двух брендах и portrait/short landscape через Playwright. Baselines не обновлялись.
+
+Rail/category/card motion отложен: PR #266 остаётся отдельной stacked-зависимостью, #269 уже находится в pizza; #268 base не менялся. Не объединять и не переносить ветки без согласования.
+
+Следующий этап: завершить cache-busting v650, затем micro-interactions карточек/категорий только после повторной проверки статуса #266; отдельно покрыть cart FAB, profile/address book/staff overlays и оставшиеся feedback/ambient effects.
