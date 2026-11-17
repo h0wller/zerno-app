@@ -876,7 +876,12 @@ test('preorder waiting pulse pauses while the mobile profile drawer is closed an
   await page.evaluate(() => {
     const card = document.createElement('article');
     card.className = 'myOrderCard';
-    card.innerHTML = '<div class="moSt">В пути</div><span class="preorder-slot" data-slot="Завтра | 20:00–21:00"></span>';
+    const futureDate = new Date(Date.now() + 2 * 60 * 60 * 1000);
+    futureDate.setUTCDate(futureDate.getUTCDate() + 2);
+    const dateLabel = String(futureDate.getUTCDate()).padStart(2, '0')
+      + '.' + String(futureDate.getUTCMonth() + 1).padStart(2, '0');
+    card.innerHTML = '<div class="moSt">В пути</div><span class="preorder-slot" data-slot="'
+      + dateLabel + ' | 20:00–21:00"></span>';
     document.querySelector('#pvProfile').appendChild(card);
     window.PreorderTimer.updateAll();
   });
