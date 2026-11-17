@@ -180,3 +180,21 @@
 }
 /* F5.14 P5: пилюля бонусов слева от круглого FAB чата на ≤820px */
 
+
+
+@media (prefers-reduced-motion: reduce) {
+  .modeSeg button,
+  .ava,
+  .search,
+  #editToggle,
+  #promoToggle,
+  #dashToggle,
+  #chatsToggle2 {
+    transition: none;
+  }
+
+  .ava:hover,
+  #editToggle:hover {
+    transform: none;
+  }
+}
