@@ -113,7 +113,7 @@ sticky слева на весь скролл
     border-radius: 20px;
     background: transparent;
     box-shadow: none;
-    color: var(--soft, var(--ink, #101418));
+    color: var(--category-icon-color, var(--ink, #101418));
     font: 700 clamp(8px, 2.3vw, 10px)/1.1 "Golos Text", system-ui, sans-serif;
     text-align: center;
     white-space: nowrap;
