@@ -275,7 +275,8 @@ body.editing .card:hover{
 
 /* The quantity stepper appears beside the CTA on first add. Keep its label on one
    compact line so the cart state cannot increase the card's height on narrow screens. */
-.card .steprow .cta.incart {
+#deliveryGrid .card .steprow .cta.incart,
+#grid .card .steprow .cta.incart {
   box-sizing: border-box;
   width: auto;
   min-width: 44px;
