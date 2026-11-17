@@ -339,15 +339,19 @@ test('delivery: pizza option labels use compact typography only at 320px', async
 });
 
 
-test('category selection preserves the original rail button node and focus', async ({ page }) => {
-  await page.setViewportSize({ width: 390, height: 844 });
-  await page.goto('/?brand=coffee');
-  await page.waitForFunction(() => document.querySelectorAll('#rail button').length > 0);
-  const target = page.locator('#rail button[data-cat]:not(.on)').first();
-  await target.focus();
-  const before = await target.evaluate((element) => element);
-  await target.click();
-  await expect(target).toHaveAttribute('aria-pressed', 'true');
-  await expect.poll(() => target.evaluate((element) => element === before)).toBe(true);
-  await expect(target).toBeFocused();
-});
+for (const brand of ['coffee', 'delivery']) {
+  test(`category selection preserves the original rail button node and focus: ${brand}`, async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto('/?brand=' + brand);
+    const rail = page.locator(brand === 'delivery' ? '#deliveryRail' : '#rail');
+    await expect.poll(() => rail.locator('button[data-cat], button[data-dcat]').count()).toBeGreaterThan(0);
+    const selector = brand === 'delivery' ? 'button[data-dcat]:not(.on)' : 'button[data-cat]:not(.on)';
+    const target = rail.locator(selector).first();
+    await target.focus();
+    await target.evaluate((element) => { window.__originalCategoryTab = element; });
+    await target.click();
+    await expect(target).toHaveAttribute('aria-pressed', 'true');
+    await expect.poll(() => target.evaluate((element) => element === window.__originalCategoryTab)).toBe(true);
+    await expect(target).toBeFocused();
+  });
+}
