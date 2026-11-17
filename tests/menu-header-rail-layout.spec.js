@@ -370,12 +370,29 @@ for (const brand of FLOATING_RAIL_CASES) {
       const geometry = await rail.evaluate(element => {
         const rect = element.getBoundingClientRect();
         const style = getComputedStyle(element);
-        const probe = document.createElement('div');
-        probe.style.cssText = 'position:fixed;visibility:hidden;pointer-events:none;padding-bottom:env(safe-area-inset-bottom,0px);height:var(--rail-total-h)';
-        document.body.appendChild(probe);
-        const safeArea = parseFloat(getComputedStyle(probe).paddingBottom) || 0;
-        const reservedHeight = probe.getBoundingClientRect().height;
-        probe.remove();
+        const safeAreaProbe = document.createElement('div');
+        safeAreaProbe.style.cssText = 'position:fixed;visibility:hidden;pointer-events:none;padding-bottom:env(safe-area-inset-bottom,0px)';
+        document.body.appendChild(safeAreaProbe);
+        const safeArea = parseFloat(getComputedStyle(safeAreaProbe).paddingBottom) || 0;
+        safeAreaProbe.remove();
+
+        const reserveProbe = document.createElement('div');
+        reserveProbe.style.cssText = 'position:fixed;visibility:hidden;pointer-events:none;width:0;height:var(--rail-total-h)';
+        document.body.appendChild(reserveProbe);
+        const reservedHeight = reserveProbe.getBoundingClientRect().height;
+        reserveProbe.remove();
+
+        const fixedContainingBlocks = [];
+        for (let node = element.parentElement; node && node instanceof HTMLElement; node = node.parentElement) {
+          if (node === document.body || node === document.documentElement) continue;
+          const ancestorStyle = getComputedStyle(node);
+          if (ancestorStyle.transform !== 'none' || ancestorStyle.filter !== 'none' ||
+              ancestorStyle.perspective !== 'none' ||
+              /(?:^|\\s)(?:layout|paint|strict|content)(?:\\s|$)/.test(ancestorStyle.contain) ||
+              ancestorStyle.willChange.split(',').some(value => ['transform', 'filter', 'perspective'].includes(value.trim()))) {
+            fixedContainingBlocks.push(node.id || node.className || node.tagName.toLowerCase());
+          }
+        }
 
         return {
           position: style.position,
@@ -391,6 +408,7 @@ for (const brand of FLOATING_RAIL_CASES) {
           clientWidth: element.clientWidth,
           pageScrollWidth: document.documentElement.scrollWidth,
           viewportWidth: window.innerWidth,
+          fixedContainingBlocks,
           buttons: Array.from(element.querySelectorAll('button')).map(button => {
             const buttonRect = button.getBoundingClientRect();
             return {
@@ -414,6 +432,7 @@ for (const brand of FLOATING_RAIL_CASES) {
       });
 
       expect(geometry.position, 'the rail is detached from document flow and fixed to the viewport').toBe('fixed');
+      expect(geometry.fixedContainingBlocks, 'no ancestor may capture fixed positioning').toEqual([]);
       expect(geometry.height).toBe(viewport.railHeight);
       expect(geometry.bottomGap).toBeGreaterThanOrEqual(10 + geometry.safeArea);
       expect(geometry.bottomGap).toBeLessThanOrEqual(12 + geometry.safeArea);
