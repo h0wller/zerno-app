@@ -299,7 +299,7 @@ Baseline evidence:
 
 Stage 0 завершён. Stage 1 (cart sheet) завершён. Stage 2 частично завершён: auth modal/overlay реализованы и визуально проверены; address book/staff overlays остаются. Stage 3 частично завершён только для chat panel/FAB/hints; category rail, product cards, category selection и cart FAB ещё не реализованы. Stage 4 частично закрывает chat hint и постоянный FAB ping; validation/toast/order flash/confetti и остальные ambient циклы остаются.
 
-Последний полный CI run `44039724343` на `b599c835`: 13/13 jobs successful. Ключевые группы: Cart/checkout 31 passed, Auth 36 passed, Responsive UI 129 passed, Mobile Chrome 130 passed. В каждом CI client build штатный `npm run build:client` запустил `npm run bump:sw` и сообщил `v649 → v650`; сгенерированные public cache-busting файлы должны быть зафиксированы в том же PR перед следующим полным визуальным gate.
+Последний полный CI run `44039724343` на `b599c835`: 13/13 jobs successful. Ключевые группы: Cart/checkout 31 passed, Auth 36 passed, Responsive UI 129 passed, Mobile Chrome 130 passed. В CI client build штатный `npm run build:client` запустил `npm run bump:sw` и сообщил `v649 → v650`; результат зафиксирован в commit `179be0e` (`public/sw.js`, `public/index.html`), проверены `STATIC_CACHE=zerno-static-v650` и 69 asset refs `?v=650`.
 
 Visual review: cart normal/reduced recordings и геометрия осмотрены в mobile portrait, compact landscape и desktop; auth reduced-motion 12 кадров (2 бренда × 3 viewport × open/closed) осмотрены; chat motion проверен в двух брендах и portrait/short landscape через Playwright. Baselines не обновлялись.
 
