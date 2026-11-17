@@ -1,5 +1,7 @@
 /* ── Сплэш выбора бренда (Ф3.54): светлая сцена, карточки в цветах брендов ── */
 /* Палитра только из корневых токенов (00-head.css): бренд на сплэше ещё не выбран. */
+/* Entrance/float animations and keyframes are owned by Layer 4 critical CSS.
+   Redeclaring them when this deferred sheet activates restarts active CSSAnimation timelines. */
 #brandSplash,
 #brandSplashStatic {
   position: fixed;
@@ -36,7 +38,6 @@
   font: 900 clamp(24px, 7vw, 34px)/1.2 Unbounded, "Golos Text", sans-serif;
   letter-spacing: -0.01em;
   margin-bottom: 28px;
-  animation: spRise 0.7s 0.1s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
 }
 #brandSplash .spBtns,
 #brandSplashStatic .spBtns {
@@ -54,11 +55,6 @@
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
   transition: transform 0.12s ease, box-shadow 0.12s ease;
-  animation: spRise 0.6s 0.2s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
-}
-#brandSplash .spBtns .spBtn:nth-child(2),
-#brandSplashStatic .spBtns .spBtn:nth-child(2) {
-  animation-delay: 0.3s;
 }
 #brandSplash .spBtn .em,
 #brandSplashStatic .spBtn .em {
@@ -67,7 +63,6 @@
   justify-content: center;
   height: 100px;
   margin-bottom: 10px;
-  animation: spFloat 3.2s ease-in-out infinite;
 }
 #brandSplash .spBtn .bt,
 #brandSplashStatic .spBtn .bt {
@@ -166,14 +161,6 @@
   #brandSplashStatic .spBtns {
     grid-template-columns: 1fr 1fr;
   }
-}
-@keyframes spRise {
-  from { opacity: 1; transform: translateY(16px); }
-  to { opacity: 1; transform: none; }
-}
-@keyframes spFloat {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-5px); }
 }
 @media (prefers-reduced-motion: reduce) {
   #brandSplash .spTitle,
