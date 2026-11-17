@@ -1185,3 +1185,65 @@ test('cashier redeem/scanner and staff-chat overlays keep their owned motion con
     await expect(page.locator('html')).toHaveAttribute('data-staff-role', 'cashier');
   }
 });
+
+
+test('staff chat overlay closes on Escape and releases the overlay for both brands and viewports', async ({ browser }, testInfo) => {
+  const viewports = [
+    { name: 'portrait', width: 390, height: 844 },
+    { name: 'compact-landscape', width: 844, height: 390 },
+    { name: 'desktop', width: 1280, height: 900 },
+  ];
+
+  for (const brand of ['coffee', 'delivery']) {
+    for (const viewport of viewports) {
+      const context = await browser.newContext({
+        viewport: { width: viewport.width, height: viewport.height },
+        serviceWorkers: 'block',
+      });
+      const page = await context.newPage();
+      try {
+        await mockStaffSession(page, 'admin');
+        await page.goto('/?brand=' + brand);
+        await page.waitForFunction(() =>
+          window.me && window.me.role === 'admin' &&
+          document.documentElement.hasAttribute('data-staff-ready') &&
+          typeof window.openStaffChat === 'function'
+        );
+        await page.evaluate((activeBrand) => window.openStaffChat(activeBrand), brand);
+
+        const modal = page.locator('#staffChatModal');
+        const card = modal.locator('.modal-card');
+        const overlay = page.locator('#overlay');
+        await expect(modal).toHaveClass(/show/);
+        await expect(card).toBeVisible();
+        await expect.poll(() => card.evaluate((element) => getComputedStyle(element).opacity)).toBe('1');
+        await expect(overlay).toHaveAttribute('aria-hidden', 'false');
+
+        const geometry = await card.boundingBox();
+        expect(geometry).not.toBeNull();
+        expect(geometry.x).toBeGreaterThanOrEqual(0);
+        expect(geometry.y).toBeGreaterThanOrEqual(0);
+        expect(geometry.x + geometry.width).toBeLessThanOrEqual(viewport.width + 0.5);
+        expect(geometry.y + geometry.height).toBeLessThanOrEqual(viewport.height + 0.5);
+
+        await expect(page.locator('#toasts .toast')).toHaveCount(0, { timeout: 5000 });
+        await testInfo.attach('staff-chat-' + brand + '-' + viewport.name + '-open.png', {
+          body: await page.screenshot({ fullPage: false }),
+          contentType: 'image/png',
+        });
+
+        await page.keyboard.press('Escape');
+        await expect(modal).not.toHaveClass(/show/);
+        await expect(overlay).toHaveAttribute('aria-hidden', 'true');
+        await expect(overlay).toHaveCSS('pointer-events', 'none');
+
+        await testInfo.attach('staff-chat-' + brand + '-' + viewport.name + '-closed.png', {
+          body: await page.screenshot({ fullPage: false }),
+          contentType: 'image/png',
+        });
+      } finally {
+        await context.close();
+      }
+    }
+  }
+});
