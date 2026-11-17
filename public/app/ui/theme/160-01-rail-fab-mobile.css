@@ -344,7 +344,10 @@ html body #authModal.tg-mode .mhint{
   z-index: 90;
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 10px;
+  width: min(208px, calc(100vw - 24px));
+  box-sizing: border-box;
   padding: 8px 16px;
   min-height: 48px;
   max-height: 64px;
