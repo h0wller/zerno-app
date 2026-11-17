@@ -94,8 +94,12 @@ for (const brand of BRANDS) {
       await page.evaluate(() => { window.__categoryScrollBehaviors = []; });
 
       const nextCategory = page.locator(brand.rail + ' button:not(.on)').first();
+      const nextCategoryId = await nextCategory.getAttribute(brand.brand === 'coffee' ? 'data-cat' : 'data-dcat');
       await nextCategory.click();
-      await expect(nextCategory).toHaveClass(/on/);
+      await expect(page.locator(brand.active)).toHaveAttribute(
+        brand.brand === 'coffee' ? 'data-cat' : 'data-dcat',
+        nextCategoryId
+      );
       const contentSelector = brand.brand === 'coffee'
         ? '#grid'
         : '#deliverySubFilterViewport:not([hidden]), #deliveryGrid';
