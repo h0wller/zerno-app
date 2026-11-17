@@ -55,6 +55,8 @@ async function expectCartAtRest(panel, viewport, open) {
   });
 
   expect(geometry.transitionDuration).toMatch(/^(0s|0\.01ms)(,\s*(0s|0\.01ms))*$/);
+  expect(geometry.display).toBe('flex');
+  expect(geometry.visibility).toBe(open ? 'visible' : 'hidden');
   if (viewport.width <= 820) {
     if (open) {
       expect(Math.abs(geometry.bottom - viewport.height)).toBeLessThanOrEqual(1);
@@ -114,8 +116,8 @@ test('cart sheet can be interrupted by rapid close and reopen without stale geom
   await expect(panel).not.toHaveClass(/open/);
   await expect(panel).toHaveCSS('visibility', 'visible');
   await expect(fab).toBeVisible();
-  await expect.poll(() => panel.evaluate((element) => getComputedStyle(element).visibility))
-    .toBe('hidden');
+  await page.waitForTimeout(100);
+  await expect(panel).toHaveCSS('visibility', 'visible');
   await fab.click();
   await expect(panel).toHaveClass(/open/);
 
@@ -134,6 +136,30 @@ test('cart sheet can be interrupted by rapid close and reopen without stale geom
   await page.close();
   if (video) {
     await testInfo.attach('cart-motion-interrupted.webm', {
+      path: await video.path(),
+      contentType: 'video/webm',
+    });
+  }
+});
+
+test('cart sheet remains visible during normal exit and hides after its spatial transition', async ({ page }, testInfo) => {
+  const video = page.video();
+  const viewport = { width: 390, height: 844 };
+  const { panel, fab } = await prepareCart(page, viewport);
+
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
+  await fab.click();
+  await expect(panel).toHaveClass(/open/);
+  await expect(panel).toHaveCSS('visibility', 'visible');
+  await page.locator('#cartClose').click();
+  await expect(panel).not.toHaveClass(/open/);
+  await expect(panel).toHaveCSS('visibility', 'visible');
+  await expect.poll(() => panel.evaluate((element) => getComputedStyle(element).visibility))
+    .toBe('hidden');
+
+  await page.close();
+  if (video) {
+    await testInfo.attach('cart-motion-exit.webm', {
       path: await video.path(),
       contentType: 'video/webm',
     });
