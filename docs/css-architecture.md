@@ -53,7 +53,7 @@
 
 - At `max-width:820px` and compact landscape (`min-width:821px`, landscape, `max-height:480px`), `150-rail.css` owns the fixed floating capsule geometry and presentation. The capsule is centered, inset 12px horizontally, and offset 10px from the visual viewport bottom plus the safe-area exactly once.
 - `ui/category-rail.js` owns runtime positioning lifecycle: it clears legacy inline sticky/flow geometry in those viewports, while preserving desktop rail alignment and #269 scroll-fade behavior. Category items, selected state and accessible labels remain owned by `menu.js` / `delivery.js`.
-- `20-cards.css` owns the catalog scroll reserve: capsule + edge gap + safe-area, with an additional cart lane only while the cart FAB is actually visible. The minimal first-frame geometry/reserve is mirrored in `public/index.html`; do not move full capsule presentation into critical CSS.
+- `160-01-rail-fab-mobile.css` keeps the cart FAB in a separate lane above the capsule using the same `--rail-total-h`; it changes positioning only and does not own cart state or behavior. `20-cards.css` owns the catalog scroll reserve: capsule + edge gap + safe-area, with an additional cart lane only while the cart FAB is actually visible. The minimal first-frame geometry/reserve is mirrored in `public/index.html`; do not move full capsule presentation into critical CSS.
 - Delivery subfilters are separate and are not faded or repositioned by this component. Cart state and cart business logic remain owned by `cart.js`.
 - Validate both brands at 320/390/430 portrait and 844/1024 compact landscape; verify 44px targets, no internal rail/page horizontal overflow, fixed containing-block ancestry, safe-area, cart open/closed and reduced motion/transparency.
 
