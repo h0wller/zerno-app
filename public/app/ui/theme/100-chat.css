@@ -12,7 +12,7 @@
   box-shadow: var(--chat-fab-shadow, 0 12px 30px rgba(18, 58, 107, .45));
   display: grid;
   place-items: center;
-  transition: transform .2s ease, background-color .2s ease, box-shadow .2s ease;
+  transition: transform var(--motion-duration-micro) var(--motion-ease-standard), background-color var(--motion-duration-state) var(--motion-ease-standard), box-shadow var(--motion-duration-state) var(--motion-ease-standard);
 }
 .chat-fab svg{
   width: 26px;
@@ -31,18 +31,6 @@
 }
 .chat-fab.open{
   background: #3E8FD0
-}
-.chat-fab::before{
-  will-change: transform, opacity;
-  contain: strict;
-  pointer-events: none;
-  content: "";
-  position: absolute;
-  inset: -4px;
-  border-radius: 50%;
-  border: 2px solid #3E8FD0;
-  opacity: .6;
-  animation: ping 2.4s infinite
 }
 .chat-fab .ub{
   position: absolute;
@@ -76,10 +64,10 @@
   overflow: hidden;
   box-shadow: 0 30px 70px -20px rgba(16, 20, 24, .5);
   transform-origin: bottom right;
-  transform: scale(.9) translateY(14px);
+  transform: translateY(10px);
   opacity: 0;
   pointer-events: none;
-  transition: .3s cubic-bezier(.2, 1, .3, 1);
+  transition: opacity var(--motion-duration-spatial) var(--motion-ease-standard), transform var(--motion-duration-spatial) var(--motion-ease-spatial);
 }
 .chat.open{
   transform: none;
@@ -195,12 +183,16 @@
   border-radius: 16px;
   font-size: 13.5px;
   line-height: 1.45;
-  animation: msgin .3s cubic-bezier(.2, 1.2, .4, 1) both;
+  animation: msgin var(--motion-duration-state) var(--motion-ease-standard) both;
 }
 @keyframes msgin{
   from {
     opacity: 0;
-    transform: translateY(8px) scale(.96);
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
   }
 }
 .msg.bot{
