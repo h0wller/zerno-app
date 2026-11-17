@@ -111,7 +111,10 @@ for (const brand of CASES) {
       await page.evaluate((top) => { window.__initialFloatingRailTop = top; }, railTopBeforeScroll);
       await page.evaluate(() => window.scrollTo(0, 500));
       if (viewport.width <= 820) {
-        await expect.poll(() => page.evaluate(selector => getComputedStyle(document.querySelector(selector)).position), {
+        await expect.poll(() => page.evaluate(selector => {
+          const rail = document.querySelector(selector);
+          return rail ? getComputedStyle(rail).position : null;
+        }, brand.rail), {
           timeout: 5000,
         }).toBe('fixed');
         await expect.poll(() => page.evaluate(selector => {
