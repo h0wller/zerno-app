@@ -8,6 +8,7 @@ const VIEWPORTS = [
   { id: 'xs', width: 320, height: 740 },
   { id: 'm', width: 390, height: 844 },
   { id: 't', width: 768, height: 1024 },
+  { id: 'landscape', width: 844, height: 390 },
   { id: 'd', width: 1440, height: 900 },
 ];
 
