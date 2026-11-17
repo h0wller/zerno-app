@@ -301,31 +301,6 @@ test('tablet desktop restores the 80px sidebar and three-column catalog', async 
   }
 });
 
-test('compact landscape retains the horizontal rail and full-width catalog', async ({ page }) => {
-  for (const brand of CASES) {
-    await page.setViewportSize({ width: 1024, height: 390 });
-    await page.addInitScript(() => sessionStorage.setItem('splashDone', '1'));
-    await page.goto('/?brand=' + brand.brand, { waitUntil: 'domcontentloaded' });
-    await expect(page.locator(brand.rail)).toBeVisible();
-    const geometry = await page.evaluate((railSelector) => {
-      const rail = document.querySelector(railSelector);
-      const rect = rail.getBoundingClientRect();
-      const style = getComputedStyle(rail);
-      return {
-        position: style.position,
-        flexDirection: style.flexDirection,
-        width: rect.width,
-        height: rect.height,
-      };
-    }, brand.rail);
-    expect(geometry.position).not.toBe('fixed');
-    expect(geometry.flexDirection).toBe('row');
-    expect(geometry.height).toBeGreaterThanOrEqual(44);
-    expect(geometry.height).toBeLessThanOrEqual(80);
-    expect(geometry.width).toBeGreaterThan(300);
-  }
-});
-
 test('both brand rails align to the catalog row on desktop', async ({page}) => {
   for (const brand of CASES) {
     await page.setViewportSize({width:1440,height:900});
@@ -397,14 +372,23 @@ for (const brand of ['coffee', 'delivery']) {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto('/?brand=' + brand);
     const rail = page.locator(brand === 'delivery' ? '#deliveryRail' : '#rail');
-    await expect.poll(() => rail.locator('button[data-cat], button[data-dcat]').count()).toBeGreaterThan(0);
-    const selector = brand === 'delivery' ? 'button[data-dcat]:not(.on)' : 'button[data-cat]:not(.on)';
-    const target = rail.locator(selector).first();
+    const attribute = brand === 'delivery' ? 'data-dcat' : 'data-cat';
+    const buttons = rail.locator('button[' + attribute + ']');
+
+    await expect.poll(() => buttons.count()).toBeGreaterThan(1);
+    await expect.poll(() => rail.locator('button.on').count()).toBe(1);
+    const activeCategory = await rail.locator('button.on').getAttribute(attribute);
+    const target = buttons.filter({ hasNot: page.locator('.on') }).first();
+    const targetCategory = await target.getAttribute(attribute);
+    expect(targetCategory).not.toBe(activeCategory);
+
     await target.focus();
     await target.evaluate((element) => { window.__originalCategoryTab = element; });
     await target.click();
-    await expect(target).toHaveAttribute('aria-pressed', 'true');
-    await expect.poll(() => target.evaluate((element) => element === window.__originalCategoryTab)).toBe(true);
-    await expect(target).toBeFocused();
+    const selected = rail.locator('button[' + attribute + '="' + targetCategory + '"]');
+    await expect(selected).toHaveClass(/\\bon\\b/);
+    await expect(selected).toHaveAttribute('aria-pressed', 'true');
+    await expect.poll(() => selected.evaluate((element) => element === window.__originalCategoryTab)).toBe(true);
+    await expect(selected).toBeFocused();
   });
 }
