@@ -339,7 +339,8 @@ html body #authModal.tg-mode .mhint{
   bottom: calc(16px + env(safe-area-inset-bottom, 0px));
   left: 50%;
   right: auto;
-  transform: translateX(-50%) scale(0.92);
+  /* Keep the interactive box stationary: visibility is communicated by opacity only. */
+  transform: translateX(-50%);
   z-index: 90;
   display: flex;
   align-items: center;
@@ -356,20 +357,22 @@ html body #authModal.tg-mode .mhint{
   cursor: pointer;
   opacity: 0;
   pointer-events: none;
-  transition: opacity 0.3s cubic-bezier(0.2, 1, 0.3, 1),
-              transform 0.3s cubic-bezier(0.2, 1, 0.3, 1);
+  transition: opacity var(--motion-duration-state, 180ms) var(--motion-ease-standard, cubic-bezier(.2,.8,.2,1));
 }
 .cartFab.visible{
   opacity: 1;
   pointer-events: auto;
-  transform: translateX(-50%) scale(1);
 }
 .cartFab:hover{
   background: #8B2A21;
-  transform: translateX(-50%) scale(1.03);
 }
 .cartFab:active{
-  transform: translateX(-50%) scale(0.97);
+  filter: brightness(.92);
+}
+@media (prefers-reduced-motion: reduce) {
+  .cartFab {
+    transition: none;
+  }
 }
 .cartFab .cf-icon{
   font-size: 18px;
