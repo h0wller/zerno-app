@@ -181,7 +181,7 @@ body.in-tg .topbar {
 }
 
 /* 3. Единый каркас .wrap и центрированный без обрезания шапкой рейл (#rail / #deliveryRail) */
-@media (min-width: 821px) and (max-width: 1180px) {
+@media (min-width: 821px) and (max-width: 1180px) and (min-height: 481px) {
   html body div.wrap,
   .wrap {
     display: grid;
