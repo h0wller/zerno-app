@@ -13,6 +13,11 @@ test('mobile category rail stays visible as a detached capsule during active scr
     const samples = await page.evaluate(async (railSelector) => {
       const element = document.querySelector(railSelector);
       const states = [];
+      const safeAreaProbe = document.createElement('div');
+      safeAreaProbe.style.paddingBottom = 'env(safe-area-inset-bottom, 0px)';
+      document.body.appendChild(safeAreaProbe);
+      const safeAreaInset = parseFloat(getComputedStyle(safeAreaProbe).paddingBottom) || 0;
+      safeAreaProbe.remove();
       for (const y of [650, 690, 730, 770]) {
         window.scrollTo(0, y);
         await new Promise(resolve => setTimeout(resolve, 50));
