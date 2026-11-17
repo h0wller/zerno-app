@@ -100,7 +100,7 @@ test('cashier preview returns synthetic customers and a demo audit log', async (
   ));
 
   assert.equal(customers.customers[0].id, 'preview-customer-01');
-  assert.match(log.log[0].a, /Демо/);
+  assert.match(log.log[0].a, /профиль открыт/i);
 });
 
 test('dispatcher preview returns only a synthetic order fixture', async () => {
