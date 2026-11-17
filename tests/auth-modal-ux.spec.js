@@ -871,7 +871,7 @@ test('reduced motion removes auth overlay travel without changing focus or layou
         trigger.id = 'reducedMotionAuthTrigger';
         trigger.type = 'button';
         trigger.textContent = 'Open account';
-        trigger.style.cssText = 'position:fixed;top:8px;left:8px;z-index:99999;';
+        trigger.style.cssText = 'position:fixed;top:8px;left:8px;z-index:99999;opacity:0;';
         trigger.addEventListener('click', () => window.openAuth(false));
         document.body.appendChild(trigger);
       });
