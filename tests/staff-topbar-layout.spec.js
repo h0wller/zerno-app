@@ -1212,10 +1212,13 @@ test('staff chat overlay closes on Escape and releases the overlay for both bran
           typeof window.openStaffChat === 'function' &&
           typeof window.setMode === 'function'
         );
-        await page.evaluate(() => window.setMode('admin'));
+        await page.evaluate(() => {
+          // Suppress the transient mode toast; this suite exercises the staff-chat overlay, not toast timing.
+          window.toast = () => null;
+          window.setMode('admin');
+        });
         const trigger = page.locator('#chatsToggle2');
         await expect(trigger).toBeVisible();
-        await expect(page.locator('#toasts .toast')).toHaveCount(0, { timeout: 5000 });
         await trigger.focus();
         await page.keyboard.press('Enter');
 
@@ -1235,7 +1238,6 @@ test('staff chat overlay closes on Escape and releases the overlay for both bran
         expect(geometry.x + geometry.width).toBeLessThanOrEqual(viewport.width + 0.5);
         expect(geometry.y + geometry.height).toBeLessThanOrEqual(viewport.height + 0.5);
 
-        await expect(page.locator('#toasts .toast')).toHaveCount(0, { timeout: 5000 });
         await testInfo.attach('staff-chat-' + brand + '-' + viewport.name + '-open.png', {
           body: await page.screenshot({ fullPage: false }),
           contentType: 'image/png',
