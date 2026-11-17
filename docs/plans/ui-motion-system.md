@@ -1,8 +1,8 @@
 # Zerno Motion System — аудит и спецификация
 
-**Статус на 2026-11-17:** Stage 0–1 завершены; core implementation Stage 2–4 проверена на обоих брендах. Stage 5 — финальная визуальная приёмка — ещё открыт: остаются отдельные staff overlays, interruption/resize matrix, hidden/offscreen loop audit и отдельное расследование document-level CLS. Последний проверенный source HEAD `071e9a2b32fe0ba33febf24817a2969cff77e7f0` прошёл CI run `44111856462` (13/13 jobs).
+**Статус на 2026-11-17:** Stage 0–1 завершены; core implementation Stage 2–4 проверена на обоих брендах. Stage 5 — финальная визуальная приёмка — остаётся открытым: нужны полная staff role/overlay matrix, interruption/resize + keyboard/focus/touch checks и отдельное расследование document-level CLS. Последняя полностью зелёная проверка application/test HEAD `1529c5dbeacc72b6c264478a10e617bf723189bd` — CI run `44119483640` (13/13 jobs; Responsive UI: 136 passed, 4 skipped, 0 failed/flaky).
 **PR:** #268, Draft. Ветка: `design/ui-animation-system-20261116`.
-**Проверенный source HEAD:** `071e9a2b32fe0ba33febf24817a2969cff77e7f0` (CI run `44111856462`).
+**Последний проверенный application/test HEAD:** `1529c5dbeacc72b6c264478a10e617bf723189bd` (CI run `44119483640`).
 **Base:** `pizza`, SHA `dacb424bdff9d073b3b9a4e13d723db1da92d078`.
 
 ## 1. Цель и motion-язык
@@ -280,8 +280,11 @@ Baseline evidence:
 - [ ] Быстрые повторные действия, interruption, viewport resize, keyboard/focus, touch.
 - [ ] Оба бренда, guest/staff, mobile portrait, compact/short landscape, desktop.
 - [ ] CLS, overflow, scroll, hit-target и overlay focus.
-- [x] Для toast timing добавлены детерминированные midpoint screenshots и computed progress assertions. Recording для interruption/resize путей оставшихся overlays всё ещё требуется.
-- [ ] Открыть каждый обязательный after screenshot. Записать SHA, viewport, brand, role, state и визуальный результат.
+- [x] Toast: midpoint screenshots и computed progress assertions для entry/exit 180/120 ms; normal/reduced кадры coffee и delivery открыты и просмотрены на `1529c5dbeacc72b6c264478a10e617bf723189bd`.
+- [x] Staff chat: normal/reduced screenshots для coffee и delivery (`390×844`) открыты и просмотрены; cashier redeem/scanner regression также проходит в обоих брендах. Admin и cashier visual fixtures изолированы разными BrowserContext, так как `auth-session.js` намеренно перезагружает соседние вкладки при изменении `zt_role`.
+- [x] Profile-panel CSS source audit: loyalty `.stamp.n` / `.freeCard .fe` overrides уже задают `animation:none`; `.hmini` — одноразовый entrance, не perpetual loop. Не добавлять redundant override.
+- [ ] Остальные обязательные staff after screenshots/role surfaces и полная interruption/resize matrix: keyboard/focus/touch.
+- [ ] CLS, overflow, scroll, hit-target и overlay focus; document-level CLS `0.0511` остаётся отдельным follow-up.
 
 ## 8. Existing test coverage и пробелы
 
