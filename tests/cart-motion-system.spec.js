@@ -49,6 +49,8 @@ async function expectCartAtRest(panel, viewport, open) {
       height: rect.height,
       transitionDuration: style.transitionDuration,
       transitionProperty: style.transitionProperty,
+      visibility: style.visibility,
+      display: style.display,
     };
   });
 
@@ -110,7 +112,10 @@ test('cart sheet can be interrupted by rapid close and reopen without stale geom
   await expect(panel).toHaveClass(/open/);
   await page.locator('#cartTopClose').click();
   await expect(panel).not.toHaveClass(/open/);
+  await expect(panel).toHaveCSS('visibility', 'visible');
   await expect(fab).toBeVisible();
+  await expect.poll(() => panel.evaluate((element) => getComputedStyle(element).visibility))
+    .toBe('hidden');
   await fab.click();
   await expect(panel).toHaveClass(/open/);
 
