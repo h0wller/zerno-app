@@ -125,7 +125,7 @@
     padding:6px;
     border:1px solid var(--line,rgba(16,20,24,.12));
     border-radius:26px;
-    background:var(--card,var(--panel,#FFFFFF));
+    background:var(--category-rail-bg,var(--card,var(--panel,#FFFFFF)));
     color:var(--ink,#101418);
     box-shadow:0 10px 28px rgba(16,20,24,.18);
     overflow:hidden;
@@ -499,7 +499,7 @@ html.is-audit .overlay {
   opacity: 0 !important;
   pointer-events: none !important;
 }
-html.is-audit body > *:not(#brandSplashStatic),
+html.is-audit body > *:not(#brandSplashStatic):not(#cartFab),
 html.no-splash body > *:not(#brandSplashStatic):not(.ticker.is-empty) {
   visibility: visible !important;
 }
@@ -647,6 +647,40 @@ body[data-brand="delivery"] .topbar .brand .mark {
   height: 40px;
   flex: 0 1 auto;
   max-width: min(60vw, 420px);
+}
+
+/* Short landscape: compact venue switcher before deferred theme CSS loads. */
+@media (min-width: 821px) and (orientation: landscape) and (max-height: 480px) {
+  html body header.topbar .venueWrap {
+    position: relative;
+    display: flex;
+    flex: 0 0 52px;
+    width: 52px;
+    min-width: 52px;
+    max-width: 52px;
+    justify-content: flex-start;
+  }
+  html body header.topbar .venueWrap > #venueToggle.venueToggle {
+    box-sizing: border-box;
+    flex: 0 0 44px;
+    width: 44px;
+    min-width: 44px;
+    max-width: 44px;
+    height: 44px;
+    min-height: 44px;
+    max-height: 44px;
+    padding: 0;
+    gap: 3px;
+    justify-content: center;
+  }
+  html body header.topbar .venueWrap > #venueToggle.venueToggle .vt-label {
+    display: none;
+  }
+  html body header.topbar .venueWrap > #venueToggle.venueToggle .vt-arrow {
+    display: inline-block;
+    font-size: 10px;
+    margin-left: 0;
+  }
 }
 
 /* Match the final mobile header before views.js wraps #brandSeg and theme CSS loads. */
