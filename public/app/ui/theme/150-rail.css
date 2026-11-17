@@ -152,8 +152,9 @@ sticky слева на весь скролл
 
   html body div.wrap > nav.rail#rail button.on,
   html body div.wrap > div.rail#deliveryRail button.on {
-    background: var(--flame, #123A6B);
-    color: var(--c-text-on-accent, #FFFFFF);
+    /* Delivery's primary terracotta needs its darker accessible tone with white text. */
+    background: var(--flame-d, var(--flame, #123A6B));
+    color: #FFFFFF;
     font-weight: 800;
   }
 
