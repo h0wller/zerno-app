@@ -212,6 +212,7 @@ function renderMenu() {
     const a = $('#addCard');
     if (a) a.onclick = () => openEditor(null);
     if (typeof fixLcp === 'function') fixLcp();
+    if (typeof window.alignRailWithCard === 'function') requestAnimationFrame(window.alignRailWithCard);
   });
   const a = $('#addCard');
   if (a) a.onclick = () => openEditor(null);
