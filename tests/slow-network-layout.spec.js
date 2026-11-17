@@ -284,7 +284,7 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
       await route.continue();
     });
 
-    for (const width of [320, 390, 480, 519, 520, 690, 691, 820, 821, 1023, 1024, 1180, 1181, 1599, 1600]) {
+    for (const width of [320, 390, 480, 519, 520, 690, 691, 820, 821, 1023, 1024, 1180, 1181, 1399, 1400, 1440, 1599, 1600]) {
       let releaseThemeCss;
       themeCssGate = new Promise((resolve) => { releaseThemeCss = resolve; });
       await page.setViewportSize({ width, height: 844 });
@@ -295,7 +295,7 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
         window.DMENU.length === 6 &&
         document.querySelectorAll('#deliveryGrid > .card[data-product-id]').length === 6
       );
-      const expectedGridColumns = width >= 1600 ? 4 : width >= 1181 ? 3 : width >= 520 ? 2 : 1;
+      const expectedGridColumns = width >= 1400 ? 4 : width >= 1181 ? 3 : width >= 520 ? 2 : 1;
       await page.waitForFunction((expectedColumns) => {
         const cards = Array.from(document.querySelectorAll('#deliveryGrid > .card[data-product-id]'));
         if (cards.length !== 6) return false;
