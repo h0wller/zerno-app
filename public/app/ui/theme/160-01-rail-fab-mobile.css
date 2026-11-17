@@ -834,3 +834,12 @@ html body #authModal.tg-mode .mhint{
 #checkoutStreet.field-error{ animation: none; transition: none; }
 }
 
+
+
+/* Keep the cart pill in its own lane above the detached category capsule. */
+@media (max-width: 820px),
+       (min-width: 821px) and (orientation: landscape) and (max-height: 480px) {
+  html body #cartFab.cartFab {
+    bottom: calc(var(--rail-total-h) + 12px);
+  }
+}
