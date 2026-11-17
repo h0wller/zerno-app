@@ -105,6 +105,7 @@ test('toast uses short non-overshooting entry and exit motion in both brands', a
     expect(exit.duration).toBe('0.12s');
     expect(exit.easing).toBe('cubic-bezier(0.2, 0.8, 0.2, 1)');
     const exitFrame = await captureMidAnimation(
+      page,
       toast,
       'tout',
       0.5,
