@@ -32,7 +32,7 @@ This is an audit queue, not a declaration that each item is defective.
 - [ ] Header width/height and compactness.
 - [ ] Guest brand switches + logo + profile aligned in a single centered row.
 - [ ] Ticker below header, no extra gap/shadow; confirm intended movement on reduced-motion clients.
-- [ ] Search and category rail alignment; rail below header/search.
+- [ ] Verify floating category capsule on iOS/Android PWA and Telegram: safe-area, scroll reserve with/without cart FAB, open-cart suppression, fade/reduced-motion, and both brands.
 - [ ] Swipe-dismiss from profile/modal does not cause header/page jump.
 
 ### C. Catalog and product selection
