@@ -320,6 +320,11 @@ html body .auth-badge-confirmed.auth-badge-confirmed{
   from { opacity: 0; transform: translateY(-8px) scale(0.98); }
   to { opacity: 1; transform: translateY(0) scale(1); }
 }
+@media (prefers-reduced-motion: reduce) {
+  html body .auth-badge-confirmed.auth-badge-confirmed {
+    animation: none;
+  }
+}
 /* Упрощённый вид формы внутри Telegram Mini App */
 html body #authModal.tg-mode #regTgBtn,
 html body #authModal.tg-mode .mhint{
