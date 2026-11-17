@@ -807,3 +807,54 @@ test('profile stamps, gift icon and history rows remove decorative motion under 
     statTransform: 'none'
   });
 });
+
+
+test('preorder waiting pulse pauses while the mobile profile drawer is closed and resumes when opened', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.addInitScript(() => {
+    localStorage.setItem('zt_onb', '1');
+    sessionStorage.setItem('splashDone', '1');
+  });
+  await page.goto('/?brand=delivery');
+  await page.waitForFunction(() =>
+    window.PreorderTimer && typeof window.PreorderTimer.updateAll === 'function' &&
+    typeof window.openPanel === 'function' && typeof window.closePanel === 'function'
+  );
+  await page.waitForFunction(() => {
+    const link = Array.from(document.querySelectorAll('link[rel="stylesheet"]'))
+      .find((item) => item.href.includes('160-01-rail-fab-mobile.css'));
+    return link && link.media === 'all' && Array.from(document.styleSheets)
+      .some((sheet) => sheet.href === link.href);
+  });
+
+  await page.evaluate(() => {
+    const card = document.createElement('article');
+    card.className = 'myOrderCard';
+    card.innerHTML = '<div class="moSt">В пути</div><span class="preorder-slot" data-slot="Завтра | 20:00–21:00"></span>';
+    document.querySelector('#pvProfile').appendChild(card);
+    window.PreorderTimer.updateAll();
+  });
+
+  const timer = page.locator('#pvProfile .preorder-timer-waiting');
+  await expect(timer).toHaveCount(1);
+  await expect.poll(() => timer.evaluate((element) => getComputedStyle(element).animationName))
+    .toContain('preorder-pulse');
+
+  await page.evaluate(() => window.openPanel('profile'));
+  await expect(page.locator('#panel')).toHaveClass(/open/);
+  await expect.poll(() => timer.evaluate((element) => getComputedStyle(element).animationName))
+    .toContain('preorder-pulse');
+
+  await page.evaluate(() => window.closePanel());
+  await expect(page.locator('#panel')).not.toHaveClass(/open/);
+  await expect.poll(() => timer.evaluate((element) => getComputedStyle(element).animationName))
+    .not.toContain('preorder-pulse');
+
+  await page.evaluate(() => window.openPanel('profile'));
+  await expect(page.locator('#panel')).toHaveClass(/open/);
+  await expect.poll(() => timer.evaluate((element) => getComputedStyle(element).animationName))
+    .toContain('preorder-pulse');
+
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await expect(timer).toHaveCSS('animation-name', 'none');
+});
