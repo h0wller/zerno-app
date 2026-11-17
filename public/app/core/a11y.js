@@ -25,6 +25,22 @@ function applyLazy(img) {
   }
 }
 
+function trapModalFocus(event, container, selector) {
+  if (event.key !== 'Tab') return;
+  var focusable = Array.prototype.slice.call(container.querySelectorAll(selector))
+    .filter(function (element) { return !element.closest('[hidden]'); });
+  if (!focusable.length) return;
+  var first = focusable[0];
+  var last = focusable[focusable.length - 1];
+  if (event.shiftKey && document.activeElement === first) {
+    event.preventDefault();
+    last.focus();
+  } else if (!event.shiftKey && document.activeElement === last) {
+    event.preventDefault();
+    first.focus();
+  }
+}
+
 function lazify(root) {
   var target = root || document;
   if (target.nodeType === 1 && target.tagName === 'IMG') applyLazy(target);
@@ -38,3 +54,4 @@ if (document.readyState === 'loading') {
 }
 
 window.lazify = lazify;
+window.trapModalFocus = trapModalFocus;

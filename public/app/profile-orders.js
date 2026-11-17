@@ -168,19 +168,8 @@
                 close();
                 return;
             }
-            if (event.key !== 'Tab') return;
-            var focusable = Array.prototype.slice.call(modal.querySelectorAll(
-                'button:not([disabled]), a[href], input:not([disabled]), [tabindex]:not([tabindex="-1"])'
-            )).filter(function (element) { return !element.closest('[hidden]'); });
-            if (!focusable.length) return;
-            var first = focusable[0], last = focusable[focusable.length - 1];
-            if (event.shiftKey && document.activeElement === first) {
-                event.preventDefault();
-                last.focus();
-            } else if (!event.shiftKey && document.activeElement === last) {
-                event.preventDefault();
-                first.focus();
-            }
+            window.trapModalFocus(event, modal,
+                'button:not([disabled]), a[href], input:not([disabled]), [tabindex]:not([tabindex="-1"])');
         });
 
         // После закрытия вложенного трекера фокус может остаться на скрытой кнопке.

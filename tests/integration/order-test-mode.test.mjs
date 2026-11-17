@@ -6,6 +6,7 @@ import net from 'node:net';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { randomUUID } from 'node:crypto';
 import Database from 'better-sqlite3';
 
@@ -77,7 +78,7 @@ globalThis.Date = class extends RealDate {
 };
 `);
 
-  child = spawn(process.execPath, ['--import', clockPath, 'server.js'], {
+  child = spawn(process.execPath, ['--import', pathToFileURL(clockPath).href, 'server.js'], {
     cwd: root,
     env: {
       ...process.env,

@@ -211,23 +211,33 @@
   }
 
 
-  async function performAccountDeletion() {
+  async function unsubscribePushSubscription(notifyServer) {
     try {
       var registration = await navigator.serviceWorker.ready;
       var subscription = await registration.pushManager.getSubscription();
-      if (subscription) await subscription.unsubscribe();
+      if (!subscription) return;
+      if (notifyServer) await api('/push/unsubscribe', { method: 'POST' });
+      await subscription.unsubscribe();
     } catch (_) {}
+  }
+
+  function resetAuthenticatedUser() {
+    window.setUser(null, null);
+    window.mode = 'guest';
+    if (typeof window.closeProfileSettings === 'function') window.closeProfileSettings();
+    if (typeof closePanel === 'function') closePanel();
+    if (typeof renderAll === 'function') renderAll();
+  }
+
+  async function performAccountDeletion() {
+    await unsubscribePushSubscription(false);
     try {
       await api('/me', { method: 'DELETE' });
     } catch (error) {
       alert('Не удалось удалить профиль. Попробуйте позже или напишите на почту из политики конфиденциальности.');
       return false;
     }
-    window.setUser(null, null);
-    window.mode = 'guest';
-    if (typeof window.closeProfileSettings === 'function') window.closeProfileSettings();
-    if (typeof closePanel === 'function') closePanel();
-    if (typeof renderAll === 'function') renderAll();
+    resetAuthenticatedUser();
     alert('Профиль удалён.');
     openAuth();
     return true;
@@ -431,22 +441,11 @@
     var logoutBtn = document.getElementById('logoutBtn');
     if (logoutBtn) {
       logoutBtn.onclick = async function () {
-        try {
-          var reg = await navigator.serviceWorker.ready;
-          var sub = await reg.pushManager.getSubscription();
-          if (sub) {
-            await api('/push/unsubscribe', { method: 'POST' });
-            await sub.unsubscribe();
-          }
-        } catch (_) {}
+        await unsubscribePushSubscription(true);
         try {
           await api('/exit', { method: 'POST' });
         } catch (_) {}
-        window.setUser(null, null);
-        window.mode = 'guest';
-        if (typeof window.closeProfileSettings === 'function') window.closeProfileSettings();
-        if (typeof closePanel === 'function') closePanel();
-        if (typeof renderAll === 'function') renderAll();
+        resetAuthenticatedUser();
         openAuth();
       };
     }

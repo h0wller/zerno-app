@@ -434,7 +434,7 @@ body.is-cashier .cust .acts{
   gap: 22px;
   padding: 22px;
   max-width: 1480px;
-  margin: 0 auto;
+  margin: 0;
   align-items: start
 }
 /* ── F5.13: база из растворённого большого <style> (порядок = прежний каскад) ── */

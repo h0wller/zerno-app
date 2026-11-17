@@ -96,6 +96,18 @@
     overflow: visible;
   }
 
+  #deliveryGrid .card.stable-meta-card .cbody:has(> .single-meta) > .desc {
+    display: -webkit-box;
+    block-size: 37px;
+    min-block-size: 37px;
+    flex: 0 0 37px;
+    box-sizing: border-box;
+    line-height: 1.45;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
   #deliveryGrid .card .cbody:has(> .single-meta) > .comp {
     block-size: 100px;
     min-block-size: 100px;
@@ -133,10 +145,17 @@ body.in-tg .topbar {
   /* Hydration replaces the SSR card; don't let scroll anchoring move the first viewport. */
   overflow-anchor: none;
 }
-@media (min-width: 520px) and (max-width: 1180px) {
+@media (min-width: 520px) and (max-width: 820px) {
   #grid,
   #deliveryGrid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+  }
+}
+@media (min-width: 821px) and (max-width: 1180px) {
+  #grid,
+  #deliveryGrid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 14px;
   }
 }
@@ -162,7 +181,7 @@ body.in-tg .topbar {
 }
 
 /* 3. Единый каркас .wrap и центрированный без обрезания шапкой рейл (#rail / #deliveryRail) */
-@media (max-width: 1180px) {
+@media (min-width: 821px) and (max-width: 1180px) {
   html body div.wrap,
   .wrap {
     display: grid;
@@ -203,45 +222,10 @@ html body div.wrap > #deliveryRail { align-self:stretch; height:auto; max-height
   html body div.wrap > .rail,
   html body div.wrap > #rail,
   html body div.wrap > #deliveryRail {
-    width: 92px;
-    min-width: 92px;
+    width: 80px;
+    min-width: 80px;
   }
 }
-html body div.wrap > .rail button,
-html body div.wrap > #rail button,
-html body div.wrap > #deliveryRail button {
-  width: 100%;
-  min-height: 56px;
-  padding: 6px 2px;
-  font-size: 9.5px;
-  line-height: 1.15;
-  white-space: normal;
-  word-break: normal;
-}
-html body div.wrap > .rail::-webkit-scrollbar,
-html body div.wrap > #rail::-webkit-scrollbar,
-html body div.wrap > #deliveryRail::-webkit-scrollbar {
-  display: none;
-}
-
-/* Short landscape keeps category targets compact without changing rail geometry. */
-@media (max-width: 820px) and (max-height: 480px) {
-  html body div.wrap > .rail button,
-  html body div.wrap > #rail button,
-  html body div.wrap > #deliveryRail button {
-    min-height: 44px;
-    font-size: 8.5px;
-  }
-}
-
-/* Normal-flow category rails need no sticky viewport offset in the first frame. */
-@media (max-width:820px) {
-  html body div.wrap > .rail,
-  html body div.wrap > #rail,
-  html body div.wrap > #deliveryRail { top:auto; transform:none; max-height:none; }
-}
-
-
 /* Тап-таргеты карточек доставки ≥ 44px по высоте (проверка pwa-responsive.spec.js: 40px минимум) */
 #deliveryGrid .card .cta[data-add],
 #deliveryGrid .card button.cta {
@@ -256,24 +240,201 @@ html body div.wrap > #deliveryRail::-webkit-scrollbar {
 }
 
 
-/* Mobile category rail buttons retain the canonical first-paint geometry. */
-@media (max-width:820px) {
-  html body div.wrap > .rail button,
-  html body div.wrap > #rail button,
-  html body div.wrap > #deliveryRail button {
-    box-sizing:border-box;
-    width:100%;
-    min-height:56px;
-    padding:6px 2px;
-    font-size:9.5px;
-    line-height:1.15;
-    white-space:normal;
-    word-break:normal;
+/* Compact landscape has horizontal category navigation and a full-width catalog. */
+@media (min-width: 821px) and (orientation: landscape) and (max-height: 480px) {
+  /* Compact landscape is a touch viewport: reserve a single compact topbar row. */
+  html body header.topbar {
+    box-sizing: border-box;
+    height: 56px;
+    min-height: 56px;
+    max-height: 56px;
+    padding: 0 12px;
+    gap: 6px;
+    flex-wrap: nowrap;
   }
-  html body div.wrap > .rail button.on,
-  html body div.wrap > #rail button.on,
-  html body div.wrap > #deliveryRail button.on {
-    font-size:9.5px;
-    line-height:1.15;
+  html body header.topbar .venueToggle {
+    height: 40px;
+    min-height: 40px;
+    max-height: 40px;
+    font-size: 13px;
+  }
+  html body header.topbar .brand .mark {
+    height: 40px;
+    min-height: 40px;
+    max-height: 40px;
+    width: auto;
+    max-width: min(34vw, 180px);
+  }
+  html body header.topbar #profileTopBtn {
+    width: 40px;
+    min-width: 40px;
+    height: 40px;
+    min-height: 40px;
+  }
+  html body header.topbar .brand b,
+  html body header.topbar #brandTitle {
+    font-size: 15px;
+    line-height: 1;
+  }
+  html body .ticker {
+    height: 28px;
+    min-height: 28px;
+  }
+  html body div.wrap,
+  .wrap {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto;
+    gap: 8px;
+    padding: 8px 12px 24px;
+  }
+  html body div.wrap > section {
+    grid-column: 1;
+    grid-row: auto;
+    width: 100%;
+    min-width: 0;
   }
 }
+
+/* Desktop category navigation: one rail surface, fixed icon chips, no tab pills. */
+@media (min-width: 821px) and (min-height: 481px) {
+  html body div.wrap > #rail,
+  html body div.wrap > #deliveryRail {
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    align-self: start;
+    justify-self: stretch;
+    width: 100%;
+    min-width: 0;
+    height: max-content;
+    min-height: 0;
+    max-height: none;
+    gap: 6px;
+    padding: 4px;
+    border: 0;
+    border-radius: 16px;
+    background: var(--category-rail-bg, var(--panel, #fff));
+    box-shadow: none;
+    overflow: visible;
+  }
+
+  html body div.wrap > #rail button,
+  html body div.wrap > #deliveryRail button {
+    box-sizing: border-box;
+    position: relative;
+    display: flex;
+    flex: 0 0 auto;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 4px;
+    width: 100%;
+    min-width: 0;
+    max-width: none;
+    height: auto;
+    min-height: 64px;
+    max-height: none;
+    padding: 6px 2px 7px;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+    transition: color 180ms ease, transform 180ms ease;
+    color: var(--category-tab-color, var(--ink, #20252b));
+    font-family: var(--category-label-font, "Golos Text", system-ui, sans-serif);
+    font-size: var(--category-label-size, 10px);
+    font-weight: var(--category-label-weight, 700);
+    line-height: 1.15;
+    text-align: center;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  html body div.wrap > #rail button.on,
+  html body div.wrap > #deliveryRail button.on {
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+    color: var(--category-tab-active-color, var(--ink, #20252b));
+    font-weight: 800;
+    transform: none;
+  }
+
+  html body div.wrap > #rail .re,
+  html body div.wrap > #deliveryRail .re {
+    display: grid;
+    flex: 0 0 var(--category-icon-size, 32px);
+    place-items: center;
+    width: var(--category-icon-size, 32px);
+    min-width: var(--category-icon-size, 32px);
+    height: var(--category-icon-size, 32px);
+    border: 0;
+    border-radius: var(--category-icon-radius, 50%);
+    background: transparent;
+    color: var(--category-icon-color, currentColor);
+    font-size: 23px;
+    line-height: 1;
+    transition: background-color 180ms ease, color 180ms ease;
+  }
+
+  html body div.wrap > #rail button.on .re,
+  html body div.wrap > #deliveryRail button.on .re {
+    border: 0;
+    border-radius: var(--category-icon-radius, 50%);
+    background: var(--category-icon-active-bg, transparent);
+    color: var(--category-icon-active-color, currentColor);
+  }
+
+  /* Beat the legacy active-tab typography in 160-01 without !important. */
+  html body div.wrap > #rail button.on[aria-pressed="true"],
+  html body div.wrap > #deliveryRail button.on[aria-pressed="true"] {
+    font-size: var(--category-label-size, 10px);
+    font-family: var(--category-label-font, "Golos Text", system-ui, sans-serif);
+    font-weight: var(--category-label-active-weight, 800);
+  }
+
+  html body div.wrap > #rail button.on::after,
+  html body div.wrap > #deliveryRail button.on::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    bottom: 2px;
+    width: 28px;
+    height: 3px;
+    border-radius: 2px;
+    background: var(--category-indicator-color, currentColor);
+    transform: translateX(-50%);
+  }
+
+  html body div.wrap > #rail button:active,
+  html body div.wrap > #deliveryRail button:active {
+    transform: none;
+  }
+
+  html body div.wrap > #rail button:focus-visible,
+  html body div.wrap > #deliveryRail button:focus-visible {
+    outline: 2px solid var(--focus, currentColor);
+    outline-offset: 2px;
+    z-index: 1;
+  }
+
+  @media (hover: hover) {
+    html body div.wrap > #rail button:not(.on):hover,
+    html body div.wrap > #deliveryRail button:not(.on):hover {
+      color: var(--category-tab-active-color, currentColor);
+    }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html body div.wrap > #rail button,
+  html body div.wrap > #deliveryRail button,
+  html body div.wrap > #rail .re,
+  html body div.wrap > #deliveryRail .re {
+    transition: none;
+  }
+}
+
+/* Mobile wrapper geometry is owned by the early fallback in 160-04. */

@@ -47,6 +47,21 @@ test('mobile menu header has only the two requested rows', async ({ page }) => {
       );
       await page.evaluate(() => window.setMode('admin'));
       await expect(page.locator('#adminBar')).toBeVisible();
+      const adminBarGeometry = await page.locator('#adminBar').evaluate(node => {
+        const rect = node.getBoundingClientRect();
+        const parent = node.parentElement.getBoundingClientRect();
+        const style = getComputedStyle(node);
+        return {
+          marginLeft: style.marginLeft,
+          left: rect.left,
+          right: rect.right,
+          parentLeft: parent.left,
+          parentRight: parent.right
+        };
+      });
+      expect(adminBarGeometry.marginLeft, 'mobile admin actions must not use the legacy -90px rail compensation').toBe('0px');
+      expect(adminBarGeometry.left, 'admin actions must align with the content column').toBeGreaterThanOrEqual(adminBarGeometry.parentLeft - 1);
+      expect(adminBarGeometry.right, 'admin actions must stay inside the content column').toBeLessThanOrEqual(adminBarGeometry.parentRight + 1);
       for (const action of ['#promoToggle', '#dashToggle', '#chatsToggle2']) {
         await expect(page.locator(action)).toBeVisible();
       }
@@ -63,6 +78,78 @@ test('mobile menu header has only the two requested rows', async ({ page }) => {
       });
       expect(rows).toEqual(['title-roles-edit', 'search-support']);
     }
+  }
+});
+
+
+test('staff mobile rail is fixed to the viewport bottom without an empty cart lane', async ({ page }, testInfo) => {
+  for (const brand of ['coffee', 'delivery']) {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await mockStaffSession(page, 'admin');
+    await page.goto('/?brand=' + brand);
+    await page.waitForFunction(() =>
+      window.me && window.me.role === 'admin' &&
+      document.documentElement.hasAttribute('data-staff-ready')
+    );
+    await page.evaluate(() => window.setMode('admin'));
+
+    const railSelector = brand === 'coffee' ? '#rail' : '#deliveryRail';
+    const gridSelector = brand === 'coffee' ? '#grid' : '#deliveryGrid';
+    const targetSelector = brand === 'coffee' ? '#grid' : '#deliverySubFilterViewport';
+    const geometry = await page.evaluate(({ railSelector, gridSelector, targetSelector }) => {
+      const rail = document.querySelector(railSelector);
+      const rect = rail.getBoundingClientRect();
+      const fab = document.querySelector('#cartFab');
+      const grid = document.querySelector(gridSelector);
+      const subfilters = brand === 'delivery' ? document.querySelector('#deliverySubFilterViewport') : null;
+      const subfiltersRect = subfilters ? subfilters.getBoundingClientRect() : null;
+      const subfiltersVisible = !!subfilters && !subfilters.hidden &&
+        getComputedStyle(subfilters).display !== 'none' && subfiltersRect.height > 0;
+      const target = brand === 'delivery' && !subfiltersVisible ? grid : document.querySelector(targetSelector);
+      const targetRect = target.getBoundingClientRect();
+      return {
+        position: getComputedStyle(rail).position,
+        top: rect.top,
+        bottom: rect.bottom,
+        bottomGap: window.innerHeight - rect.bottom,
+        height: rect.height,
+        viewportHeight: window.innerHeight,
+        pinClass: rail.classList.contains('rail-is-pinned'),
+        spacerCount: rail.parentElement.querySelectorAll(':scope > .rail-pin-spacer').length,
+        gridPaddingBottom: parseFloat(getComputedStyle(grid).paddingBottom),
+        targetTop: targetRect.top,
+        targetDisplay: getComputedStyle(target).display,
+        targetHeight: targetRect.height,
+        subfiltersVisible,
+        subfiltersTop: subfiltersRect?.top ?? null,
+        subfiltersBottom: subfiltersRect?.bottom ?? null,
+        subfiltersHeight: subfiltersRect?.height ?? null,
+        fabUnavailable: fab.hidden || getComputedStyle(fab).display === 'none' ||
+          !fab.classList.contains('visible'),
+      };
+    }, { railSelector, gridSelector, targetSelector });
+
+    expect(geometry.position).toBe('fixed');
+    expect(geometry.bottomGap).toBe(10);
+    expect(geometry.height).toBe(56);
+    expect(geometry.targetDisplay).not.toBe('none');
+    expect(geometry.targetTop).toBeLessThan(geometry.top);
+    if (geometry.subfiltersVisible) {
+      expect(geometry.subfiltersHeight).toBeGreaterThanOrEqual(44);
+      expect(geometry.subfiltersBottom).toBeLessThanOrEqual(geometry.top);
+    }
+    expect(geometry.pinClass).toBe(false);
+    expect(geometry.spacerCount).toBe(0);
+    expect(geometry.gridPaddingBottom).toBeGreaterThanOrEqual(geometry.height + 15);
+    expect(geometry.fabUnavailable, 'staff empty cart does not create a FAB reserve').toBe(true);
+    await testInfo.attach(brand + '-staff-bottom-rail-390x844.json', {
+      body: Buffer.from(JSON.stringify(geometry, null, 2)),
+      contentType: 'application/json',
+    });
+    await testInfo.attach(brand + '-staff-bottom-rail-390x844', {
+      body: await page.screenshot({ animations: 'disabled' }),
+      contentType: 'image/png',
+    });
   }
 });
 

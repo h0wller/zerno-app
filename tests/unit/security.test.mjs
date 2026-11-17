@@ -7,10 +7,24 @@ import {
   clearAuthRateLimits,
   clearLock,
   lockedSeconds,
+  getOtpSendBlockReason,
   registerFail
 } from '../../server/utils/auth-rate-limits.js';
 
 beforeEach(() => clearAuthRateLimits());
+
+test('OTP send blocking distinguishes cooldown from the rolling send cap', () => {
+  assert.equal(getOtpSendBlockReason({
+    sent: 1, lastSent: 95_000, windowEnds: 200_000
+  }, 100_000), 'cooldown');
+  assert.equal(getOtpSendBlockReason({
+    sent: 5, lastSent: 0, windowEnds: 200_000
+  }, 100_000), 'daily-limit');
+  assert.equal(getOtpSendBlockReason({
+    sent: 4, lastSent: 0, windowEnds: 200_000
+  }, 100_000), null);
+  assert.equal(getOtpSendBlockReason(null, 100_000), null);
+});
 
 test('hashPin детерминирован и различает PIN', () => {
   assert.equal(hashPin('1234'), hashPin('1234'));
