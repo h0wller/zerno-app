@@ -157,7 +157,18 @@ test('cart FAB fades without moving or resizing its hit target', async ({ page }
 
     await page.evaluate(() => window.replaceCartItems([]));
     await expect(fab).toBeHidden();
-    const hiddenTransform = await fab.evaluate((element) => getComputedStyle(element).transform);
+    await fab.evaluate((element) => { element.hidden = false; });
+    const hiddenState = await fab.evaluate((element) => {
+      const rect = element.getBoundingClientRect();
+      const style = getComputedStyle(element);
+      return {
+        transform: style.transform,
+        left: rect.left,
+        top: rect.top,
+        width: rect.width,
+        height: rect.height,
+      };
+    });
 
     await page.evaluate((item) => window.replaceCartItems([item]), CART_ITEM);
     await expect(fab).toBeVisible();
@@ -175,7 +186,11 @@ test('cart FAB fades without moving or resizing its hit target', async ({ page }
       };
     });
 
-    expect(initial.transform).toBe(hiddenTransform);
+    expect(initial.transform).toBe(hiddenState.transform);
+    expect(initial.left).toBeCloseTo(hiddenState.left, 2);
+    expect(initial.top).toBeCloseTo(hiddenState.top, 2);
+    expect(initial.width).toBeCloseTo(hiddenState.width, 2);
+    expect(initial.height).toBeCloseTo(hiddenState.height, 2);
     expect(initial.transitionProperty.split(',').map((value) => value.trim()))
       .not.toContain('transform');
     if (reducedMotion === 'reduce') {
