@@ -347,6 +347,7 @@ test('toast motion uses the shared short feedback timing in both brands', async 
   for (const brand of ['coffee', 'delivery']) {
     await page.emulateMedia({ reducedMotion: 'no-preference' });
     await prepare(page, '/?brand=' + brand);
+    await page.waitForFunction(() => typeof window.toast === 'function');
     await page.evaluate(() => window.toast('Motion feedback test', 'ℹ️'));
     await expect(toast).toHaveCount(1);
 
@@ -386,6 +387,7 @@ test('toast feedback becomes immediate under reduced motion in both brands', asy
   for (const brand of ['coffee', 'delivery']) {
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await prepare(page, '/?brand=' + brand);
+    await page.waitForFunction(() => typeof window.toast === 'function');
     await page.evaluate(() => window.toast('Reduced motion feedback test', 'ℹ️'));
     await expect(toast).toHaveCount(1);
     await expect(toast).toHaveCSS('animation-name', 'none');
