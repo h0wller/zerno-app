@@ -947,6 +947,7 @@ test('PIN error feedback and fullscreen QR are static under reduced motion', asy
   await expect(qrModal).toHaveClass(/show/);
   await expect(qrCanvas).toHaveCSS('animation-name', 'none');
   await expect(qrCanvas).toHaveCSS('animation-duration', '0s');
+  await expect(qrModal.locator('.qrcard')).toHaveCSS('transition-duration', '0s');
   await page.evaluate(() => window.closeQRFull());
 });
 
