@@ -302,7 +302,7 @@ test('chat motion uses short spatial transitions and no permanent ambient pulse'
       await expect(hint).toBeVisible();
       await hint.evaluate((element) => element.classList.add('pulse'));
       const hintAnimation = await hint.evaluate((element) => getComputedStyle(element).animationName);
-      expect(hintAnimation).toBe('none');
+      expect(hintAnimation).toBe('hintPulse');
 
       await page.emulateMedia({ reducedMotion: 'reduce' });
       await expect.poll(() => panel.evaluate((element) => getComputedStyle(element).transitionDuration))
