@@ -108,9 +108,9 @@ html body div.wrap > section {
   }
   html body #menuView .menu-head,
   html body #deliveryView .menu-head {
-    width: calc(100% + var(--menu-rail-width) + var(--menu-rail-gap));
-    max-width: none;
-    margin-left: calc(0px - var(--menu-rail-width) - var(--menu-rail-gap));
+    width: 100%;
+    max-width: 100%;
+    margin-left: 0;
   }
 }
 .menu-head .mh-top,
