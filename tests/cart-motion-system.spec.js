@@ -147,3 +147,61 @@ test('cart sheet remains visible during normal exit and hides after its spatial 
     .toBe('hidden');
 
 });
+
+test('cart FAB fades without moving or resizing its hit target', async ({ page }) => {
+  const viewport = { width: 390, height: 844 };
+  const { fab } = await prepareCart(page, viewport);
+
+  for (const reducedMotion of ['no-preference', 'reduce']) {
+    await page.emulateMedia({ reducedMotion });
+
+    await page.evaluate(() => window.replaceCartItems([]));
+    await expect(fab).toBeHidden();
+    const hiddenTransform = await fab.evaluate((element) => getComputedStyle(element).transform);
+
+    await page.evaluate((item) => window.replaceCartItems([item]), CART_ITEM);
+    await expect(fab).toBeVisible();
+    const initial = await fab.evaluate((element) => {
+      const rect = element.getBoundingClientRect();
+      const style = getComputedStyle(element);
+      return {
+        transform: style.transform,
+        transitionProperty: style.transitionProperty,
+        transitionDuration: style.transitionDuration,
+        left: rect.left,
+        top: rect.top,
+        width: rect.width,
+        height: rect.height,
+      };
+    });
+
+    expect(initial.transform).toBe(hiddenTransform);
+    expect(initial.transitionProperty.split(',').map((value) => value.trim()))
+      .not.toContain('transform');
+    if (reducedMotion === 'reduce') {
+      expect(initial.transitionDuration.split(',').every((value) => Number.parseFloat(value) === 0)).toBe(true);
+    } else {
+      expect(initial.transitionProperty).toContain('opacity');
+      expect(initial.transitionDuration).toContain('0.18s');
+    }
+
+    await page.mouse.move(initial.left + initial.width / 2, initial.top + initial.height / 2);
+    const hovered = await fab.boundingBox();
+    expect(hovered).toEqual({
+      x: initial.left,
+      y: initial.top,
+      width: initial.width,
+      height: initial.height,
+    });
+
+    await page.mouse.down();
+    const pressed = await fab.boundingBox();
+    expect(pressed).toEqual({
+      x: initial.left,
+      y: initial.top,
+      width: initial.width,
+      height: initial.height,
+    });
+    await page.mouse.up();
+  }
+});
