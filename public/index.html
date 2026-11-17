@@ -100,8 +100,8 @@
     --rail-edge-gap:10px;
     --rail-total-h:calc(var(--rail-h) + var(--rail-edge-gap) + env(safe-area-inset-bottom,0px));
   }
-  html body .wrap #menuView #rail,
-  html body .wrap #deliveryView #deliveryRail {
+  html body div.wrap > nav.rail#rail,
+  html body div.wrap > div.rail#deliveryRail {
     box-sizing:border-box;
     position:fixed;
     top:auto;
@@ -131,8 +131,8 @@
     overflow:hidden;
     z-index:80;
   }
-  html body .wrap #menuView #rail button,
-  html body .wrap #deliveryView #deliveryRail button {
+  html body div.wrap > nav.rail#rail button,
+  html body div.wrap > div.rail#deliveryRail button {
     box-sizing:border-box;
     display:flex;
     flex:1 1 0;
@@ -145,8 +145,8 @@
     min-height:44px;
     max-height:44px;
   }
-  html body .wrap #menuView #rail .category-label,
-  html body .wrap #deliveryView #deliveryRail .category-label {
+  html body div.wrap > nav.rail#rail .category-label,
+  html body div.wrap > div.rail#deliveryRail .category-label {
     min-width:0;
     max-width:100%;
     overflow:hidden;
@@ -155,8 +155,8 @@
     text-overflow:ellipsis;
   }
   @media (max-width:340px) {
-    html body .wrap #menuView #rail .category-label,
-    html body .wrap #deliveryView #deliveryRail .category-label { display:none; }
+    html body div.wrap > nav.rail#rail .category-label,
+    html body div.wrap > div.rail#deliveryRail .category-label { display:none; }
   }
   #grid,
   #deliveryGrid {
