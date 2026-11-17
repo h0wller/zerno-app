@@ -2,20 +2,26 @@
 (function () {
   "use strict";
 
+function prefersReducedMotion() {
+    return typeof window.matchMedia === "function" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  }
+
 function flagField(el) {
     if (!el) return;
     el.classList.remove("field-error", "need-slot");
     void el.offsetWidth;
     el.classList.add("field-error");
 
+    var scrollBehavior = prefersReducedMotion() ? "auto" : "smooth";
     var scrollBody = document.getElementById("cartScrollBody");
     if (scrollBody) {
       var rect = el.getBoundingClientRect();
       var bodyRect = scrollBody.getBoundingClientRect();
       var scrollOffset = (rect.top - bodyRect.top) + scrollBody.scrollTop - 70;
-      scrollBody.scrollTo({ top: Math.max(0, scrollOffset), behavior: "smooth" });
+      scrollBody.scrollTo({ top: Math.max(0, scrollOffset), behavior: scrollBehavior });
     } else {
-      try { el.scrollIntoView({ block: "center", behavior: "smooth" }); } catch (e) {}
+      try { el.scrollIntoView({ block: "center", behavior: scrollBehavior }); } catch (e) {}
     }
 
     try { el.focus({ preventScroll: true }); } catch (e) {}
