@@ -185,8 +185,14 @@ test('splash entry animation timeline stays continuous across deferred CSS for b
         const selectors = ['.spInner', '.spSub', '.spPizza', '.spCoffee', '.spPizza .em', '.spCoffee .em'];
         const geometry = selectors.map((selector) => {
           const element = root.querySelector(selector);
-          const rect = element.getBoundingClientRect();
-          return [selector, rect.left, rect.top, rect.width, rect.height];
+          // Offset geometry excludes the intentional translateY entrance animation.
+          let left = 0;
+          let top = 0;
+          for (let node = element; node && node !== root; node = node.offsetParent) {
+            left += node.offsetLeft;
+            top += node.offsetTop;
+          }
+          return [selector, left, top, element.offsetWidth, element.offsetHeight];
         });
         const motion = ['.spSub', '.spPizza', '.spCoffee', '.spPizza .em', '.spCoffee .em']
           .map((selector) => {
@@ -224,8 +230,14 @@ test('splash entry animation timeline stays continuous across deferred CSS for b
         const selectors = ['.spInner', '.spSub', '.spPizza', '.spCoffee', '.spPizza .em', '.spCoffee .em'];
         const geometry = selectors.map((selector) => {
           const element = root.querySelector(selector);
-          const rect = element.getBoundingClientRect();
-          return [selector, rect.left, rect.top, rect.width, rect.height];
+          // Offset geometry excludes the intentional translateY entrance animation.
+          let left = 0;
+          let top = 0;
+          for (let node = element; node && node !== root; node = node.offsetParent) {
+            left += node.offsetLeft;
+            top += node.offsetTop;
+          }
+          return [selector, left, top, element.offsetWidth, element.offsetHeight];
         });
         const motion = ['.spSub', '.spPizza', '.spCoffee', '.spPizza .em', '.spCoffee .em']
           .map((selector) => {
