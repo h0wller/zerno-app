@@ -1207,9 +1207,15 @@ test('staff chat overlay closes on Escape and releases the overlay for both bran
         await page.waitForFunction(() =>
           window.me && window.me.role === 'admin' &&
           document.documentElement.hasAttribute('data-staff-ready') &&
-          typeof window.openStaffChat === 'function'
+          typeof window.openStaffChat === 'function' &&
+          typeof window.setMode === 'function'
         );
-        await page.evaluate((activeBrand) => window.openStaffChat(activeBrand), brand);
+        await page.evaluate(() => window.setMode('admin'));
+        const trigger = page.locator('#chatsToggle2');
+        await expect(trigger).toBeVisible();
+        await expect(page.locator('#toasts .toast')).toHaveCount(0, { timeout: 5000 });
+        await trigger.focus();
+        await page.keyboard.press('Enter');
 
         const modal = page.locator('#staffChatModal');
         const card = modal.locator('.modal-card');
@@ -1218,6 +1224,7 @@ test('staff chat overlay closes on Escape and releases the overlay for both bran
         await expect(card).toBeVisible();
         await expect.poll(() => card.evaluate((element) => getComputedStyle(element).opacity)).toBe('1');
         await expect(overlay).toHaveAttribute('aria-hidden', 'false');
+        await expect(page.locator('#scClose')).toBeFocused();
 
         const geometry = await card.boundingBox();
         expect(geometry).not.toBeNull();
@@ -1236,6 +1243,7 @@ test('staff chat overlay closes on Escape and releases the overlay for both bran
         await expect(modal).not.toHaveClass(/show/);
         await expect(overlay).toHaveAttribute('aria-hidden', 'true');
         await expect(overlay).toHaveCSS('pointer-events', 'none');
+        await expect(trigger).toBeFocused();
 
         await testInfo.attach('staff-chat-' + brand + '-' + viewport.name + '-closed.png', {
           body: await page.screenshot({ fullPage: false }),
