@@ -838,7 +838,7 @@ test('preorder waiting pulse pauses while the mobile profile drawer is closed an
   const timer = page.locator('#pvProfile .preorder-timer-waiting');
   await expect(timer).toHaveCount(1);
   await expect.poll(() => timer.evaluate((element) => getComputedStyle(element).animationName))
-    .toContain('preorder-pulse');
+    .not.toContain('preorder-pulse');
 
   await page.evaluate(() => window.openPanel('profile'));
   await expect(page.locator('#panel')).toHaveClass(/open/);
