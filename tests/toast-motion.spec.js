@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 
 test.use({ serviceWorkers: 'block' });
 
-async function captureMidAnimation(toast, animationName, progress, testInfo, attachmentName) {
+async function captureMidAnimation(page, toast, animationName, progress, testInfo, attachmentName) {
   const sample = await toast.evaluate((element, options) => {
     const animation = element.getAnimations().find((item) =>
       item.animationName === options.animationName
@@ -34,7 +34,7 @@ async function captureMidAnimation(toast, animationName, progress, testInfo, att
   expect(sample.translateX).toBeGreaterThan(0);
 
   await testInfo.attach(attachmentName, {
-    body: await toast.page().screenshot({ fullPage: false }),
+    body: await page.screenshot({ fullPage: false }),
     contentType: 'image/png',
   });
 
@@ -79,6 +79,7 @@ test('toast uses short non-overshooting entry and exit motion in both brands', a
     expect(entry.duration).toBe('0.18s');
     expect(entry.easing).toBe('cubic-bezier(0.2, 0.8, 0.2, 1)');
     const entryFrame = await captureMidAnimation(
+      page,
       toast,
       'tin',
       0.5,
