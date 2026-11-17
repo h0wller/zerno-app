@@ -92,6 +92,11 @@ for (const brand of BRANDS) {
         localStorage.setItem('zt_onb', '1');
       });
       await page.goto(`/?brand=${brand.id}`, { waitUntil: 'domcontentloaded' });
+      await page.waitForFunction(() => {
+        const link = Array.from(document.querySelectorAll('link[rel="stylesheet"]'))
+          .find((item) => item.href.includes('/160-15-mobile-support-toolbar.css'));
+        return !!link && link.media === 'all' && !!link.sheet && link.sheet.cssRules.length > 0;
+      });
 
       const support = page.locator('#chatFab');
       const supportHost = page.locator('#supportLauncherHost');

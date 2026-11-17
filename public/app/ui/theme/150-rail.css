@@ -78,7 +78,7 @@ sticky слева на весь скролл
     max-height: var(--rail-h);
     margin: 0;
     padding: 6px;
-    border: 1px solid var(--line, rgba(16, 20, 24, 0.12));
+    border: 0;
     border-radius: 26px;
     background: var(--category-rail-bg, var(--card, var(--panel, #FFFFFF)));
     color: var(--ink, #101418);

@@ -5,6 +5,7 @@ var railHeadObserver = null;
 var observedRailHead = null;
 var observedRailTopbar = null;
 var railStickyLayout = null;
+var railDesktopAnchor = new WeakMap();
 var railFadeTimer = null;
 var fadedRail = null;
 var railScrollTick = false;
@@ -102,6 +103,7 @@ function alignRailWithCard() {
   railStickyLayout = null;
 
   if (usesFloatingCategoryRailViewport()) {
+    railDesktopAnchor.delete(rail);
     clearRailInlineLayout(rail);
     rail.classList.add('rail-position-ready');
   } else {
@@ -129,8 +131,13 @@ function alignRailWithCard() {
       var catalog = document.querySelector(isDeliveryBrand ? '#deliveryView #deliveryGrid' : '#menuView #grid');
       var catalogRect = catalog && catalog.getBoundingClientRect();
       var desiredTop = catalogRect ? catalogRect.top : (staffGuestMenu ? headRect.bottom + 12 : headRect.top);
-      var marginTop = Math.max(0, desiredTop - wrapContentTop) + 'px';
-      if (rail.style.marginTop !== marginTop) rail.style.marginTop = marginTop;
+      var anchorState = railDesktopAnchor.get(rail);
+      if (!anchorState || anchorState.headHeight !== headRect.height) {
+        var marginTop = Math.max(0, desiredTop - wrapContentTop) + 'px';
+        railDesktopAnchor.set(rail, { marginTop: marginTop, headHeight: headRect.height });
+      }
+      var capturedMarginTop = railDesktopAnchor.get(rail).marginTop;
+      if (rail.style.marginTop !== capturedMarginTop) rail.style.marginTop = capturedMarginTop;
       if (!isDeliveryBrand && rail.style.height) rail.style.removeProperty('height');
     } else if (rail.style.marginTop !== '0px') {
       rail.style.marginTop = '0px';

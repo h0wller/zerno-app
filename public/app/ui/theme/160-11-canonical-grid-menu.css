@@ -303,11 +303,11 @@ html body div.wrap > #deliveryRail { align-self:stretch; height:auto; max-height
     display: flex;
     flex-direction: column;
     align-items: stretch;
-    align-self: start;
+    align-self: stretch;
     justify-self: stretch;
     width: 100%;
     min-width: 0;
-    height: max-content;
+    height: auto;
     min-height: 0;
     max-height: none;
     gap: 6px;
@@ -425,6 +425,15 @@ html body div.wrap > #deliveryRail { align-self:stretch; height:auto; max-height
     html body div.wrap > #deliveryRail button:not(.on):hover {
       color: var(--category-tab-active-color, currentColor);
     }
+  }
+}
+
+/* Horizontal floating capsules do not use the desktop active underline. */
+@media (max-width: 820px), (min-width: 821px) and (orientation: landscape) and (max-height: 480px) {
+  html body div.wrap > #rail button.on::after,
+  html body div.wrap > #deliveryRail button.on::after {
+    content: none;
+    display: none;
   }
 }
 

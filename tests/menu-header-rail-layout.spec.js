@@ -788,7 +788,7 @@ test('category tabs expose their selected state and remain keyboard reachable', 
     const rail = page.locator(brand.rail);
     await expect(rail).toBeVisible({ timeout: 10000 });
     await expect(rail).toHaveAttribute('role', 'group');
-    await expect(rail).toHaveAttribute('aria-label', 'Категории меню');
+    await expect(rail).toHaveAttribute('aria-label', brand.brand === 'coffee' ? 'Категории меню' : 'Категории доставки');
     await expect(rail).not.toHaveAttribute('tabindex', '0');
     await expect(rail.locator('button').first()).toHaveAttribute('type', 'button');
     await expect(rail.locator('button[aria-pressed="true"]')).toHaveCount(1);

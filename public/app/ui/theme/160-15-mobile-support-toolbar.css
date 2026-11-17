@@ -97,8 +97,8 @@
     line-height:36px;
   }
 
-  html body .search:has(> input#dSearch),
-  html body .search:has(> input#searchInput) {
+  html body :is(#menuView, #deliveryView) .menu-head .mh-top > .mh-right > .search:has(> input#dSearch),
+  html body :is(#menuView, #deliveryView) .menu-head .mh-top > . .search:has(> input#searchInput) {
     box-sizing:border-box;
     height:40px;
     min-height:40px;

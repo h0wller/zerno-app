@@ -123,7 +123,7 @@
     max-height:var(--rail-h);
     margin:0;
     padding:6px;
-    border:1px solid var(--line,rgba(16,20,24,.12));
+    border:0;
     border-radius:26px;
     background:var(--category-rail-bg,var(--card,var(--panel,#FFFFFF)));
     color:var(--ink,#101418);
@@ -321,10 +321,11 @@ html[data-brand="delivery"] body #deliveryView #deliverySubFilterViewport {
   }
   /* Guest first-paint reservation; staff layout is owned by the staff-scoped rules below. */
   html:not([data-staff-role]) body :is(#menuView,#deliveryView) .menu-head .mh-top {
-    grid-template-rows:36px 44px !important;
-    height:84px !important;
-    min-height:84px !important;
-    max-height:84px !important;
+    grid-template-rows:28px 44px !important;
+    gap:2px;
+    height:74px !important;
+    min-height:74px !important;
+    max-height:74px !important;
     overflow:visible !important;
   }
   html:not([data-staff-role]) body :is(#menuView,#deliveryView) .menu-head .mh-top > .mh-right {
@@ -967,7 +968,7 @@ html[data-brand="delivery"] {
   --cta-border: 2px solid #3A2A1C;
   --cta-shadow: 3px 3px 0 #3A2A1C;
 }
-html { overflow-y: scroll; scrollbar-gutter: auto; }
+html { overflow-y: scroll; scrollbar-gutter: stable; }
 
 @media (min-width: 1481px) {
   body > div.wrap, .wrap { width: 100%; max-width: 2560px; margin-inline: auto; box-sizing: border-box; }
