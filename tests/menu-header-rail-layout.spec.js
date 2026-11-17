@@ -337,3 +337,106 @@ test('delivery: pizza option labels use compact typography only at 320px', async
     expect(fontSizes).toEqual({ ...viewport.expected, crustsFit: true });
   }
 });
+
+
+const FLOATING_RAIL_CASES = [
+  { brand: 'coffee', selector: '#rail', categoryCount: 6 },
+  { brand: 'delivery', selector: '#deliveryRail', categoryCount: 5 },
+];
+const FLOATING_RAIL_VIEWPORTS = [
+  { name: 'portrait-320', width: 320, height: 740, railHeight: 56 },
+  { name: 'portrait-390', width: 390, height: 844, railHeight: 56 },
+  { name: 'portrait-430', width: 430, height: 932, railHeight: 56 },
+  { name: 'compact-landscape-844', width: 844, height: 390, railHeight: 48 },
+  { name: 'compact-landscape-1024', width: 1024, height: 390, railHeight: 48 },
+];
+
+for (const brand of FLOATING_RAIL_CASES) {
+  for (const viewport of FLOATING_RAIL_VIEWPORTS) {
+    test(`${brand.brand}: category rail is a fixed, accessible floating capsule at ${viewport.name}`, async ({ page }, testInfo) => {
+      await page.setViewportSize({ width: viewport.width, height: viewport.height });
+      await page.addInitScript(() => {
+        sessionStorage.setItem('splashDone', '1');
+        localStorage.setItem('zt_onb', '1');
+        localStorage.setItem('zt_inst_hide', '1');
+        localStorage.setItem('zt_ios_hide', '1');
+      });
+      await page.goto('/?brand=' + brand.brand, { waitUntil: 'domcontentloaded' });
+
+      const rail = page.locator(brand.selector);
+      await expect(rail).toBeVisible({ timeout: 10000 });
+      await expect(rail).toHaveClass(/rail-position-ready/);
+
+      const geometry = await rail.evaluate(element => {
+        const rect = element.getBoundingClientRect();
+        const style = getComputedStyle(element);
+        const probe = document.createElement('div');
+        probe.style.cssText = 'position:fixed;visibility:hidden;pointer-events:none;padding-bottom:env(safe-area-inset-bottom,0px);height:var(--rail-total-h)';
+        document.body.appendChild(probe);
+        const safeArea = parseFloat(getComputedStyle(probe).paddingBottom) || 0;
+        const reservedHeight = probe.getBoundingClientRect().height;
+        probe.remove();
+
+        return {
+          position: style.position,
+          height: rect.height,
+          width: rect.width,
+          left: rect.left,
+          right: rect.right,
+          bottomGap: window.innerHeight - rect.bottom,
+          safeArea,
+          reservedHeight,
+          overflowX: style.overflowX,
+          scrollWidth: element.scrollWidth,
+          clientWidth: element.clientWidth,
+          pageScrollWidth: document.documentElement.scrollWidth,
+          viewportWidth: window.innerWidth,
+          buttons: Array.from(element.querySelectorAll('button')).map(button => {
+            const buttonRect = button.getBoundingClientRect();
+            return {
+              width: buttonRect.width,
+              height: buttonRect.height,
+              label: button.getAttribute('aria-label') || button.title || button.textContent.trim(),
+            };
+          }),
+          categoryLabelsHidden: Array.from(element.querySelectorAll('.category-label'))
+            .every(label => getComputedStyle(label).display === 'none'),
+        };
+      });
+
+      await testInfo.attach(`${brand.brand}-${viewport.name}-floating-rail`, {
+        body: await page.screenshot({ animations: 'disabled' }),
+        contentType: 'image/png',
+      });
+      await testInfo.attach(`${brand.brand}-${viewport.name}-floating-rail-geometry`, {
+        body: Buffer.from(JSON.stringify(geometry, null, 2)),
+        contentType: 'application/json',
+      });
+
+      expect(geometry.position, 'the rail is detached from document flow and fixed to the viewport').toBe('fixed');
+      expect(geometry.height).toBe(viewport.railHeight);
+      expect(geometry.bottomGap).toBeGreaterThanOrEqual(10 + geometry.safeArea);
+      expect(geometry.bottomGap).toBeLessThanOrEqual(12 + geometry.safeArea);
+      expect(geometry.reservedHeight).toBeCloseTo(geometry.height + geometry.bottomGap, 0);
+      expect(geometry.left).toBeGreaterThanOrEqual(12);
+      expect(geometry.right).toBeLessThanOrEqual(geometry.viewportWidth - 12);
+      expect(geometry.width).toBeLessThanOrEqual(geometry.viewportWidth - 24);
+      expect(geometry.pageScrollWidth).toBeLessThanOrEqual(geometry.viewportWidth);
+      expect(geometry.overflowX).toBe('hidden');
+      expect(geometry.scrollWidth).toBeLessThanOrEqual(geometry.clientWidth);
+      expect(geometry.buttons).toHaveLength(brand.categoryCount);
+      expect(geometry.buttons.every(button => button.width >= 44 && button.height >= 44)).toBe(true);
+      expect(geometry.buttons.every(button => button.label.length > 0)).toBe(true);
+      if (viewport.width <= 340) {
+        expect(geometry.categoryLabelsHidden, 'narrow icon-only rail keeps category names accessible').toBe(true);
+      }
+
+      const beforeScroll = await rail.boundingBox();
+      await page.evaluate(() => window.scrollTo(0, 600));
+      await expect.poll(() => page.evaluate(() => window.scrollY), { timeout: 5000 }).toBeGreaterThan(100);
+      const afterScroll = await rail.boundingBox();
+      expect(Math.abs(afterScroll.y - beforeScroll.y), 'the floating capsule stays on the viewport edge during page scrolling').toBeLessThanOrEqual(1);
+      expect(Math.abs(afterScroll.height - beforeScroll.height)).toBeLessThanOrEqual(1);
+    });
+  }
+}
