@@ -371,7 +371,7 @@ Baseline evidence:
 
 ui/category-rail.js восстановлен до исходной реализации на актуальной ветке до экспериментального CLS-offset изменения. Убраны delivery-only transform и special margin offset; возвращены штатный marginTop и мобильные alignSelf/sticky переходы. Причину document CLS устраняет повторная вставка skeleton cards в delivery.js; отдельное изменение rail geometry не требуется и не должно нарушать #269 bottom-alignment/sticky contract.
 
-Regression в tests/slow-network-layout.spec.js теперь ожидает data-catalog-ready, наблюдает #deliveryGrid только в границах сценария и запрещает повторную вставку skeleton cards. Главное assertion — document CLS <0.01, дополнительное — staff-header CLS <0.01. В локальном Chromium до восстановления desktop stretch было получено document CLS = 0 и staffHeader CLS = 0; exact geometry + CLS перепроверяются latest-head CI после восстановления desktop stretch.
+Regression в tests/slow-network-layout.spec.js ожидает data-catalog-ready, наблюдает #deliveryGrid только в границах сценария и запрещает повторную вставку skeleton cards. Главное assertion — document CLS <0.01, дополнительное — staff-header CLS <0.01. На локальном Chromium был зафиксирован CLS = 0; после восстановления исходного category-rail.js current-head CI прошёл весь Responsive UI, Mobile Chrome и Visual stability набор.
 
 Profile sidebar: #myOrders получает min-height:64px, чтобы переход loading → empty не сдвигал #fridayInfo. В tests/profile-orders.spec.js добавлен RED/GREEN regression, удерживающий API response и проверяющий высоту slot и y следующего блока с допуском 1 px; локальный Profile E2E прошёл 19/19. Preorder pulse fixture переведена на явную будущую дату, чтобы тест не зависел от времени запуска.
 
@@ -379,12 +379,12 @@ Profile sidebar: #myOrders получает min-height:64px, чтобы пере
 
 ### Оставшиеся цели Stage 5
 
-- [ ] Завершить current-head CI после восстановления desktop rail stretch contract и исправления time-dependent preorder fixture.
+- [x] Current-head CI после восстановления исходного rail owner и исправления time-dependent preorder fixture: run 44156705364, HEAD ae75df5, 13/13 jobs success (включая Responsive UI, Mobile Chrome и Visual stability).
 - [ ] Довести interruption + rapid reopen + resize одновременно с keyboard/focus/scroll для generic modal и оставшихся staff overlays; отдельные cart/toast/address/gesture прогоны ещё не подтверждены на current head.
 - [ ] Завершить role/viewport matrix для cashier, dispatcher и admin overlays. Уже проверены 12 кадров admin staff-chat для двух брендов и трёх viewport; это не заменяет полную staff matrix.
 - [ ] Выполнить отдельную visual review card entrance, quantity stepper, add-to-cart и delivery option states в обоих брендах; не менять высоту cards/hit targets и не менять #269 rail layout.
 - [ ] Поднять безопасный интерактивный read-only preview для телефона. Vercel project provisioned, но deploy не завершён: текущий Express + SQLite runtime нельзя просто подключить к production DB; preview требует mock API/test fixtures без реальных заказов/мутаций.
-- [ ] Не переводить PR в Ready и не мержить до зелёного current-head CI и обязательного visual gate.
+- [ ] Не переводить PR в Ready и не мержить до завершения ручного visual gate; current-head CI уже green 13/13.
 
 ## 12. Продолжение Stage 5 — 2026-11-17, current-head follow-up
 
@@ -399,7 +399,7 @@ Profile sidebar: #myOrders получает min-height:64px, чтобы пере
 
 **Локально подтверждено в изолированной Chromium Sandbox до её завершения:** staff hydration CLS test — document CLS 0, staffHeader CLS 0; category rail E2E 6/6; Profile E2E 19/19 с будущей датой; desktop profile hydration 1/1; unit/integration 186/186; npm run check, CSS audit, brand check, observer audit и git diff --check прошли. Эти результаты относятся к локальным прогонам; current-head CI остаётся источником истины для итоговой приемки.
 
-**Текущий CI finding:** run 44152517813 выявил time-dependent preorder date fixture; она исправлена явной будущей датой. Run 44154868940 подтвердил Profile success, но нашёл регрессии rail на mobile sticky и desktop bottom alignment после экспериментального offset. Эти rail изменения отменены полным восстановлением исходного category-rail.js; текущая проверка запущена в run 44156396036 и должна завершиться перед закрытием Stage 5.
+**Текущий CI finding:** run 44152517813 выявил time-dependent preorder date fixture; она исправлена явной будущей датой. Run 44154868940 показал regressions rail из-за экспериментального offset/alignSelf. Изменения полностью отменены восстановлением исходного category-rail.js и закреплены assertions в tests/menu-header-rail-layout.spec.js. Финальный current-head run 44156705364 на HEAD ae75df5 завершился 13/13 success: Responsive UI, Mobile Chrome responsive, Visual stability и все остальные jobs green.
 
 **Vercel preview:** project zerno-stage5-preview provisioned, но живой *.vercel.app deployment и read-only API adapter не созданы. Не подключать production SQLite или Telegram webhook к preview. Preview должен использовать отдельные fixtures и read-only mock API.
 
