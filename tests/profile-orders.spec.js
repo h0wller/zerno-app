@@ -746,3 +746,62 @@ test('order deep link uses instant scroll and a static highlight under reduced m
   const scrollOptions = await page.evaluate(() => window.__orderDeepScrollCalls.at(-1));
   expect(scrollOptions.behavior).toBe('auto');
 });
+
+
+test('profile stamps, gift icon and history rows remove decorative motion under reduced motion', async ({ page }) => {
+  await page.addInitScript(() => {
+    localStorage.setItem('zt_onb', '1');
+    sessionStorage.setItem('splashDone', '1');
+  });
+  await page.goto('/?brand=delivery');
+  await page.waitForFunction(() => {
+    const link = Array.from(document.querySelectorAll('link[rel="stylesheet"]'))
+      .find((item) => item.href.includes('110-panel.css'));
+    return link && link.media === 'all' && Array.from(document.styleSheets)
+      .some((sheet) => sheet.href === link.href);
+  });
+  await page.evaluate(() => {
+    const host = document.createElement('div');
+    host.id = 'profileMotionFixtures';
+    host.innerHTML = [
+      '<div class="stamp n"></div>',
+      '<div class="freeCard"><span class="fe">🎁</span></div>',
+      '<div class="hmini">История заказа</div>',
+      '<div class="stats"><div class="stat">Заказов <b>3</b></div></div>'
+    ].join('');
+    document.body.appendChild(host);
+  });
+
+  const stamp = page.locator('#profileMotionFixtures .stamp');
+  const gift = page.locator('#profileMotionFixtures .fe');
+  const history = page.locator('#profileMotionFixtures .hmini');
+  const stat = page.locator('#profileMotionFixtures .stat');
+
+  await expect.poll(() => stamp.evaluate((element) => getComputedStyle(element).animationName)).toBe('nextp');
+  await expect.poll(() => gift.evaluate((element) => getComputedStyle(element).animationName)).toBe('sway');
+  await expect.poll(() => history.evaluate((element) => getComputedStyle(element).animationName)).toBe('rise');
+  await expect(stat).toHaveCSS('transition-duration', '0.2s');
+  await stat.hover();
+  await expect.poll(() => stat.evaluate((element) => getComputedStyle(element).transform))
+    .not.toBe('none');
+
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await expect.poll(() => page.evaluate(() => {
+    const host = document.getElementById('profileMotionFixtures');
+    return {
+      stamp: getComputedStyle(host.querySelector('.stamp')).animationName,
+      gift: getComputedStyle(host.querySelector('.fe')).animationName,
+      history: getComputedStyle(host.querySelector('.hmini')).animationName,
+      stampTransition: getComputedStyle(host.querySelector('.stamp')).transitionDuration,
+      statTransition: getComputedStyle(host.querySelector('.stat')).transitionDuration,
+      statTransform: getComputedStyle(host.querySelector('.stat:hover')).transform
+    };
+  })).toEqual({
+    stamp: 'none',
+    gift: 'none',
+    history: 'none',
+    stampTransition: '0s',
+    statTransition: '0s',
+    statTransform: 'none'
+  });
+});
