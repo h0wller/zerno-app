@@ -298,10 +298,18 @@ function renderSubFilter(categoryItems) {
 }
 
 function renderDeliveryRail() {
-  $('#deliveryRail').innerHTML = DCATS.map(c => {
-    const selected = c.id === dcat;
-    return `<button type="button" data-dcat="${c.id}" class="${selected ? 'on' : ''}" aria-label="${esc(c.l)}" aria-pressed="${selected ? 'true' : 'false'}"><span class="re">${c.e}</span>${c.l}</button>`;
-  }).join('');
+  $('#deliveryRail').innerHTML = DCATS.map(c =>
+    `<button type="button" data-dcat="${c.id}" aria-label="${esc(c.l)}"><span class="re">${c.e}</span>${c.l}</button>`
+  ).join('');
+  syncDeliveryRailState();
+}
+
+function syncDeliveryRailState() {
+  document.querySelectorAll('#deliveryRail [data-dcat]').forEach(function (button) {
+    var selected = button.dataset.dcat === dcat;
+    button.classList.toggle('on', selected);
+    button.setAttribute('aria-pressed', selected ? 'true' : 'false');
+  });
 }
 
 $('#deliveryRail').addEventListener('click', e => {
@@ -314,7 +322,7 @@ $('#deliveryRail').addEventListener('click', e => {
     dcat = b.dataset.dcat;
     activeAddonTab = 'all';
     activeIngredient = 'all';
-    renderDeliveryRail();
+    syncDeliveryRailState();
     if (typeof renderDeliverySkeleton === 'function') {
       renderDeliverySkeleton();
     }
