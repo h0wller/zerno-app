@@ -73,12 +73,17 @@ test.describe('Мои адреса: шторка и сохранение', () =>
     await page.click('#addrBookBtn');
     await page.click('.abs-head b');
     expect(await sheetOpen(page)).toBe(true);
+    const sheet = page.locator('#addrBookSheet');
     await page.click('#outside');
-    expect(await sheetOpen(page)).toBe(false);
+    await expect(sheet).toBeVisible();
+    await expect(sheet).not.toHaveClass(/open/);
+    await expect(sheet).toBeHidden();
 
     await page.click('#addrBookBtn');
     await page.keyboard.press('Escape');
-    expect(await sheetOpen(page)).toBe(false);
+    await expect(sheet).toBeVisible();
+    await expect(sheet).not.toHaveClass(/open/);
+    await expect(sheet).toBeHidden();
   });
 
   test('в книгу попадает только полный адрес с улицей из справочника (никаких «Н», «Ну», «С»)', async ({ page }) => {
@@ -133,7 +138,7 @@ test.describe('Мои адреса: шторка и сохранение', () =>
 
     await page.click('#addrBookBtn');
     await expect(sheet).toBeVisible();
-    await expect(sheet).toHaveCSS('transition-duration', '0s, 0s');
+    await expect(sheet).toHaveCSS('transition-duration', '0s');
 
     await page.evaluate(() => window.AddressBook.close());
     await expect(sheet).toBeHidden();
@@ -160,8 +165,6 @@ test.describe('Мои адреса: шторка и сохранение', () =>
   test('шторка открывается и закрывается с пространственным переходом до hidden', async ({ page }) => {
     await page.emulateMedia({ reducedMotion: 'no-preference' });
     await load(page);
-    await page.addStyleTag({ path: 'public/app/ui/theme/160-01-rail-fab-mobile.css' });
-
     await page.evaluate(() => {
       window.__addressBookMotionEvents = [];
       document.addEventListener('transitionrun', (event) => {
