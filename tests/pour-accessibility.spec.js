@@ -398,7 +398,7 @@ test.describe('Pour accessibility audit — delivery brand', () => {
 
       const rail = document.getElementById('deliveryRail');
       const railProbe = document.createElement('button');
-      railProbe.className = 'on';
+      // Measure the inactive label against the opaque rail surface.
       rail.appendChild(railProbe);
 
       const ticker = document.getElementById('tickerTrack');
@@ -413,7 +413,15 @@ test.describe('Pour accessibility audit — delivery brand', () => {
         activeModeText: getComputedStyle(active).color,
         tickerBackground: getComputedStyle(ticker).backgroundColor,
         tickerText: getComputedStyle(ticker).color,
-        railBackground: getComputedStyle(railProbe).backgroundColor,
+        railBackground: (() => {
+          const surface = document.createElement('div');
+          surface.style.backgroundColor = getComputedStyle(document.documentElement)
+            .getPropertyValue('--category-rail-bg').trim();
+          document.body.appendChild(surface);
+          const value = getComputedStyle(surface).backgroundColor;
+          surface.remove();
+          return value;
+        })(),
         railText: getComputedStyle(railProbe).color,
         venueBackground: getComputedStyle(venue).backgroundColor,
         venueText: getComputedStyle(arrow).color,
