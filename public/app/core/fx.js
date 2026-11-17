@@ -25,6 +25,11 @@ function fitFx() {
 
 // Убрали немедленный fitFx(); — он позовётся внутри ensureCanvas()
 
+function prefersReducedMotion() {
+  return typeof window.matchMedia === 'function' &&
+    window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+}
+
 let __fitTimer;
 addEventListener("resize", function() {
   clearTimeout(__fitTimer);
@@ -34,6 +39,7 @@ addEventListener("resize", function() {
 });
 
 function confetti() {
+  if (prefersReducedMotion()) return;
   if (!ensureCanvas()) return; // Ленивая инициализация: если нет канваса, ничего не делаем
   
   const C = ["#1F4E8C", "#7FB2D9", "#C89B6A", "#BBD6EE", "#F5F2EC"];
@@ -55,6 +61,13 @@ function confetti() {
 }
 
 function loop() {
+  if (prefersReducedMotion()) {
+    pieces.length = 0;
+    fxOn = false;
+    if (fxx && fx) fxx.clearRect(0, 0, fx.width, fx.height);
+    return;
+  }
+
   fxx.clearRect(0, 0, fx.width, fx.height);
   pieces = pieces.filter((p) => p.y < fx.height + 30);
   pieces.forEach((p) => {
