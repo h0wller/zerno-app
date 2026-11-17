@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 
 import {
   createPreviewApiResponse,
+  installReadOnlyPreviewApi,
   isReadOnlyPreviewHost,
 } from '../../public/app/core/preview-api.js';
 
@@ -83,4 +84,85 @@ test('unknown preview API reads fail closed instead of reaching a live backend',
 
   assert.equal(response.status, 404);
   assert.match(body.error, /preview/i);
+});
+
+
+test('cashier preview returns synthetic customers and a demo audit log', async () => {
+  const customers = await readJson(createPreviewApiResponse(
+    new URL('https://zerno-motion-preview.vercel.app/api/staff/customers?search=Анна'),
+    { method: 'GET' },
+    'cashier',
+  ));
+  const log = await readJson(createPreviewApiResponse(
+    new URL('https://zerno-motion-preview.vercel.app/api/staff/log?scope=coffee'),
+    { method: 'GET' },
+    'cashier',
+  ));
+
+  assert.equal(customers.customers[0].id, 'preview-customer-01');
+  assert.match(log.log[0].a, /Демо/);
+});
+
+test('dispatcher preview returns only a synthetic order fixture', async () => {
+  const result = await readJson(createPreviewApiResponse(
+    new URL('https://zerno-motion-preview.vercel.app/api/orders'),
+    { method: 'GET' },
+    'dispatch',
+  ));
+
+  assert.equal(result.orders.length, 1);
+  assert.equal(result.orders[0].id, 'preview-order-1042');
+  assert.match(result.orders[0].phone, /^\+7 900/);
+});
+
+test('admin preview returns deterministic analytics for both dashboard panes', async () => {
+  const coffee = await readJson(createPreviewApiResponse(
+    new URL('https://zerno-motion-preview.vercel.app/api/stats'),
+    { method: 'GET' },
+    'admin',
+  ));
+  const delivery = await readJson(createPreviewApiResponse(
+    new URL('https://zerno-motion-preview.vercel.app/api/stats/orders?days=14'),
+    { method: 'GET' },
+    'admin',
+  ));
+
+  assert.equal(coffee.total, 248);
+  assert.equal(coffee.days.length, 14);
+  assert.equal(delivery.today.guest.orders, 3);
+  assert.equal(delivery.days.length, 14);
+});
+
+test('preview fetch wrapper never forwards same-origin API requests to a live server', async () => {
+  const forwarded = [];
+  const fakeWindow = {
+    location: {
+      hostname: 'zerno-motion-preview-git-feature-alexandrs-projects.vercel.app',
+      href: 'https://zerno-motion-preview-git-feature-alexandrs-projects.vercel.app/',
+      search: '?brand=delivery&previewRole=dispatch',
+      origin: 'https://zerno-motion-preview-git-feature-alexandrs-projects.vercel.app',
+    },
+    localStorage: { removeItem() {} },
+    fetch(input, init) {
+      forwarded.push({ input, init });
+      return Promise.resolve(new Response('static asset'));
+    },
+    document: {
+      title: 'Zerno',
+      head: { appendChild() {} },
+      documentElement: { dataset: {} },
+      querySelector() { return null; },
+      createElement() { return { name: '', content: '' }; },
+    },
+  };
+
+  assert.equal(installReadOnlyPreviewApi(fakeWindow), true);
+  const orderResponse = await fakeWindow.fetch('/api/orders', { method: 'POST' });
+  assert.equal(orderResponse.status, 403);
+  assert.equal(forwarded.length, 0);
+
+  await fakeWindow.fetch('/app/ui/fonts.css');
+  assert.equal(forwarded.length, 1);
+  assert.equal(fakeWindow.__ZERNO_PREVIEW_ROLE__, 'dispatch');
+  assert.equal(fakeWindow.__ZERNO_READONLY_PREVIEW__, true);
 });
