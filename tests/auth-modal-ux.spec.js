@@ -1187,6 +1187,8 @@ test('Telegram confirmation badge is immediate under reduced motion for both bra
     const badge = page.locator('#regTgRow');
     await badge.evaluate((element) => {
       element.hidden = false;
+      // registration.js assigns this class when Telegram verification succeeds.
+      element.className = 'auth-badge-confirmed';
       element.textContent = '✅ Номер подтверждён — завершите регистрацию';
     });
     await expect(badge).toBeVisible();
