@@ -252,11 +252,13 @@ Baseline evidence:
 
 - [x] Chat hint pulse отключается при reduced motion; конечный pulse в normal motion сохранён как event-bound feedback.
 - [x] Необоснованный постоянный chat FAB ping удалён.
-- [ ] Сделать validation, order flash и confetti reduced-motion safe.
+- [x] Checkout validation scroll honors `prefers-reduced-motion`: `auto` under reduce, `smooth` otherwise; regression is in `tests/cart-checkout-clarity.spec.js`.
+- [x] Order deep link uses instant scroll and disables its one-shot flash animation under reduce; regression is in `tests/profile-orders.spec.js`.
+- [x] Confetti skips canvas initialization under reduce and clears/stops an active RAF loop when the preference changes; covered in `tests/auth-modal-ux.spec.js`.
 - [x] Toast CSS переведён на общие tokens: entry 180ms и exit 120ms, без overshoot; при reduced motion entry мгновенный, exit скрывает toast без анимации.
 - [x] Normal/reduced toast assertions для coffee/delivery добавлены также в `tests/chat-support.spec.js`, который присутствует в эффективном базовом CI workflow; тест ожидает готовность `window.toast`.
 - [ ] Выполнить RED/GREEN и визуальную проверку toast на текущем SHA. В `tests/toast-motion.spec.js` остаётся отдельный дублирующий spec; ветка PR `.github/workflows/ci.yml` всё ещё содержит двойное упоминание этого файла, а base `pizza` workflow запускает chat-support spec, но не отдельный toast spec.
-- [ ] Останавливать декоративные циклы у hidden/offscreen surface, где безопасно.
+- [ ] Остановить оставшиеся декоративные циклы у hidden/offscreen surface, где безопасно; конфетти уже прекращается на следующем кадре при включении reduced motion.
 - [ ] Сохранить ticker manual fallback и splash first-frame parity.
 
 ### Stage 5 — финальная проверка
@@ -275,7 +277,9 @@ Baseline evidence:
 - tests/swipe-panel-close.spec.js — CDP touch gesture, focus restore, scroll preservation, CLS < 0.001.
 - tests/chat-support.spec.js — chat geometry/open и toast motion для coffee/delivery portrait, landscape, short landscape.
 - tests/toast-motion.spec.js — отдельные normal/reduced motion проверки toast; выполнение в base `pizza` workflow отдельно не подтверждено.
-- tests/auth-modal-ux.spec.js — auth plus generic modal/overlay, staff PIN error и fullscreen QR reduced-motion checks.
+- tests/auth-modal-ux.spec.js — auth, generic modal/overlay, staff PIN error, fullscreen QR и confetti reduced-motion checks.
+- tests/cart-checkout-clarity.spec.js — checkout validation scroll uses instant behavior under reduced motion and smooth behavior otherwise.
+- tests/profile-orders.spec.js — order deep-link scroll and flash respect reduced motion.
 - tests/pour-accessibility.spec.js — ticker reduced motion и manual scroll.
 - tests/auth-modal-ux.spec.js — auth state/geometry.
 - tests/slow-network-layout.spec.js и responsive suites — first-frame layout/overflow.
@@ -284,8 +288,8 @@ Baseline evidence:
 Пробелы:
 - Нет специальных тестов timing tokens.
 - Cart sheet reduced-motion open/close и interruption close/reopen покрыты `tests/cart-motion-system.spec.js`; общий Cart/checkout проходит на проверенном SHA.
-- Generic modal/overlay/PIN/QR reduced state теперь имеет тесты, но runtime GREEN и visual acceptance текущего SHA не получены.
-- Staff overlays кроме PIN, interruption/resize для generic modal, chat FAB pseudo ping, hint pulse, confetti, order flash и smooth scroll в reduce требуют дальнейшей проверки.
+- Generic modal/overlay/PIN/QR, validation scroll, order deep-link flash/scroll и confetti reduce paths теперь имеют regression assertions; runtime GREEN и visual acceptance текущего SHA не получены.
+- Staff overlays кроме PIN, interruption/resize для generic modal, chat FAB pseudo ping, hint pulse, bonus/free/staff ambient pulses и остальные smooth-scroll paths требуют дальнейшей проверки.
 - Нет проверки resize во время перехода с фокусом/scroll.
 - Большинство visual tests фиксируют stable states, а не промежуточные кадры.
 
@@ -305,13 +309,13 @@ Baseline evidence:
 
 ## 10. Текущий статус
 
-Срез на 2026-11-17, PR #268, branch `design/ui-animation-system-20261116`, base `pizza`. Последний commit: `8d7068373e109ead0b33249164a4dccc0fcb0f5b`.
+Срез на 2026-11-17, PR #268, branch `design/ui-animation-system-20261116`, base `pizza`. Implementation commits после последнего подтверждённого CI включают toast, generic modal/PIN/QR, checkout validation, order deep link и confetti. Последний code commit на момент обновления: `521180305539a81fa3adfdb873e56334c71ab52a`.
 
-Stage 0 завершён. Stage 1 (cart sheet) завершён. Stage 2 частично завершён: auth modal/overlay и address book sheet реализованы/проверены; generic modal, shared overlay, staff PIN error и fullscreen QR получили reduced-motion CSS и Playwright regression assertions, но тесты на текущем HEAD и визуальное состояние ещё не подтверждены. Другие staff overlays остаются. Stage 3 частично завершён: chat panel/FAB/hints и cart FAB реализованы; category rail, product cards, category selection, stepper и add-product отложены до разрешения зависимости #266/#269. Stage 4 частично завершён: chat hint и постоянный FAB ping обработаны; toast CSS и тестовые проверки добавлены, но runtime GREEN на текущем SHA не получен; validation, order flash, confetti и прочие ambient cycles остаются.
+Stage 0 завершён. Stage 1 (cart sheet) завершён. Stage 2 частично завершён: auth modal/overlay и address book sheet реализованы/проверены; generic modal, shared overlay, staff PIN error и fullscreen QR получили reduced-motion CSS и Playwright regression assertions, но тесты на текущем HEAD и визуальное состояние ещё не подтверждены. Другие staff overlays остаются. Stage 3 частично завершён: chat panel/FAB/hints и cart FAB реализованы; category rail, product cards, category selection, stepper и add-product отложены до разрешения зависимости #266/#269. Stage 4 частично завершён: chat hint/FAB idle ping, toast, checkout validation scroll, order deep-link scroll/flash и confetti получили reduced-motion изменения и regression assertions; runtime GREEN на текущем SHA не получен. Другие validation feedback, bonus/free/staff ambient cycles и остальные scroll paths остаются.
 
 Последний подтверждённый CI run `44050067076` завершился успешно: 13/13 jobs, но он относится к предшествовавшему application HEAD `9e522f4fed1a250a8d34f2513ab30a83570228c4` (synthetic PR merge SHA `4cce03607dee310e37f304f40f130255ee6009a0`), а не к текущим изменениям. После последних commits checks для актуального HEAD не появились. Локальный запуск Playwright/build в этой сессии недоступен: clone GitHub недоступен из контейнера, sandbox Vercel для имеющегося проекта отклонил создание. Поэтому новые проверки не отмечены зелёными.
 
-Base workflow `pizza` включает `tests/chat-support.spec.js` в Responsive UI и `tests/auth-modal-ux.spec.js` в Auth; новые assertions размещены в этих файлах, чтобы быть частью уже существующих job lists. Base workflow не запускает standalone `tests/toast-motion.spec.js`. В ветке PR собственный `.github/workflows/ci.yml` включает его дважды; попытка исправить workflow была отклонена защитой записи и файл оставлен без изменений. Не считать предыдущий зелёный run доказательством новых тестов.
+Base workflow `pizza` включает `tests/chat-support.spec.js` в Responsive UI, `tests/auth-modal-ux.spec.js` в Auth, `tests/cart-checkout-clarity.spec.js` в Cart and checkout и `tests/profile-orders.spec.js` в Profile; новые assertions размещены в этих файлах, чтобы быть частью существующих job lists. Base workflow не запускает standalone `tests/toast-motion.spec.js`. В ветке PR собственный `.github/workflows/ci.yml` включает его дважды; попытка исправить workflow была отклонена защитой записи и файл оставлен без изменений. Не считать предыдущий зелёный run доказательством новых тестов.
 
 На проверенном HEAD `c764590f9aacfb80650b3ce6330259b9e1ecf003` CI run `44049124205` имел 13/13 successful jobs. Cart/checkout — 32/32; Profile/address book — 24/24. Штатный client build запускал `npm run bump:sw`; commit `a984ded` содержал generated cache-busting `v652`: `STATIC_CACHE=zerno-static-v652`, `public/index.html` содержал 69 ссылок `?v=652` (историческая ссылка `?v=2` не относится к asset cache version).
 
@@ -319,4 +323,4 @@ Visual review cart FAB: сохранена запись Playwright `test-results
 
 Rail/category/card motion отложен: PR #266 остаётся отдельной stacked-зависимостью, #269 уже находится в pizza; #268 base не менялся. Не объединять и не переносить ветки без согласования.
 
-Следующие участки: validation, order flash, confetti и ambient cycles; затем остальные staff overlays. Category/card micro-interactions — только после повторной проверки branch dependency #266. Любое изменение `public/*` требует штатного `npm run build:client`/cache-bust и визуальной проверки. PR остаётся Draft до полного CI и visual acceptance.
+Следующие участки: остальные validation feedback и ambient pulses, staff overlays, затем final cross-brand/viewport visual gate. Category/card micro-interactions — только после повторной проверки branch dependency #266. Любое изменение `public/*` требует штатного `npm run build:client`/cache-bust и визуальной проверки. PR остаётся Draft до полного CI и visual acceptance.
