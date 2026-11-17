@@ -663,7 +663,7 @@ test('desktop staff menu keeps title, role switcher and edit inside the menu hea
   }
 });
 
-test('desktop staff toast never covers role or edit controls on both brands', async ({ page }, testInfo) => {
+test('desktop staff toast never covers role, edit, or floating support controls on both brands', async ({ page }, testInfo) => {
   await mockStaffSession(page);
 
   for (const brand of ['coffee', 'delivery']) {
@@ -688,7 +688,8 @@ test('desktop staff toast never covers role or edit controls on both brands', as
           .find(element => element.textContent.includes('Режим администратора активен'));
         const controls = [
           document.querySelector('#modeSeg'),
-          document.querySelector('#editToggle')
+          document.querySelector('#editToggle'),
+          document.querySelector('#chatFab')
         ];
         const rect = element => {
           const box = element.getBoundingClientRect();
