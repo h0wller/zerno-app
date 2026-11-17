@@ -485,7 +485,17 @@ label.chk{
 }
 @media (prefers-reduced-motion: reduce) {
   .overlay,
-  .modal-card {
+  .modal-card,
+  .mclose,
+  .form input:not([type="checkbox"]),
+  .form select,
+  .form textarea,
+  .zone {
     transition: none;
+  }
+
+  .pin.err,
+  .qrcard canvas {
+    animation: none;
   }
 }
