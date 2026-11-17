@@ -79,6 +79,38 @@
   }
 }
 
+/* Compact landscape uses the same one-column wrapper as mobile; the rail is fixed. */
+@media (min-width: 821px) and (orientation: landscape) and (max-height: 480px) {
+  html body div.wrap {
+    width: 100%;
+    min-width: 0;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto;
+    gap: 10px;
+    padding: 10px 12px 28px;
+    align-items: start;
+  }
+  html body div.wrap > section {
+    grid-column: 1;
+    grid-row: auto;
+    width: 100%;
+    min-width: 0;
+  }
+  html body div.wrap > .panel {
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 120;
+    width: min(400px, 100%);
+    max-height: none;
+    border-radius: 22px 0 0 22px;
+    transform: translateX(105%);
+    transition: transform 0.35s cubic-bezier(0.2, 1, 0.3, 1);
+  }
+  html body div.wrap > .panel.open { transform: none; }
+}
+
 /* ── CLS-AND-HEADER-SEARCH-STABILIZATION ── */
 
 /* 1. Мобильная шапка (<= 690px): фиксированная геометрия без скачков при смене бренда */
