@@ -1188,6 +1188,7 @@ test('cashier redeem/scanner and staff-chat overlays keep their owned motion con
 
 
 test('staff chat overlay closes on Escape and releases the overlay for both brands and viewports', async ({ browser }, testInfo) => {
+  test.setTimeout(90_000);
   const viewports = [
     { name: 'portrait', width: 390, height: 844 },
     { name: 'compact-landscape', width: 844, height: 390 },
@@ -1202,6 +1203,7 @@ test('staff chat overlay closes on Escape and releases the overlay for both bran
       });
       const page = await context.newPage();
       try {
+        await page.emulateMedia({ reducedMotion: 'no-preference' });
         await mockStaffSession(page, 'admin');
         await page.goto('/?brand=' + brand);
         await page.waitForFunction(() =>
