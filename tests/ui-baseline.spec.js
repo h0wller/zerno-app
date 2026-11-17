@@ -307,12 +307,28 @@ test('baseline: админ', async ({ page }) => {
   await expect.poll(() => activeMode.evaluate(element => getComputedStyle(element, '::before').backgroundColor)).toBe('rgb(187, 215, 242)');
   await expect(activeMode).toHaveCSS('color', 'rgb(18, 58, 107)');
 
-  await expect.poll(() => page.evaluate(() => {
-    const head = document.querySelector('#menuView .menu-head');
+  const railGeometry = await page.evaluate(() => {
     const rail = document.querySelector('#rail');
-    if (!head || !rail) return -Infinity;
-    return rail.getBoundingClientRect().top - head.getBoundingClientRect().bottom;
-  }), { timeout: 5000 }).toBeGreaterThanOrEqual(8);
+    const search = document.querySelector('#menuView .menu-head .mh-right .search');
+    if (!rail || !search) return null;
+    const railRect = rail.getBoundingClientRect();
+    const searchRect = search.getBoundingClientRect();
+    return {
+      position: getComputedStyle(rail).position,
+      height: railRect.height,
+      bottomGap: window.innerHeight - railRect.bottom,
+      searchBottom: searchRect.bottom,
+      railTop: railRect.top,
+      buttonHeights: Array.from(rail.querySelectorAll('button')).map(button => button.getBoundingClientRect().height)
+    };
+  });
+  expect(railGeometry).not.toBeNull();
+  expect(railGeometry.position).toBe('fixed');
+  expect(railGeometry.height).toBe(56);
+  expect(railGeometry.bottomGap).toBeGreaterThanOrEqual(10);
+  expect(railGeometry.bottomGap).toBeLessThanOrEqual(12);
+  expect(railGeometry.railTop).toBeGreaterThan(railGeometry.searchBottom + 8);
+  expect(railGeometry.buttonHeights.every(height => height >= 44)).toBe(true);
 
   await shot(page, '07-admin');
 });
