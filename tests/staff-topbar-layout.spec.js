@@ -683,7 +683,7 @@ test('desktop staff toast never covers role, edit, or floating support controls 
       const toast = page.locator('#toasts .toast').filter({ hasText: 'Режим администратора активен' }).first();
       await expect(page.locator('#toasts .toast').filter({ hasText: 'Режим администратора активен' })).toHaveCount(1);
       await expect(toast).toBeVisible();
-      const overlap = await page.evaluate(() => {
+      const toastLayout = await page.evaluate(() => {
         const toast = [...document.querySelectorAll('#toasts .toast')]
           .find(element => element.textContent.includes('Режим администратора активен'));
         const controls = [
@@ -696,13 +696,31 @@ test('desktop staff toast never covers role, edit, or floating support controls 
           return { left: box.left, right: box.right, top: box.top, bottom: box.bottom };
         };
         const a = rect(toast);
-        return controls.map(element => {
-          const b = rect(element);
-          return Math.min(a.right, b.right) > Math.max(a.left, b.left) &&
-            Math.min(a.bottom, b.bottom) > Math.max(a.top, b.top);
-        });
+        return {
+          overlap: controls.map(element => {
+            const b = rect(element);
+            return Math.min(a.right, b.right) > Math.max(a.left, b.left) &&
+              Math.min(a.bottom, b.bottom) > Math.max(a.top, b.top);
+          }),
+          placement: {
+            position: getComputedStyle(document.getElementById('toasts')).position,
+            left: getComputedStyle(document.getElementById('toasts')).left,
+            right: getComputedStyle(document.getElementById('toasts')).right,
+            bottom: getComputedStyle(document.getElementById('toasts')).bottom,
+            transform: getComputedStyle(document.getElementById('toasts')).transform
+          },
+          viewportWidth: document.documentElement.clientWidth,
+          toast: a
+        };
       });
-      expect(overlap).toEqual([false, false, false]);
+      expect(toastLayout.placement.position).toBe('fixed');
+      expect(toastLayout.placement.left).toBe('50%');
+      expect(toastLayout.placement.right).toBe('auto');
+      expect(toastLayout.placement.bottom).toBe('24px');
+      expect(toastLayout.placement.transform).not.toBe('none');
+      expect(toastLayout.overlap).toEqual([false, false, false]);
+      expect(toastLayout.toast.left).toBeGreaterThanOrEqual(0);
+      expect(toastLayout.toast.right).toBeLessThanOrEqual(toastLayout.viewportWidth);
 
       await testInfo.attach('staff-toast-' + brand + '-' + width + 'px', {
         body: await page.screenshot({ fullPage: false }),
