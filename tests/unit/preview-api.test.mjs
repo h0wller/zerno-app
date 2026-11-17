@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
 
 import {
   createPreviewApiResponse,
@@ -165,4 +166,37 @@ test('preview fetch wrapper never forwards same-origin API requests to a live se
   assert.equal(forwarded.length, 1);
   assert.equal(fakeWindow.__ZERNO_PREVIEW_ROLE__, 'dispatch');
   assert.equal(fakeWindow.__ZERNO_READONLY_PREVIEW__, true);
+});
+
+
+test('main initializes the state owner before installing the preview session token', async () => {
+  const main = await readFile(new URL('../../public/app/main.js', import.meta.url), 'utf8');
+  const stateImport = main.indexOf("import './core/state.js';");
+  const apiImport = main.indexOf("import './core/api.js';");
+
+  assert.notEqual(stateImport, -1);
+  assert.notEqual(apiImport, -1);
+  assert.ok(stateImport < apiImport, 'state.js must initialize first; preview api.js then applies synthetic role session');
+
+  const fakeWindow = {
+    USER_TOKEN: null,
+    location: {
+      hostname: 'zerno-motion-preview.vercel.app',
+      href: 'https://zerno-motion-preview.vercel.app/?previewRole=dispatch',
+      search: '?previewRole=dispatch',
+      origin: 'https://zerno-motion-preview.vercel.app',
+    },
+    localStorage: { removeItem() {} },
+    fetch: () => Promise.resolve(new Response('static asset')),
+    document: {
+      title: 'Zerno',
+      head: { appendChild() {} },
+      documentElement: { dataset: {} },
+      querySelector() { return null; },
+      createElement() { return { name: '', content: '' }; },
+    },
+  };
+
+  assert.equal(installReadOnlyPreviewApi(fakeWindow), true);
+  assert.equal(fakeWindow.USER_TOKEN, 'preview-session-dispatch');
 });
