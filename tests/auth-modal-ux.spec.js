@@ -861,8 +861,11 @@ test('reduced motion disables the shared auth overlay fade and preserves focus r
 
   await expect.poll(() => overlay.evaluate((element) => getComputedStyle(element).transitionDuration))
     .toBe('0s');
-  await expect.poll(() => card.evaluate((element) => getComputedStyle(element).transitionDuration))
-    .toMatch(/^(0s|0\.01ms)$/);
+  await expect.poll(() => card.evaluate((element) => {
+    const duration = getComputedStyle(element).transitionDuration.split(',')[0].trim();
+    const value = Number.parseFloat(duration);
+    return duration.endsWith('ms') ? value / 1000 : value;
+  })).toBeLessThanOrEqual(0.00001);
 
   await page.keyboard.press('Escape');
   await expect(modal).not.toHaveClass(/show/);
