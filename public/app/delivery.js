@@ -426,6 +426,7 @@ function scheduleDeliveryImagePriorities() {
   deliveryImagePriorityFrame = requestAnimationFrame(function () {
     deliveryImagePriorityFrame = 0;
     syncDeliveryImagePriorities();
+  if (typeof window.alignRailWithCard === 'function') requestAnimationFrame(window.alignRailWithCard);
   });
 }
 
