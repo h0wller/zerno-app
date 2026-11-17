@@ -2,7 +2,7 @@
 
 **Статус на 2026-11-17:** Stage 0–1 завершены; core implementation Stage 2–4 проверена на обоих брендах. Stage 5 — финальная визуальная приёмка — ещё открыт: остаются отдельные staff overlays, interruption/resize matrix, hidden/offscreen loop audit и отдельное расследование document-level CLS. Последний проверенный source HEAD `071e9a2b32fe0ba33febf24817a2969cff77e7f0` прошёл CI run `44111856462` (13/13 jobs).
 **PR:** #268, Draft. Ветка: `design/ui-animation-system-20261116`.
-**Проверенный source HEAD:** `5f7edf100a5ab11246013d696c9bc1cd3fe30efc`.
+**Проверенный source HEAD:** `071e9a2b32fe0ba33febf24817a2969cff77e7f0` (CI run `44111856462`).
 **Base:** `pizza`, SHA `dacb424bdff9d073b3b9a4e13d723db1da92d078`.
 
 ## 1. Цель и motion-язык
