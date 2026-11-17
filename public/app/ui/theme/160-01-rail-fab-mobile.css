@@ -843,7 +843,8 @@ html body #authModal.tg-mode .mhint{
     bottom: calc(var(--rail-total-h) + 12px);
   }
 
-  body.cart-open #cartFab {
+  body.cart-open #cartFab,
+  body:has(#cartPanel.open) #cartFab {
     visibility: hidden;
     pointer-events: none;
   }
