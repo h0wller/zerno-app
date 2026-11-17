@@ -28,7 +28,12 @@ function renderRail() {
 $('#rail').addEventListener('click', e => {
   const b = e.target.closest('[data-cat]');
   if (!b) return;
+  const wasSelected = b.dataset.cat === cat;
   cat = b.dataset.cat;
+  if (wasSelected) {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    return;
+  }
   window.renderRail();
   window.renderMenu();
 });

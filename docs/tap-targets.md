@@ -86,7 +86,7 @@ The original register above covers the mobile staff menu row. This section adds 
 | `.ci-mod-del` | 32 × 32 px inset square | 44 × 44 px | `cart.js` | `160-08-cart-addons.css` | Eight boundary points + inset keyboard focus ring; 320/375/390 px and desktop |
 | `#deliverySubFilter .subchip` | 40px visible pill | 44px button box; content-sized width | `delivery.js` | `160-09-preorder-subfilters.css` + mobile cascade in `160-12-admin-bar-tail.css` | Button itself owns the 44px target; `::before` paints the 40px face with a 2px vertical inset. Regression checks four cardinal hit points and bottom-edge actionability at 320/375/390px |
 | `#chatFab` / `#supportLauncherHost` | Existing branded support icon | 44 × 44 px | `core/views.js` relocates host; `chat.js` owns chat action | `160-15-mobile-support-toolbar.css` | Existing 44px slot; its focus ring may be external. Inset-ring requirement applies to clipped chat dialog controls; separately verify Telegram swipe interaction |
-| `#scrollTopBtn`, `#venueToggle` | Current visual size is already larger than 32px | Existing 44px+ control | `scrolltop.js` / header controls | `160-06-delivery-header.css`, `160-12-admin-bar-tail.css` | Explicit exception: do not shrink these controls as part of this pass |
+| `#venueToggle` | Current visual size is already larger than 32px | Existing 44px+ control | Header controls | `160-06-delivery-header.css`, `160-12-admin-bar-tail.css` | Explicit exception: do not shrink this control as part of this pass |
 
 ### Shared tokens and profile implementation
 

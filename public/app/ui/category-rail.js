@@ -1,10 +1,13 @@
-/* public/app/ui/scrolltop.js — сброс легаси-отступов и кнопка «Наверх»
-   Ф5.71: CSS в theme/*.css, устранение MutationObserver в пользу детерминированного updateScrollTop. */
+/* public/app/ui/category-rail.js
+   Shared rail geometry and transient scroll fade. The storefront modules own
+   category state and DOM; this module owns only viewport positioning/presentation. */
 var railHeadObserver = null;
 var observedRailHead = null;
 var observedRailTopbar = null;
-
 var railStickyLayout = null;
+var railFadeTimer = null;
+var fadedRail = null;
+var railScrollTick = false;
 
 function updateRailStickyPosition(rail, head) {
   if (!rail || !head) return;
@@ -30,7 +33,6 @@ function updateRailStickyPosition(rail, head) {
       };
     }
 
-    // Preserve the catalog-aligned start; engage sticky only once the page begins scrolling.
     var shouldStick = scrollY > 0 && scrollY >= railStickyLayout.documentTop - stickyTop;
     if (shouldStick) {
       rail.style.position = 'sticky';
@@ -73,8 +75,6 @@ function alignRailWithCard() {
   var wrap = rail.parentElement;
   if (!wrap) return;
 
-  // Keep the category rail below the full menu header in normal flow.
-  // The sticky positioning routine handles only the viewport lane.
   var headRect = head && head.getBoundingClientRect();
   if (headRect && headRect.height) {
     var wrapRect = wrap.getBoundingClientRect();
@@ -82,13 +82,11 @@ function alignRailWithCard() {
     var wrapContentTop = wrapRect.top
       + (parseFloat(wrapStyle.paddingTop) || 0)
       + (parseFloat(wrapStyle.borderTopWidth) || 0);
-    // Delivery rail is aligned to the menu card itself; it must not follow subfilter or search rows.
     var isDeliveryBrand = document.documentElement.dataset.brand === 'delivery';
     var menuRow = head.querySelector('.menu-controls-row');
     var modeSeg = document.getElementById('modeSeg');
     var staffGuestMenu = !!(menuRow && modeSeg &&
       modeSeg.closest('.menu-controls-row') === menuRow);
-    var mobileViewport = window.matchMedia && window.matchMedia('(max-width: 820px)').matches;
     var catalog = document.querySelector(isDeliveryBrand ? '#deliveryView #deliveryGrid' : '#menuView #grid');
     var catalogRect = catalog && catalog.getBoundingClientRect();
     var desiredTop = catalogRect ? catalogRect.top : (staffGuestMenu ? headRect.bottom + 12 : headRect.top);
@@ -111,11 +109,36 @@ function alignRailWithCard() {
     if (topbar) railHeadObserver.observe(topbar);
   }
 }
-function alignMbonusWithRail() {}
+
+function activeRail() {
+  var isDelivery = document.documentElement.dataset.brand === 'delivery';
+  return document.getElementById(isDelivery ? 'deliveryRail' : 'rail');
+}
+
+function markRailScrolling() {
+  var rail = activeRail();
+  if (!window.matchMedia || !window.matchMedia('(max-width: 820px)').matches) {
+    if (railFadeTimer) window.clearTimeout(railFadeTimer);
+    if (fadedRail) fadedRail.classList.remove('is-scroll-fading');
+    fadedRail = null;
+    railFadeTimer = null;
+    return;
+  }
+  if (fadedRail && fadedRail !== rail) fadedRail.classList.remove('is-scroll-fading');
+  fadedRail = rail;
+  if (fadedRail) fadedRail.classList.add('is-scroll-fading');
+  if (railFadeTimer) window.clearTimeout(railFadeTimer);
+  railFadeTimer = window.setTimeout(function () {
+    if (fadedRail) fadedRail.classList.remove('is-scroll-fading');
+    fadedRail = null;
+    railFadeTimer = null;
+  }, 520);
+}
+
 window.alignRailWithCard = alignRailWithCard;
-window.alignMbonusWithRail = alignMbonusWithRail;
-var railScrollTick = false;
+
 window.addEventListener('scroll', function () {
+  markRailScrolling();
   if (railScrollTick) return;
   railScrollTick = true;
   requestAnimationFrame(function () {
@@ -127,67 +150,7 @@ window.addEventListener('scroll', function () {
     );
   });
 }, { passive: true });
+
 window.addEventListener('resize', alignRailWithCard, { passive: true });
 window.addEventListener('load', alignRailWithCard, { once: true });
 requestAnimationFrame(alignRailWithCard);
-
-(function () {
-  'use strict';
-
-  var nav = document.getElementById('pageNavigation');
-  if (!nav) {
-    nav = document.createElement('nav');
-    nav.id = 'pageNavigation';
-    nav.setAttribute('aria-label', 'Навигация по странице');
-    document.body.appendChild(nav);
-  }
-
-  var btn = document.getElementById('scrollTopBtn');
-  if (!btn) {
-    btn = document.createElement('button');
-    btn.id = 'scrollTopBtn';
-    btn.type = 'button';
-    btn.setAttribute('aria-label', 'Наверх');
-    btn.textContent = '↑';
-  }
-  if (btn.parentElement !== nav) nav.appendChild(btn);
-
-  function update() {
-    // ── READ PHASE (без вызова getComputedStyle) ──
-    var chat = document.getElementById('chatPanel');
-    var chatOpen = !!(chat && chat.classList.contains('open'));
-    var y = window.scrollY || document.documentElement.scrollTop || 0;
-    var fab = document.getElementById('chatFab');
-    var isCashier = document.body.classList.contains('is-cashier');
-    var fabHidden = !fab || fab.hidden || fab.style.display === 'none' || isCashier;
-
-    // ── WRITE PHASE ──
-    btn.classList.toggle('show', !chatOpen && y > 400);
-    btn.classList.toggle('low', fabHidden);
-  }
-
-  var tick = false;
-  function onScroll() {
-    if (tick) return;
-    tick = true;
-    requestAnimationFrame(function () {
-      tick = false;
-      update();
-    });
-  }
-
-  window.addEventListener('scroll', onScroll, { passive: true });
-  window.addEventListener('resize', onScroll, { passive: true });
-
-  btn.addEventListener('click', function () {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  });
-
- if (window.ztBus) {
-    window.ztBus.on('ui:update-scrolltop', update);
-  }
-  window.updateScrollTop = update; // временно для обратной совместимости
-
-  // Запуск не блокирует текущий такт парсинга
-  requestAnimationFrame(update);
-})();
