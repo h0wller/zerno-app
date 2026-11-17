@@ -200,7 +200,7 @@
 }
 
 /* Профиль кофейни: один прогресс вместо повторяющейся статистики. */
-#profileCoffeeSection .stats[hidden] {
+#profileCoffeeSection [hidden].stats {
   display: none !important;
 }
 .profile-stamps-summary {
