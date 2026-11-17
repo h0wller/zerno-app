@@ -4,6 +4,21 @@ let fx = null;
 let fxx = null;
 let pieces = [];
 let fxOn = false;
+let fxFrameId = null;
+
+function stopFxLoop() {
+  if (fxFrameId !== null) {
+    cancelAnimationFrame(fxFrameId);
+    fxFrameId = null;
+  }
+  pieces.length = 0;
+  fxOn = false;
+  if (fxx && fx) fxx.clearRect(0, 0, fx.width, fx.height);
+}
+
+document.addEventListener("visibilitychange", function() {
+  if (document.visibilityState === "hidden") stopFxLoop();
+});
 
 function ensureCanvas() {
   if (!fx) {
@@ -39,7 +54,7 @@ addEventListener("resize", function() {
 });
 
 function confetti() {
-  if (prefersReducedMotion()) return;
+  if (prefersReducedMotion() || document.visibilityState === "hidden") return;
   if (!ensureCanvas()) return; // Ленивая инициализация: если нет канваса, ничего не делаем
   
   const C = ["#1F4E8C", "#7FB2D9", "#C89B6A", "#BBD6EE", "#F5F2EC"];
@@ -61,10 +76,10 @@ function confetti() {
 }
 
 function loop() {
-  if (prefersReducedMotion()) {
-    pieces.length = 0;
-    fxOn = false;
-    if (fxx && fx) fxx.clearRect(0, 0, fx.width, fx.height);
+  // The scheduled frame is now running; a hidden/reduced stop must cancel only future work.
+  fxFrameId = null;
+  if (prefersReducedMotion() || document.visibilityState === "hidden") {
+    stopFxLoop();
     return;
   }
 
@@ -81,9 +96,12 @@ function loop() {
     fxx.fillRect(-p.s / 2, -p.s / 2, p.s, p.s * 0.62);
     fxx.restore();
   });
-  pieces.length
-    ? requestAnimationFrame(loop)
-    : ((fxOn = false), fxx.clearRect(0, 0, fx.width, fx.height));
+  if (pieces.length) {
+    fxFrameId = requestAnimationFrame(loop);
+  } else {
+    fxOn = false;
+    fxx.clearRect(0, 0, fx.width, fx.height);
+  }
 }
 
 /* ── Ф5.6.2a: ESM-шим: явный экспорт для классик-вызывающих (кассир/админ штамп) ── */
