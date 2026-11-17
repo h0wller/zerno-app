@@ -133,10 +133,17 @@ body.in-tg .topbar {
   /* Hydration replaces the SSR card; don't let scroll anchoring move the first viewport. */
   overflow-anchor: none;
 }
-@media (min-width: 520px) and (max-width: 1180px) {
+@media (min-width: 520px) and (max-width: 820px) {
   #grid,
   #deliveryGrid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+  }
+}
+@media (min-width: 821px) and (max-width: 1180px) {
+  #grid,
+  #deliveryGrid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 14px;
   }
 }
@@ -161,14 +168,14 @@ body.in-tg .topbar {
   box-sizing: border-box;
 }
 
-/* 3. Единый каркас .wrap и центрированный без обрезания шапкой рейл (#rail / #deliveryRail) */
-@media (max-width: 1180px) {
+/* 3. Medium desktop keeps the sidebar aligned with the catalog. Mobile geometry is unchanged. */
+@media (min-width: 821px) and (max-width: 1180px) and (min-height: 481px) {
   html body div.wrap,
   .wrap {
     display: grid;
     grid-template-columns: 80px minmax(0, 1fr);
     gap: 10px;
-    padding: 10px 12px 32px 8px;
+    padding: 10px 0 32px;
     align-items: start;
   }
 }
@@ -199,12 +206,12 @@ html body div.wrap > #deliveryRail {
 /* Both brand rails fill the menu section's grid row. */
 html body div.wrap > #rail,
 html body div.wrap > #deliveryRail { align-self:stretch; height:auto; max-height:none; }
-@media (min-width: 1181px) {
+@media (min-width: 821px) {
   html body div.wrap > .rail,
   html body div.wrap > #rail,
   html body div.wrap > #deliveryRail {
-    width: 92px;
-    min-width: 92px;
+    width: 80px;
+    min-width: 80px;
   }
 }
 html body div.wrap > .rail button,
