@@ -61,6 +61,17 @@ test.describe('Splash: стабильная геометрия первого к
 
     const before = await geometry();           // первый кадр — только critical-css из <head>
     const motionBefore = await entryMotion();
+    const firstFrameOpacity = await page.evaluate(() => {
+      const root = document.getElementById('brandSplashStatic');
+      const selectors = ['.spSub', '.spPizza', '.spCoffee'];
+      const elements = selectors.map((selector) => root.querySelector(selector));
+      // Hold the backwards-filled starting keyframe so this assertion is independent of wall-clock timing.
+      elements.forEach((element) => { element.style.animationDelay = '10s'; });
+      const opacity = elements.map((element) => getComputedStyle(element).opacity);
+      elements.forEach((element) => element.style.removeProperty('animation-delay'));
+      return opacity;
+    });
+    expect(firstFrameOpacity).toEqual(['1', '1', '1']);
     await testInfo.attach('splash-critical-css-390x844.png', {
       body: await page.screenshot({ fullPage: false }),
       contentType: 'image/png',
