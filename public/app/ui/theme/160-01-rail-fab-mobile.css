@@ -836,6 +836,13 @@ html body #authModal.tg-mode .mhint{
 
 
 
+/* Cart FAB is hidden whenever the cart sheet owns the primary checkout action. */
+html body.cart-open #cartFab,
+html body:has(#cartPanel.open) #cartFab {
+  visibility: hidden;
+  pointer-events: none;
+}
+
 /* Keep the cart pill in its own lane above the detached category capsule. */
 @media (max-width: 820px),
        (min-width: 821px) and (orientation: landscape) and (max-height: 480px) {
