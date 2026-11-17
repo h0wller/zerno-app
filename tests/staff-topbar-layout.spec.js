@@ -1084,6 +1084,7 @@ test('cashier redeem/scanner and staff-chat overlays keep their owned motion con
       return { animationName: style.animationName, transitionDuration: style.transitionDuration };
     });
     expect(redeemNormal).toEqual({ animationName: 'none', transitionDuration: '0s' });
+    await expect(page.locator('#toasts .toast')).toHaveCount(0, { timeout: 5000 });
     await testInfo.attach('cashier-redeem-' + brand + '-normal-390x844.png', {
       body: await page.screenshot({ fullPage: false }),
       contentType: 'image/png',
@@ -1111,6 +1112,7 @@ test('cashier redeem/scanner and staff-chat overlays keep their owned motion con
       return { animationName: style.animationName, transitionDuration: style.transitionDuration, display: style.display };
     });
     expect(scanNormal).toEqual({ animationName: 'none', transitionDuration: '0s', display: 'flex' });
+    await expect(page.locator('#toasts .toast')).toHaveCount(0, { timeout: 5000 });
     await testInfo.attach('cashier-scanner-' + brand + '-normal-390x844.png', {
       body: await page.screenshot({ fullPage: false }),
       contentType: 'image/png',
@@ -1128,9 +1130,9 @@ test('cashier redeem/scanner and staff-chat overlays keep their owned motion con
     await expect(scan).toBeHidden();
   }
 
-  const staffChatPage = await context.newPage();
-  try {
-    for (const brand of ['coffee', 'delivery']) {
+  for (const brand of ['coffee', 'delivery']) {
+    const staffChatPage = await context.newPage();
+    try {
       await staffChatPage.setViewportSize({ width: 390, height: 844 });
       await staffChatPage.emulateMedia({ reducedMotion: 'no-preference' });
       await mockStaffSession(staffChatPage, 'admin');
@@ -1140,10 +1142,10 @@ test('cashier redeem/scanner and staff-chat overlays keep their owned motion con
         document.documentElement.hasAttribute('data-staff-ready') &&
         typeof window.openStaffChat === 'function'
       );
-      await staffChatPage.evaluate((activeBrand) => {
-        window.setMode('admin');
-        window.openStaffChat(activeBrand);
-      }, brand);
+
+      // Call the actual chat DOM owner's public contract. Avoid changing work mode here:
+      // setMode updates the same view tree and made this parallel visual fixture race navigation.
+      await staffChatPage.evaluate((activeBrand) => window.openStaffChat(activeBrand), brand);
 
       const modal = staffChatPage.locator('#staffChatModal');
       const card = modal.locator('.modal-card');
@@ -1152,6 +1154,7 @@ test('cashier redeem/scanner and staff-chat overlays keep their owned motion con
       await expect.poll(() => card.evaluate((element) => getComputedStyle(element).opacity)).toBe('1');
       const normalDuration = await card.evaluate((element) => getComputedStyle(element).transitionDuration);
       expect(normalDuration).not.toBe('0s');
+      await expect(staffChatPage.locator('#toasts .toast')).toHaveCount(0, { timeout: 5000 });
       await testInfo.attach('staff-chat-' + brand + '-normal-390x844.png', {
         body: await staffChatPage.screenshot({ fullPage: false }),
         contentType: 'image/png',
@@ -1167,8 +1170,8 @@ test('cashier redeem/scanner and staff-chat overlays keep their owned motion con
       });
       await staffChatPage.evaluate(() => window.closeStaffChat());
       await expect(modal).not.toHaveClass(/show/);
+    } finally {
+      await staffChatPage.close();
     }
-  } finally {
-    await staffChatPage.close();
   }
 });
