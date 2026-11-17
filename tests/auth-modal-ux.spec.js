@@ -1160,3 +1160,42 @@ test('ambient service hints stop pulsing and entering under reduced motion', asy
   })).toEqual(['none', 'none', 'none', 'none', 'none']);
   await expect(page.locator('#motionAmbientFixtures .mbonus')).toHaveCSS('transition-duration', '0s');
 });
+
+
+test('Telegram verification success badge skips its entrance animation under reduced motion', async ({ page }, testInfo) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.addInitScript(() => {
+    localStorage.setItem('zt_onb', '1');
+    sessionStorage.setItem('splashDone', '1');
+  });
+  await page.goto('/?brand=coffee');
+  await page.waitForFunction(() => {
+    const link = Array.from(document.querySelectorAll('link[rel="stylesheet"]'))
+      .find((item) => item.href.includes('160-01-rail-fab-mobile.css'));
+    return link && link.media === 'all' && Array.from(document.styleSheets)
+      .some((sheet) => sheet.href === link.href);
+  });
+
+  await page.evaluate(() => {
+    const badge = document.createElement('div');
+    badge.id = 'telegramVerificationSuccessFixture';
+    badge.className = 'auth-badge-confirmed';
+    badge.textContent = 'Номер подтверждён в Telegram';
+    document.body.appendChild(badge);
+  });
+  const badge = page.locator('#telegramVerificationSuccessFixture');
+  await expect(badge).toHaveCSS('animation-name', 'badgeSlideIn');
+  await expect(badge).toHaveCSS('animation-duration', '0.35s');
+  await testInfo.attach('telegram-verification-badge-normal-390x844.png', {
+    body: await page.screenshot({ fullPage: false }),
+    contentType: 'image/png',
+  });
+
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await expect(badge).toHaveCSS('animation-name', 'none');
+  await expect(badge).toHaveCSS('animation-duration', '0s');
+  await testInfo.attach('telegram-verification-badge-reduced-390x844.png', {
+    body: await page.screenshot({ fullPage: false }),
+    contentType: 'image/png',
+  });
+});
