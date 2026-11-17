@@ -949,3 +949,35 @@ test('PIN error feedback and fullscreen QR are static under reduced motion', asy
   await expect(qrCanvas).toHaveCSS('animation-duration', '0s');
   await page.evaluate(() => window.closeQRFull());
 });
+
+
+test('generic modal and shared overlay are immediate under reduced motion', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.addInitScript(() => {
+    localStorage.setItem('zt_onb', '1');
+    sessionStorage.setItem('splashDone', '1');
+  });
+  await page.goto('/?brand=coffee');
+  await page.waitForFunction(() => typeof window.syncOverlay === 'function');
+  await page.evaluate(() => {
+    document.getElementById('emModal').classList.add('show');
+    window.syncOverlay();
+  });
+
+  const modal = page.locator('#emModal');
+  const card = modal.locator('.modal-card');
+  const overlay = page.locator('#overlay');
+  await expect(modal).toHaveClass(/show/);
+  await expect(card).toBeVisible();
+  await expect(overlay).toHaveClass(/show/);
+  await expect(overlay).toHaveAttribute('aria-hidden', 'false');
+  await expect(overlay).toHaveCSS('transition-duration', '0s');
+  await expect(card).toHaveCSS('transition-duration', '0s');
+
+  await page.evaluate(() => {
+    document.getElementById('emModal').classList.remove('show');
+    window.syncOverlay();
+  });
+  await expect(overlay).toHaveAttribute('aria-hidden', 'true');
+  await expect(overlay).toHaveCSS('pointer-events', 'none');
+});
