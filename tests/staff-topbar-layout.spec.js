@@ -1041,7 +1041,7 @@ test('topbar controls stop hover travel and state transitions under reduced moti
 });
 
 
-test('cashier redeem/scanner and staff-chat overlays keep their owned motion contracts for both brands', async ({ page, context }, testInfo) => {
+test('cashier redeem/scanner and staff-chat overlays keep their owned motion contracts for both brands', async ({ page, browser }, testInfo) => {
   for (const brand of ['coffee', 'delivery']) {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.emulateMedia({ reducedMotion: 'no-preference' });
@@ -1130,21 +1130,26 @@ test('cashier redeem/scanner and staff-chat overlays keep their owned motion con
     await expect(scan).toBeHidden();
   }
 
+  const cashierDocumentTimeOrigin = await page.evaluate(() => performance.timeOrigin);
+  const appOrigin = new URL(page.url()).origin;
+
+  // auth-session.js reloads other tabs when the active role changes. Keep the
+  // cashier and admin visual sessions in separate BrowserContexts.
   for (const brand of ['coffee', 'delivery']) {
-    const staffChatPage = await context.newPage();
+    const staffChatContext = await browser.newContext({ serviceWorkers: 'block' });
+    const staffChatPage = await staffChatContext.newPage();
     try {
       await staffChatPage.setViewportSize({ width: 390, height: 844 });
       await staffChatPage.emulateMedia({ reducedMotion: 'no-preference' });
       await mockStaffSession(staffChatPage, 'admin');
-      await staffChatPage.goto('/?brand=' + brand);
-      await staffChatPage.waitForFunction(() =>
+      await staffChatPage.goto(appOrigin + '/?brand=' + brand);
+      await staffChatPage.waitForFunction((expectedBrand) =>
         window.me && window.me.role === 'admin' &&
         document.documentElement.hasAttribute('data-staff-ready') &&
+        document.documentElement.getAttribute('data-brand') === expectedBrand &&
         typeof window.openStaffChat === 'function'
-      );
+      , brand);
 
-      // Call the actual chat DOM owner's public contract. Avoid changing work mode here:
-      // setMode updates the same view tree and made this parallel visual fixture race navigation.
       await staffChatPage.evaluate((activeBrand) => window.openStaffChat(activeBrand), brand);
 
       const modal = staffChatPage.locator('#staffChatModal');
@@ -1171,7 +1176,12 @@ test('cashier redeem/scanner and staff-chat overlays keep their owned motion con
       await staffChatPage.evaluate(() => window.closeStaffChat());
       await expect(modal).not.toHaveClass(/show/);
     } finally {
-      await staffChatPage.close();
+      await staffChatContext.close();
     }
+
+    // The independent admin pass must not reload or demote the cashier document.
+    await expect.poll(() => page.evaluate(() => performance.timeOrigin))
+      .toBe(cashierDocumentTimeOrigin);
+    await expect(page.locator('html')).toHaveAttribute('data-staff-role', 'cashier');
   }
 });
