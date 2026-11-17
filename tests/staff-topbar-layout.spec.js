@@ -309,7 +309,7 @@ test('staff menu header is exactly two rows for both brands and mobile widths', 
           }),
           supportInsideRow: host.parentElement === rowTwo && fab.parentElement === host,
           documentWidth: document.documentElement.scrollWidth,
-          viewportWidth: document.documentElement.clientWidth,
+          viewportWidth: window.innerWidth,
         };
       }, view);
 
