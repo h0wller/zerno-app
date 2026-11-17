@@ -852,8 +852,8 @@ html body:has(#cartPanel.open) #cartFab {
 
   body.cart-open #cartFab,
   body:has(#cartPanel.open) #cartFab {
-    visibility: hidden !important;
-    pointer-events: none !important;
+    visibility: hidden;
+    pointer-events: none;
   }
 
   html body #mbonusBtn,
