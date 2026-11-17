@@ -702,7 +702,7 @@ test('desktop staff toast never covers role, edit, or floating support controls 
             Math.min(a.bottom, b.bottom) > Math.max(a.top, b.top);
         });
       });
-      expect(overlap).toEqual([false, false]);
+      expect(overlap).toEqual([false, false, false]);
 
       await testInfo.attach('staff-toast-' + brand + '-' + width + 'px', {
         body: await page.screenshot({ fullPage: false }),
