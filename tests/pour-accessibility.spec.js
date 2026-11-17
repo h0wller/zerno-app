@@ -294,7 +294,7 @@ test.describe('Pour accessibility audit — delivery brand', () => {
         viewportWidth: viewport.clientWidth,
         groupWidth: group.getBoundingClientRect().width,
         groups: track.children.length,
-        cloneHidden: track.children[1]?.getAttribute('aria-hidden')
+        clonesHidden: Array.from(track.children).slice(1).every(group => group.getAttribute('aria-hidden') === 'true')
       };
     });
     expect(ticker.animationName).toBe('zt-marquee');
@@ -305,8 +305,9 @@ test.describe('Pour accessibility audit — delivery brand', () => {
     expect(ticker.left).toBe(0);
     expect(ticker.width).toBe(ticker.viewportWidth);
     expect(ticker.groupWidth).toBeGreaterThan(ticker.viewportWidth);
-    expect(ticker.groups).toBe(2);
-    expect(ticker.cloneHidden).toBe('true');
+    expect(ticker.groups).toBeGreaterThanOrEqual(2);
+    expect(ticker.clonesHidden).toBe(true);
+    
     expect(ticker.animationPlayState).toBe('running');
 
     const attachedLayout = await page.locator('header.topbar').evaluate((header) => {
