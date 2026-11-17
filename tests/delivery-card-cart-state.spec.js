@@ -83,3 +83,36 @@ test.describe('Delivery card cart state', () => {
     await expect.poll(() => page.evaluate(() => JSON.parse(localStorage.getItem('zt_cart'))[0].qty)).toBe(1);
   });
 });
+
+
+test('delivery option validation keeps its message but removes shake under reduced motion', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
+  await page.addInitScript(() => {
+    localStorage.setItem('zt_onb', '1');
+    localStorage.removeItem('zt_cart');
+    sessionStorage.setItem('splashDone', '1');
+  });
+  await page.goto('/?brand=delivery');
+  await page.waitForFunction(() =>
+    window.brand === 'delivery' &&
+    typeof window.renderDeliveryMenu === 'function'
+  );
+
+  const card = page.locator('#deliveryGrid .card:not(.skeleton-card)')
+    .filter({ has: page.locator('.opts input[type="radio"]') })
+    .first();
+  await expect(card).toBeVisible();
+  const options = card.locator('.opts');
+  const addButton = card.locator('[data-add]');
+
+  await addButton.click();
+  await expect(options.locator('.opts-error')).toBeVisible();
+  await expect(options).toHaveClass(/shake/);
+  await expect.poll(() => options.evaluate((element) => getComputedStyle(element).animationName))
+    .toBe('shake');
+
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await expect.poll(() => options.evaluate((element) => getComputedStyle(element).animationName))
+    .toBe('none');
+  await expect(options.locator('.opts-error')).toBeVisible();
+});
