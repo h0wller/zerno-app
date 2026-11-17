@@ -920,7 +920,8 @@ test('reduced motion removes auth overlay travel without changing focus or layou
 });
 
 
-test('PIN error feedback and fullscreen QR are static under reduced motion', async ({ page }) => {
+test('PIN error feedback and fullscreen QR are static under reduced motion', async ({ page }, testInfo) => {
+  await page.setViewportSize({ width: 390, height: 844 });
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.addInitScript(() => {
     localStorage.setItem('zt_onb', '1');
@@ -936,6 +937,10 @@ test('PIN error feedback and fullscreen QR are static under reduced motion', asy
   await pinInput.evaluate((element) => element.classList.add('err'));
   await expect(pinInput).toHaveCSS('animation-name', 'none');
   await expect(pinInput).toHaveCSS('animation-duration', '0s');
+  await testInfo.attach('pin-error-reduced-delivery-390x844.png', {
+    body: await page.screenshot({ fullPage: false }),
+    contentType: 'image/png',
+  });
 
   await page.evaluate(() => {
     window.closePin();
@@ -948,6 +953,10 @@ test('PIN error feedback and fullscreen QR are static under reduced motion', asy
   await expect(qrCanvas).toHaveCSS('animation-name', 'none');
   await expect(qrCanvas).toHaveCSS('animation-duration', '0s');
   await expect(qrModal.locator('.qrcard')).toHaveCSS('transition-duration', '0s');
+  await testInfo.attach('fullscreen-qr-reduced-delivery-390x844.png', {
+    body: await page.screenshot({ fullPage: false }),
+    contentType: 'image/png',
+  });
   await page.evaluate(() => window.closeQRFull());
 });
 
