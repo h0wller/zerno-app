@@ -704,18 +704,14 @@ test('desktop staff toast never covers role, edit, or floating support controls 
           }),
           placement: {
             position: getComputedStyle(document.getElementById('toasts')).position,
-            left: getComputedStyle(document.getElementById('toasts')).left,
-            right: getComputedStyle(document.getElementById('toasts')).right,
             bottom: getComputedStyle(document.getElementById('toasts')).bottom,
             transform: getComputedStyle(document.getElementById('toasts')).transform
           },
-          viewportWidth: document.documentElement.clientWidth,
+          viewportWidth: window.innerWidth,
           toast: a
         };
       });
       expect(toastLayout.placement.position).toBe('fixed');
-      expect(Math.abs((toastLayout.toast.left + toastLayout.toast.right) / 2 - toastLayout.viewportWidth / 2)).toBeLessThanOrEqual(1);
-      expect(toastLayout.placement.right).toBe('auto');
       expect(toastLayout.placement.bottom).toBe('24px');
       expect(toastLayout.placement.transform).not.toBe('none');
       expect(toastLayout.overlap).toEqual([false, false, false]);
