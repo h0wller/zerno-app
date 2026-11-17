@@ -63,10 +63,14 @@ async function expectCartAtRest(panel, viewport, open) {
     if (open) {
       expect(Math.abs(geometry.bottom - viewport.height)).toBeLessThanOrEqual(1);
       expect(geometry.top).toBeGreaterThanOrEqual(-1);
+    } else {
+      expect(geometry.top).toBeGreaterThanOrEqual(viewport.height - 1);
     }
   } else if (open) {
     expect(Math.abs(geometry.right - viewport.width)).toBeLessThanOrEqual(1);
     expect(geometry.width).toBeCloseTo(430, 0);
+  } else {
+    expect(geometry.left).toBeGreaterThanOrEqual(viewport.width - 1);
   }
 
   if (open) {
@@ -99,6 +103,9 @@ test('reduced motion opens and closes the cart sheet without spatial travel', as
 
     await page.locator('#cartClose').click();
     await expect(panel).not.toHaveClass(/open/);
+    await expect(panel).toBeHidden();
+    await expect(page.locator('#overlay')).not.toHaveClass(/show/);
+    await expect(page.locator('body')).not.toHaveClass(/cart-open/);
     await expectCartAtRest(panel, viewport, false);
   }
 
