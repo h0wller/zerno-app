@@ -78,7 +78,7 @@ function updateRailStickyPosition(rail, head) {
       rail.style.top = 'auto';
       rail.style.maxHeight = 'none';
       rail.style.overflowY = '';
-      rail.style.alignSelf = 'start';
+      rail.style.alignSelf = 'stretch';
     }
   } else {
     railStickyLayout = null;
@@ -109,7 +109,7 @@ function alignRailWithCard() {
     rail.style.top = 'auto';
     rail.style.maxHeight = 'none';
     rail.style.overflowY = '';
-    rail.style.alignSelf = 'start';
+    rail.style.alignSelf = 'stretch';
 
     var wrap = rail.parentElement;
     if (!wrap) return;
