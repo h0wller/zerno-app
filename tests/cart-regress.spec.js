@@ -324,15 +324,23 @@ test.describe('Спринт 2 — Сетка опций пиццы, отступ
 
     // ── Задача 3: delivery rail starts aligned to the first product-card row ──
     const railGeometry = await page.evaluate(() => {
-      const rail = document.querySelector('#deliveryRail').getBoundingClientRect();
-      const grid = document.querySelector('#deliveryGrid').getBoundingClientRect();
+      const element = document.querySelector('#deliveryRail');
+      const rail = element.getBoundingClientRect();
       return {
-        position: getComputedStyle(document.querySelector('#deliveryRail')).position,
-        topDelta: Math.abs(rail.top - grid.top),
+        position: getComputedStyle(element).position,
+        height: rail.height,
+        bottomGap: window.innerHeight - rail.bottom,
+        left: rail.left,
+        right: rail.right,
+        viewportWidth: window.innerWidth,
       };
     });
-    expect(railGeometry.position).toBe('relative');
-    expect(railGeometry.topDelta).toBeLessThanOrEqual(2);
+    expect(railGeometry.position).toBe('fixed');
+    expect(railGeometry.height).toBe(56);
+    expect(railGeometry.bottomGap).toBeGreaterThanOrEqual(10);
+    expect(railGeometry.bottomGap).toBeLessThanOrEqual(12);
+    expect(railGeometry.left).toBeGreaterThanOrEqual(12);
+    expect(railGeometry.right).toBeLessThanOrEqual(railGeometry.viewportWidth - 12);
 
     // ── Задача 4: Контраст полей чекаута, прижатие шторки к bottom=viewport.height и скрытие #cartFab ──
     await firstPizzaCard.locator('.steprow .cta, [data-add]').first().click();
