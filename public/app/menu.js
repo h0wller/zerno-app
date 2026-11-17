@@ -146,7 +146,6 @@ function renderMenu() {
   const gridEl = $('#grid');
   if (!gridEl) return;
 
-  gridEl.innerHTML = '';
   requestAnimationFrame(() => {
     gridEl.innerHTML =
       list
