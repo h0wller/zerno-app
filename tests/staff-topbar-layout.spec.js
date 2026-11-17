@@ -922,3 +922,65 @@ test('work modes keep the role switcher in the topbar and preserve the support l
   await expect(page.locator('#adminBar')).toBeVisible();
   await expect(page.locator('#chatsToggle2')).toBeHidden();
 });
+
+
+test('cashier entrance, stamp and log feedback are static under reduced motion', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
+  await mockStaffSession(page, 'cashier');
+  await page.goto('/?brand=coffee');
+  await page.waitForFunction(() => window.me && window.me.role === 'cashier');
+  await page.waitForFunction(() => {
+    const link = Array.from(document.querySelectorAll('link[rel="stylesheet"]'))
+      .find((item) => item.href.includes('120-cashier.css'));
+    return link && link.media === 'all' && Array.from(document.styleSheets)
+      .some((sheet) => sheet.href === link.href);
+  });
+
+  await page.evaluate(() => {
+    const host = document.createElement('div');
+    host.id = 'cashierMotionFixtures';
+    host.innerHTML = [
+      '<section class="cashier"></section>',
+      '<section class="cust show"></section>',
+      '<span class="cdot last"></span>',
+      '<div class="logrow"></div>',
+      '<details class="staff-guide" open><summary>Инструкции</summary></details>'
+    ].join('');
+    document.body.appendChild(host);
+  });
+
+  const normal = await page.evaluate(() => {
+    const host = document.getElementById('cashierMotionFixtures');
+    return {
+      cashier: getComputedStyle(host.querySelector('.cashier')).animationName,
+      customer: getComputedStyle(host.querySelector('.cust')).animationName,
+      stamp: getComputedStyle(host.querySelector('.cdot')).animationName,
+      log: getComputedStyle(host.querySelector('.logrow')).animationName,
+      guide: getComputedStyle(host.querySelector('.staff-guide summary'), '::after').transitionDuration
+    };
+  });
+  expect(normal.cashier).toBe('rise');
+  expect(normal.customer).toBe('rise');
+  expect(normal.stamp).toBe('stampin');
+  expect(normal.log).toBe('rise');
+  expect(normal.guide).toBe('0.18s');
+
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await expect.poll(() => page.evaluate(() => {
+    const host = document.getElementById('cashierMotionFixtures');
+    return {
+      cashier: getComputedStyle(host.querySelector('.cashier')).animationName,
+      customer: getComputedStyle(host.querySelector('.cust')).animationName,
+      stamp: getComputedStyle(host.querySelector('.cdot')).animationName,
+      log: getComputedStyle(host.querySelector('.logrow')).animationName,
+      guide: getComputedStyle(host.querySelector('.staff-guide summary'), '::after').transitionDuration
+    };
+  })).toEqual({
+    cashier: 'none',
+    customer: 'none',
+    stamp: 'none',
+    log: 'none',
+    guide: '0s'
+  });
+});
