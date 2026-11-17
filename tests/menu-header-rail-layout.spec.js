@@ -36,19 +36,16 @@ for (const brand of CASES) {
       }
       if (brand.brand === 'delivery') {
         await expect(page.locator('#deliveryGrid .card').first()).toBeVisible({ timeout: 15000 });
-        await expect.poll(() => page.evaluate(() => {
-          const grid = document.querySelector('#deliveryGrid').getBoundingClientRect();
-          const rail = document.querySelector('#deliveryRail').getBoundingClientRect();
-          return Math.abs(rail.top - grid.top);
-        }), { timeout: 5000 }).toBeLessThanOrEqual(2);
       } else if (viewport.width <= 820) {
-        const searchGap = await page.evaluate(({ headSelector, railSelector }) => {
+        const noSearchOverlap = await page.evaluate(({ headSelector, railSelector }) => {
           const head = document.querySelector(headSelector);
           const rail = document.querySelector(railSelector);
           const searchRow = head.querySelector('.mh-right');
-          return rail.getBoundingClientRect().top - searchRow.getBoundingClientRect().bottom;
+          const a = rail.getBoundingClientRect();
+          const b = searchRow.getBoundingClientRect();
+          return !(a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top);
         }, { headSelector: brand.head, railSelector: brand.rail });
-        expect(searchGap, 'coffee rail starts below search/support row').toBeGreaterThanOrEqual(10);
+        expect(noSearchOverlap, 'floating coffee capsule must not overlap search/support controls').toBe(true);
       } else {
         await expect(page.locator('#grid .card').first()).toBeVisible({timeout:15000});
         const delta=await page.evaluate(selector=>{
@@ -82,7 +79,8 @@ for (const brand of CASES) {
       }, { headSelector: brand.head, railSelector: brand.rail });
 
       if (viewport.width <= 820) {
-        expect(layout.railPosition, 'mobile rail stays in its catalog position before scrolling').toBe('relative');
+        expect(layout.railPosition, 'mobile rail is a viewport-fixed capsule from first paint').toBe('fixed');
+        expect(layout.railTop, 'the capsule sits in the lower visual viewport lane').toBeGreaterThan(viewport.height / 2);
         expect(Math.abs(layout.headLeft - layout.contentLeft), 'mobile menu-head starts at the left edge of the complete menu area').toBeLessThanOrEqual(1);
         expect(Math.abs(layout.headRight - layout.contentRight), 'mobile menu-head spans rail and content columns').toBeLessThanOrEqual(1);
       }
@@ -109,27 +107,17 @@ for (const brand of CASES) {
       expect(tickerLayout.trackWidth).toBeGreaterThanOrEqual(tickerLayout.viewportWidth);
       expect(Math.abs(tickerLayout.tickerTop - tickerLayout.topbarBottom)).toBeLessThanOrEqual(1);
 
+      const railTopBeforeScroll = layout.railTop;
+      await page.evaluate((top) => { window.__initialFloatingRailTop = top; }, railTopBeforeScroll);
       await page.evaluate(() => window.scrollTo(0, 500));
       if (viewport.width <= 820) {
+        await expect.poll(() => page.evaluate(selector => getComputedStyle(document.querySelector(selector)).position), {
+          timeout: 5000,
+        }).toBe('fixed');
         await expect.poll(() => page.evaluate(selector => {
-          const element = document.querySelector(selector);
-          const rect = element.getBoundingClientRect();
-          const height = element.clientHeight;
-          const expectedTop = Math.max(12, (window.innerHeight - height) / 2);
-          return {
-            topDelta: Math.abs(rect.top - expectedTop),
-            position: getComputedStyle(element).position,
-            bottom: rect.bottom,
-          };
-        }, brand.rail), { timeout: 5000 }).toMatchObject({
-          position: 'sticky',
-        });
-        await expect.poll(() => page.evaluate(selector => {
-          const element = document.querySelector(selector);
-          const rect = element.getBoundingClientRect();
-          return Math.abs(rect.top - Math.max(12, (window.innerHeight - element.clientHeight) / 2));
+          return Math.abs(document.querySelector(selector).getBoundingClientRect().top - window.__initialFloatingRailTop);
         }, brand.rail), { timeout: 5000 }).toBeLessThanOrEqual(2);
-        await testInfo.attach(`${brand.brand}-sticky-rail-${viewport.width}px`, {
+        await testInfo.attach(`${brand.brand}-floating-rail-${viewport.width}px`, {
           body: await page.screenshot({ animations: 'disabled' }),
           contentType: 'image/png',
         });
