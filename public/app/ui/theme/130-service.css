@@ -487,3 +487,18 @@ body{
   -webkit-text-size-adjust: 100%;
   touch-action: manipulation;
 }
+
+
+@media (prefers-reduced-motion: reduce) {
+  .mbonus {
+    transition: none;
+  }
+
+  .mbonus .mb-free,
+  .demoBtn.glow,
+  .ava.pulse-hint,
+  .pushHint,
+  .freeBanner {
+    animation: none;
+  }
+}
