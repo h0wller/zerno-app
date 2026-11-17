@@ -322,13 +322,14 @@ $('#deliveryRail').addEventListener('click', e => {
     }
     requestAnimationFrame(() => {
       window.renderDeliveryMenu();
-      /* Прокрутка к шапке с поиском: поиск и сабфильтры остаются в кадре.
-         Раньше прокручивало к сетке (−110px), и поиск уходил выше экрана. */
-      const searchInput = document.getElementById('dSearch');
-      const anchor = (searchInput && searchInput.closest('.menu-head')) || document.getElementById('deliveryGrid');
-      if (anchor) {
-        const topOffset = anchor.getBoundingClientRect().top + window.scrollY - 8;
-        window.scrollTo({ top: Math.max(0, topOffset), behavior: 'smooth' });
+      if (window.usesHorizontalCategoryRailViewport &&
+          window.usesHorizontalCategoryRailViewport() &&
+          typeof window.scrollMenuContentToStart === 'function') {
+        window.scrollMenuContentToStart(
+          '#deliverySubFilterViewport:not([hidden]), #deliveryGrid',
+          '#deliveryRail',
+          false
+        );
       }
     });
   }
@@ -708,7 +709,7 @@ function syncAddButtons() {
     b.setAttribute('aria-label', label);
     if (n > 0) b.title = label;
     else b.removeAttribute('title');
-    if (!b.classList.contains('added')) b.textContent = n > 0 ? '✓' : 'Добавить';
+    if (!b.classList.contains('added')) b.textContent = n > 0 ? ('В корзине · ' + n) : 'Добавить';
   });
 }
 
@@ -743,7 +744,7 @@ function handleDeliveryStepperClick(e) {
   const addButton = row && row.querySelector('[data-add]');
   if (addButton) {
     const label = count ? ('В корзине · ' + count + '. Добавить ещё') : 'Добавить';
-    addButton.textContent = count ? '✓' : 'Добавить';
+    addButton.textContent = count > 0 ? ('В корзине · ' + count) : 'Добавить';
     addButton.setAttribute('aria-label', label);
     if (count) addButton.title = label;
     else addButton.removeAttribute('title');
