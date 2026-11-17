@@ -378,7 +378,7 @@ for (const brand of ['coffee', 'delivery']) {
     await expect.poll(() => buttons.count()).toBeGreaterThan(1);
     await expect.poll(() => rail.locator('button.on').count()).toBe(1);
     const activeCategory = await rail.locator('button.on').getAttribute(attribute);
-    const target = buttons.filter({ hasNot: page.locator('.on') }).first();
+    const target = rail.locator('button[' + attribute + ']:not(.on)').first();
     const targetCategory = await target.getAttribute(attribute);
     expect(targetCategory).not.toBe(activeCategory);
 
