@@ -1,7 +1,7 @@
 # Frontend roadmap & UX audit — Zerno
 
 **Base branch:** `pizza`
-**Last documentation reconciliation:** 2026-11-07
+**Last documentation reconciliation:** 2026-11-17
 
 ## Current source-of-truth and status
 
@@ -14,6 +14,18 @@ Historical milestone logs below remain historical. Do not use their old test cou
 - Slow-network layout: `docs/testing/slow-network-layout.md`.
 - API reference: `docs/api.md` is the concise route/guard index, checked against the 77 production method/path/guard entries on `pizza`; `docs/openapi.yaml` carries request/response details and still requires schema-level verification.
 - New product work: spec → review → implementation → tests.
+
+## Consolidation scope — PR #273
+
+PR #273 consolidates the non-superseded work from PRs #264–267 on current `pizza`:
+- continuous ticker cycle, accessible pointer/keyboard pause and reduced-motion behavior;
+- compact mobile AdminBar/header, 80px desktop sidebar, wide centered wrapper and three-column catalog cards at tablet widths;
+- delivery venue/search/subfilter layout, short category label and stable card content slots;
+- compact in-cart CTA label without changing cart business logic;
+- shared modal focus trap, push-subscription cleanup, OTP limits/store bounds and regression coverage;
+- detached no-horizontal-scroll category capsule, safe-area/catalog reserve and cart-open behavior.
+
+The old sticky/pinned rail implementation is intentionally not restored. PR #269's selected-category scroll-to-top and primary-rail fade remain the current behavior. Rail geometry stays CSS-owned; no DOM reparenting or screenshot-baseline refresh is part of this consolidation.
 
 ## Active UX audit — client before staff
 
