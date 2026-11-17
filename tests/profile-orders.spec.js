@@ -692,3 +692,47 @@ test.describe('Модуль заказов профиля', () => {
   });
 
 });
+
+
+test('order deep link uses instant scroll and a static highlight under reduced motion', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.route('**/api/me', route => route.fulfill({
+    status: 200,
+    contentType: 'application/json',
+    body: JSON.stringify({
+      customer: {
+        id: 'profile-test',
+        name: 'Тестовый гость',
+        phone: '+7 900 000-00-00',
+        role: 'guest',
+        cups: 2,
+        stamps: 2,
+        free: 0,
+        qr: 'profile-test',
+        history: [],
+        verified: 1
+      }
+    })
+  }));
+  await page.addInitScript(() => {
+    window.__orderDeepScrollCalls = [];
+    const original = Element.prototype.scrollIntoView;
+    Element.prototype.scrollIntoView = function (options) {
+      if (this.matches && this.matches('#myOrders .myOrderCard')) {
+        window.__orderDeepScrollCalls.push(options || {});
+      }
+      return original ? original.call(this, options) : undefined;
+    };
+  });
+
+  await page.goto('/?brand=delivery&tab=orders&no=P-1042');
+  await expect(page.locator('#panel')).toHaveClass(/open/, { timeout: 10000 });
+  const card = page.locator('#myOrders .myOrderCard').first();
+  await expect(card).toHaveClass(/flash/, { timeout: 10000 });
+  await expect.poll(() => card.evaluate(element => getComputedStyle(element).animationName))
+    .toBe('none');
+  await expect.poll(() => page.evaluate(() => window.__orderDeepScrollCalls.length))
+    .toBeGreaterThan(0);
+  const scrollOptions = await page.evaluate(() => window.__orderDeepScrollCalls.at(-1));
+  expect(scrollOptions.behavior).toBe('auto');
+});
