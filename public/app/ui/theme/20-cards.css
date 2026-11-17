@@ -10,8 +10,8 @@
        (min-width: 821px) and (orientation: landscape) and (max-height: 480px) {
   #grid,
   #deliveryGrid {
-    padding-bottom: calc(var(--rail-total-h) + 22px);
-    scroll-padding-bottom: calc(var(--rail-total-h) + 22px);
+    padding-bottom: calc(var(--rail-total-h) + 17px);
+    scroll-padding-bottom: calc(var(--rail-total-h) + 17px);
   }
 
   body:has(#cartFab.visible:not([hidden])):not(.is-cashier):not(.is-admin) #grid,
@@ -277,6 +277,10 @@ body.editing .card:hover{
    compact line so the cart state cannot increase the card's height on narrow screens. */
 .card .steprow .cta.incart {
   box-sizing: border-box;
+  width: auto;
+  min-width: 44px;
+  max-width: 100%;
+  flex: 1 1 auto;
   height: 44px;
   min-height: 44px;
   max-height: 44px;
@@ -323,6 +327,4 @@ body.editing .card:hover{
 
 
 /* Keep the delivery in-cart label compact against the brand CTA shorthand in 160-06. */
-#deliveryGrid .card .steprow > .cta.incart {
-  font-size: 11px;
-}
+
