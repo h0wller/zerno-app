@@ -129,7 +129,8 @@
 | `core/overlay-core.js` | `syncOverlay` (модалки/шторки/корзина), popstate/Escape/клик по оверлею; TgUx (MainButton, BackButton, haptics) | `window.syncOverlay`, `window.TgUx` |
 | `core/panel.js` | Единая шторка профиля `#panel`, фокус возврата и действия «Назад»; старый вызов `openPanel('bonus')` открывает тот же профиль | `window.openPanel`, `window.closePanel`, `window.setTab` |
 | `core/swipe.js` | iOS-свайп закрытия `#panel` | — |
-| `ui/category-rail.js` | Общая геометрия/позиционирование `#rail` и `#deliveryRail`, временный fade только основной панели при скролле; DOM и состояние категорий остаются у `menu.js` / `delivery.js` | `window.alignRailWithCard` |
+| `ui/category-rail.js` | Runtime-позиционирование category rail: очищает устаревшие inline sticky-стили для mobile/compact-landscape и сохраняет desktop alignment; временный fade только основной панели при скролле. DOM и состояние категорий остаются у `menu.js` / `delivery.js` | `window.alignRailWithCard` |
+| `150-rail.css` + `160-01-rail-fab-mobile.css` + `20-cards.css` | `150-rail.css` — fixed floating capsule и её fade; `160-01-rail-fab-mobile.css` — отдельный нижний lane cart FAB над capsule; `20-cards.css` — catalog scroll reserve под capsule и видимый cart FAB; critical mirror первого кадра — `index.html` | CSS custom properties `--rail-h`, `--rail-edge-gap`, `--rail-total-h` |
 | `ui/settings.js` | `#settingsModal` (PIN, каналы уведомлений, выход, typed-confirmation удаления); шестерёнка и управление фокусом | `window.openProfileSettings`, `window.closeProfileSettings` |
 | `core/fx.js` | Канвас конфетти `#fx` | `window.confetti` |
 | `core/a11y.js` | loading=lazy для небрендовых изображений | — |
