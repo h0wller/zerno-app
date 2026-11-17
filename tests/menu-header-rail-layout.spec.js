@@ -73,6 +73,8 @@ for (const brand of CASES) {
           headRight: headRect.right,
           railTop: railRect.top,
           railPosition: getComputedStyle(railEl).position,
+          railAlignSelf: getComputedStyle(railEl).alignSelf,
+          railTransform: getComputedStyle(railEl).transform,
           headBottom: headRect.bottom,
           contentLeft: wrapRect.left + parseFloat(wrapStyle.borderLeftWidth) + parseFloat(wrapStyle.paddingLeft),
           contentRight: wrapRect.right - parseFloat(wrapStyle.borderRightWidth) - parseFloat(wrapStyle.paddingRight),
@@ -81,6 +83,9 @@ for (const brand of CASES) {
         };
       }, { headSelector: brand.head, railSelector: brand.rail });
 
+      expect(layout.railTransform, 'rail keeps layout-owned positioning without visual transform offsets').toBe('none');
+      expect(layout.railAlignSelf, 'mobile and desktop keep their original grid alignment contract')
+        .toBe(viewport.width <= 820 ? 'start' : 'stretch');
       if (viewport.width <= 820) {
         expect(layout.railPosition, 'mobile rail stays in its catalog position before scrolling').toBe('relative');
         expect(Math.abs(layout.headLeft - layout.contentLeft), 'mobile menu-head starts at the left edge of the complete menu area').toBeLessThanOrEqual(1);
