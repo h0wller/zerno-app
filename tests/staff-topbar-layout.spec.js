@@ -1039,3 +1039,136 @@ test('topbar controls stop hover travel and state transitions under reduced moti
   await expect(avatar).toHaveCSS('transform', 'none');
   await expect(edit).toHaveCSS('transform', 'none');
 });
+
+
+test('cashier redeem/scanner and staff-chat overlays keep their owned motion contracts for both brands', async ({ page, context }, testInfo) => {
+  for (const brand of ['coffee', 'delivery']) {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.emulateMedia({ reducedMotion: 'no-preference' });
+    await mockStaffSession(page, 'cashier');
+    await page.addInitScript(() => {
+      Object.defineProperty(navigator, 'mediaDevices', {
+        configurable: true,
+        value: {
+          getUserMedia: () => Promise.reject(new Error('Camera permission denied by visual test'))
+        }
+      });
+    });
+    await page.goto('/?brand=' + brand);
+    await page.waitForFunction(() =>
+      window.me && window.me.role === 'cashier' &&
+      typeof window.setMode === 'function' &&
+      typeof window.showCust === 'function'
+    );
+    await page.evaluate(() => {
+      window.setMode('cashier');
+      window.showCust({
+        id: 'staff-overlay-motion-test',
+        name: 'Motion Test Guest',
+        phone: '+70000000000',
+        stamps: 9,
+        free: 1,
+        history: [],
+        qr: 'staff-overlay-motion-test'
+      });
+    });
+
+    const redeem = page.locator('#redeemPick');
+    const redeemCard = redeem.locator('.omCard');
+    await expect(page.locator('#redeemBtn')).toBeVisible();
+    await page.locator('#redeemBtn').click();
+    await expect(redeem).toHaveClass(/show/);
+    await expect(redeemCard).toBeVisible();
+    const redeemNormal = await redeemCard.evaluate((element) => {
+      const style = getComputedStyle(element);
+      return { animationName: style.animationName, transitionDuration: style.transitionDuration };
+    });
+    expect(redeemNormal).toEqual({ animationName: 'none', transitionDuration: '0s' });
+    await testInfo.attach('cashier-redeem-' + brand + '-normal-390x844.png', {
+      body: await page.screenshot({ fullPage: false }),
+      contentType: 'image/png',
+    });
+
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await expect(redeemCard).toHaveCSS('animation-name', 'none');
+    await expect(redeemCard).toHaveCSS('transition-duration', '0s');
+    await expect(redeem).toBeVisible();
+    await testInfo.attach('cashier-redeem-' + brand + '-reduced-390x844.png', {
+      body: await page.screenshot({ fullPage: false }),
+      contentType: 'image/png',
+    });
+    await redeem.locator('.omClose').click();
+    await expect(redeem).toBeHidden();
+
+    await page.emulateMedia({ reducedMotion: 'no-preference' });
+    await expect(page.locator('#scanFab')).toBeVisible();
+    await page.locator('#scanFab').click();
+    const scan = page.locator('#scanModal');
+    await expect(scan).toBeVisible();
+    await expect(page.locator('#scanStatus')).toContainText('Камера недоступна');
+    const scanNormal = await scan.evaluate((element) => {
+      const style = getComputedStyle(element);
+      return { animationName: style.animationName, transitionDuration: style.transitionDuration, display: style.display };
+    });
+    expect(scanNormal).toEqual({ animationName: 'none', transitionDuration: '0s', display: 'flex' });
+    await testInfo.attach('cashier-scanner-' + brand + '-normal-390x844.png', {
+      body: await page.screenshot({ fullPage: false }),
+      contentType: 'image/png',
+    });
+
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await expect(scan).toBeVisible();
+    await expect(scan).toHaveCSS('animation-name', 'none');
+    await expect(scan).toHaveCSS('transition-duration', '0s');
+    await testInfo.attach('cashier-scanner-' + brand + '-reduced-390x844.png', {
+      body: await page.screenshot({ fullPage: false }),
+      contentType: 'image/png',
+    });
+    await page.locator('#scanClose').click();
+    await expect(scan).toBeHidden();
+  }
+
+  const staffChatPage = await context.newPage();
+  try {
+    for (const brand of ['coffee', 'delivery']) {
+      await staffChatPage.setViewportSize({ width: 390, height: 844 });
+      await staffChatPage.emulateMedia({ reducedMotion: 'no-preference' });
+      await mockStaffSession(staffChatPage, 'admin');
+      await staffChatPage.goto('/?brand=' + brand);
+      await staffChatPage.waitForFunction(() =>
+        window.me && window.me.role === 'admin' &&
+        document.documentElement.hasAttribute('data-staff-ready') &&
+        typeof window.openStaffChat === 'function'
+      );
+      await staffChatPage.evaluate((activeBrand) => {
+        window.setMode('admin');
+        window.openStaffChat(activeBrand);
+      }, brand);
+
+      const modal = staffChatPage.locator('#staffChatModal');
+      const card = modal.locator('.modal-card');
+      await expect(modal).toHaveClass(/show/);
+      await expect(card).toBeVisible();
+      await expect.poll(() => card.evaluate((element) => getComputedStyle(element).opacity)).toBe('1');
+      const normalDuration = await card.evaluate((element) => getComputedStyle(element).transitionDuration);
+      expect(normalDuration).not.toBe('0s');
+      await testInfo.attach('staff-chat-' + brand + '-normal-390x844.png', {
+        body: await staffChatPage.screenshot({ fullPage: false }),
+        contentType: 'image/png',
+      });
+
+      await staffChatPage.emulateMedia({ reducedMotion: 'reduce' });
+      await expect(card).toHaveCSS('transition-duration', '0s');
+      await expect(card).toHaveCSS('transform', 'none');
+      await expect(modal).toBeVisible();
+      await testInfo.attach('staff-chat-' + brand + '-reduced-390x844.png', {
+        body: await staffChatPage.screenshot({ fullPage: false }),
+        contentType: 'image/png',
+      });
+      await staffChatPage.evaluate(() => window.closeStaffChat());
+      await expect(modal).not.toHaveClass(/show/);
+    }
+  } finally {
+    await staffChatPage.close();
+  }
+});
