@@ -1,5 +1,7 @@
 import { test, expect } from '@playwright/test';
 
+test.use({ serviceWorkers: 'block' });
+
 /* Сплэш не должен «прыгать» при поздней загрузке theme/*.css (они подключаются отложенно: media=print → all).
    Критичный CSS в index.html — зеркало theme/80-splash.css: проверяем геометрию и параметры входной анимации. */
 test.describe('Splash: стабильная геометрия первого кадра (CLS)', () => {
