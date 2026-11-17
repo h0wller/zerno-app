@@ -1136,3 +1136,30 @@ test('cart continue-shopping action keeps a 44px minimum hit target on narrow mo
   });
   expect(rect.height).toBeGreaterThanOrEqual(44);
 });
+
+
+test('checkout validation scroll respects reduced motion without changing field feedback', async ({ page }) => {
+  await page.addInitScript(() => {
+    localStorage.setItem('zt_onb', '1');
+    sessionStorage.setItem('splashDone', '1');
+  });
+  await page.goto('/?brand=delivery');
+  await page.waitForFunction(() => window.CheckoutValidation && typeof window.CheckoutValidation.flagField === 'function');
+
+  for (const motion of ['reduce', 'no-preference']) {
+    await page.emulateMedia({ reducedMotion: motion });
+    await page.evaluate(() => {
+      const scrollBody = document.getElementById('cartScrollBody');
+      const field = document.getElementById('checkoutStreet');
+      if (!scrollBody || !field) throw new Error('Checkout validation fixture is missing');
+      window.__checkoutValidationScrollCalls = [];
+      scrollBody.scrollTo = (options) => window.__checkoutValidationScrollCalls.push(options);
+      window.CheckoutValidation.flagField(field);
+    });
+
+    const calls = await page.evaluate(() => window.__checkoutValidationScrollCalls);
+    expect(calls).toHaveLength(1);
+    expect(calls[0].behavior).toBe(motion === 'reduce' ? 'auto' : 'smooth');
+    await expect(page.locator('#checkoutStreet')).toHaveClass(/field-error/);
+  }
+});
