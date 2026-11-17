@@ -75,8 +75,7 @@ async function expectCartAtRest(panel, viewport, open) {
   expect(geometry.height).toBeGreaterThan(0);
 }
 
-test('reduced motion opens and closes the cart sheet without spatial travel', async ({ page }, testInfo) => {
-  const video = page.video();
+test('reduced motion opens and closes the cart sheet without spatial travel', async ({ page }) => {
   const viewports = [
     { width: 390, height: 844 },
     { width: 1024, height: 768 },
@@ -95,17 +94,9 @@ test('reduced motion opens and closes the cart sheet without spatial travel', as
     await expectCartAtRest(panel, viewport, false);
   }
 
-  await page.close();
-  if (video) {
-    await testInfo.attach('cart-motion-reduced.webm', {
-      path: await video.path(),
-      contentType: 'video/webm',
-    });
-  }
 });
 
-test('cart sheet can be interrupted by rapid close and reopen without stale geometry', async ({ page }, testInfo) => {
-  const video = page.video();
+test('cart sheet can be interrupted by rapid close and reopen without stale geometry', async ({ page }) => {
   const viewport = { width: 390, height: 844 };
   const { panel, fab } = await prepareCart(page, viewport);
 
@@ -133,17 +124,9 @@ test('cart sheet can be interrupted by rapid close and reopen without stale geom
   expect(overflow.document).toBeLessThanOrEqual(overflow.viewport + 1);
   expect(overflow.body).toBeLessThanOrEqual(overflow.viewport + 1);
 
-  await page.close();
-  if (video) {
-    await testInfo.attach('cart-motion-interrupted.webm', {
-      path: await video.path(),
-      contentType: 'video/webm',
-    });
-  }
 });
 
-test('cart sheet remains visible during normal exit and hides after its spatial transition', async ({ page }, testInfo) => {
-  const video = page.video();
+test('cart sheet remains visible during normal exit and hides after its spatial transition', async ({ page }) => {
   const viewport = { width: 390, height: 844 };
   const { panel, fab } = await prepareCart(page, viewport);
 
@@ -157,11 +140,4 @@ test('cart sheet remains visible during normal exit and hides after its spatial 
   await expect.poll(() => panel.evaluate((element) => getComputedStyle(element).visibility))
     .toBe('hidden');
 
-  await page.close();
-  if (video) {
-    await testInfo.attach('cart-motion-exit.webm', {
-      path: await video.path(),
-      contentType: 'video/webm',
-    });
-  }
 });
