@@ -1,4 +1,10 @@
 /* ══ КОРЗИНА: Базовый каркас (Слой 1) ══ */
+.cartPanel.open {
+  visibility: visible;
+  pointer-events: auto;
+  transition-delay: 0s, 0s;
+}
+
 .cartPanel {
   position: fixed;
   z-index: 120;
@@ -7,7 +13,11 @@
   flex-direction: column;
   overflow: hidden;
   box-shadow: var(--shadow-sheet);
-  transition: transform var(--motion-duration-spatial) var(--motion-ease-spatial);
+  visibility: hidden;
+  pointer-events: none;
+  transition:
+    transform var(--motion-duration-spatial) var(--motion-ease-spatial),
+    visibility 0s linear var(--motion-duration-spatial);
   box-sizing: border-box;
 }
 
