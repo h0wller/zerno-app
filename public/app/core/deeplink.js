@@ -50,9 +50,15 @@ if (typeof window.__initialSearch === 'undefined') {
 
 /* ── v69: диплинк заказов: «мой заказ» → фокус, «мои заказы» → история ── */
 (function(){
+  function prefersReducedMotion() {
+    return typeof window.matchMedia === 'function' &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  }
+
   var css = document.createElement('style');
   css.textContent = '.myOrderCard.flash{outline:3px solid rgba(31,78,140,.55);outline-offset:2px;animation:oflash 2.4s}' +
-  '@keyframes oflash{0%{background:#EAF1F9}100%{background:#fff}}';
+  '@keyframes oflash{0%{background:#EAF1F9}100%{background:#fff}}' +
+  '@media (prefers-reduced-motion:reduce){.myOrderCard.flash{animation:none}}';
   document.head.appendChild(css);
 
   var bP = QS.get('brand');
@@ -80,7 +86,12 @@ if (typeof window.__initialSearch === 'undefined') {
       }
     }
     if (!target) target = cards[0];
-    try { target.scrollIntoView({ block: 'center', behavior: 'smooth' }); } catch(e) {}
+    try {
+      target.scrollIntoView({
+        block: 'center',
+        behavior: prefersReducedMotion() ? 'auto' : 'smooth'
+      });
+    } catch(e) {}
     target.classList.add('flash');
     return true;
   }
@@ -103,7 +114,10 @@ if (typeof window.__initialSearch === 'undefined') {
         ensureProfileReady();
         var btn = document.getElementById('reviewBtn');
         if (btn) {
-          btn.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          btn.scrollIntoView({
+            behavior: prefersReducedMotion() ? 'auto' : 'smooth',
+            block: 'center'
+          });
           btn.classList.add('glow');
         }
       }, 500);
