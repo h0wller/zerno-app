@@ -273,6 +273,59 @@ test('coffee rail aligns to its menu card and delivery rail aligns to product ca
 });
 
 
+test('tablet desktop restores the 80px sidebar and three-column catalog', async ({ page }) => {
+  for (const brand of CASES) {
+    await page.setViewportSize({ width: 1024, height: 768 });
+    await page.addInitScript(() => sessionStorage.setItem('splashDone', '1'));
+    await page.goto('/?brand=' + brand.brand, { waitUntil: 'domcontentloaded' });
+    const gridSelector = brand.brand === 'coffee' ? '#grid' : '#deliveryGrid';
+    await expect(page.locator(gridSelector + ' .card').first()).toBeVisible({ timeout: 15000 });
+    const geometry = await page.evaluate(({ railSelector, gridSelector }) => {
+      const rail = document.querySelector(railSelector);
+      const grid = document.querySelector(gridSelector);
+      const first = grid.querySelector('.card');
+      const second = grid.querySelectorAll('.card')[1];
+      const third = grid.querySelectorAll('.card')[2];
+      return {
+        railWidth: rail.getBoundingClientRect().width,
+        columns: getComputedStyle(grid).gridTemplateColumns.split(' ').length,
+        firstTop: first.getBoundingClientRect().top,
+        secondTop: second.getBoundingClientRect().top,
+        thirdTop: third.getBoundingClientRect().top,
+      };
+    }, { railSelector: brand.rail, gridSelector });
+    expect(geometry.railWidth, brand.brand + ' desktop tablet rail width').toBeCloseTo(80, 0);
+    expect(geometry.columns, brand.brand + ' tablet desktop uses three columns').toBe(3);
+    expect(Math.abs(geometry.firstTop - geometry.secondTop)).toBeLessThanOrEqual(1);
+    expect(Math.abs(geometry.firstTop - geometry.thirdTop)).toBeLessThanOrEqual(1);
+  }
+});
+
+test('compact landscape retains the horizontal rail and full-width catalog', async ({ page }) => {
+  for (const brand of CASES) {
+    await page.setViewportSize({ width: 1024, height: 390 });
+    await page.addInitScript(() => sessionStorage.setItem('splashDone', '1'));
+    await page.goto('/?brand=' + brand.brand, { waitUntil: 'domcontentloaded' });
+    await expect(page.locator(brand.rail)).toBeVisible();
+    const geometry = await page.evaluate((railSelector) => {
+      const rail = document.querySelector(railSelector);
+      const rect = rail.getBoundingClientRect();
+      const style = getComputedStyle(rail);
+      return {
+        position: style.position,
+        flexDirection: style.flexDirection,
+        width: rect.width,
+        height: rect.height,
+      };
+    }, brand.rail);
+    expect(geometry.position).not.toBe('fixed');
+    expect(geometry.flexDirection).toBe('row');
+    expect(geometry.height).toBeGreaterThanOrEqual(44);
+    expect(geometry.height).toBeLessThanOrEqual(80);
+    expect(geometry.width).toBeGreaterThan(300);
+  }
+});
+
 test('both brand rails align to the catalog row on desktop', async ({page}) => {
   for (const brand of CASES) {
     await page.setViewportSize({width:1440,height:900});
