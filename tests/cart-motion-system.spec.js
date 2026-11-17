@@ -78,6 +78,7 @@ async function expectCartAtRest(panel, viewport, open) {
 test('reduced motion opens and closes the cart sheet without spatial travel', async ({ page }) => {
   const viewports = [
     { width: 390, height: 844 },
+    { width: 844, height: 390 },
     { width: 1024, height: 768 },
   ];
 
