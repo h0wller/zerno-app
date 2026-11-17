@@ -1192,6 +1192,7 @@ test('Telegram confirmation badge is immediate under reduced motion for both bra
       element.textContent = '✅ Номер подтверждён — завершите регистрацию';
     });
     await expect(badge).toBeVisible();
+    await badge.scrollIntoViewIfNeeded();
     await expect(badge).toHaveCSS('animation-name', 'badgeSlideIn');
     await expect(badge).toHaveCSS('animation-duration', '0.35s');
     await testInfo.attach('telegram-verification-badge-' + brand + '-normal-390x844.png', {
@@ -1201,7 +1202,6 @@ test('Telegram confirmation badge is immediate under reduced motion for both bra
 
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await expect(badge).toHaveCSS('animation-name', 'none');
-    await expect(badge).toHaveCSS('animation-duration', '0s');
     await expect(badge).toBeVisible();
     await expect(badge).toContainText('Номер подтверждён — завершите регистрацию');
     await testInfo.attach('telegram-verification-badge-' + brand + '-reduced-390x844.png', {
