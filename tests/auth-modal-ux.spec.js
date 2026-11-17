@@ -1199,3 +1199,46 @@ test('Telegram verification success badge skips its entrance animation under red
     contentType: 'image/png',
   });
 });
+
+
+test('Telegram confirmation badge appears without entrance motion under reduced motion', async ({ page }, testInfo) => {
+  await page.addInitScript(() => {
+    localStorage.setItem('zt_onb', '1');
+    sessionStorage.setItem('splashDone', '1');
+  });
+
+  for (const brand of ['coffee', 'delivery']) {
+    await page.emulateMedia({ reducedMotion: 'no-preference' });
+    await page.goto('/?brand=' + brand);
+    await page.waitForFunction(() => {
+      const link = Array.from(document.querySelectorAll('link[rel="stylesheet"]'))
+        .find((item) => item.href.includes('160-01-rail-fab-mobile.css'));
+      return link && link.media === 'all' && Array.from(document.styleSheets)
+        .some((sheet) => sheet.href === link.href);
+    });
+
+    const badge = page.locator('#regTgRow');
+    await badge.evaluate((element) => {
+      element.hidden = false;
+      element.className = 'auth-badge-confirmed';
+      element.textContent = 'Номер подтверждён в Telegram';
+    });
+    await expect(badge).toBeVisible();
+    await expect(badge).toHaveCSS('animation-name', 'badgeSlideIn');
+    await testInfo.attach('auth-confirmed-' + brand + '-normal-390x844.png', {
+      body: await page.screenshot({ fullPage: false }),
+      contentType: 'image/png',
+    });
+
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await expect.poll(() => badge.evaluate((element) =>
+      getComputedStyle(element).animationName
+    )).toBe('none');
+    await expect(badge).toBeVisible();
+    await expect(badge).toContainText('Номер подтверждён в Telegram');
+    await testInfo.attach('auth-confirmed-' + brand + '-reduced-390x844.png', {
+      body: await page.screenshot({ fullPage: false }),
+      contentType: 'image/png',
+    });
+  }
+});
