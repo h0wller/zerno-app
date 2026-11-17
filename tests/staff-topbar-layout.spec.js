@@ -714,7 +714,7 @@ test('desktop staff toast never covers role, edit, or floating support controls 
         };
       });
       expect(toastLayout.placement.position).toBe('fixed');
-      expect(toastLayout.placement.left).toBe('50%');
+      expect(Math.abs((toastLayout.toast.left + toastLayout.toast.right) / 2 - toastLayout.viewportWidth / 2)).toBeLessThanOrEqual(1);
       expect(toastLayout.placement.right).toBe('auto');
       expect(toastLayout.placement.bottom).toBe('24px');
       expect(toastLayout.placement.transform).not.toBe('none');
