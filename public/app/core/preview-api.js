@@ -211,7 +211,7 @@ function previewReadResponse(url, role) {
     case '/api/staff/customers':
       return jsonResponse({ customers: previewCustomers() });
     case '/api/staff/log':
-      return jsonResponse({ log: [{ t: 'Сегодня, 10:42', w: 'Демо-кассир', a: 'Профиль открыт для проверки интерфейса' }] });
+      return jsonResponse({ log: [{ t: 'Сегодня, 10:42', w: 'Демо-кассир', a: 'Демо-профиль открыт для проверки интерфейса' }] });
     case '/api/staff/pending':
       return jsonResponse({ pending: [{ id: 'preview-pending-01', name: 'Гость для демо', phone: '+7 900 000-00-03', actcode: '1234', created_at: updatedAt }] });
     case '/api/promos':
