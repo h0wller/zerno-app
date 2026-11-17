@@ -714,6 +714,7 @@ test('order deep link uses instant scroll and a static highlight under reduced m
       }
     })
   }));
+  mineRequestCount = 0;
   await page.addInitScript(() => {
     window.__orderDeepScrollCalls = [];
     const original = Element.prototype.scrollIntoView;
@@ -728,6 +729,7 @@ test('order deep link uses instant scroll and a static highlight under reduced m
   await page.goto('/?brand=delivery&tab=orders&no=P-1042');
   await expect(page.locator('#panel')).toHaveClass(/open/, { timeout: 10000 });
   const card = page.locator('#myOrders .myOrderCard').first();
+  await expect(card).toContainText('Заказ #P-1042');
   await expect(card).toHaveClass(/flash/, { timeout: 10000 });
   await expect.poll(() => card.evaluate(element => getComputedStyle(element).animationName))
     .toBe('none');
