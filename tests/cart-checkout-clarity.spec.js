@@ -1163,3 +1163,41 @@ test('checkout validation scroll respects reduced motion without changing field 
     await expect(page.locator('#checkoutStreet')).toHaveClass(/field-error/);
   }
 });
+
+
+test('continue-shopping navigation uses instant scroll under reduced motion', async ({ page }) => {
+  await page.addInitScript(() => {
+    localStorage.setItem('zt_onb', '1');
+    sessionStorage.setItem('splashDone', '1');
+  });
+  await page.goto('/?brand=delivery');
+  await page.waitForFunction(() => typeof window.renderCart === 'function');
+
+  await page.evaluate(() => {
+    const grid = document.getElementById('deliveryGrid');
+    if (!grid) throw new Error('Delivery grid fixture is missing');
+    window.__gotoMenuScroll = null;
+    grid.scrollIntoView = (options) => { window.__gotoMenuScroll = options || {}; };
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.setAttribute('data-goto-menu', '');
+    button.textContent = 'Перейти в меню';
+    document.body.appendChild(button);
+    window.__gotoMenuButton = button;
+  });
+
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.evaluate(() => window.__gotoMenuButton.click());
+  await expect.poll(() => page.evaluate(() => window.__gotoMenuScroll)).toEqual({
+    behavior: 'auto',
+    block: 'start'
+  });
+
+  await page.evaluate(() => { window.__gotoMenuScroll = null; });
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
+  await page.evaluate(() => window.__gotoMenuButton.click());
+  await expect.poll(() => page.evaluate(() => window.__gotoMenuScroll)).toEqual({
+    behavior: 'smooth',
+    block: 'start'
+  });
+});
