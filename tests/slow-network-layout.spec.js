@@ -1372,3 +1372,42 @@ test.describe('API request cancellation', () => {
     expect(result).toBe('AbortError');
   });
 });
+
+
+test('static coffee menu skeleton shimmer is disabled under reduced motion', async ({ page }, testInfo) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.addInitScript(() => {
+    localStorage.clear();
+    sessionStorage.clear();
+  });
+  // Keep the server-rendered first-frame skeleton in place so this checks the
+  // .skeleton-shimmer/.skeleton-line path, not delivery's dynamic .skeleton-pulse.
+  await page.route('**/dist/main.bundle.js*', (route) => route.abort());
+  await page.goto('/?brand=coffee', { waitUntil: 'commit' });
+
+  const skeleton = page.locator('#grid .card.skeleton-card').first();
+  await expect(skeleton).toBeVisible();
+  await expect(skeleton.locator('.skeleton-shimmer')).toBeVisible();
+  await expect(skeleton.locator('.skeleton-line').first()).toBeVisible();
+
+  await page.waitForFunction(() => {
+    const link = Array.from(document.querySelectorAll('link[rel="stylesheet"]'))
+      .find((item) => item.href.includes('40-catalog.css'));
+    return link && link.media === 'all' && Array.from(document.styleSheets)
+      .some((sheet) => sheet.href === link.href);
+  });
+
+  const animations = await skeleton.evaluate((element) => ({
+    shimmer: getComputedStyle(element.querySelector('.skeleton-shimmer')).animationName,
+    lines: Array.from(element.querySelectorAll('.skeleton-line'))
+      .map((line) => getComputedStyle(line).animationName),
+  }));
+  expect(animations.shimmer).toBe('none');
+  expect(animations.lines.every((name) => name === 'none')).toBe(true);
+
+  await testInfo.attach('coffee-static-skeleton-reduced-390x844.png', {
+    body: await page.screenshot({ fullPage: false }),
+    contentType: 'image/png',
+  });
+});
