@@ -842,4 +842,21 @@ html body #authModal.tg-mode .mhint{
   html body #cartFab.cartFab {
     bottom: calc(var(--rail-total-h) + 12px);
   }
+
+  body.cart-open #cartFab {
+    visibility: hidden;
+    pointer-events: none;
+  }
+
+  html body #mbonusBtn,
+  html body #scanFab,
+  html body .fab-scan {
+    bottom: calc(var(--rail-total-h) + 12px);
+  }
+
+  html body:has(#cartFab.visible:not([hidden])) #mbonusBtn,
+  html body:has(#cartFab.visible:not([hidden])) #scanFab,
+  html body:has(#cartFab.visible:not([hidden])) .fab-scan {
+    bottom: calc(var(--rail-total-h) + 12px + 64px + 12px);
+  }
 }
