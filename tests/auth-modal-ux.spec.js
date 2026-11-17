@@ -1179,15 +1179,15 @@ test('Telegram confirmation badge is immediate under reduced motion for both bra
         .some((sheet) => sheet.href === link.href);
     });
 
+    // Isolate the component from the registration form's intentionally hidden state.
     await page.evaluate(() => {
       const badge = document.createElement('div');
       badge.id = 'telegramVerificationSuccessFixture';
       badge.className = 'auth-badge-confirmed';
-      badge.setAttribute('role', 'status');
-      badge.setAttribute('aria-live', 'polite');
       badge.textContent = 'Номер подтверждён в Telegram';
       document.body.appendChild(badge);
     });
+
     const badge = page.locator('#telegramVerificationSuccessFixture');
     await expect(badge).toBeVisible();
     await expect(badge).toHaveCSS('animation-name', 'badgeSlideIn');
