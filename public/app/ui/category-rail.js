@@ -177,6 +177,7 @@ function markRailScrolling() {
 }
 
 window.alignRailWithCard = alignRailWithCard;
+window.usesHorizontalCategoryRailViewport = usesFloatingCategoryRailViewport;
 
 window.addEventListener('scroll', function () {
   markRailScrolling();
