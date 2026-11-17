@@ -1,6 +1,6 @@
 # Zerno Motion System — аудит и спецификация
 
-**Статус на 2026-11-17:** Stage 0–1 завершены; Stage 2–4 частично реализованы. Последний проверенный source HEAD `5f7edf100a5ab11246013d696c9bc1cd3fe30efc` прошёл CI #4087 (13/13 jobs). Остаток — визуальная приёмка отдельных поверхностей, lifecycle прочих hidden/offscreen loops и Stage 5.
+**Статус на 2026-11-17:** Stage 0–1 завершены; core implementation Stage 2–4 проверена на обоих брендах. Stage 5 — финальная визуальная приёмка — ещё открыт: остаются отдельные staff overlays, interruption/resize matrix, hidden/offscreen loop audit и отдельное расследование document-level CLS. Последний проверенный source HEAD `071e9a2b32fe0ba33febf24817a2969cff77e7f0` прошёл CI run `44111856462` (13/13 jobs).
 **PR:** #268, Draft. Ветка: `design/ui-animation-system-20261116`.
 **Проверенный source HEAD:** `5f7edf100a5ab11246013d696c9bc1cd3fe30efc`.
 **Base:** `pizza`, SHA `dacb424bdff9d073b3b9a4e13d723db1da92d078`.
@@ -230,13 +230,13 @@ Baseline evidence:
 - [x] RED подтверждён на overlay fade; после CSS-фикса computed duration карточки проверяется численно с учётом Chromium serialization (`0.01ms` → `1e-05s`).
 - [x] Reduced-motion auth visual matrix: coffee/delivery × portrait/compact landscape/desktop × open/closed; 12 кадров открыты и осмотрены.
 - [x] Component-owned modal CSS uses spatial tokens and local reduced motion; core/overlay-core.js, core/panel.js and JS focus lifecycle remain unchanged.
-- [x] Generic modal/shared overlay, staff PIN error and fullscreen QR reduced-motion assertions added to `auth-modal-ux.spec.js`; all passed in CI #4087 on current source HEAD. Dedicated PIN/QR screenshots are not attached to this run, so their visual gate remains open.
+- [x] Generic modal/shared overlay, staff PIN error and fullscreen QR reduced-motion assertions are covered by `auth-modal-ux.spec.js`. PIN-error and fullscreen-QR screenshots were attached to Auth artifact `playwright-Auth-44111856462` and opened/reviewed at delivery, `390×844`, reduced motion.
 - [x] Address book sheet: normal entry/exit, reduced-motion immediate close, rapid reopen cancellation; `transitionrun` + delayed hidden lifecycle доказаны тестами.
 - [x] RED подтверждён: прежний JS переключал `hidden` синхронно, из-за чего entry/exit transition не запускались; GREEN после component-owned lifecycle fix в `core/address-book.js`.
 - [x] Cart/checkout screenshot `cart-address-book-390px` открыт и осмотрен: delivery/mobile 390×844, нижняя sheet, фон/контекст читаемы, 44×44px close/edit/delete targets, bottom/overflow assertions сохранены.
 - [x] Добавлено reduced-motion покрытие generic modal/shared overlay и PIN/QR в `tests/auth-modal-ux.spec.js`; `90-modals.css` отключает transition у modal/overlay controls, PIN shake и QR canvas entrance.
 - [x] Auth E2E на текущем source HEAD: CI #4087, 42/42 passed. Reduced-motion auth modal matrix (coffee/delivery × portrait/compact landscape/desktop × open/closed) — 12 кадров открыты и осмотрены; layout/focus visual state принят.
-- [ ] Отдельно получить и осмотреть кадры PIN error и fullscreen QR; остальные staff overlays остаются открытыми.
+- [x] PIN-error и fullscreen-QR кадры на delivery / `390×844` под reduced motion открыты и визуально приняты в CI `44111856462`. Остальные staff overlays остаются открытыми для Stage 5.
 
 ### Stage 3 — micro/component
 
@@ -268,19 +268,19 @@ Baseline evidence:
 - [x] Toast CSS переведён на общие tokens: entry 180ms и exit 120ms, без overshoot; при reduced motion entry мгновенный, exit скрывает toast без анимации.
 - [x] Normal/reduced toast assertions для coffee/delivery добавлены также в `tests/chat-support.spec.js`, который присутствует в эффективном базовом CI workflow; тест ожидает готовность `window.toast`.
 - [x] Toast RED/GREEN подтверждён: CI #4084 на `aeeb5ae40d91a3a483f0d5363d6c6d0f383eb696` поймал пропуск краткого `.out` (300ms); CI #4085 прошёл после ускорения polling до `[50, 100]`. Normal/reduced состояния для coffee/delivery проходят в `chat-support.spec.js` и `toast-motion.spec.js`; standalone spec перечислен в `Responsive UI` workflow один раз.
-- [ ] Снять и осмотреть toast timing frames/recording для normal и reduced motion; текущие assertions подтверждают computed styles и lifecycle, но не заменяют визуальный timing review.
+- [x] Toast timing визуально проверен: `toast-motion.spec.js` фиксирует реальные CSS animations `tin`/`tout` на 50% длительности через Web Animations API и прикладывает midpoint кадры normal entry/exit для coffee/delivery; reduced entry/exit также сняты. Все 8 кадров открыты и осмотрены в Responsive UI artifact `playwright-Responsive UI-44111856462` (`390×844`).
 - [x] `core/fx.js` теперь отменяет активный RAF и очищает canvas/particles на `visibilitychange` → hidden; новый вызов `confetti()` в hidden игнорируется, автоматического resume при visible нет. RED зафиксирован в CI #4086, GREEN — Auth 42/42 в CI #4087.
 - [ ] Продолжить отдельный аудит hidden/offscreen CSS loops и staff surfaces; не вводить общий lifecycle manager или глобальный override.
 - [x] Ticker manual fallback подтверждён: `tests/pour-accessibility.spec.js` проверяет normal marquee, `animation-name:none`, `overflow-x:auto` и реальное ручное перемещение при reduced motion; CI #4087 прошёл.
-- [ ] Закрыть splash first-frame parity: сравнить critical first frame с hydrated state для обоих брендов и проверить reduced-motion визуально.
+- [x] Splash first-frame parity проверена: critical CSS против deferred `80-splash.css` для coffee/delivery, mobile `390×844` и desktop `1024×768`; normal timeline продолжает исходный `spFloat`, geometry/motion совпадают. Reduced-motion critical/theme кадры статичны. Пары открыты и осмотрены в Visual stability artifact `playwright-Visual stability-44111856462`.
 
 ### Stage 5 — финальная проверка
 
-- [ ] Normal и reduce для каждого изменённого пути.
+- [x] Реализованные core motion paths имеют normal/reduced regression coverage; оставшиеся overlays и отложенные category/card/delivery paths отдельно перечислены ниже и не считаются закрытыми.
 - [ ] Быстрые повторные действия, interruption, viewport resize, keyboard/focus, touch.
 - [ ] Оба бренда, guest/staff, mobile portrait, compact/short landscape, desktop.
 - [ ] CLS, overflow, scroll, hit-target и overlay focus.
-- [ ] Короткие recordings, когда screenshot не показывает timing/interruption.
+- [x] Для toast timing добавлены детерминированные midpoint screenshots и computed progress assertions. Recording для interruption/resize путей оставшихся overlays всё ещё требуется.
 - [ ] Открыть каждый обязательный after screenshot. Записать SHA, viewport, brand, role, state и визуальный результат.
 
 ## 8. Existing test coverage и пробелы
@@ -304,10 +304,10 @@ Baseline evidence:
 Пробелы:
 - Нет специальных тестов timing tokens.
 - Cart sheet reduced-motion open/close и interruption close/reopen покрыты `tests/cart-motion-system.spec.js`; общий Cart/checkout проходит на проверенном SHA.
-- Generic modal/overlay/PIN/QR, validation scroll, order deep-link flash/scroll и confetti reduce paths имеют regression assertions; runtime GREEN подтверждён CI #4087. Auth modal matrix осмотрена визуально; отдельные кадры PIN/QR и оставшихся staff overlays ещё нужны.
+- Generic modal/overlay/PIN/QR, validation scroll, order deep-link flash/scroll и confetti reduce paths имеют regression assertions. Auth modal matrix, PIN-error и fullscreen-QR кадры осмотрены на актуальном CI `44111856462`. Визуальная приёмка остальных staff overlays ещё нужна.
 - Staff overlays кроме PIN, interruption/resize для generic modal, chat FAB pseudo ping, hint pulse, bonus/free/staff ambient pulses и остальные smooth-scroll paths требуют дальнейшей проверки.
 - Нет проверки resize во время перехода с фокусом/scroll.
-- Большинство visual tests фиксируют stable states, а не промежуточные кадры.
+- Toast entry/exit теперь имеет детерминированные промежуточные кадры; остальные overlay/interruption пути в основном фиксируют stable states и требуют отдельного timing review.
 
 Новые тесты должны утверждать реальное поведение, timing/interruption и геометрию, не только наличие CSS transition.
 
@@ -325,20 +325,27 @@ Baseline evidence:
 
 ## 10. Текущий статус
 
-Срез на 2026-11-17. PR #268, branch `design/ui-animation-system-20261116`, base `pizza` (`dacb424bdff9d073b3b9a4e13d723db1da92d078`). Последний проверенный source HEAD: `5f7edf100a5ab11246013d696c9bc1cd3fe30efc`. PR остаётся Draft; `mergeable=true`, `mergeable_state=clean`.
+Срез на 2026-11-17. PR #268, branch `design/ui-animation-system-20261116`, base `pizza` (`dacb424bdff9d073b3b9a4e13d723db1da92d078`). Проверенный source HEAD: `071e9a2b32fe0ba33febf24817a2969cff77e7f0`. PR остаётся Draft; `mergeable=true`, конфликтов с base нет.
 
-**Подтверждённый CI:** run `44069947252` на точном source HEAD `5f7edf100a5ab11246013d696c9bc1cd3fe30efc`, conclusion `success`, 13/13 jobs. Все build steps прошли; `npm run build:client` запускает штатный `npm run bump:sw` перед esbuild. Auth — 42 passed; Mobile Chrome — 137 passed и 4 skipped; Responsive UI — 134 passed и 4 skipped, один retry-flake в сценарии выбора темы поддержки. Все jobs завершились success.
+**Подтверждённый CI:** run [44111856462](https://github.com/h0wller/zerno-app/actions/runs/44111856462) на точном HEAD `071e9a2b32fe0ba33febf24817a2969cff77e7f0`, conclusion `success`, 13/13 jobs. Auth — 43/43 passed; Responsive UI — 135 passed, 4 skipped, 0 flaky; Mobile Chrome — 139 passed, 4 skipped. Cart/checkout, Profile, Menu/search, Staff API, Visual UX capture, Visual stability, UI baseline, Bonuses, PWA и Code Quality также завершились success. Все build steps прошли; `npm run build:client` выполняет штатный `npm run bump:sw` перед esbuild.
 
-**Изменения текущего цикла:** коммит `b2833b2` исправил только viewport/polling assumptions в тестах после CI #4084; коммит `39d8a73` добавил RED-сценарий остановки confetti на hidden; коммит `5f7edf1` минимально изменил только `public/app/core/fx.js`. Владелец canvas/particles сохранён: frame ID теперь хранится, скрытие документа отменяет RAF и очищает canvas, запуск в hidden игнорируется. Возврат visible сам по себе не возобновляет частицы. API, бизнес-логика, другие DOM owners и screenshot baselines не менялись.
+**Изменения последнего цикла:** коммиты `086470b`, `1630647` и `071e9a2` усилили только тестовую визуальную фиксацию toast motion в `tests/toast-motion.spec.js`: реальная CSS animation ставится на паузу на 50% длительности, проверяются промежуточные opacity/translateX и прикладываются кадры. Runtime CSS/JS, DOM ownership, бизнес-логика, API и screenshot baselines этим циклом не менялись. Ранее добавленное локальное reduced-motion правило для `.auth-badge-confirmed` сохраняет подтверждение видимым без entrance animation.
 
-Stage 0 завершён. Stage 1 (cart sheet) завершён и ранее прошёл отдельную визуальную проверку. Stage 2: auth modal/overlay и address book sheet ранее визуально проверены; текущий Auth E2E 42/42 успешен. 12 кадров reduced-motion auth modal для coffee/delivery на portrait, compact landscape и desktop (open/closed) открыты и осмотрены. PIN error и fullscreen QR имеют зелёные reduced-motion assertions, но отдельные visual captures пока отсутствуют; остальные staff overlays остаются в очереди.
+**Визуальная приёмка на source HEAD `071e9a2`:**
+- Splash: critical first frame и deferred theme CSS сопоставлены для coffee/delivery на mobile `390×844` и desktop `1024×768`, в normal и reduced motion. Геометрия и параметры анимаций совпадают; normal `spFloat` не перезапускается после поздней загрузки CSS.
+- Skeleton: coffee first-frame skeleton на `390×844` в reduced motion статичен, без shimmer/pulse.
+- Auth: confirmation badge осмотрен в normal/reduced для coffee/delivery на `390×844`; статус остаётся видимым. PIN-error и fullscreen QR осмотрены на delivery / `390×844` в reduced motion. Ранее принятая auth modal matrix — 12 кадров coffee/delivery × portrait/compact landscape/desktop × open/closed.
+- Toast: normal entry/exit midpoint и reduced entry/exit для coffee/delivery на `390×844` открыты и осмотрены; reduced сохраняет немедленную видимость/скрытие без движения, normal даёт короткий spatial feedback без overshoot.
+- Staff toast: placement осмотрен для coffee/delivery при ширине `821px` и `1024px`; нижняя центральная позиция не перекрывает role/edit controls и support FAB. Полная визуальная приёмка cashier/dispatcher/admin overlays ещё не завершена.
 
-Stage 3: chat panel/FAB/hints, cart FAB, topbar controls, profile ambient и cashier feedback имеют локальные reduced-motion правила и regression tests. Category/card/rail/stepper/add-product interactions остаются отложенными из-за отдельной зависимости #266; не менять пересекающиеся menu/card/delivery owners до согласования.
+**Состояние этапов:** Stage 0 и Stage 1 завершены. Stage 2: auth/address-book, PIN-error и QR motion paths визуально проверены; остальные staff overlays ещё не приняты. Stage 3: реализованные chat/FAB/topbar/profile/cashier paths reduce-safe; category/card/stepper/add-product interactions отложены из-за #266. Stage 4: toast, splash, ticker, confetti, service/profile/cashier ambient и реализованные scroll paths покрыты; часть delivery validation/category scroll остаётся отложенной из-за #266/#269. Stage 5 открыт до завершения полной matrix и residual findings.
 
-Stage 4: toast, service/profile/cashier ambient, checkout validation scroll, order deep-link scroll/flash, confetti и cart continue-shopping scroll имеют reduce-safe изменения/assertions. Toast RED/GREEN подтверждён на текущем PR: CI #4084 воспроизвёл пропуск transient `.out`, CI #4085 прошёл после корректировки polling. Ticker manual fallback подтверждён `tests/pour-accessibility.spec.js` и прошёл CI #4087. Splash first-frame parity остаётся открытой. Confetti теперь останавливается и при смене document visibility на hidden.
+**Оставшиеся findings / риски:**
+- Category/card/rail/stepper/add-product interactions и delivery validation/category smooth-scroll в `delivery.js` не менять до согласования dependency #266 и пересечений с #269.
+- Нужна визуальная приёмка оставшихся staff overlays и состояний cashier/dispatcher/admin; текущие PIN/QR и cashier feedback captures не заменяют полный role/overlay matrix.
+- Не все быстрые повторные действия, interruption и viewport resize проверены одновременно с keyboard/focus/scroll на generic modal и оставшихся overlays.
+- В Mobile Chrome log desktop staff hydration: staff-header CLS = `0`, но document-level CLS = `0.0511`; источники — footer/profile/sidebar geometry shifts. Тест изолирует header contract. Это отдельный UX follow-up; не скрывать и не ослаблять assertions.
+- F2.x support chooser race исторически проявлялась как retry в CI #4087; в текущем run Responsive UI — 0 flaky и 0 retries. Считать не воспроизведённой на текущем SHA, но оставить как follow-up до отдельного целевого retest.
+- Отдельный аудит hidden/offscreen CSS loops не завершён. Не вводить общий lifecycle manager или глобальный reduced-motion override.
 
-Отдельная нестабильность CI #4087: `tests/chat-support.spec.js:63` — выбор темы доставки не закрыл `#supportChooseOverlay` с первой попытки; retry прошёл, Responsive UI завершился success. Тест ссылается на ранее отмеченную race в support chooser (F2.x); это отдельный follow-up, не связанный с motion/fx изменением.
-
-Аудит декоративных циклов: для ticker, splash, skeleton-pulse, profile ambient (`.stamp.n`, `.freeCard .fe`), service hints/pulses и auth spinner существуют локальные reduced-motion правила. Общего lifecycle выключения всех hidden/offscreen surfaces нет; не добавлять глобальный override. Category rail lifecycle принадлежит `ui/category-rail.js` и остаётся в зоне отложенной зависимости #266.
-
-Следующие этапы: визуально проверить PIN/QR и toast timing; закрыть splash first-frame parity; проверить оставшиеся staff overlays и normal/reduced motion на полном наборе ролей/viewport; отдельно решить F2.x support chooser retry; завершить Stage 5 visual gate. PR остаётся Draft.
+**Следующий шаг:** закрыть оставшиеся staff overlays/role matrix, проверить interruption + resize и расследовать document-level CLS `0.0511`. PR остаётся Draft; не мерджить до полного visual gate.
