@@ -156,4 +156,38 @@ test.describe('Мои адреса: шторка и сохранение', () =>
     await expect(sheet).toHaveClass(/open/);
   });
 
+
+  test('шторка открывается и закрывается с пространственным переходом до hidden', async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'no-preference' });
+    await load(page);
+    await page.addStyleTag({ path: 'public/app/ui/theme/160-01-rail-fab-mobile.css' });
+
+    await page.evaluate(() => {
+      window.__addressBookMotionEvents = [];
+      document.addEventListener('transitionrun', (event) => {
+        if (event.target && event.target.id === 'addrBookSheet') {
+          window.__addressBookMotionEvents.push(event.propertyName);
+        }
+      }, true);
+    });
+
+    const sheet = page.locator('#addrBookSheet');
+    await page.click('#addrBookBtn');
+    await expect(sheet).toHaveClass(/open/);
+    await expect.poll(() => page.evaluate(() => window.__addressBookMotionEvents))
+      .toContain('opacity');
+
+    const openStyle = await sheet.evaluate((element) => {
+      const style = getComputedStyle(element);
+      return { duration: style.transitionDuration, opacity: style.opacity };
+    });
+    expect(openStyle.duration).toContain('0.22s');
+    expect(openStyle.opacity).toBe('1');
+
+    await page.evaluate(() => window.AddressBook.close());
+    await expect(sheet).not.toHaveClass(/open/);
+    await expect(sheet).toBeVisible();
+    await expect.poll(() => sheet.evaluate((element) => element.hidden)).toBe(true);
+  });
+
 });
