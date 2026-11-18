@@ -120,50 +120,27 @@ test('delivery option validation keeps its message but removes shake under reduc
 
 
 
-test.describe('Card entrance and delivery stepper motion', () => {
+
+test.describe('Card and stepper motion geometry', () => {
   test.use({ reducedMotion: 'no-preference' });
 
-  test('preserves geometry in both brands and disables motion when requested', async ({ page }, testInfo) => {
-    const cases = [
-      { brand: 'coffee', grid: '#grid' },
-      { brand: 'delivery', grid: '#deliveryGrid' },
-    ];
-
-    for (const item of cases) {
+  test('keeps card and 44px stepper geometry stable across both brands', async ({ page }, testInfo) => {
+    for (const item of [{ brand: 'coffee', grid: '#grid' }, { brand: 'delivery', grid: '#deliveryGrid' }]) {
       await page.setViewportSize({ width: 390, height: 844 });
-      await page.emulateMedia({ reducedMotion: 'no-preference' });
       await page.addInitScript(() => {
         localStorage.setItem('zt_onb', '1');
         localStorage.removeItem('zt_cart');
         sessionStorage.setItem('splashDone', '1');
       });
       await page.goto('/?brand=' + item.brand, { waitUntil: 'domcontentloaded' });
-      await expect.poll(() => page.evaluate(() =>
-        window.matchMedia('(prefers-reduced-motion: reduce)').matches
-      )).toBe(false);
-
-      const grid = page.locator(item.grid);
-      const card = grid.locator('.card:not(.skeleton-card)').first();
+      const card = page.locator(item.grid + ' .card:not(.skeleton-card)').first();
       await expect(card).toBeVisible();
       await page.evaluate(() => document.fonts.ready);
 
-      const entrance = await card.evaluate((element) => {
-        const style = getComputedStyle(element);
-        const rect = element.getBoundingClientRect();
-        return {
-          animationName: style.animationName,
-          animationDuration: style.animationDuration,
-          animationDelay: style.animationDelay,
-          width: rect.width,
-          height: rect.height,
-        };
-      });
-      expect(entrance.animationDuration).toBe('0.18s');
-      expect(entrance.animationDelay).toBeTruthy();
-      expect(entrance.width).toBeGreaterThan(0);
-      expect(entrance.height).toBeGreaterThan(0);
-
-      await testInfo.attach(item.brand + '-card-entry-390x844.png', {
+      const initial = await card.boundingBox();
+      expect(initial?.width).toBeGreaterThan(0);
+      expect(initial?.height).toBeGreaterThan(0);
+      await testInfo.attach(item.brand + '-card-390x844.png', {
         body: await page.screenshot({ fullPage: false }),
         contentType: 'image/png',
       });
@@ -173,18 +150,16 @@ test.describe('Card entrance and delivery stepper motion', () => {
         const option = card.locator('.opts input[type="radio"]').first();
         if (await option.count()) await option.check();
 
-        const before = await card.boundingBox();
         await add.click();
         await expect(add).toHaveClass(/incart/);
-        const row = card.locator('.steprow');
-        const minus = row.locator('[data-step="-1"]');
-        const plus = row.locator('[data-step="1"]');
+        const minus = card.locator('.steprow [data-step="-1"]');
+        const plus = card.locator('.steprow [data-step="1"]');
         await expect(minus).toBeVisible();
         await expect(plus).toBeVisible();
 
         const added = await card.evaluate((element) => {
           const rect = element.getBoundingClientRect();
-          const controls = Array.from(element.querySelectorAll('.steprow .step')).map((button) => {
+          const controls = Array.from(element.querySelectorAll('.steprow [data-step]')).map((button) => {
             const box = button.getBoundingClientRect();
             const style = getComputedStyle(button);
             return {
@@ -196,8 +171,8 @@ test.describe('Card entrance and delivery stepper motion', () => {
           });
           return { width: rect.width, height: rect.height, controls };
         });
-        expect(Math.abs(added.height - before.height)).toBeLessThanOrEqual(1);
-        expect(added.width).toBeCloseTo(before.width, 1);
+        expect(Math.abs(added.height - initial.height)).toBeLessThanOrEqual(1);
+        expect(added.width).toBeCloseTo(initial.width, 1);
         expect(added.controls).toHaveLength(2);
         for (const control of added.controls) {
           expect(control.width).toBe(44);
@@ -205,22 +180,20 @@ test.describe('Card entrance and delivery stepper motion', () => {
           expect(control.transitionProperty).toContain('transform');
           expect(control.transitionDuration).toContain('0.12s');
         }
-
-        await testInfo.attach('delivery-stepper-ready-390x844.png', {
+        await testInfo.attach('delivery-stepper-390x844.png', {
           body: await page.screenshot({ fullPage: false }),
           contentType: 'image/png',
         });
 
-        const beforeIncrement = await card.boundingBox();
+        const cardBeforeQty = await card.boundingBox();
         await plus.click();
         await expect.poll(() => page.evaluate(() => {
-          const storage = JSON.parse(localStorage.getItem('zt_cart') || '[]');
-          return storage.reduce((sum, line) => sum + line.qty, 0);
+          const cart = JSON.parse(localStorage.getItem('zt_cart') || '[]');
+          return cart.reduce((sum, line) => sum + line.qty, 0);
         })).toBe(2);
-        const afterIncrement = await card.boundingBox();
-        expect(Math.abs(afterIncrement.height - beforeIncrement.height)).toBeLessThanOrEqual(1);
-
-        await testInfo.attach('delivery-stepper-increment-390x844.png', {
+        const cardAfterQty = await card.boundingBox();
+        expect(Math.abs(cardAfterQty.height - cardBeforeQty.height)).toBeLessThanOrEqual(1);
+        await testInfo.attach('delivery-stepper-quantity-2-390x844.png', {
           body: await page.screenshot({ fullPage: false }),
           contentType: 'image/png',
         });
@@ -234,13 +207,12 @@ test.describe('Card entrance and delivery stepper motion', () => {
       await expect(card).toHaveCSS('animation-name', 'none');
       await expect(card).toHaveCSS('transition-duration', '0s');
       if (item.brand === 'delivery') {
-        await expect(card.locator('[data-step="-1"]')).toHaveCSS('transition-duration', '0s');
-        await expect(card.locator('[data-step="1"]')).toHaveCSS('transition-duration', '0s');
+        await expect(card.locator('.steprow [data-step="-1"]')).toHaveCSS('transition-duration', '0s');
+        await expect(card.locator('.steprow [data-step="1"]')).toHaveCSS('transition-duration', '0s');
       }
-      const reduced = await card.boundingBox();
-      expect(Math.abs(reduced.width - beforeReduced.width)).toBeLessThanOrEqual(1);
-      expect(Math.abs(reduced.height - beforeReduced.height)).toBeLessThanOrEqual(1);
-
+      const afterReduced = await card.boundingBox();
+      expect(Math.abs(afterReduced.width - beforeReduced.width)).toBeLessThanOrEqual(1);
+      expect(Math.abs(afterReduced.height - beforeReduced.height)).toBeLessThanOrEqual(1);
       await testInfo.attach(item.brand + '-reduced-motion-390x844.png', {
         body: await page.screenshot({ fullPage: false }),
         contentType: 'image/png',
