@@ -127,7 +127,7 @@ const CART_OPEN_VIEWPORTS = [
 
 test.describe('floating rail clearances and overlay ownership', () => {
   for (const viewport of VIEWPORTS) {
-    test('delivery: first visible card CTA does not sit underneath the rail at ' + viewport.name, async ({ page }, testInfo) => {
+    test('delivery: first card CTA scrolls into an unobstructed area and adds one item at ' + viewport.name, async ({ page }, testInfo) => {
       await page.setViewportSize({ width: viewport.width, height: viewport.height });
       await page.addInitScript(() => {
         sessionStorage.setItem('splashDone', '1');
@@ -141,14 +141,28 @@ test.describe('floating rail clearances and overlay ownership', () => {
       const firstCard = page.locator('#deliveryGrid .card:not(.skeleton-card)').first();
       await expect(rail).toBeVisible({ timeout: 15000 });
       await expect(firstCard).toBeVisible({ timeout: 15000 });
+
+      const option = firstCard.locator('.opts label.opt-btn').first();
+      await expect(option).toBeVisible();
+      await option.click();
+
       const firstAction = firstCard.locator('.steprow .cta[data-add], [data-add]').first();
       await expect(firstAction).toBeVisible();
+      // Bring the real control into the working viewport; the fixed rail must not cover it after scrolling.
+      await firstAction.evaluate(element => element.scrollIntoView({
+        block: 'center',
+        inline: 'nearest',
+        behavior: 'instant',
+      }));
       const geometry = await page.evaluate(() => {
-        const rail = document.querySelector('#deliveryRail').getBoundingClientRect();
+        const railRect = document.querySelector('#deliveryRail').getBoundingClientRect();
         const card = document.querySelector('#deliveryGrid .card:not(.skeleton-card)');
         const action = card && card.querySelector('.steprow .cta[data-add], [data-add]');
         const actionRect = action && action.getBoundingClientRect();
-        const railRect = rail;
+        const hit = actionRect && document.elementFromPoint(
+          actionRect.left + actionRect.width / 2,
+          actionRect.top + actionRect.height / 2
+        );
         return {
           rail: { top: railRect.top, bottom: railRect.bottom, left: railRect.left, right: railRect.right },
           action: actionRect && {
@@ -156,10 +170,7 @@ test.describe('floating rail clearances and overlay ownership', () => {
             left: actionRect.left, right: actionRect.right,
           },
           viewport: { width: innerWidth, height: innerHeight },
-          hitTarget: actionRect && document.elementFromPoint(
-            actionRect.left + actionRect.width / 2,
-            actionRect.top + actionRect.height / 2
-          )?.closest('[data-add]') === action,
+          hitTarget: !!hit && hit.closest('[data-add]') === action,
         };
       });
       await testInfo.attach('delivery-' + viewport.name + '-first-cta-clearance.json', {
@@ -170,12 +181,19 @@ test.describe('floating rail clearances and overlay ownership', () => {
         body: await page.screenshot({ animations: 'disabled' }),
         contentType: 'image/png',
       });
+
       expect(geometry.action, 'the real first-card add control must exist').not.toBeNull();
       expect(
         geometry.action.bottom <= geometry.rail.top || geometry.action.top >= geometry.rail.bottom,
-        'the first card CTA must not geometrically intersect the fixed category rail'
+        'after scrolling, the first card CTA must be outside the fixed rail hit area'
       ).toBe(true);
       expect(geometry.hitTarget, 'the center of the first card CTA must receive its own hit test').toBe(true);
+
+      await firstAction.click();
+      await expect(firstCard.locator('.step[data-step="1"]').first()).toBeVisible({ timeout: 7000 });
+      await expect.poll(() => page.evaluate(() => Array.isArray(window.cart) ? window.cart.reduce(
+        (sum, item) => sum + (Number(item.qty) || 0), 0
+      ) : 0)).toBe(1);
     });
   }
 
@@ -246,7 +264,7 @@ test.describe('floating rail clearances and overlay ownership', () => {
       await expect(fab).toBeVisible();
     });
 
-    test('coffee: profile overlay does not create a fictitious delivery cart FAB at ' + viewport.name, async ({ page }, testInfo) => {
+    test('coffee: guest profile button opens auth modal without creating delivery cart FAB at ' + viewport.name, async ({ page }, testInfo) => {
       await page.setViewportSize({ width: viewport.width, height: viewport.height });
       await page.addInitScript(() => {
         sessionStorage.setItem('splashDone', '1');
@@ -258,20 +276,21 @@ test.describe('floating rail clearances and overlay ownership', () => {
       const rail = page.locator('#rail');
       const fab = page.locator('#cartFab');
       const profileButton = page.locator('#profileTopBtn');
-      const profilePanel = page.locator('#panel');
+      const authModal = page.locator('#authModal');
       await expect(rail).toBeVisible({ timeout: 15000 });
       await expect(fab).toBeHidden();
       await expect(profileButton).toBeVisible();
+
       await profileButton.click();
-      await expect(profilePanel).toHaveClass(/open/);
-      await expect(rail).toBeVisible();
+      await expect(authModal).toHaveClass(/show/);
+      await expect(fab).toBeHidden();
       await expect(rail).toHaveCSS('visibility', 'visible');
-      await testInfo.attach('coffee-' + viewport.name + '-profile-open.png', {
+      await testInfo.attach('coffee-' + viewport.name + '-auth-modal-open.png', {
         body: await page.screenshot({ animations: 'disabled' }),
         contentType: 'image/png',
       });
-      await page.locator('#panel .btn-back').click();
-      await expect(profilePanel).not.toHaveClass(/open/);
+      await page.locator('#skipAuth').click();
+      await expect(authModal).not.toHaveClass(/show/);
       await expect(rail).toBeVisible();
     });
   }
