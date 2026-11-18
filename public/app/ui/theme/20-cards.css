@@ -16,8 +16,8 @@
 
   body:has(#cartFab.visible:not([hidden])):not(.is-cashier):not(.is-admin) #grid,
   body:has(#cartFab.visible:not([hidden])):not(.is-cashier):not(.is-admin) #deliveryGrid {
-    padding-bottom: calc(var(--rail-total-h) + 12px + 64px + 16px);
-    scroll-padding-bottom: calc(var(--rail-total-h) + 12px + 64px + 16px);
+    padding-bottom: calc(var(--rail-total-h) + 12px + 48px + 28px + 16px);
+    scroll-padding-bottom: calc(var(--rail-total-h) + 12px + 48px + 28px + 16px);
   }
 
   body.cart-open #grid,
