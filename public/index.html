@@ -3766,8 +3766,8 @@ html body #tickerTrack .tickerGroup > span {
     height:auto;
     min-height:0;
     max-height:none;
-    margin:2px 0 6px;
-    padding:8px 12px;
+    margin:2px 0 4px;
+    padding:4px 12px;
   }
   html body :is(#menuView,#deliveryView) .menu-head .mh-top {
     display:flex;
@@ -3872,26 +3872,40 @@ html body #tickerTrack .tickerGroup > span {
     justify-content:center;
     box-sizing:border-box;
   }
+  html[data-brand="coffee"] body #grid,
+  html[data-brand="delivery"] body #deliveryGrid {
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:12px;
+  }
   html body #deliveryView #deliverySubFilterViewport {
     box-sizing:border-box;
     height:44px;
     min-height:44px;
     max-height:44px;
   }
+  html body #menuView #grid > .card > .cbody,
+  html body #deliveryView #deliveryGrid > .card > .cbody {
+    padding-top:8px;
+    gap:4px;
+  }
     html body #menuView #grid > .card > .media,
   html body #deliveryView #deliveryGrid > .card > .media {
     box-sizing:border-box;
-    flex:0 0 44px;
+    flex:0 0 24px;
     width:100%;
-    height:44px;
-    min-height:44px;
-    max-height:44px;
+    height:24px;
+    min-height:24px;
+    max-height:24px;
     aspect-ratio:auto;
   }
   html body #menuView #grid > .card > .media .em,
   html body #deliveryView #deliveryGrid > .card > .media .em {
-    font-size:40px;
+    font-size:24px;
     line-height:1;
+  }
+  html body div.wrap {
+    gap:6px;
+    padding:4px 12px 24px;
   }
 }
 

@@ -2561,7 +2561,7 @@ test('compact landscape keeps the first product title above the floating categor
           descriptionTop: descriptionRect.top,
           descriptionBottom: descriptionRect.bottom,
           descriptionHeight: descriptionRect.height,
-          gridColumns: getComputedStyle(grid).gridTemplateColumns.trim().split(/\s+/).length,
+          gridColumns: getComputedStyle(grid).gridTemplateColumns.trim().split(/\\s+/).length,
           searchWidth: search.width,
           supportInsideToolbar: support.left >= toolbar.left && support.right <= toolbar.right,
           searchSupportOverlap: search.left < support.right && search.right > support.left
@@ -2572,10 +2572,10 @@ test('compact landscape keeps the first product title above the floating categor
         gridSelector: brand.grid,
         searchSelector: brand.brand === 'coffee' ? '#menuView .coffee-menu-search' : '#deliveryView .mh-right .search'
       });
-      expect(geometry.gridColumns, `${brand.brand} ${viewport.width}x${viewport.height}: compact landscape catalog must use two columns; geometry=${JSON.stringify(geometry)}`).toBe(2);
+      expect(geometry.gridColumns, \`${brand.brand} ${viewport.width}x${viewport.height}: compact landscape catalog must use two columns; geometry=${JSON.stringify(geometry)}\`).toBe(2);
       expect(
         geometry.descriptionBottom,
-        `${brand.brand} ${viewport.width}x${viewport.height}: first product description must remain fully visible above the floating category capsule; geometry=${JSON.stringify(geometry)}`
+        \`${brand.brand} ${viewport.width}x${viewport.height}: first product description must remain fully visible above the floating category capsule; geometry=${JSON.stringify(geometry)}\`
       ).toBeLessThanOrEqual(geometry.railTop - 4);
       expect(geometry.supportInsideToolbar, `${brand.brand}: support remains inside the search toolbar; ${JSON.stringify(geometry)}`).toBe(true);
       expect(geometry.searchSupportOverlap, `${brand.brand}: support does not overlap search; ${JSON.stringify(geometry)}`).toBe(false);

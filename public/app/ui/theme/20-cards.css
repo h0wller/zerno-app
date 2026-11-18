@@ -329,3 +329,11 @@ body.editing .card:hover{
 
 /* Keep the delivery in-cart label compact against the brand CTA shorthand in 160-06. */
 
+
+@media (min-width: 821px) and (orientation: landscape) and (max-height: 480px) {
+  #grid > .card > .cbody,
+  #deliveryGrid > .card > .cbody {
+    padding-top: 8px;
+    gap: 4px;
+  }
+}
