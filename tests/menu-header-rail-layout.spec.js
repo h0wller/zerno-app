@@ -34,29 +34,23 @@ for (const brand of CASES) {
       if (viewport.width <= 820) {
         await expect(topbar).toHaveCSS('border-bottom-width', '0px');
       }
-      if (brand.brand === 'delivery') {
+      if (viewport.width <= 820) {
+        // Floating rail geometry is asserted in floating-category-rail.spec.js.
+      } else if (brand.brand === 'delivery') {
         await expect(page.locator('#deliveryGrid .card').first()).toBeVisible({ timeout: 15000 });
         await expect.poll(() => page.evaluate(() => {
           const grid = document.querySelector('#deliveryGrid').getBoundingClientRect();
           const rail = document.querySelector('#deliveryRail').getBoundingClientRect();
           return Math.abs(rail.top - grid.top);
         }), { timeout: 5000 }).toBeLessThanOrEqual(2);
-      } else if (viewport.width <= 820) {
-        const searchGap = await page.evaluate(({ headSelector, railSelector }) => {
-          const head = document.querySelector(headSelector);
-          const rail = document.querySelector(railSelector);
-          const searchRow = head.querySelector('.mh-right');
-          return rail.getBoundingClientRect().top - searchRow.getBoundingClientRect().bottom;
-        }, { headSelector: brand.head, railSelector: brand.rail });
-        expect(searchGap, 'coffee rail starts below search/support row').toBeGreaterThanOrEqual(10);
       } else {
-        await expect(page.locator('#grid .card').first()).toBeVisible({timeout:15000});
-        const delta=await page.evaluate(selector=>{
-          const rail=document.querySelector(selector).getBoundingClientRect();
-          const grid=document.querySelector('#grid').getBoundingClientRect();
-          return Math.abs(rail.top-grid.top);
-        },brand.rail);
-        expect(delta,'coffee desktop rail aligns with first catalog row').toBeLessThanOrEqual(2);
+        await expect(page.locator('#grid .card').first()).toBeVisible({ timeout: 15000 });
+        const delta = await page.evaluate(selector => {
+          const rail = document.querySelector(selector).getBoundingClientRect();
+          const grid = document.querySelector('#grid').getBoundingClientRect();
+          return Math.abs(rail.top - grid.top);
+        }, brand.rail);
+        expect(delta, 'coffee desktop rail aligns with first catalog row').toBeLessThanOrEqual(2);
       }
       await expect.poll(() => ticker.evaluate((el) => getComputedStyle(el).backgroundColor), { timeout: 5000 }).toBe(brand.tickerBg);
 
@@ -82,9 +76,7 @@ for (const brand of CASES) {
       }, { headSelector: brand.head, railSelector: brand.rail });
 
       if (viewport.width <= 820) {
-        expect(layout.railPosition, 'mobile rail stays in its catalog position before scrolling').toBe('relative');
-        expect(Math.abs(layout.headLeft - layout.contentLeft), 'mobile menu-head starts at the left edge of the complete menu area').toBeLessThanOrEqual(1);
-        expect(Math.abs(layout.headRight - layout.contentRight), 'mobile menu-head spans rail and content columns').toBeLessThanOrEqual(1);
+        expect(layout.railPosition, 'mobile/tablet category rail is detached from catalog flow').toBe('fixed');
       }
       expect(layout.documentScrollWidth, 'menu-head must not create horizontal page overflow').toBeLessThanOrEqual(layout.documentWidth + 1);
 
@@ -111,25 +103,8 @@ for (const brand of CASES) {
 
       await page.evaluate(() => window.scrollTo(0, 500));
       if (viewport.width <= 820) {
-        await expect.poll(() => page.evaluate(selector => {
-          const element = document.querySelector(selector);
-          const rect = element.getBoundingClientRect();
-          const height = element.clientHeight;
-          const expectedTop = Math.max(12, (window.innerHeight - height) / 2);
-          return {
-            topDelta: Math.abs(rect.top - expectedTop),
-            position: getComputedStyle(element).position,
-            bottom: rect.bottom,
-          };
-        }, brand.rail), { timeout: 5000 }).toMatchObject({
-          position: 'sticky',
-        });
-        await expect.poll(() => page.evaluate(selector => {
-          const element = document.querySelector(selector);
-          const rect = element.getBoundingClientRect();
-          return Math.abs(rect.top - Math.max(12, (window.innerHeight - element.clientHeight) / 2));
-        }, brand.rail), { timeout: 5000 }).toBeLessThanOrEqual(2);
-        await testInfo.attach(`${brand.brand}-sticky-rail-${viewport.width}px`, {
+        await expect(rail).toHaveCSS('position', 'fixed');
+        await testInfo.attach(`${brand.brand}-floating-rail-${viewport.width}px`, {
           body: await page.screenshot({ animations: 'disabled' }),
           contentType: 'image/png',
         });
@@ -244,52 +219,29 @@ test('coffee: category rail never covers menu title or search input on mobile', 
 });
 
 
-test('coffee rail aligns to its menu card and delivery rail aligns to product cards', async ({ page }) => {
+test('both brand rails remain aligned with the catalog row on desktop', async ({ page }) => {
   for (const brand of CASES) {
-    await page.setViewportSize({ width: 390, height: 844 });
+    await page.setViewportSize({ width: 1440, height: 900 });
     await page.addInitScript(() => sessionStorage.setItem('splashDone', '1'));
     await page.goto('/?brand=' + brand.brand, { waitUntil: 'domcontentloaded' });
-    if (brand.brand === 'delivery') {
-      await expect(page.locator('#deliveryGrid .card').first()).toBeVisible({ timeout: 15000 });
-      await expect.poll(() => page.evaluate(() => {
-        const grid = document.querySelector('#deliveryGrid').getBoundingClientRect();
-        const rail = document.querySelector('#deliveryRail').getBoundingClientRect();
-        return Math.abs(rail.top - grid.top);
-      }), { timeout: 5000 }).toBeLessThanOrEqual(2);
-    } else {
-      const searchGap = await page.evaluate(() => {
-        const search = document.querySelector('#menuView .menu-head .mh-right').getBoundingClientRect();
-        const rail = document.querySelector('#rail').getBoundingClientRect();
-        return rail.top - search.bottom;
-      });
-      expect(searchGap, 'coffee rail starts below its menu controls').toBeGreaterThanOrEqual(10);
-    }
-    const gap = await page.locator(brand.rail + ' button').evaluateAll(buttons => {
-      const rects=buttons.map(button=>button.getBoundingClientRect());
-      return rects.slice(1).map((rect,i)=>rect.top-rects[i].bottom);
-    });
-    expect(gap.every(value => value >= 9), brand.brand + ' rail button gap should be at least 9px').toBe(true);
-  }
-});
-
-
-test('both brand rails align to the catalog row on desktop', async ({page}) => {
-  for (const brand of CASES) {
-    await page.setViewportSize({width:1440,height:900});
-    await page.addInitScript(() => sessionStorage.setItem('splashDone','1'));
-    await page.goto('/?brand='+brand.brand,{waitUntil:'domcontentloaded'});
-    const gridSelector=brand.brand==='coffee'?'#grid':'#deliveryGrid';
-    await expect(page.locator(gridSelector+' .card').first()).toBeVisible({timeout:15000});
-    await expect.poll(()=>page.locator(brand.rail).evaluate(el=>el.classList.contains('rail-position-ready'))).toBe(true);
-    const m=await page.evaluate(({railSelector,gridSelector})=>{
-      const grid=document.querySelector(gridSelector).getBoundingClientRect();
-      const rail=document.querySelector(railSelector),rect=rail.getBoundingClientRect();
-      return {gt:grid.top,gb:grid.bottom,rt:rect.top,rb:rect.bottom,pos:getComputedStyle(rail).position,align:getComputedStyle(rail).alignSelf};
-    },{railSelector:brand.rail,gridSelector});
-    expect(Math.abs(m.rt-m.gt)).toBeLessThanOrEqual(2);
-    expect(Math.abs(m.rb-m.gb)).toBeLessThanOrEqual(4);
-    expect(m.pos).toBe('relative');
-    expect(m.align).toBe('stretch');
+    const gridSelector = brand.brand === 'coffee' ? '#grid' : '#deliveryGrid';
+    await expect(page.locator(gridSelector + ' .card').first()).toBeVisible({ timeout: 15000 });
+    await expect(page.locator(brand.rail)).toHaveClass(/rail-position-ready/);
+    const geometry = await page.evaluate(({ railSelector, gridSelector }) => {
+      const railElement = document.querySelector(railSelector);
+      const rail = railElement.getBoundingClientRect();
+      const grid = document.querySelector(gridSelector).getBoundingClientRect();
+      return {
+        top: Math.abs(rail.top - grid.top),
+        bottom: Math.abs(rail.bottom - grid.bottom),
+        position: getComputedStyle(railElement).position,
+        alignSelf: getComputedStyle(railElement).alignSelf,
+      };
+    }, { railSelector: brand.rail, gridSelector });
+    expect(geometry.position).toBe('relative');
+    expect(geometry.alignSelf).toBe('stretch');
+    expect(geometry.top).toBeLessThanOrEqual(2);
+    expect(geometry.bottom).toBeLessThanOrEqual(4);
   }
 });
 
