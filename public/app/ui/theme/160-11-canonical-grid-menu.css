@@ -325,7 +325,7 @@ html body div.wrap > #deliveryRail { align-self:stretch; height:auto; max-height
   }
 
   /* Coffee title normally fills an entire flex row; in landscape it must become intrinsic. */
-  html[data-brand="coffee"] body #menuView .menu-head .mh-top h1 {
+  html body #menuView .menu-head .mh-top h1 {
     flex: 0 0 auto;
     width: auto;
     max-width: none;
@@ -346,7 +346,7 @@ html body div.wrap > #deliveryRail { align-self:stretch; height:auto; max-height
     min-width: 0;
   }
 
-  html[data-brand="delivery"] body #deliveryView #deliverySubFilterViewport {
+  html body #deliveryView #deliverySubFilterViewport {
     box-sizing:border-box;
     height:44px;
     min-height:44px;
@@ -354,8 +354,8 @@ html body div.wrap > #deliveryRail { align-self:stretch; height:auto; max-height
   }
 
   /* Reserve a compact media row; the product name remains readable above the fixed capsule. */
-  html[data-brand="coffee"] body #menuView #grid > .card > .media,
-  html[data-brand="delivery"] body #deliveryView #deliveryGrid > .card > .media {
+  html body #menuView #grid > .card > .media,
+  html body #deliveryView #deliveryGrid > .card > .media {
     box-sizing: border-box;
     flex: 0 0 64px;
     width: 100%;
