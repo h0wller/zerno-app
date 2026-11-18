@@ -79,7 +79,7 @@ function updateRailStickyPosition(rail, head) {
       rail.style.top = 'auto';
       rail.style.maxHeight = 'none';
       rail.style.overflowY = '';
-      rail.style.alignSelf = 'stretch';
+      rail.style.alignSelf = 'start';
     }
   } else {
     railStickyLayout = null;
@@ -87,7 +87,7 @@ function updateRailStickyPosition(rail, head) {
     rail.style.top = 'auto';
     rail.style.maxHeight = 'none';
     rail.style.overflowY = '';
-    rail.style.alignSelf = 'stretch';
+    rail.style.alignSelf = 'start';
   }
 
   rail.style.transform = 'none';
