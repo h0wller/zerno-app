@@ -397,11 +397,9 @@ function syncChatFab(staff, bName2) {
   var badge = document.getElementById('chatBadge');
   var badgeHtml = badge ? badge.outerHTML : '<span class="ub" id="chatBadge" hidden></span>';
   if (isOpen) {
-    cfab.innerHTML = '<svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" fill="#fff"/></svg>' + badgeHtml;
-  } else if (bName2 === 'delivery') {
-    cfab.innerHTML = '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M3 13v-1a9 9 0 0 1 18 0v1" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"/><rect x="2.5" y="12" width="4" height="7" rx="2" fill="none" stroke="#fff" stroke-width="2"/><rect x="17.5" y="12" width="4" height="7" rx="2" fill="none" stroke="#fff" stroke-width="2"/><path d="M19.5 19a3 3 0 0 1-3 3H13" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"/><rect x="10" y="20" width="4" height="2" rx="1" fill="#fff"/></svg>' + badgeHtml;
+    cfab.innerHTML = '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" fill="#fff"/></svg>' + badgeHtml;
   } else {
-    cfab.innerHTML = '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M3 13v-1a9 9 0 0 1 18 0v1" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"/><rect x="2.5" y="12" width="4" height="7" rx="2" fill="none" stroke="#fff" stroke-width="2"/><rect x="17.5" y="12" width="4" height="7" rx="2" fill="none" stroke="#fff" stroke-width="2"/><path d="M19.5 19a3 3 0 0 1-3 3H13" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"/><rect x="10" y="20" width="4" height="2" rx="1" fill="#fff"/></svg>' + badgeHtml;
+    cfab.innerHTML = '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M12 3C6.5 3 2 6.9 2 11.7c0 2.6 1.3 4.9 3.4 6.5-.1 1-.5 2.4-1.6 3.8 2-.3 3.6-1 4.7-1.7 1.1.3 2.3.5 3.5.5 5.5 0 10-3.9 10-8.7S17.5 3 12 3z" fill="#fff"/></svg>' + badgeHtml;
   }
 }
 
