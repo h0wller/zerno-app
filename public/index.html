@@ -3761,7 +3761,7 @@ html body #tickerTrack .tickerGroup > span {
 /* Compact landscape mirror of 160-11: the title, search and support action share one row;
    the reduced media slot exposes the first product title above the fixed category capsule. */
 @media (min-width:821px) and (orientation:landscape) and (max-height:480px) {
-  html body :is(#menuView,#deliveryView) .menu-head {
+  html[data-brand] body :is(#menuView,#deliveryView) .menu-head {
     box-sizing:border-box;
     height:auto;
     min-height:0;
