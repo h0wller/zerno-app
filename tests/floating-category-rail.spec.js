@@ -300,7 +300,6 @@ test.describe('floating rail clearances and overlay ownership', () => {
       await page.addInitScript(() => {
         sessionStorage.setItem('splashDone', '1');
         localStorage.setItem('zt_onb', '1');
-        sessionStorage.setItem('splashDone', '1');
         localStorage.setItem('zt_inst_hide', '1');
         localStorage.setItem('zt_ios_hide', '1');
       });
