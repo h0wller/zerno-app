@@ -834,10 +834,13 @@ body > div.wrap,
 }
 @media (min-width: 821px) and (orientation: landscape) and (max-height: 480px) {
   html[data-brand] body > div.wrap {
+    width: 100%;
+    min-width: 0;
     grid-template-columns: minmax(0, 1fr);
     grid-template-rows: auto;
     gap: 10px;
     padding: 10px 12px 28px;
+    align-items: start;
   }
   html body div.wrap > section {
     grid-column: 1;
