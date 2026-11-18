@@ -131,13 +131,13 @@ test.describe('Card entrance and delivery stepper motion', () => {
 
     for (const item of cases) {
       await page.setViewportSize({ width: 390, height: 844 });
+      await page.emulateMedia({ reducedMotion: 'no-preference' });
       await page.addInitScript(() => {
         localStorage.setItem('zt_onb', '1');
         localStorage.removeItem('zt_cart');
         sessionStorage.setItem('splashDone', '1');
       });
       await page.goto('/?brand=' + item.brand, { waitUntil: 'domcontentloaded' });
-      await page.emulateMedia({ reducedMotion: 'no-preference' });
       await expect.poll(() => page.evaluate(() =>
         window.matchMedia('(prefers-reduced-motion: reduce)').matches
       )).toBe(false);
