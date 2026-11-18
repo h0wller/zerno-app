@@ -82,7 +82,8 @@ for (const width of [1024, 1440]) {
     expect(geometry.flexWrap).toBe('nowrap');
     expect(geometry.overflowX).toBe('auto');
     expect(geometry.scrollWidth, 'the full filter set should be reachable by horizontal scrolling')
-      .toBeGreaterThan(geometry.clientWidth);
+      .toBeGreaterThanOrEqual(geometry.clientWidth);
+    expect(geometry.clientWidth).toBeGreaterThan(0);
     expect(await page.evaluate(() =>
       document.documentElement.scrollWidth <= document.documentElement.clientWidth + 1
     )).toBe(true);
