@@ -118,3 +118,77 @@ test('desktop category sidebar remains in-flow and vertically aligned', async ({
     expect(alignment).toBeLessThanOrEqual(4);
   }
 });
+
+const CART_OPEN_VIEWPORTS = [
+  { name: '844x390', width: 844, height: 390 },
+  { name: '1024x390', width: 1024, height: 390 },
+];
+
+for (const brand of BRANDS) {
+  for (const viewport of CART_OPEN_VIEWPORTS) {
+    test(brand.brand + ': floating rail and cart FAB use separate lanes at ' + viewport.name, async ({ page }, testInfo) => {
+      await page.setViewportSize({ width: viewport.width, height: viewport.height });
+      await page.addInitScript(() => {
+        sessionStorage.setItem('splashDone', '1');
+        localStorage.setItem('zt_inst_hide', '1');
+        localStorage.setItem('zt_ios_hide', '1');
+      });
+      await page.goto('/?brand=' + brand.brand, { waitUntil: 'domcontentloaded' });
+
+      const rail = page.locator(brand.selector);
+      const fab = page.locator('#cartFab');
+      const cartPanel = page.locator('#cartPanel');
+      await expect(rail).toBeVisible({ timeout: 15000 });
+      await expect.poll(() => page.evaluate(() => typeof window.replaceCartItems)).toBe('function');
+
+      // Seed through cart.js, the sole owner of cart state; the sheet itself is opened by a real click.
+      await page.evaluate(() => window.replaceCartItems([{
+        key: 'floating-rail-acceptance',
+        id: 'floating-rail-acceptance',
+        name: 'Тестовая позиция',
+        oi: -1,
+        opt: null,
+        sz: 0,
+        price: 500,
+        qty: 1,
+      }]));
+      await expect(fab).toBeVisible();
+      const lanes = await page.evaluate(() => {
+        const railRect = document.querySelector('#rail, #deliveryRail').getBoundingClientRect();
+        const fabRect = document.querySelector('#cartFab').getBoundingClientRect();
+        return {
+          railTop: railRect.top,
+          fabBottom: fabRect.bottom,
+          fabHeight: fabRect.height,
+          viewportWidth: window.innerWidth,
+          fabWidth: fabRect.width,
+        };
+      });
+      expect(lanes.fabHeight).toBeGreaterThanOrEqual(48);
+      expect(lanes.fabWidth).toBeLessThanOrEqual(lanes.viewportWidth - 24);
+      expect(lanes.fabBottom + 8,
+        'visible cart FAB keeps at least 8px clearance above the fixed category capsule')
+        .toBeLessThanOrEqual(lanes.railTop);
+      await testInfo.attach(brand.brand + '-' + viewport.name + '-cart-fab-lane.png', {
+        body: await page.screenshot({ animations: 'disabled' }),
+        contentType: 'image/png',
+      });
+
+      await fab.click();
+      await expect(cartPanel).toHaveClass(/open/);
+      await expect(rail).toHaveCSS('visibility', 'hidden');
+      await expect(rail).toHaveCSS('pointer-events', 'none');
+      await expect(fab).toHaveCSS('visibility', 'hidden');
+      await expect(fab).toHaveCSS('pointer-events', 'none');
+      await testInfo.attach(brand.brand + '-' + viewport.name + '-cart-open.png', {
+        body: await page.screenshot({ animations: 'disabled' }),
+        contentType: 'image/png',
+      });
+
+      await page.locator('#cartClose').click();
+      await expect(cartPanel).not.toHaveClass(/open/);
+      await expect(rail).toHaveCSS('visibility', 'visible');
+      await expect(fab).toBeVisible();
+    });
+  }
+}
