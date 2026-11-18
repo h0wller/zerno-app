@@ -140,6 +140,51 @@
     z-index: 80;
     overflow: hidden;
   }
+  html body div.wrap > #rail button,
+  html body div.wrap > #deliveryRail button {
+    box-sizing: border-box;
+    display: flex;
+    flex: 1 1 0;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1px;
+    width: 0;
+    min-width: 44px;
+    height: 44px;
+    min-height: 44px;
+    max-height: 44px;
+    margin: 0;
+    padding: 2px 1px;
+    border: 0;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+  }
+  html body div.wrap > #rail .re,
+  html body div.wrap > #deliveryRail .re {
+    display: grid;
+    flex: 0 0 22px;
+    place-items: center;
+    width: 22px;
+    min-width: 22px;
+    height: 22px;
+    margin: 0;
+    font-size: 20px;
+    line-height: 1;
+  }
+  html body div.wrap > #rail .category-label,
+  html body div.wrap > #deliveryRail .category-label {
+    display: block;
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: clamp(8px, 2.3vw, 10px);
+    line-height: 1.1;
+  }
   @media (max-width: 340px) {
     html body div.wrap > #rail .category-label,
     html body div.wrap > #deliveryRail .category-label { display: none; }
