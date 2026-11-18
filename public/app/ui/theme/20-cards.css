@@ -302,7 +302,7 @@ body.editing .card:hover{
 
 @media (prefers-reduced-motion: reduce) {
   .card {
-    animation: none;
+    animation: none !important;
     transition: none;
   }
 
