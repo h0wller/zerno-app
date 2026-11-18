@@ -386,7 +386,7 @@ for (const brand of ['coffee', 'delivery']) {
     await target.evaluate((element) => { window.__originalCategoryTab = element; });
     await target.click();
     const selected = rail.locator('button[' + attribute + '="' + targetCategory + '"]');
-    await expect(selected).toHaveClass(/\\bon\\b/);
+    await expect(selected).toHaveClass('on');
     await expect(selected).toHaveAttribute('aria-pressed', 'true');
     await expect.poll(() => selected.evaluate((element) => element === window.__originalCategoryTab)).toBe(true);
     await expect(selected).toBeFocused();
