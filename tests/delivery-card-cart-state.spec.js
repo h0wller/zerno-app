@@ -116,3 +116,131 @@ test('delivery option validation keeps its message but removes shake under reduc
     .toBe('none');
   await expect(options.locator('.opts-error')).toBeVisible();
 });
+
+
+test('card entrance and quantity controls use bounded motion without changing geometry', async ({ page }, testInfo) => {
+  const cases = [
+    { brand: 'coffee', width: 390, height: 844, grid: '#menuGrid' },
+    { brand: 'delivery', width: 390, height: 844, grid: '#deliveryGrid' },
+  ];
+
+  for (const item of cases) {
+    await page.setViewportSize({ width: item.width, height: item.height });
+    await page.emulateMedia({ reducedMotion: 'no-preference' });
+    await page.addInitScript(() => {
+      localStorage.setItem('zt_onb', '1');
+      localStorage.removeItem('zt_cart');
+      sessionStorage.setItem('splashDone', '1');
+    });
+    await page.goto('/?brand=' + item.brand);
+    await page.waitForFunction((brand) =>
+      window.brand === brand &&
+      (brand === 'coffee'
+        ? !!document.querySelector('#menuGrid .card')
+        : !!document.querySelector('#deliveryGrid .card')),
+      item.brand
+    );
+
+    const grid = page.locator(item.grid);
+    const card = grid.locator('.card:not(.skeleton-card)').first();
+    const add = card.locator('[data-add]');
+    if (item.brand === 'delivery') {
+      const option = card.locator('.opts input[type="radio"]').first();
+      if (await option.count()) await option.check();
+    }
+
+    const before = await card.evaluate((element) => {
+      const rect = element.getBoundingClientRect();
+      const animation = getComputedStyle(element);
+      return {
+        x: rect.x, y: rect.y, width: rect.width, height: rect.height,
+        animationName: animation.animationName,
+        animationDuration: animation.animationDuration,
+        animationDelay: animation.animationDelay,
+      };
+    });
+    expect(before.animationName).toBe('card-enter');
+    expect(before.animationDuration).toBe('0.18s');
+    expect(before.width).toBeGreaterThan(0);
+    await page.waitForFunction(() => document.fonts.status === 'loaded');
+    await page.waitForTimeout(220);
+
+    await testInfo.attach(item.brand + '-card-entry-390x844.png', {
+      body: await page.screenshot({ fullPage: false }),
+      contentType: 'image/png',
+    });
+
+    const idleButton = await add.boundingBox();
+    await add.click();
+    await expect(add).toHaveClass(/incart/);
+    const row = card.locator('.steprow');
+    const minus = row.locator('[data-step="-1"]');
+    const plus = row.locator('[data-step="1"]');
+    await expect(minus).toBeVisible();
+    await expect(plus).toBeVisible();
+
+    const added = await card.evaluate((element) => {
+      const rect = element.getBoundingClientRect();
+      const controls = Array.from(element.querySelectorAll('.steprow .step')).map((button) => {
+        const box = button.getBoundingClientRect();
+        const style = getComputedStyle(button);
+        return {
+          width: box.width, height: box.height,
+          transitionProperty: style.transitionProperty,
+          transitionDuration: style.transitionDuration,
+        };
+      });
+      return { x: rect.x, y: rect.y, width: rect.width, height: rect.height, controls };
+    });
+    expect(Math.abs(added.height - before.height)).toBeLessThanOrEqual(1);
+    expect(added.width).toBeCloseTo(before.width, 1);
+    expect(added.controls).toHaveLength(2);
+    for (const control of added.controls) {
+      expect(control.width).toBe(44);
+      expect(control.height).toBe(44);
+      expect(control.transitionProperty).toContain('transform');
+      expect(control.transitionDuration).toContain('0.12s');
+    }
+
+    await testInfo.attach(item.brand + '-stepper-ready-390x844.png', {
+      body: await page.screenshot({ fullPage: false }),
+      contentType: 'image/png',
+    });
+
+    const beforeIncrement = await card.boundingBox();
+    await plus.click();
+    await expect.poll(() => page.evaluate((brand) => {
+      const storage = JSON.parse(localStorage.getItem('zt_cart') || '[]');
+      return brand === 'delivery'
+        ? storage.reduce((sum, line) => sum + line.qty, 0)
+        : storage.reduce((sum, line) => sum + line.qty, 0);
+    }, item.brand)).toBe(2);
+    const afterIncrement = await card.boundingBox();
+    expect(Math.abs(afterIncrement.height - beforeIncrement.height)).toBeLessThanOrEqual(1);
+
+    await testInfo.attach(item.brand + '-stepper-increment-390x844.png', {
+      body: await page.screenshot({ fullPage: false }),
+      contentType: 'image/png',
+    });
+
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await expect(card).toHaveCSS('animation-name', 'none');
+    await expect(card).toHaveCSS('transition-duration', '0s');
+    await expect(minus).toHaveCSS('transition-duration', '0s');
+    await expect(plus).toHaveCSS('transition-duration', '0s');
+    const reduced = await card.evaluate((element) => {
+      const rect = element.getBoundingClientRect();
+      return {
+        width: rect.width, height: rect.height,
+        animationName: getComputedStyle(element).animationName,
+      };
+    });
+    expect(reduced.width).toBeCloseTo(afterIncrement.width, 1);
+    expect(reduced.height).toBeCloseTo(afterIncrement.height, 1);
+    expect(reduced.animationName).toBe('none');
+    await testInfo.attach(item.brand + '-reduced-motion-390x844.png', {
+      body: await page.screenshot({ fullPage: false }),
+      contentType: 'image/png',
+    });
+  }
+});
