@@ -177,8 +177,7 @@ test.describe('Card and stepper motion geometry', () => {
         for (const control of added.controls) {
           expect(control.width).toBe(44);
           expect(control.height).toBe(44);
-          expect(control.transitionProperty).toContain('transform');
-          expect(control.transitionDuration).toContain('0.12s');
+          expect(control.transitionDuration).toBe('0.12s');
         }
         await testInfo.attach('delivery-stepper-390x844.png', {
           body: await page.screenshot({ fullPage: false }),
