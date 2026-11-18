@@ -116,12 +116,40 @@
   }
   html body div.wrap > #rail,
   html body div.wrap > #deliveryRail {
-    width:auto;
-    min-width:0;
-    max-width:none;
-    height:auto;
-    max-height:none;
-    margin:0;
+    box-sizing: border-box;
+    position: fixed;
+    top: auto;
+    right: auto;
+    bottom: calc(var(--rail-edge-gap) + env(safe-area-inset-bottom, 0px));
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 2px;
+    width: min(460px, calc(100vw - 24px));
+    min-width: 0;
+    max-width: calc(100vw - 24px);
+    height: var(--rail-h);
+    min-height: var(--rail-h);
+    max-height: var(--rail-h);
+    margin: 0;
+    padding: 6px;
+    z-index: 80;
+    overflow: hidden;
+  }
+  @media (max-width: 340px) {
+    html body div.wrap > #rail .category-label,
+    html body div.wrap > #deliveryRail .category-label { display: none; }
+  }
+  @media (max-width: 820px) and (max-height: 480px),
+         (min-width: 821px) and (orientation: landscape) and (max-height: 480px) {
+    html body div.wrap > #rail,
+    html body div.wrap > #deliveryRail {
+      padding: 2px 6px;
+    }
   }
 }
 @media (max-width:820px) and (max-height:480px),
