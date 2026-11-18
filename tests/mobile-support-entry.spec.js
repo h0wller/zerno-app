@@ -109,6 +109,14 @@ for (const brand of BRANDS) {
       expect(noScriptBlock).toContain('<link rel="stylesheet" href="/app/ui/theme/160-15-mobile-support-toolbar.css?v=');
       expect(noScriptBlock).not.toContain('160-15-mobile-support-toolbar.css" media=');
       await expect(support).toBeVisible({ timeout: 15000 });
+      const icon = support.locator('svg');
+      await expect(icon).toHaveCount(1);
+      await expect(icon).toHaveAttribute('viewBox', '0 0 24 24');
+      await expect(icon.locator('path').first()).toHaveAttribute('d', /^M12 3C6\\.5 3 2 6\\.9/);
+      await expect(icon.locator('path').first()).toHaveAttribute('fill', '#fff');
+      const iconBox = await icon.boundingBox();
+      expect(iconBox?.width).toBeGreaterThanOrEqual(20);
+      expect(iconBox?.height).toBeGreaterThanOrEqual(20);
       await expect(supportHost).toHaveCount(1);
       await expect(supportHost).toHaveAttribute('aria-label', 'Поддержка');
       await expect.poll(() => support.evaluate((el) => el.parentElement?.id)).toBe('supportLauncherHost');
