@@ -401,13 +401,11 @@ test.describe('Карточки меню: высота, выравнивание
         expect(items).toHaveLength(6);
         expect(items[0].id).toBe('pz-marg');
         await page.waitForSelector('#deliveryGrid .card:not(.skeleton-card)', { timeout: 5000 });
-        await page.waitForTimeout(500);
-
         // Кладём одну позицию в корзину, чтобы степпер «−/+» перестал быть hidden и тоже попал в замер.
         const firstOpt = page.locator('#deliveryGrid .opts label.opt-btn').first();
         if (await firstOpt.isVisible().catch(() => false)) await firstOpt.click({ force: true }).catch(() => {});
         await page.locator('#deliveryGrid [data-add]').first().click({ force: true }).catch(() => {});
-        await page.waitForTimeout(400);
+        await expect(page.locator('#deliveryGrid .steprow .qty, #deliveryGrid .steprow [data-qty], #deliveryGrid .steprow button[data-action="inc"]')).toBeVisible({ timeout: 5000 });
 
         const targets = await page.evaluate((selectors) => {
           const out = [];
