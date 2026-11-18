@@ -15,9 +15,26 @@ function coffeePool() {
   });
 }
 
-$('#rail').innerHTML = CATS.map(
-  c => `<button type="button" data-cat="${c.id}" aria-label="${esc(c.l)}" title="${esc(c.l)}"><span class="re">${c.e}</span><span class="category-label">${c.l}</span></button>`
-).join('');
+function ensureRailButtons() {
+  const rail = $('#rail');
+  const current = new Map(
+    Array.from(rail.querySelectorAll('button[data-cat]')).map(button => [button.dataset.cat, button])
+  );
+  CATS.forEach(c => {
+    if (current.has(c.id)) return;
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.dataset.cat = c.id;
+    button.setAttribute('aria-label', c.l);
+    button.title = c.l;
+    button.innerHTML = '<span class="re">' + c.e + '</span><span class="category-label">' + c.l + '</span>';
+    rail.appendChild(button);
+  });
+  rail.querySelectorAll('button[data-cat]').forEach(button => {
+    if (!CATS.some(c => c.id === button.dataset.cat)) button.remove();
+  });
+}
+ensureRailButtons();
 
 $('#rail').setAttribute('role', 'group');
 $('#rail').setAttribute('aria-label', 'Категории меню');
