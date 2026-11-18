@@ -405,7 +405,7 @@ test.describe('Карточки меню: высота, выравнивание
         const firstOpt = page.locator('#deliveryGrid .opts label.opt-btn').first();
         if (await firstOpt.isVisible().catch(() => false)) await firstOpt.click({ force: true }).catch(() => {});
         await page.locator('#deliveryGrid [data-add]').first().click({ force: true }).catch(() => {});
-        await expect(page.locator('#deliveryGrid .steprow .qty, #deliveryGrid .steprow [data-qty], #deliveryGrid .steprow button[data-action="inc"]')).toBeVisible({ timeout: 5000 });
+        await expect(page.locator('#deliveryGrid .steprow button.step[data-step="1"]').first()).toBeVisible({ timeout: 5000 });
 
         const targets = await page.evaluate((selectors) => {
           const out = [];
