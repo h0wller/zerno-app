@@ -2545,6 +2545,8 @@ test('compact landscape keeps the first product title above the floating categor
         const card = title.closest('.card');
         const cardRect = card.getBoundingClientRect();
         const media = card.querySelector('.media').getBoundingClientRect();
+        const description = card.querySelector('.cbody > .desc');
+        const descriptionRect = description.getBoundingClientRect();
         const toolbar = document.querySelector(searchSelector).closest('.mh-right').getBoundingClientRect();
         const search = document.querySelector(searchSelector).getBoundingClientRect();
         const support = document.querySelector('#supportLauncherHost').getBoundingClientRect();
@@ -2555,8 +2557,11 @@ test('compact landscape keeps the first product title above the floating categor
           mediaHeight: media.height,
           titleTop: titleRect.top,
           titleBottom: titleRect.bottom,
-          visibleTitleHeight: Math.max(0, Math.min(titleRect.bottom, rail.top) - titleRect.top),
           titleHeight: titleRect.height,
+          descriptionTop: descriptionRect.top,
+          descriptionBottom: descriptionRect.bottom,
+          descriptionHeight: descriptionRect.height,
+          gridColumns: getComputedStyle(grid).gridTemplateColumns.trim().split(/\\s+/).length,
           searchWidth: search.width,
           supportInsideToolbar: support.left >= toolbar.left && support.right <= toolbar.right,
           searchSupportOverlap: search.left < support.right && search.right > support.left
@@ -2567,6 +2572,11 @@ test('compact landscape keeps the first product title above the floating categor
         gridSelector: brand.grid,
         searchSelector: brand.brand === 'coffee' ? '#menuView .coffee-menu-search' : '#deliveryView .mh-right .search'
       });
+      expect(geometry.gridColumns, \`${brand.brand} ${viewport.width}x${viewport.height}: compact landscape catalog must use two columns; geometry=${JSON.stringify(geometry)}\`).toBe(2);
+      expect(
+        geometry.descriptionBottom,
+        \`${brand.brand} ${viewport.width}x${viewport.height}: first product description must remain fully visible above the floating category capsule; geometry=${JSON.stringify(geometry)}\`
+      ).toBeLessThanOrEqual(geometry.railTop - 4);
       expect(geometry.supportInsideToolbar, `${brand.brand}: support remains inside the search toolbar; ${JSON.stringify(geometry)}`).toBe(true);
       expect(geometry.searchSupportOverlap, `${brand.brand}: support does not overlap search; ${JSON.stringify(geometry)}`).toBe(false);
       expect(
