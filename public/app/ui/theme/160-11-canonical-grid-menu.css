@@ -365,10 +365,9 @@ html body div.wrap > #deliveryRail { align-self:stretch; height:auto; max-height
     aspect-ratio: auto;
   }
 
-  /* Match the brand-specific first-frame grid selectors in index.html. */
   /* Two readable columns keep long delivery names on one line in a short viewport. */
-  html[data-brand="coffee"] body #grid,
-  html[data-brand="delivery"] body #deliveryGrid {
+  html body #grid,
+  html body #deliveryGrid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 12px;
   }
