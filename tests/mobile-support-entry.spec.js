@@ -112,7 +112,7 @@ for (const brand of BRANDS) {
       const icon = support.locator('svg');
       await expect(icon).toHaveCount(1);
       await expect(icon).toHaveAttribute('viewBox', '0 0 24 24');
-      await expect(icon.locator('path').first()).toHaveAttribute('d', /^M12 3C6\\.5 3 2 6\\.9/);
+      await expect(icon.locator('path').first()).toHaveAttribute('d', /^M12 3C6\.5 3 2 6\.9/);
       await expect(icon.locator('path').first()).toHaveAttribute('fill', '#fff');
       const iconBox = await icon.boundingBox();
       expect(iconBox?.width).toBeGreaterThanOrEqual(20);
