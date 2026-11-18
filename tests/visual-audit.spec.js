@@ -462,6 +462,7 @@ for (const viewport of REVIEW_VIEWPORTS) {
     await expect(cartPanel).toHaveClass(/open/);
     await expect(cartPanel).toBeVisible();
     await expect(page.locator('#cartItems .cartItem')).toHaveCount(1);
+    await expect(page.locator('#toasts .toast')).toHaveCount(0, { timeout: 5000 });
 
     await page.evaluate(async () => {
       if (document.fonts?.ready) await document.fonts.ready;
