@@ -401,12 +401,7 @@ test.describe('Карточки меню: высота, выравнивание
         const items = (await response.json()).items;
         expect(items).toHaveLength(6);
         expect(items[0].id).toBe('pz-marg');
-        // This spec measures card hit targets, not category navigation. Seed the populated category directly.
-        await page.evaluate(() => {
-          window.dcat = 'pizza';
-          window.renderDeliveryRail();
-          window.renderDeliveryMenu();
-        });
+        // The delivery module defaults to pizza; assert the real initial state instead of mutating it.
         await expect(page.locator('#deliveryRail button[data-dcat="pizza"]')).toHaveAttribute('aria-pressed', 'true');
         await expect(page.locator('#deliveryGrid .card:not(.skeleton-card)').first()).toBeVisible({ timeout: 5000 });
         // Add a real fixture product so both hidden step controls are included in the target measurements.
