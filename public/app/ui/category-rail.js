@@ -8,6 +8,8 @@ var railStickyLayout = null;
 var railFadeTimer = null;
 var fadedRail = null;
 var railScrollTick = false;
+var railFadeSuppressed = false;
+var railFadeSuppressionTimer = null;
 
 function updateRailStickyPosition(rail, head) {
   if (!rail || !head) return;
@@ -115,8 +117,39 @@ function activeRail() {
   return document.getElementById(isDelivery ? 'deliveryRail' : 'rail');
 }
 
+function suppressRailFadeUntilScrollSettles() {
+  railFadeSuppressed = true;
+  if (railFadeSuppressionTimer) window.clearTimeout(railFadeSuppressionTimer);
+  if (railFadeTimer) window.clearTimeout(railFadeTimer);
+  if (fadedRail) fadedRail.classList.remove('is-scroll-fading');
+  fadedRail = null;
+  railFadeTimer = null;
+  railFadeSuppressionTimer = window.setTimeout(function () {
+    railFadeSuppressed = false;
+    railFadeSuppressionTimer = null;
+  }, 520);
+}
+
+window.scrollToTopWithoutRailFade = function () {
+  suppressRailFadeUntilScrollSettles();
+  var reducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  window.scrollTo({ top: 0, behavior: reducedMotion ? 'auto' : 'smooth' });
+};
+
 function markRailScrolling() {
   var rail = activeRail();
+  if (railFadeSuppressed) {
+    if (railFadeSuppressionTimer) window.clearTimeout(railFadeSuppressionTimer);
+    railFadeSuppressionTimer = window.setTimeout(function () {
+      railFadeSuppressed = false;
+      railFadeSuppressionTimer = null;
+    }, 520);
+    if (railFadeTimer) window.clearTimeout(railFadeTimer);
+    if (fadedRail) fadedRail.classList.remove('is-scroll-fading');
+    fadedRail = null;
+    railFadeTimer = null;
+    return;
+  }
   if (!window.matchMedia || !window.matchMedia('(max-width: 820px)').matches) {
     if (railFadeTimer) window.clearTimeout(railFadeTimer);
     if (fadedRail) fadedRail.classList.remove('is-scroll-fading');
