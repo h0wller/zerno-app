@@ -17,6 +17,9 @@ for (const brand of ['coffee', 'delivery']) {
     await expect(viewport).toHaveAttribute('tabindex', '0');
     await expect(viewport).toHaveAttribute('aria-pressed', 'false');
     await expect(ticker).toHaveClass(/is-overflowing/);
+    await expect.poll(() => track.locator('.tickerGroup:not([aria-hidden="true"]) .ti').first()
+      .evaluate((item) => getComputedStyle(item, '::after').content))
+      .toBe('"•"');
 
     for (const width of [320, 390, 1440, 1920, 2560]) {
       await page.setViewportSize({ width, height: 844 });
