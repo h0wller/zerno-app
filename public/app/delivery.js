@@ -298,10 +298,28 @@ function renderSubFilter(categoryItems) {
 }
 
 function renderDeliveryRail() {
-  $('#deliveryRail').innerHTML = DCATS.map(c => {
+  var rail = $('#deliveryRail');
+  var current = new Map(
+    Array.from(rail.querySelectorAll('button[data-dcat]')).map(button => [button.dataset.dcat, button])
+  );
+  DCATS.forEach(function (c) {
+    var button = current.get(c.id);
+    if (!button) {
+      button = document.createElement('button');
+      button.type = 'button';
+      button.dataset.dcat = c.id;
+      button.setAttribute('aria-label', c.l);
+      button.title = c.l;
+      button.innerHTML = '<span class="re">' + c.e + '</span><span class="category-label">' + esc(c.shortLabel || c.l) + '</span>';
+      rail.appendChild(button);
+    }
     var selected = c.id === dcat;
-    return `<button type="button" data-dcat="${c.id}" class="${selected ? 'on' : ''}" aria-label="${esc(c.l)}" title="${esc(c.l)}" aria-pressed="${selected ? 'true' : 'false'}"><span class="re">${c.e}</span><span class="category-label">${esc(c.shortLabel || c.l)}</span></button>`;
-  }).join('');
+    button.classList.toggle('on', selected);
+    button.setAttribute('aria-pressed', selected ? 'true' : 'false');
+  });
+  rail.querySelectorAll('button[data-dcat]').forEach(function (button) {
+    if (!DCATS.some(function (c) { return c.id === button.dataset.dcat; })) button.remove();
+  });
 }
 $('#deliveryRail').setAttribute('role', 'group');
 $('#deliveryRail').setAttribute('aria-label', 'Категории доставки');
