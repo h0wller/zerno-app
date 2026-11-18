@@ -73,7 +73,8 @@ for (const viewport of viewports) {
     expect(layout.contentScrollWidth).toBeLessThanOrEqual(layout.contentWidth + 1);
 
     const submit = card.locator('#regBtn');
-    if (viewport.height <= 560) {
+    if (viewport.width <= 560 || viewport.height <= 560) {
+      // Narrow phones need an explicit gesture on the nested card scroller even at 640px tall.
       await card.hover();
       await page.mouse.wheel(0, 800);
       await expect.poll(() => card.evaluate((element) => element.scrollTop)).toBeGreaterThan(0);
@@ -93,7 +94,7 @@ for (const viewport of viewports) {
     });
     expect(submitGeometry.top, JSON.stringify(submitGeometry)).toBeGreaterThanOrEqual(-1);
     expect(submitGeometry.bottom, JSON.stringify(submitGeometry)).toBeLessThanOrEqual(submitGeometry.viewportHeight + 1);
-    if (viewport.height <= 560) {
+    if (viewport.width <= 560 || viewport.height <= 560) {
       expect(submitGeometry.cardScrollTop, JSON.stringify(submitGeometry)).toBeGreaterThan(0);
     }
     await expect(submit).toBeInViewport();
