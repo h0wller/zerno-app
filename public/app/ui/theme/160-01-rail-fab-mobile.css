@@ -371,6 +371,10 @@ html body #authModal.tg-mode .mhint{
   opacity: 1;
   pointer-events: auto;
 }
+.cartFab.is-scroll-hidden{
+  opacity: 0;
+  pointer-events: none;
+}
 .cartFab:hover{
   background: #8B2A21;
 }
