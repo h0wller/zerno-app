@@ -313,6 +313,18 @@ import { getNextLunchPromoBoundaryDelay } from "./core/lunch-promo-time.js";
     renderGifts();
   }
 
+  var cartFabScrollTimer = null;
+  window.addEventListener("scroll", function () {
+    var fab = document.getElementById("cartFab");
+    if (!fab || !fab.classList.contains("visible")) return;
+    fab.classList.add("is-scroll-hidden");
+    if (cartFabScrollTimer) window.clearTimeout(cartFabScrollTimer);
+    cartFabScrollTimer = window.setTimeout(function () {
+      fab.classList.remove("is-scroll-hidden");
+      cartFabScrollTimer = null;
+    }, 520);
+  }, { passive: true });
+
   function cartFabShow() {
     var cf = document.getElementById("cartFab");
     if (!cf) return;
