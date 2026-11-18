@@ -307,7 +307,7 @@ $('#deliveryRail').addEventListener('click', e => {
   const b = e.target.closest('[data-dcat]');
   if (b) {
     if (b.classList.contains('on')) {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      window.scrollToTopWithoutRailFade();
       return;
     }
     dcat = b.dataset.dcat;
