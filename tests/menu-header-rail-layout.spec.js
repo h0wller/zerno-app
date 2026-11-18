@@ -212,6 +212,20 @@ for (const brand of CASES) {
           contentType: 'image/png',
         });
       } else {
+        // Scroll past this rail's actual sticky threshold. Wide coffee menus place
+        // the catalog below 500px, so a fixed scroll amount can leave the rail relative.
+        await page.evaluate(railSelector => {
+          const element = document.querySelector(railSelector);
+          const topbar = document.querySelector('header.topbar');
+          const stickyTop = Math.max(12, (topbar ? topbar.getBoundingClientRect().bottom : 0) + 12);
+          const documentTop = element.getBoundingClientRect().top + window.scrollY;
+          const targetScroll = documentTop - stickyTop + 48;
+          const maxScroll = Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
+          window.scrollTo(0, Math.min(maxScroll, Math.max(window.scrollY, targetScroll)));
+        }, brand.rail);
+        await expect.poll(() => rail.evaluate(element => getComputedStyle(element).position), { timeout: 5000 })
+          .toBe('sticky');
+
         const stickyGeometry = await rail.evaluate(element => {
           const rect = element.getBoundingClientRect();
           const style = getComputedStyle(element);
