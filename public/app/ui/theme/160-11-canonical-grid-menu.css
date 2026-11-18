@@ -277,3 +277,30 @@ html body div.wrap > #deliveryRail::-webkit-scrollbar {
     line-height:1.15;
   }
 }
+
+/* Floating mobile rail is viewport-fixed; remove the legacy 80px catalog column. */
+@media (max-width: 820px),
+       (min-width: 821px) and (orientation: landscape) and (max-height: 480px) {
+  html body div.wrap {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0;
+    padding-inline: 12px;
+  }
+
+  html body div.wrap > nav.rail#rail,
+  html body div.wrap > div.rail#deliveryRail {
+    grid-column: 1;
+    width: auto;
+    min-width: 0;
+    max-width: none;
+    align-self: auto;
+    justify-self: center;
+    margin: 0;
+    overflow: visible;
+  }
+
+  html body div.wrap > section {
+    grid-column: 1;
+    min-width: 0;
+  }
+}
