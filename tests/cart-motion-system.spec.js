@@ -222,3 +222,16 @@ test('cart FAB fades without moving or resizing its hit target', async ({ page }
     await page.mouse.up();
   }
 });
+
+test('cart FAB hides while scrolling and returns when scrolling settles', async ({ page }) => {
+  const viewport = { width: 390, height: 844 };
+  const { fab } = await prepareCart(page, viewport);
+
+  await page.evaluate(() => window.scrollTo(0, 700));
+  await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(300);
+  await expect(fab).toHaveClass(/is-scroll-hidden/);
+  await expect.poll(() => fab.evaluate(el => Number.parseFloat(getComputedStyle(el).opacity))).toBeLessThan(0.1);
+
+  await expect(fab).not.toHaveClass(/is-scroll-hidden/, { timeout: 5000 });
+  await expect.poll(() => fab.evaluate(el => Number.parseFloat(getComputedStyle(el).opacity))).toBeGreaterThan(0.9);
+});
