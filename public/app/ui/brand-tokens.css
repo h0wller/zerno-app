@@ -29,6 +29,38 @@ body[data-brand="coffee"] {
   --staff-focus-ring: #123A6B;
   --mark-w: 54px;
   --mark-h: 54px;
+  --venue-menu-bg: #FFFFFF;
+  --venue-menu-border: 1px solid rgba(18, 58, 107, 0.12);
+  --venue-menu-shadow: 0 12px 28px rgba(16, 20, 24, 0.16);
+  --venue-option-font: "Golos Text", system-ui, sans-serif;
+  --venue-option-color: #30465C;
+  --venue-option-hover-bg: #F3F7FC;
+  --venue-option-active-bg: var(--staff-mode-active-bg);
+  --venue-option-active-color: var(--staff-mode-active-color);
+  --venue-option-active-border: 1px solid rgba(18, 58, 107, 0.16);
+  --venue-option-active-shadow: var(--staff-mode-active-shadow);
+
+  /* ── Навигация категорий: океаническая палитра ───────────── */
+  --category-rail-bg: #EAF1F9;
+  --category-rail-border-color: rgba(62, 143, 208, 0.28);
+  --category-tab-color: #4E6C89;
+  --category-tab-active-color: #123A6B;
+  --category-tab-active-border-color: rgba(62, 143, 208, 0.46);
+  --category-tab-hover-bg: #F4F8FC;
+  --category-tab-hover-border-color: rgba(62, 143, 208, 0.25);
+  --category-icon-size: 32px;
+  --category-icon-bg: transparent;
+  --category-icon-border: 0;
+  --category-icon-color: #123A6B;
+  --category-icon-radius: 50%;
+  --category-icon-active-bg: #123A6B;
+  --category-icon-active-border: 0;
+  --category-icon-active-color: #FFFFFF;
+  --category-indicator-color: #123A6B;
+  --category-label-font: "Golos Text", system-ui, sans-serif;
+  --category-label-size: 11px;
+  --category-label-weight: 600;
+  --category-label-active-weight: 700;
 
   /* ── Карточки меню и бейджи ──────────────────────────────── */
   --card-bg: #FFFFFF;
@@ -213,6 +245,16 @@ body[data-brand="delivery"] {
   --staff-focus-ring: #3A2A1C;
   --mark-w: 200px;
   --mark-h: 48px;
+  --venue-menu-bg: #FFFDF9;
+  --venue-menu-border: 1px solid var(--fr-tan, #C99E6E);
+  --venue-menu-shadow: 0 10px 25px rgba(58, 42, 28, 0.18);
+  --venue-option-font: "Unbounded", "Golos Text", system-ui, sans-serif;
+  --venue-option-color: var(--fr-choc, #3A2A1C);
+  --venue-option-hover-bg: #F6EEE1;
+  --venue-option-active-bg: #8B2B20;
+  --venue-option-active-color: #FFFFFF;
+  --venue-option-active-border: 2px solid var(--fr-choc, #3A2A1C);
+  --venue-option-active-shadow: 2px 2px 0 var(--fr-choc, #3A2A1C);
 
   /* ── Основная палитра ────────────────────────────────────── */
   --flame: #C03B2A;
@@ -232,6 +274,27 @@ body[data-brand="delivery"] {
   --tint-warm: #F3E2CE;
   --panel: #FAF5EE;
   --line: #E5DACB;
+
+  /* ── Навигация категорий: крафтовая палитра «Пятницы» ──── */
+  --category-rail-bg: var(--fr-rice, #EFE6D8);
+  --category-rail-border-color: rgba(58, 42, 28, 0.3);
+  --category-tab-color: var(--fr-choc, #3A2A1C);
+  --category-tab-active-color: var(--fr-choc, #3A2A1C);
+  --category-tab-active-border-color: rgba(58, 42, 28, 0.36);
+  --category-tab-hover-bg: #F9F2E8;
+  --category-tab-hover-border-color: rgba(58, 42, 28, 0.2);
+  --category-icon-size: 32px;
+  --category-icon-bg: transparent;
+  --category-icon-border: 0;
+  --category-icon-color: var(--fr-choc, #3A2A1C);
+  --category-icon-radius: 8px;
+  --category-icon-active-bg: #C03B2A;
+  --category-icon-active-border: 0;
+  --category-icon-active-color: #FFFFFF;
+  --category-indicator-color: #C03B2A;
+  --category-label-font: "Unbounded", "Golos Text", system-ui, sans-serif;
+  --category-label-size: 10px;
+  --category-label-weight: 700;
 
   /* ── Карточки доставки: крафтовый фон, шоколадная обводка ── */
   --card-bg: var(--fr-paper, #F6EEE1);

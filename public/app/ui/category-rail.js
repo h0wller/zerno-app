@@ -1,17 +1,51 @@
 /* public/app/ui/category-rail.js
-   Shared rail geometry and transient scroll fade. The storefront modules own
-   category state and DOM; this module owns only viewport positioning/presentation. */
+   Shared rail viewport positioning and transient scroll fade.
+   menu.js / delivery.js own category state and markup; CSS owns the capsule geometry. */
 var railHeadObserver = null;
 var observedRailHead = null;
 var observedRailTopbar = null;
 var railStickyLayout = null;
+var railDesktopAnchor = new WeakMap();
 var railFadeTimer = null;
 var fadedRail = null;
 var railScrollTick = false;
 
-function updateRailStickyPosition(rail, head) {
-  if (!rail || !head) return;
+function usesFloatingCategoryRailViewport() {
+  return !!(window.matchMedia && window.matchMedia(
+    '(max-width: 820px), (min-width: 821px) and (orientation: landscape) and (max-height: 480px)'
+  ).matches);
+}
 
+function clearRailInlineLayout(rail) {
+  [
+    'position',
+    'top',
+    'right',
+    'bottom',
+    'left',
+    'max-height',
+    'overflow-y',
+    'align-self',
+    'transform',
+    'margin-top',
+    'height'
+  ].forEach(function (property) {
+    rail.style.removeProperty(property);
+  });
+}
+
+function updateRailStickyPosition(rail, head) {
+  if (!rail) return;
+
+  /* The fixed capsule is entirely CSS-owned; do not let legacy sticky inline styles win. */
+  if (usesFloatingCategoryRailViewport()) {
+    railStickyLayout = null;
+    clearRailInlineLayout(rail);
+    rail.classList.add('rail-position-ready');
+    return;
+  }
+
+  if (!head) return;
   if (!head.getBoundingClientRect().height) {
     railStickyLayout = null;
     rail.classList.remove('rail-position-ready');
@@ -45,7 +79,7 @@ function updateRailStickyPosition(rail, head) {
       rail.style.top = 'auto';
       rail.style.maxHeight = 'none';
       rail.style.overflowY = '';
-      rail.style.alignSelf = 'start';
+      rail.style.alignSelf = 'stretch';
     }
   } else {
     railStickyLayout = null;
@@ -67,37 +101,50 @@ function alignRailWithCard() {
 
   if (!rail) return;
   railStickyLayout = null;
-  rail.style.position = 'relative';
-  rail.style.top = 'auto';
-  rail.style.maxHeight = 'none';
-  rail.style.overflowY = '';
-  rail.style.alignSelf = 'start';
-  var wrap = rail.parentElement;
-  if (!wrap) return;
 
-  var headRect = head && head.getBoundingClientRect();
-  if (headRect && headRect.height) {
-    var wrapRect = wrap.getBoundingClientRect();
-    var wrapStyle = window.getComputedStyle(wrap);
-    var wrapContentTop = wrapRect.top
-      + (parseFloat(wrapStyle.paddingTop) || 0)
-      + (parseFloat(wrapStyle.borderTopWidth) || 0);
-    var isDeliveryBrand = document.documentElement.dataset.brand === 'delivery';
-    var menuRow = head.querySelector('.menu-controls-row');
-    var modeSeg = document.getElementById('modeSeg');
-    var staffGuestMenu = !!(menuRow && modeSeg &&
-      modeSeg.closest('.menu-controls-row') === menuRow);
-    var catalog = document.querySelector(isDeliveryBrand ? '#deliveryView #deliveryGrid' : '#menuView #grid');
-    var catalogRect = catalog && catalog.getBoundingClientRect();
-    var desiredTop = catalogRect ? catalogRect.top : (staffGuestMenu ? headRect.bottom + 12 : headRect.top);
-    var marginTop = Math.max(0, desiredTop - wrapContentTop) + 'px';
-    if (rail.style.marginTop !== marginTop) rail.style.marginTop = marginTop;
-    if (!isDeliveryBrand && rail.style.height) rail.style.removeProperty('height');
-  } else if (rail.style.marginTop !== '0px') {
-    rail.style.marginTop = '0px';
+  if (usesFloatingCategoryRailViewport()) {
+    railDesktopAnchor.delete(rail);
+    clearRailInlineLayout(rail);
+    rail.classList.add('rail-position-ready');
+  } else {
+    rail.style.position = 'relative';
+    rail.style.top = 'auto';
+    rail.style.maxHeight = 'none';
+    rail.style.overflowY = '';
+    rail.style.alignSelf = 'stretch';
+
+    var wrap = rail.parentElement;
+    if (!wrap) return;
+
+    var headRect = head && head.getBoundingClientRect();
+    if (headRect && headRect.height) {
+      var wrapRect = wrap.getBoundingClientRect();
+      var wrapStyle = window.getComputedStyle(wrap);
+      var wrapContentTop = wrapRect.top
+        + (parseFloat(wrapStyle.paddingTop) || 0)
+        + (parseFloat(wrapStyle.borderTopWidth) || 0);
+      var isDeliveryBrand = document.documentElement.dataset.brand === 'delivery';
+      var menuRow = head.querySelector('.menu-controls-row');
+      var modeSeg = document.getElementById('modeSeg');
+      var staffGuestMenu = !!(menuRow && modeSeg &&
+        modeSeg.closest('.menu-controls-row') === menuRow);
+      var catalog = document.querySelector(isDeliveryBrand ? '#deliveryView #deliveryGrid' : '#menuView #grid');
+      var catalogRect = catalog && catalog.getBoundingClientRect();
+      var desiredTop = catalogRect ? catalogRect.top : (staffGuestMenu ? headRect.bottom + 12 : headRect.top);
+      var anchorState = railDesktopAnchor.get(rail);
+      if (!anchorState || anchorState.headHeight !== headRect.height) {
+        var marginTop = Math.max(0, desiredTop - wrapContentTop) + 'px';
+        railDesktopAnchor.set(rail, { marginTop: marginTop, headHeight: headRect.height });
+      }
+      var capturedMarginTop = railDesktopAnchor.get(rail).marginTop;
+      if (rail.style.marginTop !== capturedMarginTop) rail.style.marginTop = capturedMarginTop;
+      if (!isDeliveryBrand && rail.style.height) rail.style.removeProperty('height');
+    } else if (rail.style.marginTop !== '0px') {
+      rail.style.marginTop = '0px';
+    }
+
+    updateRailStickyPosition(rail, head);
   }
-
-  updateRailStickyPosition(rail, head);
 
   var topbar = document.querySelector('header.topbar');
   if (typeof ResizeObserver === 'function' && (observedRailHead !== head || observedRailTopbar !== topbar)) {
@@ -117,6 +164,7 @@ function activeRail() {
 
 function markRailScrolling() {
   var rail = activeRail();
+  /* Preserve #269: fade only portrait/tablet rails; compact landscape is not faded. */
   if (!window.matchMedia || !window.matchMedia('(max-width: 820px)').matches) {
     if (railFadeTimer) window.clearTimeout(railFadeTimer);
     if (fadedRail) fadedRail.classList.remove('is-scroll-fading');
@@ -136,6 +184,7 @@ function markRailScrolling() {
 }
 
 window.alignRailWithCard = alignRailWithCard;
+window.usesHorizontalCategoryRailViewport = usesFloatingCategoryRailViewport;
 
 window.addEventListener('scroll', function () {
   markRailScrolling();

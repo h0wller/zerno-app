@@ -92,6 +92,54 @@
     box-sizing:border-box;
   }
 }
+/* Critical first-frame reserve for the detached category capsule; presentation lives in 150-rail.css. */
+@media (max-width:820px),
+       (min-width:821px) and (orientation:landscape) and (max-height:480px) {
+  :root {
+    --rail-h:56px;
+    --rail-edge-gap:10px;
+    --rail-total-h:calc(var(--rail-h) + var(--rail-edge-gap) + env(safe-area-inset-bottom,0px));
+  }
+  html body div.wrap {
+    grid-template-columns:minmax(0,1fr);
+    grid-template-rows:auto;
+    gap:10px;
+    padding:10px 12px 28px;
+  }
+  html body div.wrap > #rail,
+  html body div.wrap > #deliveryRail,
+  html body div.wrap > section {
+    grid-column:1;
+    min-width:0;
+    width:100%;
+  }
+  html body div.wrap > #rail,
+  html body div.wrap > #deliveryRail {
+    width:auto;
+    min-width:0;
+    max-width:none;
+    height:auto;
+    max-height:none;
+    margin:0;
+  }
+  #grid,
+  #deliveryGrid {
+    padding-bottom:calc(var(--rail-total-h) + 16px);
+    scroll-padding-bottom:calc(var(--rail-total-h) + 16px);
+  }
+  body:has(#cartFab.visible:not([hidden])):not(.is-cashier):not(.is-admin) #grid,
+  body:has(#cartFab.visible:not([hidden])):not(.is-cashier):not(.is-admin) #deliveryGrid {
+    padding-bottom:calc(var(--rail-total-h) + 12px + 64px + 16px);
+    scroll-padding-bottom:calc(var(--rail-total-h) + 12px + 64px + 16px);
+  }
+}
+@media (max-width:820px) and (max-height:480px),
+       (min-width:821px) and (orientation:landscape) and (max-height:480px) {
+  :root {
+    --rail-h:48px;
+    --rail-total-h:calc(var(--rail-h) + var(--rail-edge-gap) + env(safe-area-inset-bottom,0px));
+  }
+}
 /* Reserve the delivery subfilter viewport's final 56px content + 12px gap before deferred CSS. */
 html[data-brand="delivery"] body #deliveryView #deliverySubFilterViewport {
   box-sizing: border-box;

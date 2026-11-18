@@ -834,3 +834,25 @@ html body #authModal.tg-mode .mhint{
 #checkoutStreet.field-error{ animation: none; transition: none; }
 }
 
+
+
+/* Put the cart launcher and floating rail in separate visual lanes. */
+@media (max-width: 820px),
+       (min-width: 821px) and (orientation: landscape) and (max-height: 480px) {
+  html body #cartFab.cartFab {
+    bottom: calc(var(--rail-total-h) + 12px);
+  }
+
+  html body.cart-open #cartFab,
+  html body:has(#cartPanel.open) #cartFab {
+    visibility: hidden;
+    pointer-events: none;
+  }
+
+  html body.cart-open #mbonusBtn,
+  html body.cart-open #scanFab,
+  html body.cart-open .fab-scan {
+    visibility: hidden;
+    pointer-events: none;
+  }
+}
