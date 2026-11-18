@@ -98,5 +98,5 @@
 ### Mobile detached category capsule correction
 
 - На floating breakpoints (max-width:820px и short landscape) .wrap имеет одну контентную колонку. Fixed capsule не занимает grid track; слева не резервируется прежняя 80px rail column.
-- Первый кадр в index.html и hydrated layout в core/views.js используют одинаковый одноколоночный .wrap. Отрицательные rail-компенсации margin-left на меню/заголовке в этих breakpoints не используются.
+- Первый кадр в index.html и hydrated layout в core/views.js используют одинаковый одноколоночный .wrap. Отрицательные rail-компенсации margin-left на меню/заголовке в этих breakpoints не используются; critical CSS ставит section в первую колонку.
 - cartFab остаётся DOM/state owner cart.js; inline SVG glyph — статическая презентация в HTML, а lane определяется responsive CSS над capsule.

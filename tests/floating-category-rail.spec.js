@@ -44,6 +44,9 @@ for (const brand of BRANDS) {
           wrapLeft: wrapRect.left,
           wrapWidth: wrapRect.width,
           gridLeft: grid.getBoundingClientRect().left,
+          sectionColumn: getComputedStyle(document.querySelector('.wrap > section')).gridColumnStart,
+          headLeft: document.querySelector(brandName === 'coffee' ? '#menuView .menu-head' : '#deliveryView .menu-head').getBoundingClientRect().left,
+          headRight: document.querySelector(brandName === 'coffee' ? '#menuView .menu-head' : '#deliveryView .menu-head').getBoundingClientRect().right,
           bottomGap: window.innerHeight - rect.bottom,
           safeArea,
           left: rect.left,
@@ -80,6 +83,9 @@ for (const brand of BRANDS) {
       expect(geometry.wrapColumns.trim().split(/\s+/)).toHaveLength(1);
       expect(geometry.gridLeft).toBeGreaterThanOrEqual(geometry.wrapLeft - 1);
       expect(geometry.gridLeft).toBeLessThanOrEqual(geometry.wrapLeft + 1);
+      expect(geometry.sectionColumn).toBe('1');
+      expect(geometry.headLeft).toBeGreaterThanOrEqual(geometry.wrapLeft - 1);
+      expect(geometry.headRight).toBeLessThanOrEqual(geometry.wrapLeft + geometry.wrapWidth + 1);
       expect(geometry.height).toBe(viewport.railHeight);
       expect(geometry.bottomGap).toBeGreaterThanOrEqual(10 + geometry.safeArea);
       expect(geometry.bottomGap).toBeLessThanOrEqual(12 + geometry.safeArea);

@@ -776,14 +776,7 @@ html body div.wrap > #deliveryRail button.on {
   #menuView .menu-head .upd,
   #deliveryView .menu-head .upd { display:none; }
 }
-@media (max-width: 820px) {
-  html body #menuView .menu-head,
-  html body #deliveryView .menu-head {
-    width: calc(100% + var(--menu-rail-width) + var(--menu-rail-gap));
-    max-width: none;
-    margin-left: calc(0px - var(--menu-rail-width) - var(--menu-rail-gap));
-  }
-}
+/* Detached capsule no longer reserves a left rail gutter. */
 .mh-top {
   display: flex;
   align-items: center;
@@ -2380,6 +2373,13 @@ html body div.wrap > section {
   min-width: 0;
   width: 100%;
 }
+@media (max-width: 820px),
+       (min-width: 821px) and (orientation: landscape) and (max-height: 480px) {
+  html body div.wrap > section {
+    grid-column: 1;
+    grid-row: auto;
+  }
+}
 html body div.wrap > .rail,
 html body div.wrap > #deliveryRail {
   grid-column: 1;
@@ -2550,13 +2550,7 @@ html[data-brand="delivery"] #deliveryView .mh-top > div:first-child {
   gap: 6px 12px;
   width: 100%;
 }
-@media (max-width: 820px) {
-  html[data-brand="delivery"] #deliveryView .menu-head {
-    width: calc(100% + var(--menu-rail-width,80px) + var(--menu-rail-gap,10px));
-    max-width: none;
-    margin-left: calc(0px - var(--menu-rail-width,80px) - var(--menu-rail-gap,10px));
-  }
-}
+/* Detached capsule no longer reserves a left rail gutter. */
 html[data-brand="delivery"] #deliveryView .menu-head h1 {
   margin: 0;
   display: inline-flex;
