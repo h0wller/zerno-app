@@ -853,3 +853,32 @@ html body #authModal.tg-mode .mhint{
     pointer-events: none;
   }
 }
+
+/* Dedicated compact FAB lane above the fixed category capsule.
+   Product quantity steppers remain fully hit-testable at narrow widths. */
+@media (max-width: 820px),
+       (min-width: 821px) and (orientation: landscape) and (max-height: 480px) {
+  .cartFab {
+    right: 12px;
+    left: auto;
+    bottom: calc(var(--rail-total-h, 66px) + 12px + 48px + 8px);
+    min-width: 104px;
+    max-width: min(180px, calc(100vw - 24px));
+    min-height: 48px;
+    padding: 8px 12px;
+    gap: 7px;
+  }
+  .cartFab .cf-icon { flex-basis: 22px; width: 22px; height: 22px; }
+  .cartFab .cf-icon svg { width: 20px; height: 20px; }
+}
+@media (max-width: 340px) {
+  .cartFab {
+    right: 12px;
+    bottom: calc(var(--rail-total-h, 66px) + 12px + 48px + 8px);
+    min-width: 96px;
+    max-width: calc(100vw - 24px);
+    padding-inline: 10px;
+    gap: 6px;
+  }
+  .cartFab .cf-total { font-size: 12px; }
+}

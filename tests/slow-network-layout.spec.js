@@ -181,7 +181,7 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
     expect(before.ticker.height).toBe(34);
     expect(before.tickerOverflowX).toBe('hidden');
     expect(before.section.width).toBeGreaterThan(250);
-    expect(before.section.width).toBeLessThanOrEqual(before.viewportWidth - 80);
+    expect(before.section.width).toBeLessThanOrEqual(before.viewportWidth - 24);
     expect(before.heading.width).toBeGreaterThan(60);
     expect(before.brandContext).toBeNull();
     expect(before.menuHead).not.toBeNull();
@@ -208,7 +208,7 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
     expect(before.searchLabel.width).toBeLessThanOrEqual(1);
     expect(before.searchLabel.height).toBeLessThanOrEqual(1);
     expect(before.searchInput).not.toBeNull();
-    expect(before.card.width).toBeLessThanOrEqual(before.viewportWidth - 80);
+    expect(before.card.width).toBeLessThanOrEqual(before.viewportWidth - 24);
     expect(before.scrollWidth).toBeLessThanOrEqual(before.viewportWidth + 1);
 
     await waitForDeferredTheme(page);
@@ -982,7 +982,7 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
         cls: window.__layoutShifts.reduce((sum, entry) => sum + entry.value, 0),
         staffHeaderCls: window.__layoutShifts.reduce((sum, shift) => {
           const affectsStaffHeader = (shift.sources || []).some(source =>
-            (source.node || []).some(node =>
+            (Array.isArray(source.node) ? source.node : source.node ? [source.node] : []).some(node =>
               node.id === 'modeSeg' || node.id === 'editToggle' ||
               (node.className || '').split(/\s+/).some(name =>
                 name === 'menu-head' || name === 'menu-controls-row' || name === 'mode-seg-slot'

@@ -53,6 +53,7 @@ sticky слева на весь скролл
     --rail-h: 56px;
     --rail-edge-gap: 10px;
     --rail-total-h: calc(var(--rail-h) + var(--rail-edge-gap) + env(safe-area-inset-bottom, 0px));
+    --floating-cart-h: 48px;
   }
 
   html body div.wrap > nav.rail#rail,

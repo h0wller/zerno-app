@@ -27,7 +27,7 @@ for (const brand of BRANDS) {
       const rail = page.locator(brand.selector);
       await expect(rail).toBeVisible({ timeout: 15000 });
       await expect(rail).toHaveClass(/rail-position-ready/);
-      const geometry = await rail.evaluate((element, gridSelector) => {
+      const geometry = await rail.evaluate((element, args) => {
         const rect = element.getBoundingClientRect();
         const probe = document.createElement('div');
         probe.style.cssText = 'position:fixed;visibility:hidden;padding-bottom:env(safe-area-inset-bottom,0px)';
@@ -37,7 +37,7 @@ for (const brand of BRANDS) {
         const wrap = document.querySelector('body > .wrap') || document.querySelector('.wrap');
         const wrapStyle = getComputedStyle(wrap);
         const wrapRect = wrap.getBoundingClientRect();
-        const grid = document.querySelector(gridSelector);
+        const grid = document.querySelector(args.grid);
         return {
           position: getComputedStyle(element).position,
           wrapColumns: wrapStyle.gridTemplateColumns,
@@ -45,8 +45,8 @@ for (const brand of BRANDS) {
           wrapWidth: wrapRect.width,
           gridLeft: grid.getBoundingClientRect().left,
           sectionColumn: getComputedStyle(document.querySelector('.wrap > section')).gridColumnStart,
-          headLeft: document.querySelector(brandName === 'coffee' ? '#menuView .menu-head' : '#deliveryView .menu-head').getBoundingClientRect().left,
-          headRight: document.querySelector(brandName === 'coffee' ? '#menuView .menu-head' : '#deliveryView .menu-head').getBoundingClientRect().right,
+          headLeft: document.querySelector(args.brand === 'coffee' ? '#menuView .menu-head' : '#deliveryView .menu-head').getBoundingClientRect().left,
+          headRight: document.querySelector(args.brand === 'coffee' ? '#menuView .menu-head' : '#deliveryView .menu-head').getBoundingClientRect().right,
           bottomGap: window.innerHeight - rect.bottom,
           safeArea,
           left: rect.left,
@@ -69,7 +69,7 @@ for (const brand of BRANDS) {
             };
           })
         };
-      }, brand.grid);
+      }, { brand: brand.brand, grid: brand.grid });
       await testInfo.attach(brand.brand + '-' + viewport.name + '-rail.png', {
         body: await page.screenshot({ animations: 'disabled' }),
         contentType: 'image/png'
