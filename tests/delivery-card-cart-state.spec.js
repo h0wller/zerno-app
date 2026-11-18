@@ -120,7 +120,7 @@ test('delivery option validation keeps its message but removes shake under reduc
 
 test('card entrance and quantity controls use bounded motion without changing geometry', async ({ page }, testInfo) => {
   const cases = [
-    { brand: 'coffee', width: 390, height: 844, grid: '#menuGrid' },
+    { brand: 'coffee', width: 390, height: 844, grid: '#grid' },
     { brand: 'delivery', width: 390, height: 844, grid: '#deliveryGrid' },
   ];
 
@@ -136,7 +136,7 @@ test('card entrance and quantity controls use bounded motion without changing ge
     await page.waitForFunction((brand) =>
       window.brand === brand &&
       (brand === 'coffee'
-        ? !!document.querySelector('#menuGrid .card')
+        ? !!document.querySelector('#grid .card')
         : !!document.querySelector('#deliveryGrid .card')),
       item.brand
     );
