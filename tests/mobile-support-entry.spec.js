@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { readFileSync } from 'node:fs';
+import sharp from 'sharp';
 
 test.use({ serviceWorkers: 'block' });
 
@@ -117,6 +118,66 @@ for (const brand of BRANDS) {
       const iconBox = await icon.boundingBox();
       expect(iconBox?.width).toBeGreaterThanOrEqual(20);
       expect(iconBox?.height).toBeGreaterThanOrEqual(20);
+
+      const renderState = await icon.evaluate((svg) => {
+        const path = svg.querySelector('path');
+        const svgStyle = getComputedStyle(svg);
+        const pathStyle = path ? getComputedStyle(path) : null;
+        const pathBox = path?.getBBox();
+        const rect = svg.getBoundingClientRect();
+        return {
+          svg: {
+            display: svgStyle.display,
+            visibility: svgStyle.visibility,
+            opacity: svgStyle.opacity,
+            fill: svgStyle.fill,
+            width: rect.width,
+            height: rect.height
+          },
+          path: path && pathStyle ? {
+            display: pathStyle.display,
+            visibility: pathStyle.visibility,
+            opacity: pathStyle.opacity,
+            fill: pathStyle.fill,
+            bbox: pathBox ? {
+              x: pathBox.x,
+              y: pathBox.y,
+              width: pathBox.width,
+              height: pathBox.height
+            } : null
+          } : null
+        };
+      });
+      const iconPng = await icon.screenshot({ animations: 'disabled' });
+      const { data: pixels, info } = await sharp(iconPng)
+        .removeAlpha()
+        .raw()
+        .toBuffer({ resolveWithObject: true });
+      let brightPixels = 0;
+      for (let i = 0; i < pixels.length; i += info.channels) {
+        if (pixels[i] > 200 && pixels[i + 1] > 200 && pixels[i + 2] > 200) brightPixels++;
+      }
+      if (viewport.width === 390) {
+        await testInfo.attach(`support-icon-render-${brand.id}.json`, {
+          body: JSON.stringify({
+            brand: brand.id,
+            viewport,
+            renderState,
+            pixelSize: { width: info.width, height: info.height },
+            brightPixels
+          }, null, 2),
+          contentType: 'application/json'
+        });
+        await testInfo.attach(`support-icon-render-${brand.id}.png`, {
+          body: iconPng,
+          contentType: 'image/png'
+        });
+      }
+      expect(
+        brightPixels,
+        `support icon must paint light pixels at ${viewport.name}; diagnostics: ${JSON.stringify(renderState)}`
+      ).toBeGreaterThan(20);
+
       await expect(supportHost).toHaveCount(1);
       await expect(supportHost).toHaveAttribute('aria-label', 'Поддержка');
       await expect.poll(() => support.evaluate((el) => el.parentElement?.id)).toBe('supportLauncherHost');
