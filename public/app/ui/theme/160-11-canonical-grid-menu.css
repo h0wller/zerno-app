@@ -301,7 +301,7 @@ html body div.wrap > #deliveryRail { align-self:stretch; height:auto; max-height
     height: auto;
     min-height: 0;
     max-height: none;
-    margin-bottom: 8px;
+    margin-bottom: 6px;
     padding: 8px 14px;
   }
 
@@ -344,6 +344,13 @@ html body div.wrap > #deliveryRail { align-self:stretch; height:auto; max-height
   html[data-brand] body :is(#menuView, #deliveryView) .menu-head .mh-top > .mh-right > .search {
     flex: 1 1 0%;
     min-width: 0;
+  }
+
+  html[data-brand="delivery"] body #deliveryView #deliverySubFilterViewport {
+    box-sizing:border-box;
+    height:44px;
+    min-height:44px;
+    max-height:44px;
   }
 
   /* Reserve a compact media row; the product name remains readable above the fixed capsule. */
