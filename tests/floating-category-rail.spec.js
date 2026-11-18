@@ -231,7 +231,12 @@ test.describe('floating rail clearances and overlay ownership', () => {
       const lastAction = brand.brand === 'delivery'
         ? lastCard.locator('.steprow .cta[data-add], [data-add]').last()
         : lastCard.locator('.cfoot');
-      await lastAction.scrollIntoViewIfNeeded();
+      // Fixed overlays are not scroll-into-view clipping ancestors; center the footer above the rail.
+      await lastAction.evaluate(element => element.scrollIntoView({
+        block: 'center',
+        inline: 'nearest',
+        behavior: 'instant',
+      }));
 
       const geometry = await page.evaluate(({ railSelector, actionSelector, isInteractive }) => {
         const rail = document.querySelector(railSelector).getBoundingClientRect();
