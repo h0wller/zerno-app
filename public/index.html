@@ -122,16 +122,6 @@
     max-height:none;
     margin:0;
   }
-  #grid,
-  #deliveryGrid {
-    padding-bottom:calc(var(--rail-total-h) + 16px);
-    scroll-padding-bottom:calc(var(--rail-total-h) + 16px);
-  }
-  body:has(#cartFab.visible:not([hidden])):not(.is-cashier):not(.is-admin) #grid,
-  body:has(#cartFab.visible:not([hidden])):not(.is-cashier):not(.is-admin) #deliveryGrid {
-    padding-bottom:calc(var(--rail-total-h) + 12px + 64px + 16px);
-    scroll-padding-bottom:calc(var(--rail-total-h) + 12px + 64px + 16px);
-  }
 }
 @media (max-width:820px) and (max-height:480px),
        (min-width:821px) and (orientation:landscape) and (max-height:480px) {
