@@ -110,6 +110,7 @@ test('desktop category sidebar remains in-flow and vertically aligned', async ({
     const rail = page.locator(selector);
     await expect(rail).toBeVisible();
     await expect(rail).toHaveCSS('position', 'relative');
+    await expect(rail).toHaveClass(/rail-position-ready/);
     const alignment = await page.evaluate(brandName => {
       const rail = document.querySelector(brandName === 'coffee' ? '#rail' : '#deliveryRail').getBoundingClientRect();
       const grid = document.querySelector(brandName === 'coffee' ? '#grid' : '#deliveryGrid').getBoundingClientRect();
@@ -153,8 +154,8 @@ for (const brand of BRANDS) {
         qty: 1,
       }]));
       await expect(fab).toBeVisible();
-      const lanes = await page.evaluate(() => {
-        const railRect = document.querySelector('#rail, #deliveryRail').getBoundingClientRect();
+      const lanes = await page.evaluate((railSelector) => {
+        const railRect = document.querySelector(railSelector).getBoundingClientRect();
         const fabRect = document.querySelector('#cartFab').getBoundingClientRect();
         return {
           railTop: railRect.top,
@@ -163,7 +164,7 @@ for (const brand of BRANDS) {
           viewportWidth: window.innerWidth,
           fabWidth: fabRect.width,
         };
-      });
+      }, brand.selector);
       expect(lanes.fabHeight).toBeGreaterThanOrEqual(48);
       expect(lanes.fabWidth).toBeLessThanOrEqual(lanes.viewportWidth - 24);
       expect(lanes.fabBottom + 8,
@@ -178,7 +179,8 @@ for (const brand of BRANDS) {
       await expect(cartPanel).toHaveClass(/open/);
       await expect(rail).toHaveCSS('visibility', 'hidden');
       await expect(rail).toHaveCSS('pointer-events', 'none');
-      await expect(fab).toHaveCSS('visibility', 'hidden');
+      // cart.js/theme hide the cart FAB from layout with display:none while the sheet is open.
+      await expect(fab).toBeHidden();
       await expect(fab).toHaveCSS('pointer-events', 'none');
       await testInfo.attach(brand.brand + '-' + viewport.name + '-cart-open.png', {
         body: await page.screenshot({ animations: 'disabled' }),
