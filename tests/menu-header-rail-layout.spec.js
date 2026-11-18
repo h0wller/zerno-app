@@ -214,15 +214,26 @@ for (const brand of CASES) {
       } else {
         // Scroll past this rail's actual sticky threshold. Wide coffee menus place
         // the catalog below 500px, so a fixed scroll amount can leave the rail relative.
-        await page.evaluate(railSelector => {
+        const targetScroll = await page.evaluate(railSelector => {
           const element = document.querySelector(railSelector);
           const topbar = document.querySelector('header.topbar');
           const stickyTop = Math.max(12, (topbar ? topbar.getBoundingClientRect().bottom : 0) + 12);
           const documentTop = element.getBoundingClientRect().top + window.scrollY;
-          const targetScroll = documentTop - stickyTop + 48;
-          const maxScroll = Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
-          window.scrollTo(0, Math.min(maxScroll, Math.max(window.scrollY, targetScroll)));
+          const target = Math.max(window.scrollY, documentTop - stickyTop + 48);
+          const requiredScrollHeight = target + window.innerHeight + 1;
+          const currentScrollHeight = document.documentElement.scrollHeight;
+          if (currentScrollHeight < requiredScrollHeight) {
+            const spacer = document.createElement('div');
+            spacer.setAttribute('aria-hidden', 'true');
+            spacer.dataset.playwrightScrollFixture = 'category-rail-sticky';
+            spacer.style.cssText = 'height:' + (requiredScrollHeight - currentScrollHeight) + 'px;visibility:hidden;pointer-events:none';
+            document.body.appendChild(spacer);
+          }
+          window.scrollTo(0, target);
+          return target;
         }, brand.rail);
+        await expect.poll(() => page.evaluate(() => window.scrollY))
+          .toBeGreaterThanOrEqual(targetScroll - 1);
         await expect.poll(() => rail.evaluate(element => getComputedStyle(element).position), { timeout: 5000 })
           .toBe('sticky');
 
@@ -429,6 +440,10 @@ test('mobile category tabs match the catalog width and distribute evenly for bot
       await expect(page.locator(brand.head)).toBeVisible({ timeout: 10000 });
       await expect(rail).toBeVisible({ timeout: 10000 });
       await expect(grid.locator('.card').first()).toBeVisible({ timeout: 15000 });
+      const inactiveTab = rail.locator('button:not(.on)').first();
+      await expect.poll(() => inactiveTab.evaluate(button => getComputedStyle(button).backgroundColor), {
+        timeout: 5000,
+      }).toBe('rgba(0, 0, 0, 0)');
 
       const geometry = await page.evaluate(({ railSelector, gridSelector, headSelector, brandName }) => {
         const rail = document.querySelector(railSelector);
