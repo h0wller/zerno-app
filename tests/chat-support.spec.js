@@ -132,7 +132,7 @@ test('mobile support uses an icon and delivery search keeps an inset from the me
     await expect(button).toBeVisible();
     await expect(button.locator('svg')).toHaveCount(1);
     await expect(button.locator('svg')).toHaveAttribute('viewBox', '0 0 24 24');
-    await expect(button.locator('svg path').first()).toHaveAttribute('d', /^M12 3C6\\.5 3 2 6\\.9/);
+    await expect(button.locator('svg path').first()).toHaveAttribute('d', /^M12 3C6\.5 3 2 6\.9/);
     await expect(button.locator('svg path').first()).toHaveAttribute('fill', '#fff');
     await expect(button).toHaveAttribute('aria-label', /поддерж/i);
     if (brand === 'delivery') {
