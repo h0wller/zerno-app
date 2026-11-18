@@ -402,36 +402,43 @@ async function addOneVisibleCartItem(page, brand) {
     if (await firstOption.count()) await firstOption.click();
     await card.locator('[data-add]').click();
   } else {
-    const productId = await page.evaluate(() => {
-      const parseOptions = (value) => {
-        if (Array.isArray(value)) return value;
-        if (typeof value !== 'string') return [];
-        try {
-          const parsed = JSON.parse(value);
-          return Array.isArray(parsed) ? parsed : [];
-        } catch {
-          return [];
-        }
+    // Coffee cards do not expose the delivery add-stepper. Seed one actual catalog
+    // product through the cart state owner so the shared cart panel can be captured.
+    const cartItem = await page.evaluate(() => {
+      const item = (window.MENU || []).find(product =>
+        product && product.on !== 0 && Number.parseInt(product.price, 10) > 0
+      );
+      if (!item) return null;
+      return {
+        key: String(item.id),
+        id: item.id,
+        oi: -1,
+        name: item.name,
+        opt: null,
+        optName: null,
+        price: Number.parseInt(item.price, 10),
+        sz: 0,
+        qty: 1,
       };
-      const visibleCards = [...document.querySelectorAll('#grid article[data-item-id]')];
-      const card = visibleCards.find((element) => {
-        const product = (window.MENU || []).find((item) => String(item.id) === element.dataset.itemId);
-        return product && parseOptions(product.opts).length > 0;
-      });
-      return card ? card.dataset.itemId : null;
     });
-    if (!productId) throw new Error('No configurable coffee product is available for the open-cart visual fixture');
-    const card = page.locator('#grid article[data-item-id="' + productId + '"]');
-    await card.locator('.cbody h3').click();
-    const modal = page.locator('#itemModal');
-    await expect(modal).toHaveClass(/open/);
-    await modal.locator('#modalAddBtn').click();
+    if (!cartItem) throw new Error('No priced coffee catalog product is available for the open-cart visual fixture');
+    await page.evaluate(item => {
+      if (!Array.isArray(window.cart) || typeof window.updateCartFab !== 'function' ||
+          typeof window.renderCart !== 'function') {
+        throw new Error('Cart owner API is not ready for the coffee visual fixture');
+      }
+      window.cart.splice(0, window.cart.length, item);
+      localStorage.setItem('zt_cart', JSON.stringify(window.cart));
+      window.updateCartFab();
+      window.renderCart();
+    }, cartItem);
   }
 
   await expect(page.locator('#cartFab')).toBeVisible({ timeout: 10000 });
   await page.locator('#cartFab').click();
   await expect(page.locator('#cartPanel')).toHaveClass(/open/);
   await expect(page.locator('#cartItems .cartItem')).toHaveCount(1);
+  await expect(page.locator('#toasts .toast')).toHaveCount(0, { timeout: 5000 });
 }
 
 for (const brand of ['coffee', 'delivery']) {
