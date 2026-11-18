@@ -61,7 +61,7 @@ body.is-admin .ticker {
   white-space: nowrap;
 }
 #tickerTrack span::after {
-  content: "〜";
+  content: "•";
   margin-left: .6rem;
   color: var(--ticker-marker-color, var(--azure, #3E8FD0));
 }
