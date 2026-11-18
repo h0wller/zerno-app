@@ -65,3 +65,31 @@ for (const brand of BRANDS) {
     });
   });
 }
+
+for (const brand of BRANDS) {
+  test(`${brand.brand}: repeated active-category scroll does not fade the rail`, async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.addInitScript(() => sessionStorage.setItem('splashDone', '1'));
+    await page.goto('/?brand=' + brand.brand, { waitUntil: 'domcontentloaded' });
+    const rail = page.locator(brand.rail);
+    await expect(rail).toBeVisible({ timeout: 15000 });
+    await page.evaluate(() => window.scrollTo(0, 700));
+    await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(300);
+
+    await page.locator(brand.active).click();
+    await expect.poll(() => page.evaluate(() => window.scrollY), { timeout: 5000 }).toBeLessThanOrEqual(80);
+    await expect(rail).not.toHaveClass(/is-scroll-fading/);
+  });
+
+  test(`${brand.brand}: desktop rail background does not stretch with the catalog`, async ({ page }) => {
+    await page.setViewportSize({ width: 995, height: 858 });
+    await page.addInitScript(() => sessionStorage.setItem('splashDone', '1'));
+    await page.goto('/?brand=' + brand.brand, { waitUntil: 'domcontentloaded' });
+    const rail = page.locator(brand.rail);
+    const catalog = page.locator(brand.brand === 'delivery' ? '#deliveryGrid' : '#grid');
+    await expect(rail).toBeVisible({ timeout: 15000 });
+    await expect.poll(() => rail.evaluate(el => getComputedStyle(el).alignSelf)).toBe('start');
+    expect(await rail.evaluate(el => el.clientHeight)).toBeLessThan(await catalog.evaluate(el => el.scrollHeight));
+  });
+}
+
