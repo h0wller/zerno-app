@@ -388,6 +388,7 @@ test.describe('Карточки меню: высота, выравнивание
         await page.setViewportSize({ width: vp.width, height: vp.height });
         await routeDeliveryFixture(page);
         await page.addInitScript(() => {
+          localStorage.removeItem('zt_cart');
           localStorage.setItem('zt_onb', '1');
           sessionStorage.setItem('splashDone', '1');
         });
@@ -400,14 +401,19 @@ test.describe('Карточки меню: высота, выравнивание
         const items = (await response.json()).items;
         expect(items).toHaveLength(6);
         expect(items[0].id).toBe('pz-marg');
-        await page.waitForSelector('#deliveryGrid .card:not(.skeleton-card)', { timeout: 5000 });
-        // Fixture starts on the empty Sets category; choose Pizzas before adding the first card.
-        await page.getByRole('button', { name: 'Пиццы' }).click();
-        await expect(page.locator('#deliveryGrid .card:not(.skeleton-card)').first()).toBeVisible();
-        // Кладём одну позицию в корзину, чтобы степпер «−/+» перестал быть hidden и тоже попал в замер.
+        // This spec measures card hit targets, not category navigation. Seed the populated category directly.
+        await page.evaluate(() => {
+          window.dcat = 'pizza';
+          window.renderDeliveryRail();
+          window.renderDeliveryMenu();
+        });
+        await expect(page.locator('#deliveryRail button[data-dcat="pizza"]')).toHaveAttribute('aria-pressed', 'true');
+        await expect(page.locator('#deliveryGrid .card:not(.skeleton-card)').first()).toBeVisible({ timeout: 5000 });
+        // Add a real fixture product so both hidden step controls are included in the target measurements.
         const firstOpt = page.locator('#deliveryGrid .opts label.opt-btn').first();
-        if (await firstOpt.isVisible().catch(() => false)) await firstOpt.click({ force: true }).catch(() => {});
-        await page.locator('#deliveryGrid [data-add]').first().click({ force: true }).catch(() => {});
+        await expect(firstOpt).toBeVisible();
+        await firstOpt.click();
+        await page.locator('#deliveryGrid [data-add]').first().click();
         await expect(page.locator('#deliveryGrid .steprow button.step[data-step="1"]').first()).toBeVisible({ timeout: 5000 });
 
         const targets = await page.evaluate((selectors) => {
