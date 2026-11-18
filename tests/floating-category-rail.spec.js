@@ -227,52 +227,47 @@ test.describe('floating rail clearances and overlay ownership', () => {
       expect(reserve.paddingBottom).toBeGreaterThanOrEqual(reserve.railTotal + 15);
       expect(reserve.paddingBottom).toBeLessThanOrEqual(reserve.railTotal + 17);
 
-      const lastCard = grid.locator('> .card:not(.skeleton-card)').last();
-      const lastAction = brand.brand === 'delivery'
-        ? lastCard.locator('.steprow .cta[data-add], [data-add]').last()
-        : lastCard.locator('.cfoot');
-      // Fixed overlays are not scroll-into-view clipping ancestors; center the footer above the rail.
-      await lastAction.evaluate(element => element.scrollIntoView({
-        block: 'center',
-        inline: 'nearest',
-        behavior: 'instant',
-      }));
+      // Match the established acceptance: move the whole catalog to its scroll end,
+      // so the complete last card clears the fixed rail (not just its footer).
+      await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
 
-      const geometry = await page.evaluate(({ railSelector, actionSelector, isInteractive }) => {
+      const geometry = await page.evaluate(({ railSelector, gridSelector, isDelivery }) => {
         const rail = document.querySelector(railSelector).getBoundingClientRect();
-        const action = document.querySelector(actionSelector);
-        const rect = action && action.getBoundingClientRect();
-        const hit = isInteractive && rect && document.elementFromPoint(
-          rect.left + rect.width / 2,
-          rect.top + rect.height / 2
+        const cards = Array.from(document.querySelectorAll(gridSelector + ' > .card:not(.skeleton-card)'));
+        const last = cards[cards.length - 1];
+        const cta = isDelivery && last && last.querySelector('.steprow .cta[data-add], [data-add]');
+        const ctaRect = cta && cta.getBoundingClientRect();
+        const hit = ctaRect && document.elementFromPoint(
+          ctaRect.left + ctaRect.width / 2,
+          ctaRect.top + ctaRect.height / 2
         );
         return {
           railTop: rail.top,
-          actionBottom: rect ? rect.bottom : null,
-          hitTarget: isInteractive ? !!(action && hit && (hit === action || action.contains(hit))) : null,
+          lastCardBottom: last ? last.getBoundingClientRect().bottom : null,
+          ctaBottom: ctaRect ? ctaRect.bottom : null,
+          hitTarget: isDelivery ? !!(cta && hit && (hit === cta || cta.contains(hit))) : null,
         };
       }, {
         railSelector: brand.selector,
-        actionSelector: brand.brand === 'delivery'
-          ? brand.grid + ' > .card:not(.skeleton-card):last-child .steprow .cta[data-add]'
-          : brand.grid + ' > .card:not(.skeleton-card):last-child .cfoot',
-        isInteractive: brand.brand === 'delivery',
+        gridSelector: brand.grid,
+        isDelivery: brand.brand === 'delivery',
       });
 
-      await testInfo.attach(brand.brand + '-last-action-clearance.json', {
+      await testInfo.attach(brand.brand + '-last-card-clearance.json', {
         body: Buffer.from(JSON.stringify({ reserve, geometry }, null, 2)),
         contentType: 'application/json',
       });
-      await testInfo.attach(brand.brand + '-last-action-clearance.png', {
+      await testInfo.attach(brand.brand + '-last-card-clearance.png', {
         body: await page.screenshot({ animations: 'disabled' }),
         contentType: 'image/png',
       });
 
-      expect(geometry.actionBottom, brand.brand + ' last catalog action remains above the fixed rail')
+      expect(geometry.lastCardBottom, brand.brand + ' complete last card remains above fixed rail')
         .not.toBeNull();
-      expect(geometry.actionBottom, brand.brand + ' final footer/control must remain above the rail')
-        .toBeLessThanOrEqual(geometry.railTop);
+      expect(geometry.lastCardBottom).toBeLessThanOrEqual(geometry.railTop);
       if (brand.brand === 'delivery') {
+        expect(geometry.ctaBottom, 'delivery last-card CTA also remains above the rail')
+          .toBeLessThanOrEqual(geometry.railTop);
         expect(geometry.hitTarget, 'delivery last-card CTA receives its own hit test').toBe(true);
       }
     }
