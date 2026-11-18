@@ -108,6 +108,7 @@ var rules = [
  'html[data-brand="delivery"] body{background-color:#F3EDE6;background-image:radial-gradient(rgba(58,42,28,.1) 1px,transparent 1.5px);background-size:12px 12px}',
  'html[data-brand="delivery"] #deliveryView h1,html[data-brand="delivery"] #deliveryView h2,html[data-brand="delivery"] #deliveryView h3,html[data-brand="delivery"] #deliveryView .cbody h3{font-family:Unbounded, "Golos Text", sans-serif;color:var(--fr-choc)}',
  '[data-brand="delivery"] #deliveryRail button.on{background:#8B2B20;border:2px solid var(--fr-choc);box-shadow:2px 2px 0 var(--fr-choc);color:#fff;font:700 13px Unbounded, "Golos Text", sans-serif}',
+ 'html[data-brand="delivery"] body #deliveryRail button.on{background:#8E3716;color:#FFFFFF}',
  '[data-brand="delivery"] #brandSeg{background:var(--esp)}',
  '[data-brand="delivery"] #brandSeg button.on{background:#8B2B20;color:#fff}',
  '[data-brand="delivery"] #cartFab,[data-brand="delivery"] .chat-fab{background:var(--flame);border:2px solid var(--fr-choc);box-shadow:3px 3px 0 var(--fr-choc)}',
