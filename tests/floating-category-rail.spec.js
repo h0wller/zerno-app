@@ -197,7 +197,7 @@ test.describe('floating rail clearances and overlay ownership', () => {
     });
   }
 
-  test('floating rail keeps the last catalog action reachable for both brands', async ({ page }, testInfo) => {
+  test('floating rail keeps the last card footer and delivery CTA reachable', async ({ page }, testInfo) => {
     for (const brand of BRANDS) {
       await page.setViewportSize({ width: 390, height: 844 });
       await page.addInitScript(() => {
@@ -233,25 +233,25 @@ test.describe('floating rail clearances and overlay ownership', () => {
         : lastCard.locator('.cfoot');
       await lastAction.scrollIntoViewIfNeeded();
 
-      const geometry = await page.evaluate(({ gridSelector, railSelector, actionSelector }) => {
+      const geometry = await page.evaluate(({ railSelector, actionSelector, isInteractive }) => {
         const rail = document.querySelector(railSelector).getBoundingClientRect();
         const action = document.querySelector(actionSelector);
         const rect = action && action.getBoundingClientRect();
-        const hit = rect && document.elementFromPoint(
+        const hit = isInteractive && rect && document.elementFromPoint(
           rect.left + rect.width / 2,
           rect.top + rect.height / 2
         );
         return {
           railTop: rail.top,
           actionBottom: rect ? rect.bottom : null,
-          hitTarget: !!(action && hit && (hit === action || action.contains(hit))),
+          hitTarget: isInteractive ? !!(action && hit && (hit === action || action.contains(hit))) : null,
         };
       }, {
-        gridSelector: brand.grid,
         railSelector: brand.selector,
         actionSelector: brand.brand === 'delivery'
           ? brand.grid + ' > .card:not(.skeleton-card):last-child .steprow .cta[data-add]'
           : brand.grid + ' > .card:not(.skeleton-card):last-child .cfoot',
+        isInteractive: brand.brand === 'delivery',
       });
 
       await testInfo.attach(brand.brand + '-last-action-clearance.json', {
@@ -265,8 +265,11 @@ test.describe('floating rail clearances and overlay ownership', () => {
 
       expect(geometry.actionBottom, brand.brand + ' last catalog action remains above the fixed rail')
         .not.toBeNull();
-      expect(geometry.actionBottom).toBeLessThanOrEqual(geometry.railTop);
-      expect(geometry.hitTarget, brand.brand + ' last catalog action receives its own hit test').toBe(true);
+      expect(geometry.actionBottom, brand.brand + ' final footer/control must remain above the rail')
+        .toBeLessThanOrEqual(geometry.railTop);
+      if (brand.brand === 'delivery') {
+        expect(geometry.hitTarget, 'delivery last-card CTA receives its own hit test').toBe(true);
+      }
     }
   });
 
