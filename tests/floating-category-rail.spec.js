@@ -213,16 +213,37 @@ test.describe('floating rail clearances and overlay ownership', () => {
       await expect(rail).toBeVisible({ timeout: 15000 });
       await expect.poll(() => grid.locator('> .card:not(.skeleton-card)').count()).toBeGreaterThan(0);
 
-      const reserve = await grid.evaluate(element => {
+      const reserve = await grid.evaluate((element, railSelector) => {
+        const root = getComputedStyle(document.documentElement);
+        const style = getComputedStyle(element);
+        const rail = document.querySelector(railSelector);
         const probe = document.createElement('div');
-        probe.style.cssText = 'position:fixed;visibility:hidden;width:0;height:var(--rail-total-h)';
+        probe.style.cssText = 'position:fixed;visibility:hidden;pointer-events:none;width:0;height:var(--rail-total-h)';
         document.body.appendChild(probe);
         const railTotal = probe.getBoundingClientRect().height;
         probe.remove();
+        const railRect = rail.getBoundingClientRect();
         return {
-          paddingBottom: parseFloat(getComputedStyle(element).paddingBottom),
+          brand: document.documentElement.dataset.brand,
+          paddingBottom: parseFloat(style.paddingBottom),
           railTotal,
+          railBoxHeight: railRect.height,
+          railTop: railRect.top,
+          rootRailTotal: root.getPropertyValue('--rail-total-h').trim(),
+          rootRailHeight: root.getPropertyValue('--rail-h').trim(),
+          rootRailGap: root.getPropertyValue('--rail-edge-gap').trim(),
+          rootGridGap: root.getPropertyValue('--rail-grid-clearance-gap').trim(),
+          floatingCartHeight: root.getPropertyValue('--floating-cart-h').trim(),
+          gridInlinePaddingBottom: element.style.paddingBottom,
+          gridScrollHeight: element.scrollHeight,
+          gridClientHeight: element.clientHeight,
+          documentScrollHeight: document.documentElement.scrollHeight,
+          windowScrollY: window.scrollY,
         };
+      }, brand.selector);
+      await testInfo.attach(brand.brand + '-empty-cart-scroll-reserve.json', {
+        body: Buffer.from(JSON.stringify(reserve, null, 2)),
+        contentType: 'application/json',
       });
       expect(reserve.paddingBottom).toBeGreaterThanOrEqual(reserve.railTotal + 15);
       expect(reserve.paddingBottom).toBeLessThanOrEqual(reserve.railTotal + 17);
