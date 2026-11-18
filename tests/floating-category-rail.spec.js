@@ -125,52 +125,106 @@ const CART_OPEN_VIEWPORTS = [
   { name: '1024x390', width: 1024, height: 390 },
 ];
 
-for (const brand of BRANDS) {
-  for (const viewport of CART_OPEN_VIEWPORTS) {
-    test(brand.brand + ': floating rail and cart FAB use separate lanes at ' + viewport.name, async ({ page }, testInfo) => {
+test.describe('floating rail clearances and overlay ownership', () => {
+  for (const viewport of VIEWPORTS) {
+    test('delivery: first visible card CTA does not sit underneath the rail at ' + viewport.name, async ({ page }, testInfo) => {
       await page.setViewportSize({ width: viewport.width, height: viewport.height });
       await page.addInitScript(() => {
+        sessionStorage.setItem('splashDone', '1');
+        localStorage.setItem('zt_onb', '1');
+        localStorage.setItem('zt_inst_hide', '1');
+        localStorage.setItem('zt_ios_hide', '1');
+      });
+      await page.goto('/?brand=delivery', { waitUntil: 'domcontentloaded' });
+
+      const rail = page.locator('#deliveryRail');
+      const firstCard = page.locator('#deliveryGrid .card:not(.skeleton-card)').first();
+      await expect(rail).toBeVisible({ timeout: 15000 });
+      await expect(firstCard).toBeVisible({ timeout: 15000 });
+      const firstAction = firstCard.locator('.steprow .cta[data-add], [data-add]').first();
+      await expect(firstAction).toBeVisible();
+      const geometry = await page.evaluate(() => {
+        const rail = document.querySelector('#deliveryRail').getBoundingClientRect();
+        const card = document.querySelector('#deliveryGrid .card:not(.skeleton-card)');
+        const action = card && card.querySelector('.steprow .cta[data-add], [data-add]');
+        const actionRect = action && action.getBoundingClientRect();
+        const railRect = rail;
+        return {
+          rail: { top: railRect.top, bottom: railRect.bottom, left: railRect.left, right: railRect.right },
+          action: actionRect && {
+            top: actionRect.top, bottom: actionRect.bottom,
+            left: actionRect.left, right: actionRect.right,
+          },
+          viewport: { width: innerWidth, height: innerHeight },
+          hitTarget: actionRect && document.elementFromPoint(
+            actionRect.left + actionRect.width / 2,
+            actionRect.top + actionRect.height / 2
+          )?.closest('[data-add]') === action,
+        };
+      });
+      await testInfo.attach('delivery-' + viewport.name + '-first-cta-clearance.json', {
+        body: Buffer.from(JSON.stringify(geometry, null, 2)),
+        contentType: 'application/json',
+      });
+      await testInfo.attach('delivery-' + viewport.name + '-first-cta-clearance.png', {
+        body: await page.screenshot({ animations: 'disabled' }),
+        contentType: 'image/png',
+      });
+      expect(geometry.action, 'the real first-card add control must exist').not.toBeNull();
+      expect(
+        geometry.action.bottom <= geometry.rail.top || geometry.action.top >= geometry.rail.bottom,
+        'the first card CTA must not geometrically intersect the fixed category rail'
+      ).toBe(true);
+      expect(geometry.hitTarget, 'the center of the first card CTA must receive its own hit test').toBe(true);
+    });
+  }
+
+  for (const viewport of CART_OPEN_VIEWPORTS) {
+    test('delivery: cart FAB and category rail use separate lanes, then hide under cart sheet at ' + viewport.name, async ({ page }, testInfo) => {
+      await page.setViewportSize({ width: viewport.width, height: viewport.height });
+      await page.addInitScript(() => {
+        sessionStorage.setItem('splashDone', '1');
+        localStorage.setItem('zt_onb', '1');
         sessionStorage.setItem('splashDone', '1');
         localStorage.setItem('zt_inst_hide', '1');
         localStorage.setItem('zt_ios_hide', '1');
       });
-      await page.goto('/?brand=' + brand.brand, { waitUntil: 'domcontentloaded' });
+      await page.goto('/?brand=delivery', { waitUntil: 'domcontentloaded' });
 
-      const rail = page.locator(brand.selector);
+      const rail = page.locator('#deliveryRail');
       const fab = page.locator('#cartFab');
       const cartPanel = page.locator('#cartPanel');
+      const firstCard = page.locator('#deliveryGrid .card:not(.skeleton-card)').first();
       await expect(rail).toBeVisible({ timeout: 15000 });
-      await expect.poll(() => page.evaluate(() => typeof window.replaceCartItems)).toBe('function');
+      await expect(firstCard).toBeVisible({ timeout: 15000 });
+      const option = firstCard.locator('.opts label.opt-btn').first();
+      if (await option.count()) await option.click();
+      await firstCard.locator('.steprow .cta[data-add], [data-add]').first().click();
+      await expect.poll(() => fab.evaluate(element =>
+        !element.hidden && getComputedStyle(element).display !== 'none' &&
+        element.classList.contains('visible')
+      ), { timeout: 7000 }).toBe(true);
 
-      // Seed through cart.js, the sole owner of cart state; the sheet itself is opened by a real click.
-      await page.evaluate(() => window.replaceCartItems([{
-        key: 'floating-rail-acceptance',
-        id: 'floating-rail-acceptance',
-        name: 'Тестовая позиция',
-        oi: -1,
-        opt: null,
-        sz: 0,
-        price: 500,
-        qty: 1,
-      }]));
-      await expect(fab).toBeVisible();
-      const lanes = await page.evaluate((railSelector) => {
-        const railRect = document.querySelector(railSelector).getBoundingClientRect();
+      const lanes = await page.evaluate(() => {
+        const railRect = document.querySelector('#deliveryRail').getBoundingClientRect();
         const fabRect = document.querySelector('#cartFab').getBoundingClientRect();
         return {
           railTop: railRect.top,
           fabBottom: fabRect.bottom,
           fabHeight: fabRect.height,
-          viewportWidth: window.innerWidth,
+          viewportWidth: innerWidth,
           fabWidth: fabRect.width,
+          hitTarget: document.elementFromPoint(
+            fabRect.left + fabRect.width / 2,
+            fabRect.top + fabRect.height / 2
+          )?.closest('#cartFab') === document.querySelector('#cartFab'),
         };
-      }, brand.selector);
+      });
       expect(lanes.fabHeight).toBeGreaterThanOrEqual(48);
       expect(lanes.fabWidth).toBeLessThanOrEqual(lanes.viewportWidth - 24);
-      expect(lanes.fabBottom + 8,
-        'visible cart FAB keeps at least 8px clearance above the fixed category capsule')
-        .toBeLessThanOrEqual(lanes.railTop);
-      await testInfo.attach(brand.brand + '-' + viewport.name + '-cart-fab-lane.png', {
+      expect(lanes.fabBottom + 8).toBeLessThanOrEqual(lanes.railTop);
+      expect(lanes.hitTarget).toBe(true);
+      await testInfo.attach('delivery-' + viewport.name + '-cart-fab-lane.png', {
         body: await page.screenshot({ animations: 'disabled' }),
         contentType: 'image/png',
       });
@@ -179,10 +233,9 @@ for (const brand of BRANDS) {
       await expect(cartPanel).toHaveClass(/open/);
       await expect(rail).toHaveCSS('visibility', 'hidden');
       await expect(rail).toHaveCSS('pointer-events', 'none');
-      // cart.js/theme hide the cart FAB from layout with display:none while the sheet is open.
       await expect(fab).toBeHidden();
       await expect(fab).toHaveCSS('pointer-events', 'none');
-      await testInfo.attach(brand.brand + '-' + viewport.name + '-cart-open.png', {
+      await testInfo.attach('delivery-' + viewport.name + '-cart-open.png', {
         body: await page.screenshot({ animations: 'disabled' }),
         contentType: 'image/png',
       });
@@ -192,5 +245,34 @@ for (const brand of BRANDS) {
       await expect(rail).toHaveCSS('visibility', 'visible');
       await expect(fab).toBeVisible();
     });
+
+    test('coffee: profile overlay does not create a fictitious delivery cart FAB at ' + viewport.name, async ({ page }, testInfo) => {
+      await page.setViewportSize({ width: viewport.width, height: viewport.height });
+      await page.addInitScript(() => {
+        sessionStorage.setItem('splashDone', '1');
+        localStorage.setItem('zt_inst_hide', '1');
+        localStorage.setItem('zt_ios_hide', '1');
+      });
+      await page.goto('/?brand=coffee', { waitUntil: 'domcontentloaded' });
+
+      const rail = page.locator('#rail');
+      const fab = page.locator('#cartFab');
+      const profileButton = page.locator('#profileTopBtn');
+      const profilePanel = page.locator('#panel');
+      await expect(rail).toBeVisible({ timeout: 15000 });
+      await expect(fab).toBeHidden();
+      await expect(profileButton).toBeVisible();
+      await profileButton.click();
+      await expect(profilePanel).toHaveClass(/open/);
+      await expect(rail).toBeVisible();
+      await expect(rail).toHaveCSS('visibility', 'visible');
+      await testInfo.attach('coffee-' + viewport.name + '-profile-open.png', {
+        body: await page.screenshot({ animations: 'disabled' }),
+        contentType: 'image/png',
+      });
+      await page.locator('#panel .btn-back').click();
+      await expect(profilePanel).not.toHaveClass(/open/);
+      await expect(rail).toBeVisible();
+    });
   }
-}
+});
