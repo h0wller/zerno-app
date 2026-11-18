@@ -300,8 +300,6 @@ html body div.wrap > section {
   html body header.topbar #venueToggle,
   html body #chatFab,
   html body .topbar-actions > button { flex:0 0 32px; }
-  html body #chatFab svg,
-
   /* Text CTAs keep their normal dimensions; only the horizontal padding is compact. */
   html body #cartPanel :is(button,[role="button"],.btn-primary,.checkout-btn),
   html body #deliveryGrid .cta,
