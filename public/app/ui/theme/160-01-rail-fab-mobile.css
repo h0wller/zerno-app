@@ -837,7 +837,7 @@ html body #authModal.tg-mode .mhint{
 @media (max-width: 820px),
        (min-width: 821px) and (orientation: landscape) and (max-height: 480px) {
   html body #cartFab.cartFab {
-    bottom: calc(var(--rail-total-h) + 12px);
+    bottom: calc(var(--rail-total-h, 66px) + 12px + 48px + 8px);
   }
 
   html body.cart-open #cartFab,

@@ -1014,7 +1014,15 @@ test('delivery catalog quantity stepper keeps a 44px hit cell at narrow mobile w
         [rect.left + 2, rect.top + rect.height / 2],
         [rect.right - 2, rect.top + rect.height / 2]
       ];
+      const fab = document.querySelector('#cartFab');
+      const fabRect = fab.getBoundingClientRect();
+      const fabStyle = getComputedStyle(fab);
       return {
+        fabVisible: fab.classList.contains('visible') && !fab.hidden,
+        fabBottom: fabRect.bottom,
+        fabTop: fabRect.top,
+        fabComputedBottom: fabStyle.bottom,
+        stepTop: rect.top,
         width: rect.width,
         height: rect.height,
         cornerInset,
@@ -1032,6 +1040,7 @@ test('delivery catalog quantity stepper keeps a 44px hit cell at narrow mobile w
       };
     });
 
+    if (geometry.fabVisible) expect(geometry.fabBottom).toBeLessThanOrEqual(geometry.stepTop - 8);
     expect(geometry.width).toBeGreaterThanOrEqual(44);
     expect(geometry.height).toBeGreaterThanOrEqual(44);
     expect(geometry.points.every((point) => point.intended), JSON.stringify({ viewport, geometry })).toBe(true);
