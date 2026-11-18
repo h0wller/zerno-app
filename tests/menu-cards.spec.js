@@ -401,6 +401,9 @@ test.describe('Карточки меню: высота, выравнивание
         expect(items).toHaveLength(6);
         expect(items[0].id).toBe('pz-marg');
         await page.waitForSelector('#deliveryGrid .card:not(.skeleton-card)', { timeout: 5000 });
+        // Fixture starts on the empty Sets category; choose Pizzas before adding the first card.
+        await page.getByRole('button', { name: 'Пиццы' }).click();
+        await expect(page.locator('#deliveryGrid .card:not(.skeleton-card)').first()).toBeVisible();
         // Кладём одну позицию в корзину, чтобы степпер «−/+» перестал быть hidden и тоже попал в замер.
         const firstOpt = page.locator('#deliveryGrid .opts label.opt-btn').first();
         if (await firstOpt.isVisible().catch(() => false)) await firstOpt.click({ force: true }).catch(() => {});
