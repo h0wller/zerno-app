@@ -301,8 +301,9 @@ body.editing .card:hover{
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .card {
-    animation: none !important;
+  #grid .card,
+  #deliveryGrid .card {
+    animation: none;
     transition: none;
   }
 
