@@ -99,6 +99,7 @@
     --rail-h:56px;
     --rail-edge-gap:10px;
     --rail-total-h:calc(var(--rail-h) + var(--rail-edge-gap) + env(safe-area-inset-bottom,0px));
+    --rail-grid-clearance-gap:16px;
   }
   html body div.wrap {
     grid-template-columns:minmax(0,1fr);
@@ -128,6 +129,7 @@
   :root {
     --rail-h:48px;
     --rail-total-h:calc(var(--rail-h) + var(--rail-edge-gap) + env(safe-area-inset-bottom,0px));
+    --rail-grid-clearance-gap:16px;
   }
 }
 /* Reserve the delivery subfilter viewport's final 56px content + 12px gap before deferred CSS. */
@@ -975,7 +977,7 @@ body {
   display: grid;
   grid-template-columns: 1fr;
   gap: 16px;
-  padding-bottom: calc(var(--floating-cart-h, 72px) + max(16px, env(safe-area-inset-bottom, 0px)));
+  padding-bottom: calc(var(--rail-total-h, var(--floating-cart-h, 72px)) + var(--rail-grid-clearance-gap, max(16px, env(safe-area-inset-bottom, 0px))));
 }
 @media (min-width: 560px) {
   #deliveryGrid { grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); }
