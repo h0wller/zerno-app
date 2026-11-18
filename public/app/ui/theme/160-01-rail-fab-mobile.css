@@ -337,7 +337,7 @@ html body #authModal.tg-mode .mhint{
 .cartFab{
   position: fixed;
   bottom: calc(16px + env(safe-area-inset-bottom, 0px));
-  left: 50%;
+  left: calc(50% - (100vw - 100%) / 2);
   right: auto;
   transform: translateX(-50%) scale(0.92);
   z-index: 90;
