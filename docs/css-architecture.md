@@ -83,3 +83,13 @@
 - просмотр CI screenshots/report, если сценарий их прикладывает
 
 Не ослаблять assertions для сокрытия layout regressions. Визуальное изменение принимается только после сравнения screenshot states и review фактического responsive поведения.
+
+
+### Detached floating category capsule
+
+- `ui/category-rail.js` owns viewport lifecycle and clears legacy inline sticky values only for mobile and short landscape. `menu.js` / `delivery.js` retain category markup and selection ownership.
+- The capsule is fixed at `max-width:820px` and short landscape (`min-width:821px`, landscape, `max-height:480px`). Ordinary desktop and tablet portrait retain the vertical in-flow sidebar.
+- `150-rail.css` owns capsule geometry and brand-token appearance. `20-cards.css` and minimal critical CSS in `index.html` reserve bottom scroll clearance; an extra FAB lane exists only while the cart launcher is visible.
+- The cart state/FAB remain owned by `cart.js`; the category capsule and launcher are hidden while the cart sheet is open.
+- The rail has no horizontal scrolling. Category controls retain accessible names and 44×44px minimum hit areas. Delivery subfilters keep their own independent overflow behavior.
+- Include safe-area exactly once in the 10–12px visual bottom gap and test both brands at 320/360/390/430 portrait and 844×390 / 1024×390 compact landscape.
