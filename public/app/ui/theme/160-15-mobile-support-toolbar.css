@@ -64,8 +64,8 @@
 
   :is(#menuView, #deliveryView) .menu-head .mh-top .mh-right > #supportLauncherHost > #chatFab.chat-fab > svg {
     display:block;
-    width:16px;
-    height:16px;
+    width:20px;
+    height:20px;
   }
 
   :is(#menuView, #deliveryView) .menu-head .mh-top .mh-right > #supportLauncherHost > #chatFab.chat-fab::before,
