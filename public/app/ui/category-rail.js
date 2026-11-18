@@ -98,8 +98,9 @@ function updateRailStickyPosition(rail, head) {
     if (shouldStick) {
       rail.style.position = 'sticky';
       rail.style.top = stickyTop + 'px';
-      rail.style.maxHeight = Math.min(460, desktopMaxHeight) + 'px';
-      rail.style.overflowY = rail.scrollHeight > desktopMaxHeight ? 'auto' : 'visible';
+      var maxRailHeight = Math.min(460, desktopMaxHeight);
+      rail.style.maxHeight = maxRailHeight + 'px';
+      rail.style.overflowY = rail.scrollHeight > maxRailHeight ? 'auto' : 'visible';
       rail.style.alignSelf = 'start';
     } else {
       railStickyLayout = null;

@@ -381,3 +381,94 @@ test('visual audit: delivery pizza and rolls card grids at desktop width', async
     }, null, 2)
   );
 });
+
+
+const CART_VIEWPORTS = [
+  { id: '320x740', width: 320, height: 740 },
+  { id: '360x780', width: 360, height: 780 },
+  { id: '390x844', width: 390, height: 844 },
+  { id: '430x932', width: 430, height: 932 },
+  { id: '844x390', width: 844, height: 390 },
+  { id: '1024x390', width: 1024, height: 390 },
+  { id: '820x1024', width: 820, height: 1024 },
+  { id: '1440x900', width: 1440, height: 900 },
+];
+
+async function addOneVisibleCartItem(page, brand) {
+  if (brand === 'delivery') {
+    const card = page.locator('#deliveryGrid .card:not(.skeleton-card):not(.stopped)').first();
+    await expect(card).toBeVisible({ timeout: 15000 });
+    const firstOption = card.locator('.opts label.opt-btn').first();
+    if (await firstOption.count()) await firstOption.click();
+    await card.locator('[data-add]').click();
+  } else {
+    const productId = await page.evaluate(() => {
+      const parseOptions = (value) => {
+        if (Array.isArray(value)) return value;
+        if (typeof value !== 'string') return [];
+        try {
+          const parsed = JSON.parse(value);
+          return Array.isArray(parsed) ? parsed : [];
+        } catch {
+          return [];
+        }
+      };
+      const visibleCards = [...document.querySelectorAll('#grid article[data-item-id]')];
+      const card = visibleCards.find((element) => {
+        const product = (window.MENU || []).find((item) => String(item.id) === element.dataset.itemId);
+        return product && parseOptions(product.opts).length > 0;
+      });
+      return card ? card.dataset.itemId : null;
+    });
+    if (!productId) throw new Error('No configurable coffee product is available for the open-cart visual fixture');
+    const card = page.locator('#grid article[data-item-id="' + productId + '"]');
+    await card.locator('.cbody h3').click();
+    const modal = page.locator('#itemModal');
+    await expect(modal).toHaveClass(/open/);
+    await modal.locator('#modalAddBtn').click();
+  }
+
+  await expect(page.locator('#cartFab')).toBeVisible({ timeout: 10000 });
+  await page.locator('#cartFab').click();
+  await expect(page.locator('#cartPanel')).toHaveClass(/open/);
+  await expect(page.locator('#cartItems .cartItem')).toHaveCount(1);
+}
+
+for (const brand of ['coffee', 'delivery']) {
+  for (const viewport of CART_VIEWPORTS) {
+    test(`visual audit: ${brand} guest cart open at ${viewport.id}`, async ({ page }) => {
+      await prepareColdGuest(page, brand, viewport);
+      await waitForHydratedStorefront(page, brand);
+      await waitForHydratedSidebar(page, brand, viewport);
+      await addOneVisibleCartItem(page, brand);
+
+      await page.evaluate(async () => {
+        if (document.fonts?.ready) await document.fonts.ready;
+        window.scrollTo(0, 0);
+        const scrollBody = document.getElementById('cartScrollBody');
+        if (scrollBody) scrollBody.scrollTop = 0;
+      });
+
+      const screenshot = await capture(page, {
+        brand,
+        viewport,
+        state: 'cart-open',
+      });
+      const cartState = await page.evaluate(() => ({
+        panelOpen: document.getElementById('cartPanel')?.classList.contains('open') ?? false,
+        itemCount: document.querySelectorAll('#cartItems .cartItem').length,
+        documentWidth: document.documentElement.scrollWidth,
+        clientWidth: document.documentElement.clientWidth,
+      }));
+
+      expect(cartState.panelOpen).toBe(true);
+      expect(cartState.itemCount).toBe(1);
+      expect(cartState.documentWidth).toBeLessThanOrEqual(viewport.width);
+
+      fs.writeFileSync(
+        path.join(OUT, `${brand}-cart-open-${viewport.id}.json`),
+        JSON.stringify({ screenshot, cartState }, null, 2)
+      );
+    });
+  }
+}

@@ -212,14 +212,29 @@ for (const brand of CASES) {
           contentType: 'image/png',
         });
       } else {
-        const gridSelector = brand.brand === 'delivery' ? '#deliveryGrid' : '#grid';
-        await expect.poll(() => page.evaluate(({ railSelector, gridSelector }) => {
-          const grid = document.querySelector(gridSelector).getBoundingClientRect();
-          const rail = document.querySelector(railSelector).getBoundingClientRect();
-          return Math.abs(rail.top - grid.top);
-        }, { railSelector: brand.rail, gridSelector }), { timeout: 5000 }).toBeLessThanOrEqual(2);
-        await expect.poll(() => rail.evaluate(el => el.getBoundingClientRect().height))
-          .toBeLessThan(480);
+        const stickyGeometry = await rail.evaluate(element => {
+          const rect = element.getBoundingClientRect();
+          const style = getComputedStyle(element);
+          const topbar = document.querySelector('header.topbar');
+          const topbarBottom = topbar ? topbar.getBoundingClientRect().bottom : 0;
+          return {
+            position: style.position,
+            top: rect.top,
+            expectedTop: Math.max(12, topbarBottom + 12),
+            height: rect.height,
+            maxHeight: parseFloat(style.maxHeight),
+            scrollHeight: element.scrollHeight,
+            overflowY: style.overflowY,
+          };
+        });
+        expect(stickyGeometry.position, 'desktop rail becomes sticky after page scroll').toBe('sticky');
+        expect(Math.abs(stickyGeometry.top - stickyGeometry.expectedTop),
+          'sticky rail stays below the visible topbar').toBeLessThanOrEqual(2);
+        expect(stickyGeometry.maxHeight, 'desktop sticky rail is capped to 460px').toBeLessThanOrEqual(460);
+        expect(stickyGeometry.height, 'desktop sticky rail does not exceed its max-height').toBeLessThanOrEqual(460);
+        expect(stickyGeometry.overflowY,
+          'rail content scrolls when it exceeds the effective height cap')
+          .toBe(stickyGeometry.scrollHeight > stickyGeometry.maxHeight ? 'auto' : 'visible');
       }
     });
   }
@@ -606,7 +621,13 @@ test('desktop category navigation uses one rail surface and a selected icon chip
       const columns = await grid.evaluate((element) => getComputedStyle(element).gridTemplateColumns.split(' ').filter(Boolean).length);
       expect(layout.position).toBe('relative');
       expect(layout.width).toBeLessThanOrEqual(80);
-      expect(layout.height).toBeLessThan(480);
+      const catalogBottomDelta = await page.evaluate(({ railSelector, gridSelector }) => {
+        const rail = document.querySelector(railSelector).getBoundingClientRect();
+        const grid = document.querySelector(gridSelector).getBoundingClientRect();
+        return Math.abs(rail.bottom - grid.bottom);
+      }, { railSelector: brand.rail, gridSelector: brand.brand === 'coffee' ? '#grid' : '#deliveryGrid' });
+      expect(catalogBottomDelta, brand.brand + ' desktop rail spans the full catalog row before scrolling')
+        .toBeLessThanOrEqual(4);
       expect(layout.railBackground).not.toBe('rgba(0, 0, 0, 0)');
       expect(layout.railBorder).toBe('0px');
       expect(layout.radius).toBe('16px');
