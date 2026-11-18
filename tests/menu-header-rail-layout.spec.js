@@ -2509,3 +2509,54 @@ test('both brand rails align to the catalog row on desktop', async ({page}) => {
     expect(m.align).toBe('stretch');
   }
 });
+
+
+test('compact landscape keeps the first product title above the floating category capsule', async ({ page }, testInfo) => {
+  const cases = [
+    { brand: 'coffee', rail: '#rail', grid: '#grid' },
+    { brand: 'delivery', rail: '#deliveryRail', grid: '#deliveryGrid' },
+  ];
+  for (const brand of cases) {
+    for (const viewport of [
+      { width: 844, height: 390 },
+      { width: 1024, height: 390 },
+    ]) {
+      await page.setViewportSize(viewport);
+      await page.addInitScript(() => {
+        localStorage.clear();
+        sessionStorage.clear();
+        sessionStorage.setItem('splashDone', '1');
+      });
+      await page.goto('/?brand=' + brand.brand, { waitUntil: 'domcontentloaded' });
+      const rail = page.locator(brand.rail);
+      const firstCardTitle = page.locator(brand.grid + ' > .card:not(.skeleton-card) .cbody > h3').first();
+      await expect(rail).toBeVisible({ timeout: 10000 });
+      await expect(firstCardTitle).toBeVisible({ timeout: 15000 });
+      await page.evaluate(() => document.fonts && document.fonts.ready);
+      const geometry = await page.evaluate(({ railSelector, gridSelector }) => {
+        const rail = document.querySelector(railSelector).getBoundingClientRect();
+        const grid = document.querySelector(gridSelector);
+        const title = grid.querySelector('.card:not(.skeleton-card) .cbody > h3');
+        const titleRect = title.getBoundingClientRect();
+        const cardRect = title.closest('.card').getBoundingClientRect();
+        return {
+          railTop: rail.top,
+          railBottom: rail.bottom,
+          cardTop: cardRect.top,
+          titleTop: titleRect.top,
+          titleBottom: titleRect.bottom,
+          visibleTitleHeight: Math.max(0, Math.min(titleRect.bottom, rail.top) - titleRect.top),
+          titleHeight: titleRect.height,
+        };
+      }, { railSelector: brand.rail, gridSelector: brand.grid });
+      expect(
+        geometry.titleBottom,
+        `${brand.brand} ${viewport.width}x${viewport.height}: first card title must be fully visible before the floating category capsule; geometry=${JSON.stringify(geometry)}`
+      ).toBeLessThanOrEqual(geometry.railTop - 4);
+      await testInfo.attach(`${brand.brand}-compact-landscape-first-card-${viewport.width}x${viewport.height}`, {
+        body: await page.screenshot({ animations: 'disabled' }),
+        contentType: 'image/png',
+      });
+    }
+  }
+});
