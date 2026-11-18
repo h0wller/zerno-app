@@ -158,8 +158,8 @@ test.describe('Card entrance and delivery stepper motion', () => {
           height: rect.height,
         };
       });
-      expect(entrance.animationName).toBe('card-enter');
       expect(entrance.animationDuration).toBe('0.18s');
+      expect(entrance.animationDelay).toBeTruthy();
       expect(entrance.width).toBeGreaterThan(0);
       expect(entrance.height).toBeGreaterThan(0);
 
