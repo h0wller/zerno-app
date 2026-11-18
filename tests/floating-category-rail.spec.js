@@ -197,6 +197,79 @@ test.describe('floating rail clearances and overlay ownership', () => {
     });
   }
 
+  test('floating rail keeps the last catalog action reachable for both brands', async ({ page }, testInfo) => {
+    for (const brand of BRANDS) {
+      await page.setViewportSize({ width: 390, height: 844 });
+      await page.addInitScript(() => {
+        sessionStorage.setItem('splashDone', '1');
+        localStorage.setItem('zt_onb', '1');
+        localStorage.setItem('zt_inst_hide', '1');
+        localStorage.setItem('zt_ios_hide', '1');
+      });
+      await page.goto('/?brand=' + brand.brand, { waitUntil: 'domcontentloaded' });
+
+      const grid = page.locator(brand.grid);
+      const rail = page.locator(brand.selector);
+      await expect(rail).toBeVisible({ timeout: 15000 });
+      await expect.poll(() => grid.locator('> .card:not(.skeleton-card)').count()).toBeGreaterThan(0);
+
+      const reserve = await grid.evaluate(element => {
+        const probe = document.createElement('div');
+        probe.style.cssText = 'position:fixed;visibility:hidden;width:0;height:var(--rail-total-h)';
+        document.body.appendChild(probe);
+        const railTotal = probe.getBoundingClientRect().height;
+        probe.remove();
+        return {
+          paddingBottom: parseFloat(getComputedStyle(element).paddingBottom),
+          railTotal,
+        };
+      });
+      expect(reserve.paddingBottom).toBeGreaterThanOrEqual(reserve.railTotal + 15);
+      expect(reserve.paddingBottom).toBeLessThanOrEqual(reserve.railTotal + 17);
+
+      const lastCard = grid.locator('> .card:not(.skeleton-card)').last();
+      const lastAction = brand.brand === 'delivery'
+        ? lastCard.locator('.steprow .cta[data-add], [data-add]').last()
+        : lastCard.locator('.cfoot');
+      await lastAction.scrollIntoViewIfNeeded();
+
+      const geometry = await page.evaluate(({ gridSelector, railSelector, actionSelector }) => {
+        const rail = document.querySelector(railSelector).getBoundingClientRect();
+        const action = document.querySelector(actionSelector);
+        const rect = action && action.getBoundingClientRect();
+        const hit = rect && document.elementFromPoint(
+          rect.left + rect.width / 2,
+          rect.top + rect.height / 2
+        );
+        return {
+          railTop: rail.top,
+          actionBottom: rect ? rect.bottom : null,
+          hitTarget: !!(action && hit && (hit === action || action.contains(hit))),
+        };
+      }, {
+        gridSelector: brand.grid,
+        railSelector: brand.selector,
+        actionSelector: brand.brand === 'delivery'
+          ? brand.grid + ' > .card:not(.skeleton-card):last-child .steprow .cta[data-add]'
+          : brand.grid + ' > .card:not(.skeleton-card):last-child .cfoot',
+      });
+
+      await testInfo.attach(brand.brand + '-last-action-clearance.json', {
+        body: Buffer.from(JSON.stringify({ reserve, geometry }, null, 2)),
+        contentType: 'application/json',
+      });
+      await testInfo.attach(brand.brand + '-last-action-clearance.png', {
+        body: await page.screenshot({ animations: 'disabled' }),
+        contentType: 'image/png',
+      });
+
+      expect(geometry.actionBottom, brand.brand + ' last catalog action remains above the fixed rail')
+        .not.toBeNull();
+      expect(geometry.actionBottom).toBeLessThanOrEqual(geometry.railTop);
+      expect(geometry.hitTarget, brand.brand + ' last catalog action receives its own hit test').toBe(true);
+    }
+  });
+
   for (const viewport of CART_OPEN_VIEWPORTS) {
     test('delivery: cart FAB and category rail use separate lanes, then hide under cart sheet at ' + viewport.name, async ({ page }, testInfo) => {
       await page.setViewportSize({ width: viewport.width, height: viewport.height });
