@@ -31,10 +31,10 @@ for (const brand of CASES) {
       await expect(rail).toHaveClass(/rail-position-ready/);
       await expect(ticker).toHaveCSS('display', 'flex');
       const topbar = page.locator('header.topbar');
-      if (viewport.width <= 820) {
+      if (viewport.width <= 820 || (viewport.width > 820 && viewport.height <= 480)) {
         await expect(topbar).toHaveCSS('border-bottom-width', '0px');
       }
-      if (viewport.width <= 820) {
+      if (viewport.width <= 820 || (viewport.width > 820 && viewport.height <= 480)) {
         // Floating rail geometry is asserted in floating-category-rail.spec.js.
       } else if (brand.brand === 'delivery') {
         await expect(page.locator('#deliveryGrid .card').first()).toBeVisible({ timeout: 15000 });
@@ -75,7 +75,7 @@ for (const brand of CASES) {
         };
       }, { headSelector: brand.head, railSelector: brand.rail });
 
-      if (viewport.width <= 820) {
+      if (viewport.width <= 820 || (viewport.width > 820 && viewport.height <= 480)) {
         expect(layout.railPosition, 'mobile/tablet category rail is detached from catalog flow').toBe('fixed');
       }
       expect(layout.documentScrollWidth, 'menu-head must not create horizontal page overflow').toBeLessThanOrEqual(layout.documentWidth + 1);
@@ -102,7 +102,7 @@ for (const brand of CASES) {
       expect(Math.abs(tickerLayout.tickerTop - tickerLayout.topbarBottom)).toBeLessThanOrEqual(1);
 
       await page.evaluate(() => window.scrollTo(0, 500));
-      if (viewport.width <= 820) {
+      if (viewport.width <= 820 || (viewport.width > 820 && viewport.height <= 480)) {
         await expect(rail).toHaveCSS('position', 'fixed');
         await testInfo.attach(`${brand.brand}-floating-rail-${viewport.width}px`, {
           body: await page.screenshot({ animations: 'disabled' }),
