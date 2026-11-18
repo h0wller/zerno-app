@@ -2530,25 +2530,45 @@ test('compact landscape keeps the first product title above the floating categor
       await page.goto('/?brand=' + brand.brand, { waitUntil: 'domcontentloaded' });
       const rail = page.locator(brand.rail);
       const firstCardTitle = page.locator(brand.grid + ' > .card:not(.skeleton-card) .cbody > h3').first();
+      const search = page.locator(brand.brand === 'coffee' ? '#menuView .coffee-menu-search' : '#deliveryView .mh-right .search');
+      const support = page.locator('#chatFab');
       await expect(rail).toBeVisible({ timeout: 10000 });
+      await expect(search).toBeVisible({ timeout: 10000 });
+      await expect(support).toBeVisible({ timeout: 10000 });
       await expect(firstCardTitle).toBeVisible({ timeout: 15000 });
       await page.evaluate(() => document.fonts && document.fonts.ready);
-      const geometry = await page.evaluate(({ railSelector, gridSelector }) => {
+      const geometry = await page.evaluate(({ railSelector, gridSelector, searchSelector }) => {
         const rail = document.querySelector(railSelector).getBoundingClientRect();
         const grid = document.querySelector(gridSelector);
         const title = grid.querySelector('.card:not(.skeleton-card) .cbody > h3');
         const titleRect = title.getBoundingClientRect();
-        const cardRect = title.closest('.card').getBoundingClientRect();
+        const card = title.closest('.card');
+        const cardRect = card.getBoundingClientRect();
+        const media = card.querySelector('.media').getBoundingClientRect();
+        const toolbar = document.querySelector(searchSelector).closest('.mh-right').getBoundingClientRect();
+        const search = document.querySelector(searchSelector).getBoundingClientRect();
+        const support = document.querySelector('#supportLauncherHost').getBoundingClientRect();
         return {
           railTop: rail.top,
           railBottom: rail.bottom,
           cardTop: cardRect.top,
+          mediaHeight: media.height,
           titleTop: titleRect.top,
           titleBottom: titleRect.bottom,
           visibleTitleHeight: Math.max(0, Math.min(titleRect.bottom, rail.top) - titleRect.top),
           titleHeight: titleRect.height,
+          searchWidth: search.width,
+          supportInsideToolbar: support.left >= toolbar.left && support.right <= toolbar.right,
+          searchSupportOverlap: search.left < support.right && search.right > support.left
+            && search.top < support.bottom && search.bottom > support.top,
         };
-      }, { railSelector: brand.rail, gridSelector: brand.grid });
+      }, {
+        railSelector: brand.rail,
+        gridSelector: brand.grid,
+        searchSelector: brand.brand === 'coffee' ? '#menuView .coffee-menu-search' : '#deliveryView .mh-right .search'
+      });
+      expect(geometry.supportInsideToolbar, `${brand.brand}: support remains inside the search toolbar; ${JSON.stringify(geometry)}`).toBe(true);
+      expect(geometry.searchSupportOverlap, `${brand.brand}: support does not overlap search; ${JSON.stringify(geometry)}`).toBe(false);
       expect(
         geometry.titleBottom,
         `${brand.brand} ${viewport.width}x${viewport.height}: first card title must be fully visible before the floating category capsule; geometry=${JSON.stringify(geometry)}`
