@@ -146,6 +146,7 @@ test.describe('Card and stepper motion geometry', () => {
       });
 
       if (item.brand === 'delivery') {
+        await page.emulateMedia({ reducedMotion: 'no-preference' });
         const add = card.locator('[data-add]');
         const option = card.locator('.opts input[type="radio"]').first();
         if (await option.count()) await option.check();
