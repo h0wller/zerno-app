@@ -318,9 +318,20 @@ test.describe('Спринт 2 — Сетка опций пиццы, отступ
     await expect(firstOpt).toHaveCSS('color', 'rgb(255, 255, 255)');
     await expect(firstOpt).toHaveCSS('background-color', 'rgb(192, 59, 42)');
 
-    // ── Задача 2: Безопасный нижний отступ #deliveryGrid (>= 88px под плавающую корзину) ──
-    const padBottom = await page.locator('#deliveryGrid').evaluate((el) => parseFloat(window.getComputedStyle(el).paddingBottom));
-    expect(padBottom).toBeGreaterThanOrEqual(88);
+    // ── Задача 2: Пустая корзина резервирует только detached rail + 16px clearance. ──
+    const emptyCartReserve = await page.locator('#deliveryGrid').evaluate((element) => {
+      const probe = document.createElement('div');
+      probe.style.cssText = 'position:fixed;visibility:hidden;pointer-events:none;width:0;height:var(--rail-total-h)';
+      document.body.appendChild(probe);
+      const railTotal = probe.getBoundingClientRect().height;
+      probe.remove();
+      return {
+        paddingBottom: parseFloat(getComputedStyle(element).paddingBottom),
+        railTotal,
+      };
+    });
+    expect(emptyCartReserve.paddingBottom).toBeGreaterThanOrEqual(emptyCartReserve.railTotal + 15);
+    expect(emptyCartReserve.paddingBottom).toBeLessThanOrEqual(emptyCartReserve.railTotal + 17);
 
     // ── Задача 3: delivery rail is a detached fixed capsule on mobile ──
     const railGeometry = await page.evaluate(() => {
