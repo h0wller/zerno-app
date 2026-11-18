@@ -383,7 +383,8 @@ test('visual audit: delivery pizza and rolls card grids at desktop width', async
 });
 
 
-const CART_VIEWPORTS = [
+
+const REVIEW_VIEWPORTS = [
   { id: '320x740', width: 320, height: 740 },
   { id: '360x780', width: 360, height: 780 },
   { id: '390x844', width: 390, height: 844 },
@@ -394,88 +395,104 @@ const CART_VIEWPORTS = [
   { id: '1440x900', width: 1440, height: 900 },
 ];
 
-async function addOneVisibleCartItem(page, brand) {
-  if (brand === 'delivery') {
+// Coffee is a loyalty/menu storefront; it does not expose ordering or checkout.
+// Capture its real hydrated menu only. The order/cart flow belongs to delivery.
+for (const viewport of REVIEW_VIEWPORTS) {
+  test(`visual audit: coffee guest menu only at ${viewport.id}`, async ({ page }) => {
+    await prepareColdGuest(page, 'coffee', viewport);
+    await waitForHydratedStorefront(page, 'coffee');
+    await waitForHydratedSidebar(page, 'coffee', viewport);
+
+    await expect(page.locator('#cartFab')).toBeHidden();
+    await expect(page.locator('#cartPanel')).toBeHidden();
+    await expect(page.locator('#grid [data-add]')).toHaveCount(0);
+
+    const screenshot = await capture(page, {
+      brand: 'coffee',
+      viewport,
+      state: 'hydrated-menu',
+    });
+    const runtime = await page.evaluate(() => ({
+      brand: document.documentElement.dataset.brand || null,
+      staffRole: document.documentElement.getAttribute('data-staff-role'),
+      cartFabVisible: (() => {
+        const element = document.getElementById('cartFab');
+        if (!element) return false;
+        const style = getComputedStyle(element);
+        const rect = element.getBoundingClientRect();
+        return style.display !== 'none' && style.visibility !== 'hidden' &&
+          rect.width > 0 && rect.height > 0;
+      })(),
+      cartOpen: document.getElementById('cartPanel')?.classList.contains('open') ?? false,
+      deliveryAddControls: document.querySelectorAll('#grid [data-add]').length,
+      documentWidth: document.documentElement.scrollWidth,
+      clientWidth: document.documentElement.clientWidth,
+    }));
+
+    expect(runtime.brand).toBe('coffee');
+    expect(runtime.staffRole).toBeNull();
+    expect(runtime.cartFabVisible).toBe(false);
+    expect(runtime.cartOpen).toBe(false);
+    expect(runtime.deliveryAddControls).toBe(0);
+    expect(runtime.documentWidth).toBeLessThanOrEqual(viewport.width);
+
+    fs.writeFileSync(
+      path.join(OUT, `coffee-menu-${viewport.id}.json`),
+      JSON.stringify({ screenshot, runtime }, null, 2)
+    );
+  });
+}
+
+// Delivery is the ordering storefront. Only this brand is captured with a populated cart.
+for (const viewport of REVIEW_VIEWPORTS) {
+  test(`visual audit: delivery guest cart open at ${viewport.id}`, async ({ page }) => {
+    await prepareColdGuest(page, 'delivery', viewport);
+    await waitForHydratedStorefront(page, 'delivery');
+    await waitForHydratedSidebar(page, 'delivery', viewport);
+
     const card = page.locator('#deliveryGrid .card:not(.skeleton-card):not(.stopped)').first();
     await expect(card).toBeVisible({ timeout: 15000 });
     const firstOption = card.locator('.opts label.opt-btn').first();
     if (await firstOption.count()) await firstOption.click();
     await card.locator('[data-add]').click();
-  } else {
-    // Coffee cards do not expose the delivery add-stepper. Seed one actual catalog
-    // product through the cart state owner so the shared cart panel can be captured.
-    const cartItem = await page.evaluate(() => {
-      const item = (window.MENU || []).find(product =>
-        product && product.on !== 0 && Number.parseInt(product.price, 10) > 0
-      );
-      if (!item) return null;
-      return {
-        key: String(item.id),
-        id: item.id,
-        oi: -1,
-        name: item.name,
-        opt: null,
-        optName: null,
-        price: Number.parseInt(item.price, 10),
-        sz: 0,
-        qty: 1,
-      };
+
+    await expect(page.locator('#cartFab')).toBeVisible({ timeout: 10000 });
+    await page.locator('#cartFab').click();
+    const cartPanel = page.locator('#cartPanel');
+    await expect(cartPanel).toHaveClass(/open/);
+    await expect(cartPanel).toBeVisible();
+    await expect(page.locator('#cartItems .cartItem')).toHaveCount(1);
+
+    await page.evaluate(async () => {
+      if (document.fonts?.ready) await document.fonts.ready;
+      window.scrollTo(0, 0);
+      const scrollBody = document.getElementById('cartScrollBody');
+      if (scrollBody) scrollBody.scrollTop = 0;
     });
-    if (!cartItem) throw new Error('No priced coffee catalog product is available for the open-cart visual fixture');
-    await page.evaluate(item => {
-      if (!Array.isArray(window.cart) || typeof window.updateCartFab !== 'function' ||
-          typeof window.renderCart !== 'function') {
-        throw new Error('Cart owner API is not ready for the coffee visual fixture');
-      }
-      window.cart.splice(0, window.cart.length, item);
-      localStorage.setItem('zt_cart', JSON.stringify(window.cart));
-      window.updateCartFab();
-      window.renderCart();
-    }, cartItem);
-  }
 
-  await expect(page.locator('#cartFab')).toBeVisible({ timeout: 10000 });
-  await page.locator('#cartFab').click();
-  await expect(page.locator('#cartPanel')).toHaveClass(/open/);
-  await expect(page.locator('#cartItems .cartItem')).toHaveCount(1);
-  await expect(page.locator('#toasts .toast')).toHaveCount(0, { timeout: 5000 });
-}
-
-for (const brand of ['coffee', 'delivery']) {
-  for (const viewport of CART_VIEWPORTS) {
-    test(`visual audit: ${brand} guest cart open at ${viewport.id}`, async ({ page }) => {
-      await prepareColdGuest(page, brand, viewport);
-      await waitForHydratedStorefront(page, brand);
-      await waitForHydratedSidebar(page, brand, viewport);
-      await addOneVisibleCartItem(page, brand);
-
-      await page.evaluate(async () => {
-        if (document.fonts?.ready) await document.fonts.ready;
-        window.scrollTo(0, 0);
-        const scrollBody = document.getElementById('cartScrollBody');
-        if (scrollBody) scrollBody.scrollTop = 0;
-      });
-
-      const screenshot = await capture(page, {
-        brand,
-        viewport,
-        state: 'cart-open',
-      });
-      const cartState = await page.evaluate(() => ({
-        panelOpen: document.getElementById('cartPanel')?.classList.contains('open') ?? false,
-        itemCount: document.querySelectorAll('#cartItems .cartItem').length,
-        documentWidth: document.documentElement.scrollWidth,
-        clientWidth: document.documentElement.clientWidth,
-      }));
-
-      expect(cartState.panelOpen).toBe(true);
-      expect(cartState.itemCount).toBe(1);
-      expect(cartState.documentWidth).toBeLessThanOrEqual(viewport.width);
-
-      fs.writeFileSync(
-        path.join(OUT, `${brand}-cart-open-${viewport.id}.json`),
-        JSON.stringify({ screenshot, cartState }, null, 2)
-      );
+    const screenshot = await capture(page, {
+      brand: 'delivery',
+      viewport,
+      state: 'cart-open',
     });
-  }
+    const runtime = await page.evaluate(() => ({
+      brand: document.documentElement.dataset.brand || null,
+      staffRole: document.documentElement.getAttribute('data-staff-role'),
+      cartOpen: document.getElementById('cartPanel')?.classList.contains('open') ?? false,
+      itemCount: document.querySelectorAll('#cartItems .cartItem').length,
+      documentWidth: document.documentElement.scrollWidth,
+      clientWidth: document.documentElement.clientWidth,
+    }));
+
+    expect(runtime.brand).toBe('delivery');
+    expect(runtime.staffRole).toBeNull();
+    expect(runtime.cartOpen).toBe(true);
+    expect(runtime.itemCount).toBe(1);
+    expect(runtime.documentWidth).toBeLessThanOrEqual(viewport.width);
+
+    fs.writeFileSync(
+      path.join(OUT, `delivery-cart-open-${viewport.id}.json`),
+      JSON.stringify({ screenshot, runtime }, null, 2)
+    );
+  });
 }
