@@ -66,6 +66,8 @@
     display:block;
     width:20px;
     height:20px;
+    padding:0;
+    box-sizing:border-box;
   }
 
   :is(#menuView, #deliveryView) .menu-head .mh-top .mh-right > #supportLauncherHost > #chatFab.chat-fab::before,
