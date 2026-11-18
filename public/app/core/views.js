@@ -128,7 +128,7 @@ var rules = [
   '@media(min-width:820px){[data-brand="delivery"] body #deliveryView #deliverySubFilter>.subchip.on,[data-brand="delivery"] body #deliveryView .subfilter-bar>.subchip.on{color:#fff}}',
  '[data-brand="delivery"] #qrModal.show,[data-brand="delivery"] #qrModal.show .modal-card,[data-brand="delivery"] #setPinModal.show .modal-card{background-image:none}',
 
- '@media(min-width:821px) and (orientation:landscape) and (max-height:480px){html[data-brand="coffee"] body #grid,html[data-brand="delivery"] body #deliveryGrid{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}}',
+ '@media(min-width:821px) and (orientation:landscape) and (max-height:480px){html body #menuView #grid,html body #deliveryView #deliveryGrid{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}}',
 ];
 css.textContent = rules.join('\n');
 document.head.appendChild(css);
