@@ -93,3 +93,10 @@
 - The cart state/FAB remain owned by `cart.js`; the category capsule and launcher are hidden while the cart sheet is open.
 - The rail has no horizontal scrolling. Category controls retain accessible names and 44×44px minimum hit areas. Delivery subfilters keep their own independent overflow behavior.
 - Include safe-area exactly once in the 10–12px visual bottom gap and test both brands at 320/360/390/430 portrait and 844×390 / 1024×390 compact landscape.
+
+
+### Mobile detached category capsule correction
+
+- На floating breakpoints (max-width:820px и short landscape) .wrap имеет одну контентную колонку. Fixed capsule не занимает grid track; слева не резервируется прежняя 80px rail column.
+- Первый кадр в index.html и hydrated layout в core/views.js используют одинаковый одноколоночный .wrap. Отрицательные rail-компенсации margin-left на меню/заголовке в этих breakpoints не используются.
+- cartFab остаётся DOM/state owner cart.js; inline SVG glyph — статическая презентация в HTML, а lane определяется responsive CSS над capsule.

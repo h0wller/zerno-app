@@ -333,49 +333,85 @@ html body #authModal.tg-mode .mhint{
 
 
 }
-/* CART-PILL-PATCH v2: плавающая корзина-пилюля */
-.cartFab{
+/* Detached capsule controls replace the legacy vertical mobile category buttons. */
+@media (max-width: 820px),
+       (min-width: 821px) and (orientation: landscape) and (max-height: 480px) {
+  .wrap .rail button,
+  .wrap #deliveryRail button {
+    min-height: 44px;
+    padding: 2px 1px;
+    border-radius: 20px;
+    font-size: 10px;
+    line-height: 1.1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: clip;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1px;
+    width: auto;
+    margin: 0;
+    letter-spacing: 0;
+    text-align: center;
+  }
+  .wrap .rail .re,
+  .wrap #deliveryRail .re {
+    display: grid;
+    place-items: center;
+    width: 22px;
+    min-width: 22px;
+    height: 22px;
+    margin: 0;
+    font-size: 20px;
+  }
+}
+
+/* Cart launcher: high-contrast icon and independent lane above the category capsule. */
+.cartFab {
   position: fixed;
-  bottom: calc(16px + env(safe-area-inset-bottom, 0px));
-  left: 50%;
-  right: auto;
-  transform: translateX(-50%) scale(0.92);
+  right: 16px;
+  left: auto;
+  bottom: calc(var(--rail-total-h, 66px) + 12px);
+  transform: translateY(6px);
   z-index: 90;
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 8px 16px;
+  gap: 9px;
+  box-sizing: border-box;
+  min-width: 112px;
   min-height: 48px;
-  max-height: 64px;
-  background: #A93226;
-  color: #FFFFFF;
+  max-width: calc(100vw - 32px);
+  padding: 8px 14px;
+  border: 1.5px solid currentColor;
   border-radius: 999px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
-  font: 700 14px/1 "Golos Text", system-ui, sans-serif;
+  background: var(--flame, #A93226);
+  color: #FFFFFF;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, .22);
+  font: 700 13px/1 "Golos Text", system-ui, sans-serif;
   white-space: nowrap;
   cursor: pointer;
   opacity: 0;
   pointer-events: none;
-  transition: opacity 0.3s cubic-bezier(0.2, 1, 0.3, 1),
-              transform 0.3s cubic-bezier(0.2, 1, 0.3, 1);
+  transition: opacity .18s ease, transform .18s ease;
 }
-.cartFab.visible{
+.cartFab.visible { opacity: 1; pointer-events: auto; transform: none; }
+.cartFab:hover { filter: brightness(.94); }
+.cartFab:active { transform: translateY(1px); }
+.cartFab .cf-icon {
+  display: grid;
+  place-items: center;
+  flex: 0 0 24px;
+  width: 24px;
+  height: 24px;
+  color: #FFFFFF;
+  font-size: 21px;
+  line-height: 1;
   opacity: 1;
-  pointer-events: auto;
-  transform: translateX(-50%) scale(1);
+  filter: none;
 }
-.cartFab:hover{
-  background: #8B2A21;
-  transform: translateX(-50%) scale(1.03);
-}
-.cartFab:active{
-  transform: translateX(-50%) scale(0.97);
-}
-.cartFab .cf-icon{
-  font-size: 18px;
-  flex-shrink: 0;
-}
-.cartFab .cf-badge{
+.cartFab .cf-icon svg { display: block; width: 22px; height: 22px; overflow: visible; }
+.cartFab .cf-badge {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -384,22 +420,16 @@ html body #authModal.tg-mode .mhint{
   padding: 0 6px;
   border-radius: 999px;
   background: #FFFFFF;
-  color: #A93226;
+  color: var(--flame, #A93226);
   font: 800 11px/1 "Unbounded", "Golos Text", system-ui, sans-serif;
   flex-shrink: 0;
 }
-.cartFab .cf-sep{
-  width: 1px;
-  height: 20px;
-  background: rgba(255, 255, 255, 0.3);
-  flex-shrink: 0;
+.cartFab .cf-sep { width: 1px; height: 20px; background: rgba(255, 255, 255, .4); flex-shrink: 0; }
+.cartFab .cf-total { color: #FFFFFF; font: 700 13px/1 "Golos Text", system-ui, sans-serif; letter-spacing: .01em; }
+@media (min-width: 821px) and (orientation: landscape) and (max-height: 480px) {
+  .cartFab { right: 12px; bottom: calc(58px + 12px); }
 }
-.cartFab .cf-total{
-  font: 700 14px/1 "Golos Text", system-ui, sans-serif;
-  color: #FFFFFF;
-  letter-spacing: 0.02em;
-}
-
+@media (prefers-reduced-motion: reduce) { .cartFab { transition: none; } }
 /* [tg-rudiments-cleanup-v1] */
 #authModal.tg-mode small,
 #authModal.tg-mode .mhint,

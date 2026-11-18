@@ -27,15 +27,23 @@ for (const brand of BRANDS) {
       const rail = page.locator(brand.selector);
       await expect(rail).toBeVisible({ timeout: 15000 });
       await expect(rail).toHaveClass(/rail-position-ready/);
-      const geometry = await rail.evaluate((element) => {
+      const geometry = await rail.evaluate((element, gridSelector) => {
         const rect = element.getBoundingClientRect();
         const probe = document.createElement('div');
         probe.style.cssText = 'position:fixed;visibility:hidden;padding-bottom:env(safe-area-inset-bottom,0px)';
         document.body.appendChild(probe);
         const safeArea = parseFloat(getComputedStyle(probe).paddingBottom) || 0;
         probe.remove();
+        const wrap = document.querySelector('body > .wrap') || document.querySelector('.wrap');
+        const wrapStyle = getComputedStyle(wrap);
+        const wrapRect = wrap.getBoundingClientRect();
+        const grid = document.querySelector(gridSelector);
         return {
           position: getComputedStyle(element).position,
+          wrapColumns: wrapStyle.gridTemplateColumns,
+          wrapLeft: wrapRect.left,
+          wrapWidth: wrapRect.width,
+          gridLeft: grid.getBoundingClientRect().left,
           bottomGap: window.innerHeight - rect.bottom,
           safeArea,
           left: rect.left,
@@ -58,7 +66,7 @@ for (const brand of BRANDS) {
             };
           })
         };
-      });
+      }, brand.grid);
       await testInfo.attach(brand.brand + '-' + viewport.name + '-rail.png', {
         body: await page.screenshot({ animations: 'disabled' }),
         contentType: 'image/png'
@@ -69,6 +77,9 @@ for (const brand of BRANDS) {
       });
 
       expect(geometry.position).toBe('fixed');
+      expect(geometry.wrapColumns.trim().split(/\s+/)).toHaveLength(1);
+      expect(geometry.gridLeft).toBeGreaterThanOrEqual(geometry.wrapLeft - 1);
+      expect(geometry.gridLeft).toBeLessThanOrEqual(geometry.wrapLeft + 1);
       expect(geometry.height).toBe(viewport.railHeight);
       expect(geometry.bottomGap).toBeGreaterThanOrEqual(10 + geometry.safeArea);
       expect(geometry.bottomGap).toBeLessThanOrEqual(12 + geometry.safeArea);
@@ -321,10 +332,18 @@ test.describe('floating rail clearances and overlay ownership', () => {
 
       const lanes = await page.evaluate(() => {
         const railRect = document.querySelector('#deliveryRail').getBoundingClientRect();
-        const fabRect = document.querySelector('#cartFab').getBoundingClientRect();
+        const fab = document.querySelector('#cartFab');
+        const fabRect = fab.getBoundingClientRect();
+        const icon = fab.querySelector('.cf-icon');
+        const iconRect = icon && icon.getBoundingClientRect();
         return {
           railTop: railRect.top,
           fabBottom: fabRect.bottom,
+          iconVisible: !!icon && !!icon.querySelector('svg') &&
+            iconRect.width >= 20 && iconRect.height >= 20 &&
+            getComputedStyle(icon).opacity === '1' &&
+            getComputedStyle(icon).visibility === 'visible',
+          iconPathVisible: !!icon && !!icon.querySelector('svg path'),
           fabHeight: fabRect.height,
           viewportWidth: innerWidth,
           fabWidth: fabRect.width,
@@ -334,6 +353,8 @@ test.describe('floating rail clearances and overlay ownership', () => {
           )?.closest('#cartFab') === document.querySelector('#cartFab'),
         };
       });
+      expect(lanes.iconVisible).toBe(true);
+      expect(lanes.iconPathVisible).toBe(true);
       expect(lanes.fabHeight).toBeGreaterThanOrEqual(48);
       expect(lanes.fabWidth).toBeLessThanOrEqual(lanes.viewportWidth - 24);
       expect(lanes.fabBottom + 8).toBeLessThanOrEqual(lanes.railTop);
