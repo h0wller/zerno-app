@@ -27,6 +27,7 @@ for (const brand of BRANDS) {
     await expect(rail).toBeVisible({ timeout: 15000 });
     await page.evaluate(() => window.scrollTo(0, 700));
 
+    await expect.poll(() => rail.evaluate(el => getComputedStyle(el).position)).toBe('fixed');
     await expect.poll(() => rail.evaluate(el => el.classList.contains('is-scroll-fading'))).toBe(true);
     await expect.poll(() => rail.evaluate(el => Number.parseFloat(getComputedStyle(el).opacity))).toBeLessThan(0.1);
     await expect.poll(() => rail.evaluate(el => getComputedStyle(el).pointerEvents)).toBe('auto');

@@ -81,10 +81,15 @@ for (const brand of CASES) {
         };
       }, { headSelector: brand.head, railSelector: brand.rail });
 
-      if (viewport.width <= 820) {
-        expect(layout.railPosition, 'mobile rail stays in its catalog position before scrolling').toBe('relative');
-        expect(Math.abs(layout.headLeft - layout.contentLeft), 'mobile menu-head starts at the left edge of the complete menu area').toBeLessThanOrEqual(1);
-        expect(Math.abs(layout.headRight - layout.contentRight), 'mobile menu-head spans rail and content columns').toBeLessThanOrEqual(1);
+      const floatingViewport = viewport.width <= 820
+        || (viewport.width >= 821 && viewport.height <= 480 && viewport.width > viewport.height);
+      if (floatingViewport) {
+        expect(layout.railPosition, 'mobile and compact-landscape rail is a fixed floating capsule').toBe('fixed');
+        expect(layout.headLeft, 'catalog occupies the full content column without a legacy rail track').toBeGreaterThanOrEqual(layout.contentLeft - 1);
+        expect(layout.headRight).toBeLessThanOrEqual(layout.contentRight + 1);
+      } else if (viewport.width <= 1180) {
+        expect(layout.railPosition, 'desktop/tablet rail remains in-flow').toBe('relative');
+        expect(Math.abs(layout.headLeft - layout.contentLeft), 'menu-head starts at the content column').toBeLessThanOrEqual(1);
       }
       expect(layout.documentScrollWidth, 'menu-head must not create horizontal page overflow').toBeLessThanOrEqual(layout.documentWidth + 1);
 
@@ -110,26 +115,13 @@ for (const brand of CASES) {
       expect(Math.abs(tickerLayout.tickerTop - tickerLayout.topbarBottom)).toBeLessThanOrEqual(1);
 
       await page.evaluate(() => window.scrollTo(0, 500));
-      if (viewport.width <= 820) {
-        await expect.poll(() => page.evaluate(selector => {
-          const element = document.querySelector(selector);
-          const rect = element.getBoundingClientRect();
-          const height = element.clientHeight;
-          const expectedTop = Math.max(12, (window.innerHeight - height) / 2);
-          return {
-            topDelta: Math.abs(rect.top - expectedTop),
-            position: getComputedStyle(element).position,
-            bottom: rect.bottom,
-          };
-        }, brand.rail), { timeout: 5000 }).toMatchObject({
-          position: 'sticky',
-        });
-        await expect.poll(() => page.evaluate(selector => {
-          const element = document.querySelector(selector);
-          const rect = element.getBoundingClientRect();
-          return Math.abs(rect.top - Math.max(12, (window.innerHeight - element.clientHeight) / 2));
-        }, brand.rail), { timeout: 5000 }).toBeLessThanOrEqual(2);
-        await testInfo.attach(`${brand.brand}-sticky-rail-${viewport.width}px`, {
+      if (floatingViewport) {
+        await expect.poll(() => page.locator(brand.rail).evaluate(el => getComputedStyle(el).position)).toBe('fixed');
+        await expect.poll(() => page.locator(brand.rail).evaluate(el => {
+          const rect = el.getBoundingClientRect();
+          return Math.abs(rect.bottom - (window.innerHeight - 10));
+        })).toBeLessThanOrEqual(2);
+        await testInfo.attach(`${brand.brand}-floating-rail-${viewport.width}x${viewport.height}`, {
           body: await page.screenshot({ animations: 'disabled' }),
           contentType: 'image/png',
         });
@@ -264,14 +256,69 @@ test('coffee rail aligns to its menu card and delivery rail aligns to product ca
       });
       expect(searchGap, 'coffee rail starts below its menu controls').toBeGreaterThanOrEqual(10);
     }
-    const gap = await page.locator(brand.rail + ' button').evaluateAll(buttons => {
-      const rects=buttons.map(button=>button.getBoundingClientRect());
-      return rects.slice(1).map((rect,i)=>rect.top-rects[i].bottom);
+    const geometry = await page.locator(brand.rail).evaluate(rail => {
+      const buttons = [...rail.querySelectorAll('button')];
+      const rects = buttons.map(button => button.getBoundingClientRect());
+      return {
+        positions: rects.map(rect => ({ top: rect.top, bottom: rect.bottom, left: rect.left, right: rect.right, width: rect.width, height: rect.height })),
+        overflowX: rail.scrollWidth > rail.clientWidth + 1,
+        labels: buttons.map(button => button.getAttribute('aria-label')),
+        pressed: buttons.map(button => button.getAttribute('aria-pressed')),
+      };
     });
-    expect(gap.every(value => value >= 9), brand.brand + ' rail button gap should be at least 9px').toBe(true);
+    expect(geometry.overflowX, brand.brand + ' category capsule has no horizontal scrolling').toBe(false);
+    expect(geometry.positions.every(rect => rect.width >= 44 && rect.height >= 44), brand.brand + ' category targets remain at least 44x44').toBe(true);
+    expect(geometry.labels.every(Boolean), brand.brand + ' categories have accessible names').toBe(true);
+    expect(geometry.pressed.every(value => value === 'true' || value === 'false'), brand.brand + ' categories expose pressed state').toBe(true);
+    expect(geometry.positions.every(rect => Math.abs(rect.top - geometry.positions[0].top) <= 1), brand.brand + ' category buttons share one horizontal row').toBe(true);
   }
 });
 
+
+test('floating rail and catalog reserve stay correct across portrait and compact landscape', async ({ page }, testInfo) => {
+  for (const brand of CASES) {
+    for (const viewport of [
+      { width: 320, height: 740 },
+      { width: 390, height: 844 },
+      { width: 844, height: 390 },
+      { width: 1024, height: 390 },
+    ]) {
+      await page.setViewportSize(viewport);
+      await page.addInitScript(() => sessionStorage.setItem('splashDone', '1'));
+      await page.goto('/?brand=' + brand.brand, { waitUntil: 'domcontentloaded' });
+      const rail = page.locator(brand.rail);
+      await expect(rail).toBeVisible({ timeout: 15000 });
+      await expect.poll(() => rail.evaluate(el => getComputedStyle(el).position)).toBe('fixed');
+      const metrics = await rail.evaluate(el => {
+        const rect = el.getBoundingClientRect();
+        const buttons = [...el.querySelectorAll('button')].map(button => {
+          const box = button.getBoundingClientRect();
+          return { width: box.width, height: box.height, top: box.top };
+        });
+        const grid = document.querySelector(document.documentElement.dataset.brand === 'delivery' ? '#deliveryGrid' : '#grid');
+        return {
+          rect: { left: rect.left, right: rect.right, top: rect.top, bottom: rect.bottom, height: rect.height },
+          width: window.innerWidth,
+          scrollWidth: document.documentElement.scrollWidth,
+          buttons,
+          catalogPaddingBottom: parseFloat(getComputedStyle(grid).paddingBottom),
+        };
+      });
+      expect(metrics.rect.left).toBeGreaterThanOrEqual(0);
+      expect(metrics.rect.right).toBeLessThanOrEqual(viewport.width);
+      expect(metrics.rect.bottom).toBeLessThan(viewport.height);
+      expect(metrics.rect.height).toBeLessThanOrEqual(56);
+      expect(metrics.scrollWidth).toBeLessThanOrEqual(viewport.width + 1);
+      expect(metrics.buttons.every(button => button.width >= 44 && button.height >= 44)).toBe(true);
+      expect(metrics.buttons.every(button => Math.abs(button.top - metrics.buttons[0].top) <= 1)).toBe(true);
+      expect(metrics.catalogPaddingBottom).toBeGreaterThanOrEqual(metrics.rect.height + 20);
+      await testInfo.attach(brand.brand + '-floating-' + viewport.width + 'x' + viewport.height, {
+        body: await page.screenshot({ animations: 'disabled' }),
+        contentType: 'image/png',
+      });
+    }
+  }
+});
 
 test('both brand rails align to the catalog row on desktop', async ({page}) => {
   for (const brand of CASES) {
