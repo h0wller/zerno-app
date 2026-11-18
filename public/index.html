@@ -3766,7 +3766,7 @@ html body #tickerTrack .tickerGroup > span {
     height:auto;
     min-height:0;
     max-height:none;
-    margin:2px 0 8px;
+    margin:2px 0 6px;
     padding:8px 12px;
   }
   html body :is(#menuView,#deliveryView) .menu-head .mh-top {
@@ -3872,7 +3872,13 @@ html body #tickerTrack .tickerGroup > span {
     justify-content:center;
     box-sizing:border-box;
   }
-  html body #menuView #grid > .card > .media,
+  html body #deliveryView #deliverySubFilterViewport {
+    box-sizing:border-box;
+    height:44px;
+    min-height:44px;
+    max-height:44px;
+  }
+    html body #menuView #grid > .card > .media,
   html body #deliveryView #deliveryGrid > .card > .media {
     box-sizing:border-box;
     flex:0 0 64px;
