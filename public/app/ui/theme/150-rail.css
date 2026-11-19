@@ -206,7 +206,8 @@ sticky слева на весь скролл
   }
 
   .wrap .rail.is-scroll-fading,
-  .wrap #deliveryRail.is-scroll-fading {
+  .wrap #deliveryRail.is-scroll-fading,
+  html body #cartFab.cartFab.is-scroll-fading {
     opacity: 0.06;
   }
 }
@@ -238,7 +239,8 @@ sticky слева на весь скролл
   html body div.wrap > nav.rail#rail,
   html body div.wrap > div.rail#deliveryRail,
   html body div.wrap > nav.rail#rail button,
-  html body div.wrap > div.rail#deliveryRail button {
+  html body div.wrap > div.rail#deliveryRail button,
+  html body #cartFab.cartFab {
     transition: none;
   }
 }
