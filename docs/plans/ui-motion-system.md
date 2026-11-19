@@ -58,15 +58,16 @@ The motion integration is complete for the listed scope; this is not sign-off fo
 - `public/sw.js` static cache остаётся `zerno-static-v668`; URL ресурсов в `public/index.html` остаются с `?v=668`. CI выполняет временную сборку; generated bundle/cache bump не коммитится из CI.
 - Не обновлять screenshot baselines для сокрытия diff.
 
-## Explicitly excluded functional changes from #268
+## Functional changes excluded from the original motion PR and their disposition
 
-Эти изменения не входят в motion scope и не должны появляться в PR #273:
+Эти изменения были исключены из PR #273 и интегрированы отдельными проверяемыми PR поверх актуального `pizza`:
 
-1. **Staff-chat Escape/focus lifecycle:** Escape dismissal, opener focus capture/restore в `public/app/chat.js` и `public/app/core/overlay-core.js`, плюс функциональные тесты.
-2. **Delivery catalog hydration marker:** `data-catalog-ready` в `public/app/delivery.js` и связанная skeleton/hydration regression в `tests/slow-network-layout.spec.js`.
-3. **Latest-order slot reservation:** `#profileBox #myOrders { min-height: 64px; }` и соответствующий тест удержания позиции в `public/app/ui/theme/110-panel.css` / `tests/profile-orders.spec.js`.
+1. **Staff-chat Escape/focus lifecycle** — #290 merged: Escape dismissal, opener focus capture/restore в `public/app/chat.js` и `public/app/core/overlay-core.js`, с тестами.
+2. **Delivery catalog hydration guard** — #291 merged: `data-catalog-ready` в `public/app/delivery.js` и skeleton/hydration regression в `tests/slow-network-layout.spec.js`.
+3. **Latest-order slot reservation** — #291 merged: `#profileBox #myOrders { min-height: 64px; }` и тест удержания позиции в `public/app/ui/theme/110-panel.css` / `tests/profile-orders.spec.js`.
+4. **Delivery option validation scroll under reduced motion** — #289 merged: `smooth` в обычном режиме и `auto` при reduced motion, без потери focus/validation feedback.
 
-Также исключены 4-column breakpoint/test 1400px, любые изменения `public/sw.js` и любые API/business-logic changes.
+Ограничения остаются: не импортировать 4-column breakpoint/test 1400px, не менять `public/sw.js`/cache version из donor branch и не добавлять API/business-logic changes.
 
 ## Component ownership and selected implementation paths
 
@@ -80,16 +81,13 @@ The motion integration is complete for the listed scope; this is not sign-off fo
 
 ## Test and visual acceptance
 
-Targeted Playwright coverage is wired into the existing CI groups:
-- cart sheet lifecycle, interruption and reduced motion;
-- address sheet entry/exit/reopen and reduced motion;
-- chat panel/message/FAB and hint motion;
+The current `pizza` branch contains targeted Playwright coverage for:
+- cart/address sheet lifecycle, interruption and reduced motion;
+- chat panel/message/FAB, hint behavior, Escape and focus restoration;
 - auth modal, generic overlay, PIN/QR, confetti and ambient effects under reduced motion;
 - toast entry/exit (180/120ms) and reduced motion;
-- profile/deeplink/preorder reduced motion;
-- card entrance/hover and stepper active feedback;
+- profile/deeplink/preorder and responsive profile drawer reduced motion;
+- card entrance/hover and stepper active feedback, including live preference changes;
 - rail fade during manual downward scroll and no fade during selected-category scroll-to-top.
 
-Final visual evidence must be generated from the final #273 HEAD, not an earlier commit. Required captures include coffee and delivery at 390×844: (a) normal downward scroll showing the rail fade and delivery cart FAB fade when populated, (b) selected-category scroll-to-top with both controls restored and no programmatic fade. Include relevant motion frames and reduced-motion states from the motion test artifacts.
-
-The PR remains Draft until CI on the final exact HEAD is reviewed and the required screenshots are actually opened/visually inspected. A generated artifact or green CI alone is not visual acceptance.
+Exact-head CI and visual review are recorded on the split implementation PRs above. The profile drawer visual review covers both brands, portrait, compact landscape and tablet; Mobile Chrome and Responsive UI passed on the merge-ready head. The original donor PR is not the integration vehicle and remains unmerged.
