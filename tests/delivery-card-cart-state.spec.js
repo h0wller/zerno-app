@@ -306,14 +306,11 @@ test('delivery quantity stepper stops press scaling under runtime reduced motion
   });
   await page.mouse.up();
 
-  await card.locator('[data-add]').click();
-  await expect.poll(() => page.evaluate(() =>
-    JSON.parse(localStorage.getItem('zt_cart'))[0].qty
-  )).toBe(2);
   await step.click();
   await expect.poll(() => page.evaluate(() =>
-    JSON.parse(localStorage.getItem('zt_cart'))[0].qty
-  )).toBe(1);
+    JSON.parse(localStorage.getItem('zt_cart') || '[]')
+  )).toEqual([]);
+  await expect(card.locator('[data-add]')).not.toHaveClass(/incart/);
 
   await testInfo.attach('delivery-stepper-reduced-motion-390x844', {
     body: await page.screenshot({ fullPage: false, animations: 'disabled' }),
