@@ -45,7 +45,7 @@ This is an audit queue, not a declaration that each item is defective.
 - [ ] Guest brand switches + logo + profile aligned in a single centered row.
 - [ ] Ticker below header, no extra gap/shadow; verify continuous duplicated-group movement, invisible click/keyboard pause-play and reduced-motion behavior.
 - [ ] Verify floating category capsule on iOS/Android PWA and Telegram: safe-area, scroll reserve with/without cart FAB, open-cart suppression, fade/reduced-motion, and both brands.
-- [x] Synchronize the visible delivery category with `aria-current="location"` during scroll spy while preserving `aria-pressed` as the actual filter selection; coffee and delivery manual selection expose one current/pressed category — implementation and regression coverage in the category rail accessibility PR. Native iOS/Telegram gesture acceptance remains separate.
+- [x] Synchronize the visible delivery category with `aria-current="location"` during scroll spy while preserving `aria-pressed` as the actual filter selection; coffee and delivery manual selection expose one current/pressed category — [PR #295](https://github.com/h0wller/zerno-app/pull/295). Native iOS/Telegram gesture acceptance remains separate.
 - [ ] Swipe-dismiss from profile/modal does not cause header/page jump.
 
 ### C. Catalog and product selection
