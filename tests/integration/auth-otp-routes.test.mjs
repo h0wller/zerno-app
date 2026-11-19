@@ -126,7 +126,7 @@ test('registration without consent neither creates a usable profile nor consumes
 });
 
 
-test('cashier-created profile requires phone proof before first PIN is set', async () => {
+test('cashier-created guests get a PIN immediately and duplicate registration reuses the same profile', async () => {
   const adminPhone = '+7 900 000-01-10';
   await seedOtp('reg:' + adminPhone, '2468');
   const admin = await api('/api/auth/register', {
@@ -140,35 +140,51 @@ test('cashier-created profile requires phone proof before first PIN is set', asy
 
   const phone = '+7 900 000-01-11';
   const created = await api('/api/staff/customers', {
-    name: 'Cashier Created Guest', phone
+    name: 'Cashier Created Guest', phone, pin: '4321'
   }, admin.json.token);
   assert.equal(created.status, 200, JSON.stringify(created.json));
   assert.equal(created.json.customer?.verified, 1);
+  assert.equal(created.json.created, true);
+  assert.equal(created.json.pinSet, true);
 
-  const anonymousSetup = await api('/api/auth/setup-pin', { phone, pin: '4321' });
-  assert.equal(anonymousSetup.status, 401);
-  assert.equal(anonymousSetup.json.token, undefined);
-
-  const anonymousLogin = await api('/api/auth/login', { phone, pin: '4321' });
-  assert.equal(anonymousLogin.status, 409);
-  assert.equal(anonymousLogin.json.token, undefined);
-
-  const otpRequest = await api('/api/auth/request-otp', { phone });
-  assert.equal(otpRequest.status, 200, JSON.stringify(otpRequest.json));
-  assert.equal(otpRequest.json.via, 'sms');
-
-  await seedOtp(phone, '5731');
-  const verifiedLogin = await api('/api/auth/login', { phone, otp: '5731' });
-  assert.equal(verifiedLogin.status, 200, JSON.stringify(verifiedLogin.json));
-  assert.equal(verifiedLogin.json.needPin, true);
-
-  const pinSetup = await api('/api/auth/setup-pin', { pin: '4321' }, verifiedLogin.json.token);
-  assert.equal(pinSetup.status, 200, JSON.stringify(pinSetup.json));
-  assert.equal(pinSetup.json.customer?.id, created.json.customer.id);
+  const invalidPin = await api('/api/auth/login', { phone, pin: '9999' });
+  assert.equal(invalidPin.status, 403);
 
   const pinLogin = await api('/api/auth/login', { phone, pin: '4321' });
   assert.equal(pinLogin.status, 200, JSON.stringify(pinLogin.json));
   assert.ok(pinLogin.json.token);
+  assert.equal(pinLogin.json.customer?.id, created.json.customer.id);
+
+  const duplicate = await api('/api/staff/customers', {
+    name: 'Different Name Must Not Replace Existing', phone: '8 900 000-01-11', pin: '9999'
+  }, admin.json.token);
+  assert.equal(duplicate.status, 200, JSON.stringify(duplicate.json));
+  assert.equal(duplicate.json.customer?.id, created.json.customer.id);
+  assert.equal(duplicate.json.reused, true);
+  assert.equal(duplicate.json.pinPreserved, true);
+
+  const originalPinStillWorks = await api('/api/auth/login', { phone, pin: '4321' });
+  assert.equal(originalPinStillWorks.status, 200, JSON.stringify(originalPinStillWorks.json));
+  const replacementPinRejected = await api('/api/auth/login', { phone, pin: '9999' });
+  assert.equal(replacementPinRejected.status, 403);
+
+  const pendingPhone = '+7 900 000-01-12';
+  const pending = await api('/api/auth/register', {
+    name: 'Existing Pending Guest', phone: pendingPhone, consent: true
+  });
+  assert.equal(pending.status, 200, JSON.stringify(pending.json));
+  assert.equal(pending.json.customer?.verified, 0);
+
+  const activated = await api('/api/staff/customers', {
+    name: 'Existing Pending Guest', phone: '8 900 000-01-12', pin: '2468'
+  }, admin.json.token);
+  assert.equal(activated.status, 200, JSON.stringify(activated.json));
+  assert.equal(activated.json.customer?.id, pending.json.customer.id);
+  assert.equal(activated.json.reused, true);
+  assert.equal(activated.json.pinSet, true);
+
+  const activatedLogin = await api('/api/auth/login', { phone: pendingPhone, pin: '2468' });
+  assert.equal(activatedLogin.status, 200, JSON.stringify(activatedLogin.json));
 });
 
 test('Telegram registration polling is scoped to a random one-attempt secret, not the phone number', async () => {
