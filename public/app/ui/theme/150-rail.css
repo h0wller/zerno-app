@@ -147,9 +147,9 @@ sticky слева на весь скролл
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    font-size: clamp(10px, 2.8vw, var(--category-label-size, 10px));
+    font-size: clamp(10px, 2.56vw, var(--category-label-size, 10px));
     line-height: 1.1;
-    letter-spacing: -0.25px;
+    letter-spacing: -0.4px;
   }
 
   html body div.wrap > nav.rail#rail button.on,
