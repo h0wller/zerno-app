@@ -83,7 +83,7 @@ $('#ngSave').onclick = async () => {
   const pin = $('#ngPin').value.trim();
   if (name.length < 2) return toast('Введите имя гостя', '✍️');
   if (ph10(phone).length < 10) return toast('Введите номер полностью', '📵');
-  if (!/^\\d{4}$/.test(pin)) return toast('PIN гостя должен состоять ровно из 4 цифр', '🔐');
+  if (!/^\d{4}$/.test(pin)) return toast('PIN гостя должен состоять ровно из 4 цифр', '🔐');
   try {
     const r = await api('/staff/customers', {
       method: 'POST',
