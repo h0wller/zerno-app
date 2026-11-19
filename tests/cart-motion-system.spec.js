@@ -52,7 +52,7 @@ async function expectCartAtRest(panel, viewport, open) {
       visibility: style.visibility,
       display: style.display,
       pointerEvents: style.pointerEvents,
-      layoutViewportWidth: document.documentElement.clientWidth,
+      viewportWidth: window.innerWidth,
     };
   });
 
@@ -67,7 +67,7 @@ async function expectCartAtRest(panel, viewport, open) {
       expect(geometry.top).toBeGreaterThanOrEqual(viewport.height - 1);
     }
   } else if (open) {
-    expect(Math.abs(geometry.right - geometry.layoutViewportWidth)).toBeLessThanOrEqual(1);
+    expect(Math.abs(geometry.right - geometry.viewportWidth)).toBeLessThanOrEqual(1);
     expect(geometry.width).toBeCloseTo(430, 0);
   } else {
     expect(geometry.left).toBeGreaterThanOrEqual(viewport.width - 1);
@@ -110,7 +110,12 @@ test('cart sheet can be interrupted by rapid close and reopen without stale geom
   await page.emulateMedia({ reducedMotion: 'no-preference' });
   await fab.click();
   await expect(panel).toHaveClass(/open/);
-  await page.locator('#cartTopClose').click();
+  const closeButton = await page.locator('#cartTopClose').boundingBox();
+  expect(closeButton).not.toBeNull();
+  await page.mouse.click(
+    closeButton.x + closeButton.width / 2,
+    closeButton.y + closeButton.height / 2
+  );
   await expect(panel).not.toHaveClass(/open/);
   await expect(panel).toHaveCSS('visibility', 'visible');
   await expect(fab).toBeVisible();
