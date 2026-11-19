@@ -189,6 +189,38 @@ test('quantity stepper has 120ms press feedback without changing its hit target'
 });
 
 
+test('delivery option validation scroll is instant under reduced motion', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.addInitScript(() => {
+    localStorage.setItem('zt_onb', '1');
+    localStorage.removeItem('zt_cart');
+    sessionStorage.setItem('splashDone', '1');
+    window.__validationScrollCalls = [];
+  });
+  await page.goto('/?brand=delivery');
+  await page.waitForFunction(() =>
+    window.brand === 'delivery' && typeof window.renderDeliveryMenu === 'function'
+  );
+
+  const card = page.locator('#deliveryGrid .card:not(.skeleton-card)')
+    .filter({ has: page.locator('.opts input[type="radio"]') })
+    .first();
+  await expect(card).toBeVisible();
+  await card.locator('.opts input[type="radio"]').first().evaluate((element) => {
+    element.scrollIntoView = (options) => window.__validationScrollCalls.push(options);
+    element.closest('.opts').scrollIntoView = (options) => window.__validationScrollCalls.push(options);
+  });
+
+  await card.locator('[data-add]').click();
+  await expect(card.locator('.opts .opts-error')).toBeVisible();
+  await expect.poll(() => page.evaluate(() => window.__validationScrollCalls.length)).toBe(2);
+  const calls = await page.evaluate(() => window.__validationScrollCalls);
+  expect(calls).toEqual([
+    { block: 'center', behavior: 'auto' },
+    { block: 'center', behavior: 'auto' }
+  ]);
+});
+
 test('delivery option validation keeps its message but removes shake under reduced motion', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'no-preference' });
   await page.addInitScript(() => {
