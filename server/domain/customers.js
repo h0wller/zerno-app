@@ -10,7 +10,7 @@ export function createCustomer(name, phone, pin, createdBy = 'Приложени
   const phoneDigits = ph10(p);
   if (String(name).trim().length < 2) return { err: 'Введите имя', code: 400 };
   if (phoneDigits.length !== 10) return { err: 'Введите номер полностью', code: 400 };
-  if (pin !== undefined && pin !== '' && !/^\\d{4}$/.test(String(pin))) {
+  if (pin !== undefined && pin !== '' && !/^\d{4}$/.test(String(pin))) {
     return { err: 'PIN — ровно 4 цифры', code: 400 };
   }
 
