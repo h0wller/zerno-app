@@ -83,15 +83,10 @@ for (const brand of CASES) {
           overflowX: getComputedStyle(element).overflowX,
           scrollWidth: element.scrollWidth,
           clientWidth: element.clientWidth,
-          activeBackground: getComputedStyle(
-            element.querySelector('button.on .re') || element.querySelector('button.on')
-          ).backgroundColor,
-          activeIconBorderWidth: getComputedStyle(
-            element.querySelector('button.on .re') || element.querySelector('button.on')
-          ).borderTopWidth,
-          activeIconBorderColor: getComputedStyle(
-            element.querySelector('button.on .re') || element.querySelector('button.on')
-          ).borderTopColor,
+          activeButtonBackground: getComputedStyle(element.querySelector('button.on')).backgroundColor,
+          activeIconBackground: getComputedStyle(element.querySelector('button.on .re')).backgroundColor,
+          activeIconBorderWidth: getComputedStyle(element.querySelector('button.on .re')).borderTopWidth,
+          activeIconBorderColor: getComputedStyle(element.querySelector('button.on .re')).borderTopColor,
           backdropFilter: getComputedStyle(element).backdropFilter,
           viewportWidth: window.innerWidth,
           viewportHeight: window.innerHeight,
@@ -149,8 +144,12 @@ for (const brand of CASES) {
       brand.brand + ' categories remain visible without scrolling').toBe(true);
       expect(categoryButtons.every(button => button.accessibleName.length > 0),
         brand.brand + ' icon-only controls retain accessible names').toBe(true);
-      expect(geometry.activeBackground, 'selected category icon uses a filled state').not.toBe('rgba(0, 0, 0, 0)');
-      if (brand.brand === 'delivery') {
+      if (brand.brand === 'coffee') {
+        expect(geometry.activeButtonBackground, 'coffee selected category keeps its blue filled tab').toBe('rgb(18, 58, 107)');
+        expect(geometry.activeIconBackground, 'coffee selected icon does not duplicate the tab fill').toBe('rgba(0, 0, 0, 0)');
+      } else {
+        expect(geometry.activeButtonBackground, 'delivery selected tab remains unfilled').toBe('rgba(0, 0, 0, 0)');
+        expect(geometry.activeIconBackground, 'delivery selected icon uses the flame token').toBe('rgb(192, 59, 42)');
         expect(geometry.activeIconBorderWidth, 'delivery selected category icon uses the tokenized chocolate outline').toBe('2px');
         expect(geometry.activeIconBorderColor, 'delivery selected category icon uses the chocolate brand token').toBe('rgb(58, 42, 28)');
       }
