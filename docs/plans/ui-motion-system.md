@@ -1,6 +1,35 @@
 # Zerno Motion System — интеграция в PR #273
 
-**Статус:** implementation in progress. Этот документ фиксирует scope интеграции и критерии завершения; он не переносит CI или визуальные результаты из донорских веток.
+**Статус:** motion scope integrated on `pizza` after PRs #287, #289–#293. This plan records the accepted implementation and the split integration decisions; it does not imply that the broader frontend UX audit is complete.
+
+## Итоговая интеграция на 2026-11-19
+
+- PR #273 (merged) is the base responsive/rail consolidation. Its category-rail ownership and fade/scroll-to-top contract remain unchanged.
+- The core motion implementation from donor PR #268 is already present in current `pizza`: shared timing/easing tokens; cart/address/auth/chat/overlay/toast/profile/staff motion; reduced-motion handling; scroll behavior; confetti lifecycle; local component CSS owners.
+- Donor PR #268 was not merged wholesale. Its stale base, legacy rail/layout context, critical CSS snapshot and generated cache changes were not imported as a branch merge.
+- Card entrance and stepper press behavior are present in current `20-cards.css`: 180ms opacity/translateY entrance with `backwards` fill (not `both`), 120ms press feedback and 44×44px targets. PR #292 adds live reduced-motion regression coverage only.
+- Profile drawer reduced-motion transition is handled by `core/views.js` (Layer 2b) and `160-04-wrap-cls-sheets.css` (Layer 1), with coffee/delivery portrait, compact-landscape and tablet coverage in PR #293.
+- The four functional changes explicitly excluded from the original motion scope were integrated independently: staff-chat Escape/focus lifecycle (#290), delivery catalog hydration guard (#291), latest-order slot reservation (#291), and delivery option validation scroll reduced-motion behavior (#289).
+- PR #287 separately closes the cart FAB reduced-motion gap without importing its geometry from the donor.
+- PR #277 is superseded: its stale rail/FAB behavior and old card entrance fill-mode must not be merged. The current `pizza` implementation is authoritative.
+
+### Accepted exact-head CI evidence
+
+- #287: CI #441? — historical run recorded in its PR; cart FAB reduced-motion scope.
+- #289: CI #4420 — 13/13.
+- #290: CI #4423 — 13/13.
+- #291: CI #4430 — 13/13.
+- #292: CI #4443 — 13/13 after sync with #289.
+- #293: CI #4445 — 13/13 after sync with current `pizza`.
+- #273 baseline/rail behavior is verified by the current Mobile Chrome and Responsive UI matrix in those exact-head runs.
+- No deployment was performed by this integration.
+
+### Final acceptance boundaries
+
+The motion integration is complete for the listed scope; this is not sign-off for the separate production guest/staff UX audit in `docs/frontend-todo.md`. Existing non-motion issues in that audit remain open. The current `pizza` source and tests, not donor branch commit counts, define the accepted implementation.
+
+---
+
 
 ## Источники изменений
 
