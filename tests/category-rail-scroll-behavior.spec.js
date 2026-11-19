@@ -27,8 +27,21 @@ for (const brand of BRANDS) {
     await expect(rail).toHaveClass(/is-scroll-fading/);
     if (brand.brand === 'delivery') await expect(cartFab).toHaveClass(/is-scroll-fading/);
 
+    await page.evaluate(() => {
+      window.__scrollTopFadeStates = [];
+      window.addEventListener('scroll', () => {
+        window.__scrollTopFadeStates.push({
+          rail: !!document.querySelector('#rail.is-scroll-fading, #deliveryRail.is-scroll-fading'),
+          cart: !!document.querySelector('#cartFab.is-scroll-fading')
+        });
+      }, { passive: true });
+    });
     await page.locator(brand.active).click();
     await expect.poll(() => page.evaluate(() => window.scrollY), { timeout: 5000 }).toBeLessThanOrEqual(80);
+    const topScrollStates = await page.evaluate(() => window.__scrollTopFadeStates);
+    expect(topScrollStates.length, 'scroll-to-top should produce observable scroll events').toBeGreaterThan(0);
+    expect(topScrollStates.every(state => !state.rail && !state.cart),
+      'neither floating control may fade during programmatic scroll-to-top').toBe(true);
     await expect(rail).not.toHaveClass(/is-scroll-fading/);
     await expect.poll(() => rail.evaluate(el => Number.parseFloat(getComputedStyle(el).opacity))).toBeGreaterThan(0.9);
     if (brand.brand === 'delivery') {
@@ -53,7 +66,8 @@ for (const brand of BRANDS) {
       await card.locator('[data-add]').click();
       await expect(cartFab).toBeVisible();
     }
-    await page.evaluate(() => window.scrollTo(0, 700));
+    await page.mouse.move(180, 420);
+    await page.mouse.wheel(0, 700);
 
     await expect.poll(() => rail.evaluate(el => el.classList.contains('is-scroll-fading'))).toBe(true);
     await expect.poll(() => rail.evaluate(el => Number.parseFloat(getComputedStyle(el).opacity))).toBeLessThan(0.1);
@@ -84,7 +98,7 @@ for (const brand of BRANDS) {
       await expect.poll(() => subfilters.evaluate(el => Number.parseFloat(getComputedStyle(el).opacity))).toBeGreaterThan(0.9);
     }
 
-    await page.evaluate(() => window.scrollTo(0, 500));
+    await page.mouse.wheel(0, -200);
     await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(300);
     await expect(rail).toHaveClass(/is-scroll-fading/);
     if (brand.brand === 'delivery') await expect(cartFab).toHaveClass(/is-scroll-fading/);
