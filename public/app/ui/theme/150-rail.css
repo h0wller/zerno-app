@@ -154,10 +154,16 @@ sticky слева на весь скролл
 
   html body div.wrap > nav.rail#rail button.on,
   html body div.wrap > div.rail#deliveryRail button.on {
-    /* Delivery's primary terracotta needs its darker accessible tone with white text. */
-    background: var(--category-icon-active-bg, var(--category-tab-active-color, var(--flame, #123A6B)));
-    color: var(--category-icon-active-color, #FFFFFF);
+    background: transparent;
+    color: var(--category-tab-active-color, var(--ink, #101418));
     font-weight: 700;
+  }
+
+  html body div.wrap > nav.rail#rail button.on .re,
+  html body div.wrap > div.rail#deliveryRail button.on .re {
+    border: var(--category-icon-active-border, 0);
+    background: var(--category-icon-active-bg, transparent);
+    color: var(--category-icon-active-color, currentColor);
   }
 
   html body div.wrap > nav.rail#rail button:active,
