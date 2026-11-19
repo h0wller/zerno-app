@@ -74,7 +74,7 @@ $('#rail').addEventListener('click', e => {
   const wasSelected = b.dataset.cat === cat;
   cat = b.dataset.cat;
   if (wasSelected) {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    window.scrollToTopWithoutRailFade();
     return;
   }
   window.renderRail();
