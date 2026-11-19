@@ -32,6 +32,21 @@ async function prepareCart(page, viewport) {
   const fab = page.locator('#cartFab');
   await expect(panel).toBeAttached();
   await expect(fab).toBeVisible({ timeout: 10000 });
+  const fabMotion = await fab.evaluate((element) => {
+    const style = getComputedStyle(element);
+    const transform = new DOMMatrixReadOnly(style.transform);
+    return {
+      transitionDuration: style.transitionDuration,
+      scaleX: transform.a,
+      scaleY: transform.d,
+      translateX: transform.m41,
+      halfWidth: element.getBoundingClientRect().width / 2,
+    };
+  });
+  expect(fabMotion.transitionDuration).toBe('0s');
+  expect(fabMotion.scaleX).toBeCloseTo(1, 3);
+  expect(fabMotion.scaleY).toBeCloseTo(1, 3);
+  expect(fabMotion.translateX).toBeCloseTo(-fabMotion.halfWidth, 1);
   await expect(panel).not.toHaveClass(/open/);
   return { panel, fab };
 }
