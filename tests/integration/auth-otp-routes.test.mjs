@@ -168,7 +168,7 @@ test('cashier-created guests get a PIN immediately and duplicate registration re
   const replacementPinRejected = await api('/api/auth/login', { phone, pin: '9999' });
   assert.equal(replacementPinRejected.status, 403);
 
-  const pendingPhone = '+7 900 000-01-12';
+  const pendingPhone = '+7 900 000-09-91';
   const pending = await api('/api/auth/register', {
     name: 'Existing Pending Guest', phone: pendingPhone, consent: true
   });
@@ -176,7 +176,7 @@ test('cashier-created guests get a PIN immediately and duplicate registration re
   assert.equal(pending.json.customer?.verified, 0);
 
   const activated = await api('/api/staff/customers', {
-    name: 'Existing Pending Guest', phone: '8 900 000-01-12', pin: '2468'
+    name: 'Existing Pending Guest', phone: '8 900 000-09-91', pin: '2468'
   }, admin.json.token);
   assert.equal(activated.status, 200, JSON.stringify(activated.json));
   assert.equal(activated.json.customer?.id, pending.json.customer.id);
@@ -188,7 +188,7 @@ test('cashier-created guests get a PIN immediately and duplicate registration re
 });
 
 test('Telegram registration polling is scoped to a random one-attempt secret, not the phone number', async () => {
-  const phone = '+7 900 000-01-12';
+  const phone = '+7 900 000-09-91';
   const requested = await api('/api/auth/request-reg-otp', {
     name: 'Telegram Poll Guest', phone, via: 'tg'
   });
