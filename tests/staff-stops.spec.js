@@ -205,27 +205,54 @@ test.describe('Cashier guest PIN and reward picker', () => {
     await expect(page.locator('#cashierView')).toBeVisible();
   }
 
-  test('guest form sends a four-digit PIN when cashier creates a profile', async ({ page }) => {
+  test('guest form sends a four-digit PIN across brands and mobile viewports', async ({ page }, testInfo) => {
     let submitted = null;
     await mockCashierSession(page, (type, payload) => {
       if (type === 'create') submitted = payload;
     });
-    await enterCashierMode(page);
 
-    await page.locator('#newGuestBtn').click();
-    await expect(page.locator('#ngCard')).toBeVisible();
-    await page.locator('#ngName').fill('New Guest');
-    await page.locator('#ngPhone').fill('+7 900 000-00-03');
-    await page.locator('#ngPin').fill('4826');
-    await page.locator('#ngSave').click();
+    const brands = ['coffee', 'delivery'];
+    const viewports = [
+      { name: 'portrait', width: 390, height: 844 },
+      { name: 'landscape', width: 844, height: 390 },
+      { name: 'short', width: 320, height: 568 }
+    ];
 
-    await expect.poll(() => submitted).toMatchObject({
-      name: 'New Guest',
-      phone: '+7 900 000-00-03',
-      pin: '4826'
-    });
-    await expect(page.locator('#ngCard')).toBeHidden();
-    await expect(page.locator('#custName')).toHaveText('New Guest');
+    for (const brand of brands) {
+      for (const viewport of viewports) {
+        submitted = null;
+        await enterCashierMode(page, brand, viewport);
+
+        await page.locator('#newGuestBtn').click();
+        await expect(page.locator('#ngCard')).toBeVisible();
+        const pinInput = page.locator('#ngPin');
+        await pinInput.scrollIntoViewIfNeeded();
+        await expect(pinInput).toBeVisible();
+
+        const pinBox = await pinInput.boundingBox();
+        expect(pinBox).not.toBeNull();
+        expect(pinBox.x).toBeGreaterThanOrEqual(0);
+        expect(pinBox.x + pinBox.width).toBeLessThanOrEqual(viewport.width + 1);
+
+        await testInfo.attach('cashier-new-guest-pin-' + brand + '-' + viewport.name + '.png', {
+          body: await page.screenshot({ animations: 'disabled' }),
+          contentType: 'image/png'
+        });
+
+        await page.locator('#ngName').fill('New Guest');
+        await page.locator('#ngPhone').fill('+7 900 000-00-03');
+        await pinInput.fill('4826');
+        await page.locator('#ngSave').click();
+
+        await expect.poll(() => submitted).toMatchObject({
+          name: 'New Guest',
+          phone: '+7 900 000-00-03',
+          pin: '4826'
+        });
+        await expect(page.locator('#ngCard')).toBeHidden();
+        await expect(page.locator('#custName')).toHaveText('New Guest');
+      }
+    }
   });
 
   test('gift redemption waits for drink selection across brands and mobile viewports', async ({ page }, testInfo) => {
