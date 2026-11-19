@@ -99,7 +99,7 @@ test('card entrance uses backwards fill and releases the desktop hover lift in b
       window.__cardMotionEvents.push({
         phase: 'start',
         animationName: event.animationName,
-        productId: event.target.getAttribute('data-product-id') || event.target.getAttribute('data-item-id') || event.target.id,
+        productId: event.target.getAttribute('data-product-id') || event.target.getAttribute('data-item-id') || event.target.id || event.target.className,
         fillMode: style.animationFillMode,
         duration: style.animationDuration
       });
@@ -121,7 +121,7 @@ test('card entrance uses backwards fill and releases the desktop hover lift in b
     await page.goto('/?brand=' + storefront.brand, { waitUntil: 'domcontentloaded' });
     const card = page.locator(storefront.grid + ' > .card:not(.skeleton-card)').first();
     await expect(card).toBeVisible({ timeout: 15000 });
-    const productId = await card.evaluate(element => element.getAttribute('data-product-id') || element.getAttribute('data-item-id') || element.id);
+    const productId = await card.evaluate(element => element.getAttribute('data-product-id') || element.getAttribute('data-item-id') || element.id || element.className);
 
     await expect.poll(() => page.evaluate((id) => window.__cardMotionEvents.some((event) =>
       event.phase === 'start' && event.animationName === 'card-enter' &&
@@ -166,6 +166,10 @@ test('quantity stepper has 120ms press feedback without changing its hit target'
 
   await step.hover();
   await page.mouse.down();
+  await expect.poll(() => step.evaluate((element) => {
+    const matrix = new DOMMatrixReadOnly(getComputedStyle(element).transform);
+    return matrix.m11;
+  })).toBeLessThan(0.97);
   const pressed = await step.evaluate((element) => {
     const style = getComputedStyle(element);
     const matrix = new DOMMatrixReadOnly(style.transform);

@@ -179,7 +179,7 @@
     });
 
     sheet.addEventListener('transitionend', function (e) {
-      if (e.target !== sheet || e.propertyName !== 'opacity' || sheet.classList.contains('open')) return;
+      if (e.target !== sheet || (e.propertyName !== 'opacity' && e.propertyName !== 'transform') || sheet.classList.contains('open')) return;
       if (closeTimer) window.clearTimeout(closeTimer);
       closeTimer = 0;
       sheet.hidden = true;
@@ -198,7 +198,7 @@
       closeSheet();
     });
     document.addEventListener('keydown', function (e) {
-      if (e.key === 'Escape' && sheet && !sheet.hidden) closeSheet();
+      if (e.key === 'Escape' && sheet && !sheet.hidden) { e.preventDefault(); closeSheet(); }
     });
     return sheet;
   }

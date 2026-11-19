@@ -155,6 +155,7 @@ test('cart keeps the current selected price and explains every amount without gu
     document.getElementById('cartPanel').classList.add('open');
     window.renderCart();
   });
+  await expect(page.locator('#cartPanel')).toHaveClass(/open/);
   await expect(page.locator('#checkoutGuestBar')).toBeAttached();
   await expect(page.locator('#checkoutGuestBar')).toBeHidden();
   await page.evaluate(() => window.setUser('checkout-clarity-token', {

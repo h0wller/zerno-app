@@ -79,6 +79,8 @@ test.describe('Мои адреса: шторка и сохранение', () =>
 
     await page.click('#addrBookBtn');
     await page.keyboard.press('Escape');
+    await expect(page.locator('#addrBookSheet')).not.toHaveClass(/open/);
+    await expect(page.locator('#addrBookSheet')).toBeHidden({ timeout: 1000 });
     expect(await sheetOpen(page)).toBe(false);
   });
 

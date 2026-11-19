@@ -60,7 +60,7 @@
 | `checkout-validation.js` | Проверка адреса и времени доставки перед оформлением; подсветка ошибочного поля и переключатель «сейчас / ко времени» | `window.CheckoutValidation` |
 | `address.js` | Единственный владелец `window.AddressModule` и datalist `#streetSuggestions`; сгенерированный справочник улиц, нормализация и валидация | `window.AddressModule` |
 | `core/address-autocomplete.js` | Дропдаун подсказок `#checkoutStreet` | — |
-| `core/address-book.js` | Шторка «Мои адреса» (`#addrBookSheet`), кнопка в чекауте; тариф адреса читает из `window.deliveryInfo.zones` | `window.AddressBook` |
+| `core/address-book.js` | Шторка «Мои адреса» (`#addrBookSheet`), кнопка в чекауте; владеет close lifecycle через `.open`, transitionend/таймер и `hidden`; тариф адреса читает из `window.deliveryInfo.zones` | `window.AddressBook` |
 
 Примечание: `delivery.js` исторически содержал второй рендерер и писатели корзины; они удалены. Все изменения состояния корзины проходят через контракты `cart.js`.
 
