@@ -193,7 +193,7 @@ test('cashier-created guests get a PIN immediately and duplicate registration re
 });
 
 test('Telegram registration polling is scoped to a random one-attempt secret, not the phone number', async () => {
-  const phone = '+7 900 000-09-91';
+  const phone = '+7 900 000-01-12';
   const requested = await api('/api/auth/request-reg-otp', {
     name: 'Telegram Poll Guest', phone, via: 'tg'
   });
