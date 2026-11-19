@@ -95,7 +95,7 @@ test('reduced motion opens and closes the cart sheet without spatial travel', as
 
     await page.locator('#cartClose').click();
     await expect(panel).not.toHaveClass(/open/);
-    await expect(panel).toBeHidden();
+    await expect(panel).toHaveCSS('visibility', 'hidden');
     await expect(page.locator('#overlay')).not.toHaveClass(/show/);
     await expect(page.locator('body')).not.toHaveClass(/cart-open/);
     await expectCartAtRest(panel, viewport, false);
