@@ -11,11 +11,30 @@ for (const brand of BRANDS) {
     await page.addInitScript(() => sessionStorage.setItem('splashDone', '1'));
     await page.goto('/?brand=' + brand.brand, { waitUntil: 'domcontentloaded' });
     await expect(page.locator(brand.active)).toBeVisible({ timeout: 15000 });
+    const rail = page.locator(brand.rail);
+    const cartFab = page.locator('#cartFab');
+    if (brand.brand === 'delivery') {
+      const card = page.locator('#deliveryGrid .card:not(.skeleton-card)').first();
+      await expect(card).toBeVisible({ timeout: 15000 });
+      const option = card.locator('.opts label.opt-btn, .opts button').first();
+      if (await option.count()) await option.click();
+      await card.locator('[data-add]').click();
+      await expect(cartFab).toBeVisible();
+    }
+
     await page.evaluate(() => window.scrollTo(0, 700));
     await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(300);
+    await expect(rail).toHaveClass(/is-scroll-fading/);
+    if (brand.brand === 'delivery') await expect(cartFab).toHaveClass(/is-scroll-fading/);
 
     await page.locator(brand.active).click();
     await expect.poll(() => page.evaluate(() => window.scrollY), { timeout: 5000 }).toBeLessThanOrEqual(80);
+    await expect(rail).not.toHaveClass(/is-scroll-fading/);
+    await expect.poll(() => rail.evaluate(el => Number.parseFloat(getComputedStyle(el).opacity))).toBeGreaterThan(0.9);
+    if (brand.brand === 'delivery') {
+      await expect(cartFab).not.toHaveClass(/is-scroll-fading/);
+      await expect.poll(() => cartFab.evaluate(el => Number.parseFloat(getComputedStyle(el).opacity))).toBeGreaterThan(0.9);
+    }
     await expect(page.locator('#scrollTopBtn')).toHaveCount(0);
   });
 
@@ -24,12 +43,25 @@ for (const brand of BRANDS) {
     await page.addInitScript(() => sessionStorage.setItem('splashDone', '1'));
     await page.goto('/?brand=' + brand.brand, { waitUntil: 'domcontentloaded' });
     const rail = page.locator(brand.rail);
+    const cartFab = page.locator('#cartFab');
     await expect(rail).toBeVisible({ timeout: 15000 });
+    if (brand.brand === 'delivery') {
+      const card = page.locator('#deliveryGrid .card:not(.skeleton-card)').first();
+      await expect(card).toBeVisible({ timeout: 15000 });
+      const option = card.locator('.opts label.opt-btn, .opts button').first();
+      if (await option.count()) await option.click();
+      await card.locator('[data-add]').click();
+      await expect(cartFab).toBeVisible();
+    }
     await page.evaluate(() => window.scrollTo(0, 700));
 
     await expect.poll(() => rail.evaluate(el => el.classList.contains('is-scroll-fading'))).toBe(true);
     await expect.poll(() => rail.evaluate(el => Number.parseFloat(getComputedStyle(el).opacity))).toBeLessThan(0.1);
     await expect.poll(() => rail.evaluate(el => getComputedStyle(el).pointerEvents)).toBe('auto');
+    if (brand.brand === 'delivery') {
+      await expect(cartFab).toHaveClass(/is-scroll-fading/);
+      await expect.poll(() => cartFab.evaluate(el => Number.parseFloat(getComputedStyle(el).opacity))).toBeLessThan(0.1);
+    }
     await testInfo.attach(`${brand.brand}-rail-faded-390x844`, {
       body: await page.screenshot({ animations: 'disabled' }),
       contentType: 'image/png',
@@ -38,6 +70,10 @@ for (const brand of BRANDS) {
     await expect.poll(() => rail.evaluate(el => el.classList.contains('is-scroll-fading')), { timeout: 5000 }).toBe(false);
     await expect.poll(() => rail.evaluate(el => Number.parseFloat(getComputedStyle(el).opacity))).toBeGreaterThan(0.9);
     await expect.poll(() => rail.evaluate(el => getComputedStyle(el).pointerEvents)).toBe('auto');
+    if (brand.brand === 'delivery') {
+      await expect(cartFab).not.toHaveClass(/is-scroll-fading/);
+      await expect.poll(() => cartFab.evaluate(el => Number.parseFloat(getComputedStyle(el).opacity))).toBeGreaterThan(0.9);
+    }
     await testInfo.attach(`${brand.brand}-rail-restored-390x844`, {
       body: await page.screenshot({ animations: 'disabled' }),
       contentType: 'image/png',
@@ -46,6 +82,15 @@ for (const brand of BRANDS) {
       const subfilters = page.locator('#deliverySubFilter');
       await expect(subfilters).not.toHaveClass(/is-scroll-fading/);
       await expect.poll(() => subfilters.evaluate(el => Number.parseFloat(getComputedStyle(el).opacity))).toBeGreaterThan(0.9);
+    }
+
+    await page.evaluate(() => window.scrollTo(500, 0));
+    await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(300);
+    await expect(rail).toHaveClass(/is-scroll-fading/);
+    if (brand.brand === 'delivery') await expect(cartFab).toHaveClass(/is-scroll-fading/);
+    await expect.poll(() => rail.evaluate(el => el.classList.contains('is-scroll-fading')), { timeout: 5000 }).toBe(false);
+    if (brand.brand === 'delivery') {
+      await expect.poll(() => cartFab.evaluate(el => el.classList.contains('is-scroll-fading')), { timeout: 5000 }).toBe(false);
     }
   });
 }
