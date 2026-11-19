@@ -1009,3 +1009,80 @@ test('work modes keep the role switcher in the topbar and preserve the support l
   await expect(page.locator('#adminBar')).toBeVisible();
   await expect(page.locator('#chatsToggle2')).toBeHidden();
 });
+
+test('staff chat overlay closes on Escape and restores focus for both brands and viewports', async ({ browser }, testInfo) => {
+  test.setTimeout(90_000);
+  const viewports = [
+    { name: 'portrait', width: 390, height: 844 },
+    { name: 'compact-landscape', width: 844, height: 390 },
+    { name: 'desktop', width: 1280, height: 900 },
+  ];
+
+  for (const brand of ['coffee', 'delivery']) {
+    for (const viewport of viewports) {
+      const context = await browser.newContext({
+        viewport: { width: viewport.width, height: viewport.height },
+        serviceWorkers: 'block',
+      });
+      const page = await context.newPage();
+      try {
+        await page.emulateMedia({ reducedMotion: 'no-preference' });
+        await mockStaffSession(page, 'admin');
+        await page.goto('/?brand=' + brand);
+        await page.waitForFunction(() =>
+          window.me && window.me.role === 'admin' &&
+          document.documentElement.hasAttribute('data-staff-ready') &&
+          typeof window.openStaffChat === 'function' &&
+          typeof window.setMode === 'function'
+        );
+        await page.evaluate(() => {
+          window.toast = () => null;
+          window.setMode('admin');
+        });
+
+        const trigger = page.locator('#chatsToggle2');
+        await expect(trigger).toBeVisible();
+        await trigger.focus();
+        const scrollBeforeOpen = await page.evaluate(() => window.scrollY);
+        await page.keyboard.press('Enter');
+
+        const modal = page.locator('#staffChatModal');
+        const card = modal.locator('.modal-card');
+        const overlay = page.locator('#overlay');
+        await expect(modal).toHaveClass(/show/);
+        await expect(card).toBeVisible();
+        await expect.poll(() => card.evaluate(element => getComputedStyle(element).opacity))
+          .toBe('1');
+        await expect(overlay).toHaveAttribute('aria-hidden', 'false');
+        await expect(page.locator('#scClose')).toBeFocused();
+
+        const geometry = await card.boundingBox();
+        expect(geometry).not.toBeNull();
+        expect(geometry.x).toBeGreaterThanOrEqual(0);
+        expect(geometry.y).toBeGreaterThanOrEqual(0);
+        expect(geometry.x + geometry.width).toBeLessThanOrEqual(viewport.width + 0.5);
+        expect(geometry.y + geometry.height).toBeLessThanOrEqual(viewport.height + 0.5);
+
+        await testInfo.attach('staff-chat-' + brand + '-' + viewport.name + '-open.png', {
+          body: await page.screenshot({ fullPage: false }),
+          contentType: 'image/png',
+        });
+
+        await page.keyboard.press('Escape');
+        await expect(modal).not.toHaveClass(/show/);
+        await expect(overlay).toHaveAttribute('aria-hidden', 'true');
+        await expect(overlay).toHaveCSS('pointer-events', 'none');
+        await expect(trigger).toBeFocused();
+        await expect.poll(() => page.evaluate(() => window.scrollY))
+          .toBe(scrollBeforeOpen);
+
+        await testInfo.attach('staff-chat-' + brand + '-' + viewport.name + '-closed.png', {
+          body: await page.screenshot({ fullPage: false }),
+          contentType: 'image/png',
+        });
+      } finally {
+        await context.close();
+      }
+    }
+  }
+});

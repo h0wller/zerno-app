@@ -220,3 +220,145 @@ test('delivery option validation keeps its message but removes shake under reduc
     .toBe('none');
   await expect(options.locator('.opts-error')).toBeVisible();
 });
+
+for (const reducedMotion of ['no-preference', 'reduce']) {
+  test(`delivery option validation scroll respects ${reducedMotion}`, async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.emulateMedia({ reducedMotion });
+    await page.addInitScript(() => {
+      localStorage.setItem('zt_onb', '1');
+      localStorage.removeItem('zt_cart');
+      sessionStorage.setItem('splashDone', '1');
+      window.__deliveryOptionScrollCalls = [];
+      const nativeScrollIntoView = Element.prototype.scrollIntoView;
+      Element.prototype.scrollIntoView = function (options) {
+        if (this.closest && this.closest('#deliveryGrid .opts')) {
+          window.__deliveryOptionScrollCalls.push({
+            target: this.matches('input[type="radio"]') ? 'option' : 'options',
+            behavior: options && options.behavior || 'auto',
+            block: options && options.block || 'start'
+          });
+          return;
+        }
+        return nativeScrollIntoView.call(this, options);
+      };
+    });
+
+    await page.goto('/?brand=delivery', { waitUntil: 'domcontentloaded' });
+    const card = page.locator('#deliveryGrid .card:not(.skeleton-card)')
+      .filter({ has: page.locator('.opts input[type="radio"]') })
+      .first();
+    await expect(card).toBeVisible({ timeout: 15000 });
+
+    await card.locator('[data-add]').click();
+    await expect(card.locator('.opts-error')).toBeVisible();
+    await expect(card.locator('.opts')).toHaveClass(/shake/);
+    await expect(card.locator('.opts input[type="radio"]').first()).toBeFocused();
+
+    await expect.poll(() => page.evaluate(() => window.__deliveryOptionScrollCalls.length))
+      .toBe(2);
+    const scrollCalls = await page.evaluate(() => window.__deliveryOptionScrollCalls);
+    const expectedBehavior = reducedMotion === 'reduce' ? 'auto' : 'smooth';
+    expect(scrollCalls).toEqual([
+      { target: 'option', behavior: expectedBehavior, block: 'center' },
+      { target: 'options', behavior: expectedBehavior, block: 'center' }
+    ]);
+  });
+}
+
+for (const storefront of [
+  { brand: 'coffee', grid: '#grid' },
+  { brand: 'delivery', grid: '#deliveryGrid' }
+]) {
+  test(`${storefront.brand}: card entrance and hover stop when reduced motion is enabled at runtime`, async ({ page }, testInfo) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.emulateMedia({ reducedMotion: 'no-preference' });
+    await page.addInitScript(() => {
+      localStorage.setItem('zt_onb', '1');
+      localStorage.removeItem('zt_cart');
+      sessionStorage.setItem('splashDone', '1');
+    });
+    await page.goto('/?brand=' + storefront.brand, { waitUntil: 'domcontentloaded' });
+
+    const card = page.locator(storefront.grid + ' > .card:not(.skeleton-card)').first();
+    await expect(card).toBeVisible({ timeout: 15000 });
+    await expect.poll(() => card.evaluate(element => getComputedStyle(element).animationName))
+      .toBe('card-enter');
+
+    await card.hover();
+    await expect.poll(() => card.evaluate(element => {
+      const transform = new DOMMatrixReadOnly(getComputedStyle(element).transform);
+      return transform.m42;
+    })).toBeLessThan(-1);
+
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await expect.poll(() => card.evaluate(element => ({
+      animationName: getComputedStyle(element).animationName,
+      transitionDuration: getComputedStyle(element).transitionDuration,
+      transform: getComputedStyle(element).transform,
+    }))).toEqual({
+      animationName: 'none',
+      transitionDuration: '0s',
+      transform: 'none',
+    });
+
+    await testInfo.attach(storefront.brand + '-card-reduced-motion-1440x900', {
+      body: await page.screenshot({ fullPage: false, animations: 'disabled' }),
+      contentType: 'image/png',
+    });
+  });
+}
+
+test('delivery quantity stepper stops press scaling under runtime reduced motion and remains usable', async ({ page }, testInfo) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
+  await page.addInitScript(() => {
+    localStorage.setItem('zt_onb', '1');
+    localStorage.removeItem('zt_cart');
+    sessionStorage.setItem('splashDone', '1');
+  });
+  await page.goto('/?brand=delivery', { waitUntil: 'domcontentloaded' });
+
+  const card = page.locator('#deliveryGrid .card:not(.skeleton-card)')
+    .filter({ has: page.locator('.opts input[type="radio"]') })
+    .first();
+  await expect(card).toBeVisible({ timeout: 15000 });
+  const option = card.locator('.opts input[type="radio"]').first();
+  if (await option.count()) await option.check();
+  await card.locator('[data-add]').click();
+
+  const step = card.locator('.steprow .step[data-step="-1"]:visible');
+  await expect(step).toBeVisible();
+  const hitArea = await step.boundingBox();
+  expect(hitArea.width).toBeGreaterThanOrEqual(44);
+  expect(hitArea.height).toBeGreaterThanOrEqual(44);
+
+  await step.hover();
+  await page.mouse.down();
+  await expect.poll(() => step.evaluate(element => {
+    return new DOMMatrixReadOnly(getComputedStyle(element).transform).m11;
+  })).toBeLessThan(0.97);
+
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await expect.poll(() => step.evaluate(element => ({
+    transform: getComputedStyle(element).transform,
+    transitionDuration: getComputedStyle(element).transitionDuration,
+    filter: getComputedStyle(element).filter,
+  }))).toEqual({
+    transform: 'none',
+    transitionDuration: '0s',
+    filter: 'brightness(0.96)',
+  });
+  // Releasing the active press dispatches the click. The quantity-one item
+  // must be removed even though reduced motion cancelled the visual press.
+  await page.mouse.up();
+  await expect.poll(() => page.evaluate(() =>
+    JSON.parse(localStorage.getItem('zt_cart') || '[]')
+  )).toEqual([]);
+  await expect(card.locator('[data-add]')).not.toHaveClass(/incart/);
+
+  await testInfo.attach('delivery-stepper-reduced-motion-390x844', {
+    body: await page.screenshot({ fullPage: false, animations: 'disabled' }),
+    contentType: 'image/png',
+  });
+});

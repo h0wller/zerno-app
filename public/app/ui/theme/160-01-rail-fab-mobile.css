@@ -880,3 +880,14 @@ html body:has(#cartPanel.open) #cartFab {
     bottom: calc(var(--rail-total-h) + 12px + 64px + 12px);
   }
 }
+
+/* Keep cart FAB state immediate under reduced motion without losing horizontal centering. */
+@media (prefers-reduced-motion: reduce) {
+  html body #cartFab.cartFab,
+  html body #cartFab.cartFab.visible,
+  html body #cartFab.cartFab:hover,
+  html body #cartFab.cartFab:active {
+    transition: none;
+    transform: translateX(-50%);
+  }
+}
