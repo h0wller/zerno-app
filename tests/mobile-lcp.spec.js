@@ -86,6 +86,14 @@ test.describe('Initial catalog image priorities', () => {
     const firstImage = '/media/dishes/espresso-card.webp?v=12345';
     const firstSrcset = '/media/dishes/resized/espresso-card-300.webp?v=12345 300w, /media/dishes/resized/espresso-card-600.webp?v=12345 600w';
     await page.addInitScript(() => {
+      window.__preloadExistedAtFirstCoffeeImage = null;
+      const observer = new MutationObserver(() => {
+        if (window.__preloadExistedAtFirstCoffeeImage !== null) return;
+        if (document.querySelector('#grid > .card img')) {
+          window.__preloadExistedAtFirstCoffeeImage = !!document.querySelector('#zt-menu-lcp-preload');
+        }
+      });
+      observer.observe(document, { childList: true, subtree: true });
       localStorage.setItem('zt_onb', '1');
       localStorage.setItem('zt_inst_hide', '1');
       sessionStorage.setItem('splashDone', '1');
@@ -112,6 +120,7 @@ test.describe('Initial catalog image priorities', () => {
     await expect(preload).toHaveAttribute('href', firstImage);
     await expect(preload).toHaveAttribute('imagesrcset', firstSrcset);
     await expect(preload).toHaveAttribute('fetchpriority', 'high');
+    await expect.poll(() => page.evaluate(() => window.__preloadExistedAtFirstCoffeeImage)).toBe(true);
   });
 
 });
