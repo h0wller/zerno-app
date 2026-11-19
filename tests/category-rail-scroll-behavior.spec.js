@@ -209,6 +209,7 @@ for (const width of [390, 820, 1024]) {
     await page.goto('/?brand=delivery', { waitUntil: 'domcontentloaded' });
     const rail = page.locator('#deliveryRail');
     await expect(rail.locator('button[data-dcat]')).toHaveCount(5, { timeout: 15000 });
+    await expect(rail.locator('button[aria-pressed="true"]')).toHaveCount(1);
     const selectedBeforeScroll = await rail.locator('button[aria-pressed="true"]').getAttribute('data-dcat');
     expect(selectedBeforeScroll).toBeTruthy();
 
@@ -257,7 +258,7 @@ for (const brand of ['coffee', 'delivery']) {
     await target.press('Enter');
     await expect(rail.locator('button[aria-pressed="true"]')).toHaveAttribute(attribute, targetId);
     await expect(rail.locator('button[aria-current="location"]')).toHaveAttribute(attribute, targetId);
-    expect(await rail.ariaSnapshot()).toContain('current');
+    expect(await rail.ariaSnapshot()).toContain('location');
   });
 }
 
