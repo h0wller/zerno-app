@@ -132,6 +132,6 @@ test('cashier gift redemption waits for drink selection and submits exactly once
     item: 'Капучино'
   });
   await expect(modal).not.toHaveClass(/show/);
-  await expect(page.locator('#custFree')).toBeHidden();
+  await expect(page.locator('#redeemBtn')).toBeHidden();
 
 });
