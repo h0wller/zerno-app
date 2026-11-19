@@ -4,6 +4,8 @@ import { cust, addHist, logEv } from '../domain/helpers.js';
 import { createCustomer } from '../domain/customers.js';
 import { grant, redeem } from '../domain/loyalty.js';
 import { grantBonus, QR_SOURCE } from '../domain/bonuses.js';
+import { fmtPhone, ph10 } from '../utils/phone.js';
+import { hashPin } from '../utils/security.js';
 
 import { staffGuard } from '../middleware/auth.js';
 
@@ -34,42 +36,91 @@ staffRouter.get('/api/staff/customers', staffGuard, (req, res) => {
   res.json({ customers: matches.map(cust) });
 });
 
-/* ── СОЗДАНИЕ ГОСТЯ ──
-   Если гость уже есть (createCustomer вернул err) — не отдаём 409,
-   а находим его по телефону, верифицируем и возвращаем карточку. */
+/* ── СОЗДАНИЕ / ПОВТОРНОЕ ИСПОЛЬЗОВАНИЕ ГОСТЯ ──
+   Телефон сравнивается по каноническим десяти цифрам, а не по строковому
+   форматированию. При неоднозначных legacy-дубликатах не выбираем профиль наугад. */
 staffRouter.post('/api/staff/customers', staffGuard, (req, res) => {
   const name = String(req.body.name || '').trim();
   const phone = String(req.body.phone || '').trim();
+  const pin = String(req.body.pin || '').trim();
+  const normalizedPhone = fmtPhone(phone);
+  const phoneDigits = ph10(normalizedPhone);
 
-  const r = createCustomer(name, phone);
+  if (name.length < 2) return res.status(400).json({ error: 'Введите имя' });
+  if (phoneDigits.length !== 10) return res.status(400).json({ error: 'Введите номер полностью' });
+  if (!/^\\d{4}$/.test(pin)) return res.status(400).json({ error: 'PIN — ровно 4 цифры' });
 
-  if (r && r.err) {
-    if (r.code === 409 || /exist/i.test(r.err)) {
-      const d10 = String(phone).replace(/\D/g, '').slice(-10);
-      const all = db.prepare('SELECT * FROM customers').all();
-      const existing = all.find(c => {
-        const cd = String(c.phone || '').replace(/\D/g, '');
-        return cd.slice(-10) === d10;
-      });
-      if (existing) {
-        const wasUnverified = !existing.verified;
-        db.prepare('UPDATE customers SET verified=1 WHERE id=?').run(existing.id);
-        addHist(existing.id, 'Профиль верифицирован кассиром', 'Кассир');
-        logEv(existing.name, 'Верификация кассиром');
-        if (wasUnverified) grantBonus(existing.id, existing.src === QR_SOURCE ? 'qr' : 'signup');
-        const updated = db.prepare('SELECT * FROM customers WHERE id=?').get(existing.id);
-        return res.json({ customer: cust(updated) });
+  let outcome;
+  try {
+    outcome = db.transaction(() => {
+      const matches = db.prepare('SELECT * FROM customers').all()
+        .filter(customer => ph10(customer.phone) === phoneDigits);
+
+      if (matches.length > 1) {
+        return { conflict: true };
       }
+
+      if (matches.length === 1) {
+        const existing = matches[0];
+        const wasUnverified = !existing.verified;
+        const pinAlreadySet = !!existing.pin;
+        db.prepare(`
+          UPDATE customers
+          SET verified=1,
+              pin=CASE WHEN COALESCE(pin, '')='' THEN ? ELSE pin END
+          WHERE id=?
+        `).run(pinAlreadySet ? existing.pin : hashPin(pin), existing.id);
+        addHist(existing.id, 'Профиль проверен кассиром', 'Кассир');
+        logEv(existing.name, 'Проверка профиля кассиром');
+        return {
+          customer: db.prepare('SELECT * FROM customers WHERE id=?').get(existing.id),
+          reused: true,
+          created: false,
+          wasUnverified,
+          pinSet: !pinAlreadySet,
+          pinPreserved: pinAlreadySet
+        };
+      }
+
+      const created = createCustomer(name, normalizedPhone, pin);
+      if (created?.err) return { error: created.err, code: created.code || 400 };
+      db.prepare('UPDATE customers SET verified=1 WHERE id=?').run(created.customer.id);
+      addHist(created.customer.id, 'Профиль создан кассиром', 'Кассир');
+      logEv(created.customer.name, 'Создан профиль кассиром');
+      return {
+        customer: db.prepare('SELECT * FROM customers WHERE id=?').get(created.customer.id),
+        reused: false,
+        created: true,
+        wasUnverified: false,
+        pinSet: true,
+        pinPreserved: false
+      };
+    })();
+  } catch (error) {
+    if (error?.code === 'SQLITE_CONSTRAINT_UNIQUE') {
+      return res.status(409).json({ error: 'Профиль с этим номером уже создаётся. Найдите гостя и повторите попытку.' });
     }
-    return res.status(r.code || 400).json({ error: r.err });
+    throw error;
   }
 
-  db.prepare('UPDATE customers SET verified=1 WHERE id=?').run(r.customer.id);
-  addHist(r.customer.id, 'Профиль создан', 'Кассир');
-  logEv(r.customer.name, 'Создан профиль');
-  grantBonus(r.customer.id, r.customer.src === QR_SOURCE ? 'qr' : 'signup');
-  const updated = db.prepare('SELECT * FROM customers WHERE id=?').get(r.customer.id);
-  res.json({ customer: cust(updated) });
+  if (outcome.conflict) {
+    return res.status(409).json({
+      error: 'Найдено несколько профилей с этим номером. Нужна проверка администратором; списание и создание остановлены.'
+    });
+  }
+  if (outcome.error) return res.status(outcome.code).json({ error: outcome.error });
+
+  if (outcome.created || outcome.wasUnverified) {
+    grantBonus(outcome.customer.id, outcome.customer.src === QR_SOURCE ? 'qr' : 'signup');
+  }
+  const customer = db.prepare('SELECT * FROM customers WHERE id=?').get(outcome.customer.id);
+  return res.json({
+    customer: cust(customer),
+    created: outcome.created,
+    reused: outcome.reused,
+    pinSet: outcome.pinSet,
+    pinPreserved: outcome.pinPreserved
+  });
 });
 
 staffRouter.post('/api/staff/stamp', staffGuard, (req, res) => {
