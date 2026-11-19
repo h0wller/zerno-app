@@ -464,7 +464,7 @@ html body div.wrap > #deliveryRail { align-self:stretch; height:auto; max-height
 
   html body div.wrap > #rail button.on .re,
   html body div.wrap > #deliveryRail button.on .re {
-    border: 0;
+    border: var(--category-icon-active-border, 0);
     border-radius: var(--category-icon-radius, 50%);
     background: var(--category-icon-active-bg, transparent);
     color: var(--category-icon-active-color, currentColor);
