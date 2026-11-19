@@ -48,7 +48,7 @@ staffRouter.post('/api/staff/customers', staffGuard, (req, res) => {
 
   if (name.length < 2) return res.status(400).json({ error: 'Введите имя' });
   if (phoneDigits.length !== 10) return res.status(400).json({ error: 'Введите номер полностью' });
-  if (!/^\\d{4}$/.test(pin)) return res.status(400).json({ error: 'PIN — ровно 4 цифры' });
+  if (!/^\d{4}$/.test(pin)) return res.status(400).json({ error: 'PIN — ровно 4 цифры' });
 
   let outcome;
   try {
