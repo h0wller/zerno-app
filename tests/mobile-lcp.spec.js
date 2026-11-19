@@ -81,4 +81,37 @@ test.describe('Initial catalog image priorities', () => {
     )).toBe(1);
   });
 
+
+  test('coffee early menu response preloads the exact first-card image URL', async ({ page }) => {
+    const firstImage = '/media/dishes/espresso-card.webp?v=12345';
+    const firstSrcset = '/media/dishes/resized/espresso-card-300.webp?v=12345 300w, /media/dishes/resized/espresso-card-600.webp?v=12345 600w';
+    await page.addInitScript(() => {
+      localStorage.setItem('zt_onb', '1');
+      localStorage.setItem('zt_inst_hide', '1');
+      sessionStorage.setItem('splashDone', '1');
+    });
+    await page.route('**/api/menu', async (route) => {
+      await new Promise((resolve) => setTimeout(resolve, 250));
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          items: [{
+            id: 'espresso', cat: 'coffee', section: 'coffee', name: 'Эспрессо',
+            desc: '', comp: [], opts: [], price: '180', e: '☕', on: 1,
+            img: firstImage, imgSrcset: firstSrcset
+          }],
+          updatedAt: Date.now()
+        })
+      });
+    });
+
+    await page.goto('/?brand=coffee');
+    const preload = page.locator('link#zt-menu-lcp-preload');
+    await expect(preload).toHaveCount(1);
+    await expect(preload).toHaveAttribute('href', firstImage);
+    await expect(preload).toHaveAttribute('imagesrcset', firstSrcset);
+    await expect(preload).toHaveAttribute('fetchpriority', 'high');
+  });
+
 });
