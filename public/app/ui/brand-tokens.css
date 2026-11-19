@@ -56,6 +56,11 @@ body[data-brand="coffee"] {
   --category-icon-active-bg: #123A6B;
   --category-icon-active-border: 0;
   --category-icon-active-color: #FFFFFF;
+  --category-mobile-tab-active-bg: var(--category-icon-active-bg);
+  --category-mobile-tab-active-color: #FFFFFF;
+  --category-mobile-icon-active-bg: transparent;
+  --category-mobile-icon-active-border: 0;
+  --category-mobile-icon-active-color: var(--category-icon-active-color);
   --category-indicator-color: #123A6B;
   --category-label-font: "Golos Text", system-ui, sans-serif;
   --category-label-size: 11px;
@@ -291,6 +296,11 @@ body[data-brand="delivery"] {
   --category-icon-active-bg: var(--flame, #C03B2A);
   --category-icon-active-border: 2px solid var(--fr-choc, #3A2A1C);
   --category-icon-active-color: #FFFFFF;
+  --category-mobile-tab-active-bg: transparent;
+  --category-mobile-tab-active-color: var(--category-tab-active-color);
+  --category-mobile-icon-active-bg: var(--category-icon-active-bg);
+  --category-mobile-icon-active-border: var(--category-icon-active-border);
+  --category-mobile-icon-active-color: var(--category-icon-active-color);
   --category-indicator-color: #C03B2A;
   --category-label-font: "Unbounded", "Golos Text", system-ui, sans-serif;
   --category-label-size: 10px;
