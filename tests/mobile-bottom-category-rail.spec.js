@@ -29,6 +29,7 @@ for (const brand of CASES) {
       const rail = page.locator(brand.rail);
       await expect(rail).toBeVisible({ timeout: 10000 });
       await expect(rail).toHaveClass(/rail-position-ready/);
+      await page.addStyleTag({ content: '*,:before,:after{transition:none!important;animation:none!important}' });
 
       const geometry = await page.evaluate((selector) => {
         const element = document.querySelector(selector);
