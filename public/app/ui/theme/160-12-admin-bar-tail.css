@@ -567,10 +567,10 @@ html body div.wrap > section {
   html body #deliveryView .subfilter-bar .subchip.on,
   html body #menuView .subfilter-bar .subchip.on,
   html body #deliverySubFilter .subchip.on {
-    background:#c43b32;
-    border-color:#c43b32;
+    background:transparent;
+    border:0;
     color:#fff;
-    box-shadow:0 2px 8px rgba(196,59,50,.2);
+    box-shadow:none;
   }
   html body #deliveryGrid .steprow,
   html body #grid .steprow { display:flex; justify-content:center; align-items:center; width:100%; }
