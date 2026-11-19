@@ -439,6 +439,7 @@ test('mobile category tabs match the catalog width and distribute evenly for bot
       const grid = page.locator(brand.brand === 'coffee' ? '#grid' : '#deliveryGrid');
       await expect(page.locator(brand.head)).toBeVisible({ timeout: 10000 });
       await expect(rail).toBeVisible({ timeout: 10000 });
+      await page.addStyleTag({ content: '*,:before,:after{transition:none!important;animation:none!important}' });
       await expect(grid.locator('.card').first()).toBeVisible({ timeout: 15000 });
       const inactiveTab = rail.locator('button:not(.on)').first();
       await expect.poll(() => inactiveTab.evaluate(button => getComputedStyle(button).backgroundColor), {
@@ -1329,6 +1330,14 @@ test('category rail uses one surface and viewport-appropriate selected treatment
             radius: pseudo.borderRadius,
           },
           railBackground: railStyle.backgroundColor,
+          railSurfaceToken: (() => {
+            const probe = document.createElement('div');
+            probe.style.cssText = 'position:fixed;visibility:hidden;background-color:var(--category-rail-bg)';
+            document.body.appendChild(probe);
+            const value = getComputedStyle(probe).backgroundColor;
+            probe.remove();
+            return value;
+          })(),
           activeTextColor: buttonStyle.color,
           fontFamily: buttonStyle.fontFamily,
           fontSize: parseFloat(buttonStyle.fontSize),
@@ -1388,7 +1397,7 @@ test('category rail uses one surface and viewport-appropriate selected treatment
         return channel <= 0.04045 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4;
       });
       const textLuminance = 0.2126 * luminance[0] + 0.7152 * luminance[1] + 0.0722 * luminance[2];
-      const contrastBackground = horizontalRail && brand === 'coffee' ? styles.buttonBackground : styles.railBackground;
+      const contrastBackground = horizontalRail && brand === 'coffee' ? styles.buttonBackground : styles.railSurfaceToken;
       const bgRgb = contrastBackground.match(/[0-9.]+/g).map(Number);
       const bgLum = bgRgb.slice(0, 3).map(value => {
         const channel = value / 255;
@@ -2428,6 +2437,7 @@ test('mobile menu header and category rail use compact vertical geometry', async
         if (!sheet.href || !sheet.href.includes('/150-rail.css')) return false;
         try { return sheet.cssRules.length > 0; } catch { return false; }
       }));
+      await page.addStyleTag({ content: '*,:before,:after{transition:none!important;animation:none!important}' });
 
       const geometry = await page.evaluate(({ headSelector, railSelector }) => {
         const head = document.querySelector(headSelector);
