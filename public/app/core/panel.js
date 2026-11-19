@@ -17,23 +17,6 @@ function syncPanelOverlay() {
     else if (window.TgUx && typeof window.TgUx.sync === 'function') window.TgUx.sync();
 }
 
-function loadProfileOrdersAfterOpen(panel) {
-    if (window.brand !== 'delivery' || !window.me || typeof window.loadMyOrders !== 'function') return;
-    var load = function () {
-        if (!panel || panel.classList.contains('open') || window.innerWidth > 1180) {
-            window.loadMyOrders();
-        }
-    };
-    // Let the drawer's opening frame be painted before order hydration touches its DOM.
-    if (window.innerWidth > 1180) {
-        load();
-        return;
-    }
-    requestAnimationFrame(function () {
-        requestAnimationFrame(load);
-    });
-}
-
 function openPanel() {
     setTab();
     var panel = document.getElementById('panel');
@@ -44,7 +27,10 @@ function openPanel() {
         if (back) back.focus({ preventScroll: true });
         syncPanelOverlay();
     }
-    loadProfileOrdersAfterOpen(panel);
+    // Start order hydration only after the drawer state has been committed.
+    if (window.brand === 'delivery' && window.me && typeof window.loadMyOrders === 'function') {
+        window.loadMyOrders();
+    }
 }
 
 function closePanel() {
