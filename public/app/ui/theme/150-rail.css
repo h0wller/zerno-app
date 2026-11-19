@@ -154,16 +154,16 @@ sticky слева на весь скролл
 
   html body div.wrap > nav.rail#rail button.on,
   html body div.wrap > div.rail#deliveryRail button.on {
-    background: transparent;
-    color: var(--category-tab-active-color, var(--ink, #101418));
+    background: var(--category-mobile-tab-active-bg, transparent);
+    color: var(--category-mobile-tab-active-color, var(--category-icon-active-color, currentColor));
     font-weight: 700;
   }
 
   html body div.wrap > nav.rail#rail button.on .re,
   html body div.wrap > div.rail#deliveryRail button.on .re {
-    border: var(--category-icon-active-border, 0);
-    background: var(--category-icon-active-bg, transparent);
-    color: var(--category-icon-active-color, currentColor);
+    border: var(--category-mobile-icon-active-border, 0);
+    background: var(--category-mobile-icon-active-bg, transparent);
+    color: var(--category-mobile-icon-active-color, var(--category-icon-active-color, currentColor));
   }
 
   html body div.wrap > nav.rail#rail button:active,
