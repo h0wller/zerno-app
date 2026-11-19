@@ -877,8 +877,9 @@ test('preorder waiting pulse pauses while the mobile profile drawer is closed an
 
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await expect(timer).toHaveCSS('animation-name', 'none');
+});
 
-  test('empty latest-order refresh keeps the following profile section anchored', async ({ page }) => {
+test('empty latest-order refresh keeps the following profile section anchored', async ({ page }) => {
     let releaseResponse;
     let markRequestStarted;
     const requestStarted = new Promise(resolve => { markRequestStarted = resolve; });
@@ -922,5 +923,3 @@ test('preorder waiting pulse pauses while the mobile profile drawer is closed an
     expect(Math.abs(after.nextY - before.nextY), 'content after the latest-order slot does not move').toBeLessThanOrEqual(1);
     expect(Math.abs(after.hostHeight - before.hostHeight), 'latest-order slot retains its reserved height').toBeLessThanOrEqual(1);
   });
-
-});
