@@ -6,6 +6,7 @@ var callTimer = null;
 window.lastChatId = 0; window.historyLoaded = false; window.staffIn = false; /* Ф5.8c-1-fix: разделяемое состояние чата (chat-core пишет голыми, auth — через window) */
 var CALL_LABEL = '🙋 Позвать сотрудника';
 var scKey = null, scClosedView = false;
+var staffChatOpener = null;
 
 (function () {
   'use strict';
@@ -182,6 +183,12 @@ function showBadge() {
   }
   /* ── стафф: чаты гостей ── */
 function openStaffChat(forceCtx) {
+  const staffChatModal = $('#staffChatModal');
+  if (!staffChatModal.classList.contains('show')) {
+    const activeElement = document.activeElement;
+    staffChatOpener = activeElement && activeElement !== document.body &&
+      typeof activeElement.focus === 'function' ? activeElement : null;
+  }
   window.__staffChatFilter = (typeof forceCtx === 'string' && (forceCtx === 'delivery' || forceCtx === 'coffee'))
     ? forceCtx
     : (typeof mode !== 'undefined' && mode === 'orders' ? 'delivery' : (typeof mode !== 'undefined' && mode === 'cashier' ? 'coffee' : null));
@@ -195,8 +202,10 @@ function openStaffChat(forceCtx) {
           if (!s) toast('Включите уведомления в профиле (🔔), чтобы получать вопросы гостей', '🔔');
         });
   }
-  $('#staffChatModal').classList.add('show');
+  staffChatModal.classList.add('show');
   syncOverlay();
+  const closeButton = staffChatModal.querySelector('#scClose');
+  if (closeButton) closeButton.focus({ preventScroll: true });
   $('#scDialogWrap').hidden = true;
   scKey = null;
   if (typeof window.loadScList === 'function') window.loadScList();
@@ -211,8 +220,17 @@ function openStaffChatThread(key) {
   }, 600);
 }
   function closeStaffChat() {
-    $("#staffChatModal").classList.remove("show");
+    const modal = $("#staffChatModal");
+    const wasOpen = modal.classList.contains("show");
+    modal.classList.remove("show");
     syncOverlay();
+
+    const opener = staffChatOpener;
+    staffChatOpener = null;
+    if (wasOpen && opener && opener.isConnected && !opener.disabled &&
+        opener.getClientRects().length && typeof opener.focus === 'function') {
+      opener.focus({ preventScroll: true });
+    }
     if (typeof window.updateStaffBadge === 'function') window.updateStaffBadge();
   }
 
