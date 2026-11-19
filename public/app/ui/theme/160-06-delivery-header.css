@@ -224,12 +224,12 @@
   transform: none;
 }
 #deliveryGrid .cta.incart {
-  border-color: var(--flame);
+  border: var(--cta-border, var(--card-border, 2px solid var(--fr-choc, #3A2A1C)));
   color: var(--flame);
 }
 #deliveryGrid .cta.added {
   background: var(--btn-fire-bg, var(--flame));
-  border-color: var(--btn-fire-bg, var(--flame));
+  border: var(--btn-fire-border, 2px solid var(--fr-choc, #3A2A1C));
   color: var(--btn-fire-color, #FFFFFF);
 }
 .addonChip {
