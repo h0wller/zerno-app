@@ -316,6 +316,8 @@ function renderDeliveryRail() {
     var selected = c.id === dcat;
     button.classList.toggle('on', selected);
     button.setAttribute('aria-pressed', selected ? 'true' : 'false');
+    if (selected) button.setAttribute('aria-current', 'location');
+    else button.removeAttribute('aria-current');
   });
   rail.querySelectorAll('button[data-dcat]').forEach(function (button) {
     if (!DCATS.some(function (c) { return c.id === button.dataset.dcat; })) button.remove();
@@ -1215,7 +1217,11 @@ attachGridDnD(document.getElementById('deliveryGrid'), {
     if (currentCat) {
       rail.querySelectorAll("button").forEach(function (btn) {
         var bCat = btn.getAttribute("data-dcat") || btn.getAttribute("data-cat") || btn.dataset.dcat || btn.dataset.cat;
-        if (bCat) btn.classList.toggle("on", bCat === currentCat);
+        if (!bCat) return;
+        var isCurrent = bCat === currentCat;
+        btn.classList.toggle("on", isCurrent);
+        if (isCurrent) btn.setAttribute("aria-current", "location");
+        else btn.removeAttribute("aria-current");
       });
     }
   }
