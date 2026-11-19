@@ -1,17 +1,53 @@
 /* public/app/ui/category-rail.js
-   Shared rail geometry and transient scroll fade. The storefront modules own
-   category state and DOM; this module owns only viewport positioning/presentation. */
+   Shared rail viewport positioning and transient scroll fade.
+   menu.js / delivery.js own category state and markup; CSS owns the capsule geometry. */
 var railHeadObserver = null;
 var observedRailHead = null;
 var observedRailTopbar = null;
 var railStickyLayout = null;
+var railDesktopAnchor = new WeakMap();
 var railFadeTimer = null;
-var fadedRail = null;
+var fadedElements = [];
+var programmaticScrollToTop = false;
+var programmaticScrollToTopTimer = null;
 var railScrollTick = false;
 
-function updateRailStickyPosition(rail, head) {
-  if (!rail || !head) return;
+function usesFloatingCategoryRailViewport() {
+  return !!(window.matchMedia && window.matchMedia(
+    '(max-width: 820px), (min-width: 821px) and (orientation: landscape) and (max-height: 480px)'
+  ).matches);
+}
 
+function clearRailInlineLayout(rail) {
+  [
+    'position',
+    'top',
+    'right',
+    'bottom',
+    'left',
+    'max-height',
+    'overflow-y',
+    'align-self',
+    'transform',
+    'margin-top',
+    'height'
+  ].forEach(function (property) {
+    rail.style.removeProperty(property);
+  });
+}
+
+function updateRailStickyPosition(rail, head) {
+  if (!rail) return;
+
+  /* The fixed capsule is entirely CSS-owned; do not let legacy sticky inline styles win. */
+  if (usesFloatingCategoryRailViewport()) {
+    railStickyLayout = null;
+    clearRailInlineLayout(rail);
+    rail.classList.add('rail-position-ready');
+    return;
+  }
+
+  if (!head) return;
   if (!head.getBoundingClientRect().height) {
     railStickyLayout = null;
     rail.classList.remove('rail-position-ready');
@@ -48,12 +84,34 @@ function updateRailStickyPosition(rail, head) {
       rail.style.alignSelf = 'start';
     }
   } else {
-    railStickyLayout = null;
-    rail.style.position = 'relative';
-    rail.style.top = 'auto';
-    rail.style.maxHeight = 'none';
-    rail.style.overflowY = '';
-    rail.style.alignSelf = 'stretch';
+    var scrollY = window.scrollY || document.documentElement.scrollTop || 0;
+    var topbar = document.querySelector('header.topbar');
+    var stickyTop = Math.max(12, (topbar ? topbar.getBoundingClientRect().bottom : 0) + 12);
+    var desktopMaxHeight = Math.max(0, (window.innerHeight || document.documentElement.clientHeight) - stickyTop - 12);
+
+    if (!railStickyLayout || railStickyLayout.rail !== rail) {
+      railStickyLayout = {
+        rail: rail,
+        documentTop: rail.getBoundingClientRect().top + scrollY
+      };
+    }
+
+    var shouldStick = scrollY > 0 && scrollY >= railStickyLayout.documentTop - stickyTop;
+    if (shouldStick) {
+      rail.style.position = 'sticky';
+      rail.style.top = stickyTop + 'px';
+      var maxRailHeight = Math.min(460, desktopMaxHeight);
+      rail.style.maxHeight = maxRailHeight + 'px';
+      rail.style.overflowY = rail.scrollHeight > maxRailHeight ? 'auto' : 'visible';
+      rail.style.alignSelf = 'start';
+    } else {
+      railStickyLayout = null;
+      rail.style.position = 'relative';
+      rail.style.top = 'auto';
+      rail.style.maxHeight = 'none';
+      rail.style.overflowY = '';
+      rail.style.alignSelf = 'stretch';
+    }
   }
 
   rail.style.transform = 'none';
@@ -67,37 +125,50 @@ function alignRailWithCard() {
 
   if (!rail) return;
   railStickyLayout = null;
-  rail.style.position = 'relative';
-  rail.style.top = 'auto';
-  rail.style.maxHeight = 'none';
-  rail.style.overflowY = '';
-  rail.style.alignSelf = 'start';
-  var wrap = rail.parentElement;
-  if (!wrap) return;
 
-  var headRect = head && head.getBoundingClientRect();
-  if (headRect && headRect.height) {
-    var wrapRect = wrap.getBoundingClientRect();
-    var wrapStyle = window.getComputedStyle(wrap);
-    var wrapContentTop = wrapRect.top
-      + (parseFloat(wrapStyle.paddingTop) || 0)
-      + (parseFloat(wrapStyle.borderTopWidth) || 0);
-    var isDeliveryBrand = document.documentElement.dataset.brand === 'delivery';
-    var menuRow = head.querySelector('.menu-controls-row');
-    var modeSeg = document.getElementById('modeSeg');
-    var staffGuestMenu = !!(menuRow && modeSeg &&
-      modeSeg.closest('.menu-controls-row') === menuRow);
-    var catalog = document.querySelector(isDeliveryBrand ? '#deliveryView #deliveryGrid' : '#menuView #grid');
-    var catalogRect = catalog && catalog.getBoundingClientRect();
-    var desiredTop = catalogRect ? catalogRect.top : (staffGuestMenu ? headRect.bottom + 12 : headRect.top);
-    var marginTop = Math.max(0, desiredTop - wrapContentTop) + 'px';
-    if (rail.style.marginTop !== marginTop) rail.style.marginTop = marginTop;
-    if (!isDeliveryBrand && rail.style.height) rail.style.removeProperty('height');
-  } else if (rail.style.marginTop !== '0px') {
-    rail.style.marginTop = '0px';
+  if (usesFloatingCategoryRailViewport()) {
+    railDesktopAnchor.delete(rail);
+    clearRailInlineLayout(rail);
+    rail.classList.add('rail-position-ready');
+  } else {
+    rail.style.position = 'relative';
+    rail.style.top = 'auto';
+    rail.style.maxHeight = 'none';
+    rail.style.overflowY = '';
+    rail.style.alignSelf = 'stretch';
+
+    var wrap = rail.parentElement;
+    if (!wrap) return;
+
+    var headRect = head && head.getBoundingClientRect();
+    if (headRect && headRect.height) {
+      var wrapRect = wrap.getBoundingClientRect();
+      var wrapStyle = window.getComputedStyle(wrap);
+      var wrapContentTop = wrapRect.top
+        + (parseFloat(wrapStyle.paddingTop) || 0)
+        + (parseFloat(wrapStyle.borderTopWidth) || 0);
+      var isDeliveryBrand = document.documentElement.dataset.brand === 'delivery';
+      var menuRow = head.querySelector('.menu-controls-row');
+      var modeSeg = document.getElementById('modeSeg');
+      var staffGuestMenu = !!(menuRow && modeSeg &&
+        modeSeg.closest('.menu-controls-row') === menuRow);
+      var catalog = document.querySelector(isDeliveryBrand ? '#deliveryView #deliveryGrid' : '#menuView #grid');
+      var catalogRect = catalog && catalog.getBoundingClientRect();
+      var desiredTop = catalogRect ? catalogRect.top : (staffGuestMenu ? headRect.bottom + 12 : headRect.top);
+      var anchorState = railDesktopAnchor.get(rail);
+      if (!anchorState || anchorState.headHeight !== headRect.height) {
+        var marginTop = Math.max(0, desiredTop - wrapContentTop) + 'px';
+        railDesktopAnchor.set(rail, { marginTop: marginTop, headHeight: headRect.height });
+      }
+      var capturedMarginTop = railDesktopAnchor.get(rail).marginTop;
+      if (rail.style.marginTop !== capturedMarginTop) rail.style.marginTop = capturedMarginTop;
+      if (!isDeliveryBrand && rail.style.height) rail.style.removeProperty('height');
+    } else if (rail.style.marginTop !== '0px') {
+      rail.style.marginTop = '0px';
+    }
+
+    updateRailStickyPosition(rail, head);
   }
-
-  updateRailStickyPosition(rail, head);
 
   var topbar = document.querySelector('header.topbar');
   if (typeof ResizeObserver === 'function' && (observedRailHead !== head || observedRailTopbar !== topbar)) {
@@ -115,27 +186,86 @@ function activeRail() {
   return document.getElementById(isDelivery ? 'deliveryRail' : 'rail');
 }
 
-function markRailScrolling() {
-  var rail = activeRail();
-  if (!window.matchMedia || !window.matchMedia('(max-width: 820px)').matches) {
-    if (railFadeTimer) window.clearTimeout(railFadeTimer);
-    if (fadedRail) fadedRail.classList.remove('is-scroll-fading');
-    fadedRail = null;
-    railFadeTimer = null;
-    return;
-  }
-  if (fadedRail && fadedRail !== rail) fadedRail.classList.remove('is-scroll-fading');
-  fadedRail = rail;
-  if (fadedRail) fadedRail.classList.add('is-scroll-fading');
+function clearScrollFade() {
   if (railFadeTimer) window.clearTimeout(railFadeTimer);
-  railFadeTimer = window.setTimeout(function () {
-    if (fadedRail) fadedRail.classList.remove('is-scroll-fading');
-    fadedRail = null;
-    railFadeTimer = null;
-  }, 520);
+  railFadeTimer = null;
+  fadedElements.forEach(function (element) {
+    if (element && element.classList) element.classList.remove('is-scroll-fading');
+  });
+  fadedElements = [];
 }
 
+function currentScrollFadeTargets() {
+  var targets = [];
+  var rail = activeRail();
+  if (rail) targets.push(rail);
+
+  var cartFab = document.getElementById('cartFab');
+  var cartOpen = document.body.classList.contains('cart-open') ||
+    !!document.querySelector('#cartPanel.open');
+  if (cartFab && !cartFab.hidden && cartFab.classList.contains('visible') && !cartOpen) {
+    targets.push(cartFab);
+  }
+  return targets;
+}
+
+function markRailScrolling() {
+  if (programmaticScrollToTop) return;
+
+  /* Preserve #269: fade only portrait/tablet rails; compact landscape is not faded. */
+  if (!window.matchMedia || !window.matchMedia('(max-width: 820px)').matches) {
+    clearScrollFade();
+    return;
+  }
+
+  var targets = currentScrollFadeTargets();
+  fadedElements.forEach(function (element) {
+    if (targets.indexOf(element) === -1) element.classList.remove('is-scroll-fading');
+  });
+  fadedElements = targets;
+  fadedElements.forEach(function (element) {
+    element.classList.add('is-scroll-fading');
+  });
+
+  if (railFadeTimer) window.clearTimeout(railFadeTimer);
+  railFadeTimer = window.setTimeout(clearScrollFade, 520);
+}
+
+function finishProgrammaticScrollToTop() {
+  if (programmaticScrollToTopTimer) {
+    window.clearTimeout(programmaticScrollToTopTimer);
+    programmaticScrollToTopTimer = null;
+  }
+  programmaticScrollToTop = false;
+}
+
+function cancelProgrammaticScrollToTop() {
+  if (!programmaticScrollToTop) return;
+  finishProgrammaticScrollToTop();
+}
+
+window.scrollToTopWithoutRailFade = function () {
+  finishProgrammaticScrollToTop();
+  clearScrollFade();
+  var currentY = window.scrollY || document.documentElement.scrollTop || 0;
+  if (currentY <= 0) return;
+
+  programmaticScrollToTop = true;
+  var reduceMotion = window.matchMedia &&
+    window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  window.scrollTo({ top: 0, behavior: reduceMotion ? 'auto' : 'smooth' });
+
+  /* scrollend is authoritative; timeout is a fallback for older WebKit versions. */
+  programmaticScrollToTopTimer = window.setTimeout(finishProgrammaticScrollToTop, 2500);
+};
+
+window.addEventListener('scrollend', finishProgrammaticScrollToTop, { passive: true });
+['wheel', 'touchstart', 'pointerdown'].forEach(function (eventName) {
+  window.addEventListener(eventName, cancelProgrammaticScrollToTop, { passive: true });
+});
+
 window.alignRailWithCard = alignRailWithCard;
+window.usesHorizontalCategoryRailViewport = usesFloatingCategoryRailViewport;
 
 window.addEventListener('scroll', function () {
   markRailScrolling();

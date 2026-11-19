@@ -7,6 +7,8 @@ ensureAuthSecuritySchema();
 const FAILURE_WINDOW_MS = 15 * 60 * 1000;
 const LOCK_BASE_MS = 60 * 1000;
 const DAY_MS = 24 * 60 * 60 * 1000;
+const OTP_SEND_COOLDOWN_MS = 60 * 1000;
+const OTP_SEND_MAX_PER_WINDOW = 5;
 
 let statements;
 
@@ -123,6 +125,14 @@ export function getOtpSendState(flow, phone) {
     lastSent: row.last_sent,
     windowEnds: row.window_ends
   };
+}
+
+/** Returns the reason an OTP send is blocked, or null when sending is allowed. */
+export function getOtpSendBlockReason(state, now = Date.now()) {
+  if (!state) return null;
+  if (now - state.lastSent < OTP_SEND_COOLDOWN_MS) return 'cooldown';
+  if (now < state.windowEnds && state.sent >= OTP_SEND_MAX_PER_WINDOW) return 'daily-limit';
+  return null;
 }
 
 /** Records a successfully accepted OTP send, preserving the 24-hour cap. */

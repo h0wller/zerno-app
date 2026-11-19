@@ -155,6 +155,7 @@ test('cart keeps the current selected price and explains every amount without gu
     document.getElementById('cartPanel').classList.add('open');
     window.renderCart();
   });
+  await expect(page.locator('#cartPanel')).toHaveClass(/open/);
   await expect(page.locator('#checkoutGuestBar')).toBeAttached();
   await expect(page.locator('#checkoutGuestBar')).toBeHidden();
   await page.evaluate(() => window.setUser('checkout-clarity-token', {
@@ -521,6 +522,10 @@ test('cart keeps the current selected price and explains every amount without gu
   await expect(addressSheet).toBeVisible();
   await expect(addressSheet).toHaveClass(/open/);
   await expect(addressSheet.locator('.abs-row')).toHaveCount(2);
+  await expect.poll(() => addressSheet.evaluate((el) => {
+    const matrix = new DOMMatrixReadOnly(getComputedStyle(el).transform);
+    return Math.abs(matrix.m42);
+  })).toBeLessThanOrEqual(0.5);
   const addressSheetGeometry = await addressSheet.evaluate((el) => {
     const rect = el.getBoundingClientRect();
     const close = el.querySelector('.abs-close').getBoundingClientRect();
@@ -1133,4 +1138,72 @@ test('cart continue-shopping action keeps a 44px minimum hit target on narrow mo
     return { width: Math.round(box.width), height: Math.round(box.height) };
   });
   expect(rect.height).toBeGreaterThanOrEqual(44);
+});
+
+test('checkout validation scroll respects reduced motion without changing field feedback', async ({ page }) => {
+  await page.addInitScript(() => {
+    localStorage.setItem('zt_onb', '1');
+    sessionStorage.setItem('splashDone', '1');
+  });
+  await page.goto('/?brand=delivery');
+  await page.waitForFunction(() => window.CheckoutValidation && typeof window.CheckoutValidation.flagField === 'function');
+
+  for (const motion of ['reduce', 'no-preference']) {
+    await page.emulateMedia({ reducedMotion: motion });
+    await page.evaluate(() => {
+      const scrollBody = document.getElementById('cartScrollBody');
+      const field = document.getElementById('checkoutStreet');
+      if (!scrollBody || !field) throw new Error('Checkout validation fixture is missing');
+      window.__checkoutValidationScrollCalls = [];
+      scrollBody.scrollTo = (options) => window.__checkoutValidationScrollCalls.push(options);
+      window.CheckoutValidation.flagField(field);
+    });
+
+    const calls = await page.evaluate(() => window.__checkoutValidationScrollCalls);
+    expect(calls).toHaveLength(1);
+    expect(calls[0].behavior).toBe(motion === 'reduce' ? 'auto' : 'smooth');
+    await expect(page.locator('#checkoutStreet')).toHaveClass(/field-error/);
+  }
+});
+
+
+test('continue-shopping navigation uses instant scroll under reduced motion', async ({ page }) => {
+  await page.addInitScript(() => {
+    localStorage.setItem('zt_onb', '1');
+    sessionStorage.setItem('splashDone', '1');
+  });
+  await page.goto('/?brand=delivery');
+  await page.waitForFunction(() =>
+    window.brand === 'delivery' &&
+    typeof window.renderCart === 'function' &&
+    typeof window.renderDeliveryMenu === 'function'
+  );
+
+  await page.evaluate(() => {
+    const grid = document.getElementById('deliveryGrid');
+    if (!grid) throw new Error('Delivery grid fixture is missing');
+    window.__gotoMenuScroll = null;
+    grid.scrollIntoView = (options) => { window.__gotoMenuScroll = options || {}; };
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.setAttribute('data-goto-menu', '');
+    button.textContent = 'Перейти в меню';
+    document.body.appendChild(button);
+    window.__gotoMenuButton = button;
+  });
+
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.evaluate(() => window.__gotoMenuButton.click());
+  await expect.poll(() => page.evaluate(() => window.__gotoMenuScroll)).toEqual({
+    behavior: 'auto',
+    block: 'start'
+  });
+
+  await page.evaluate(() => { window.__gotoMenuScroll = null; });
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
+  await page.evaluate(() => window.__gotoMenuButton.click());
+  await expect.poll(() => page.evaluate(() => window.__gotoMenuScroll)).toEqual({
+    behavior: 'smooth',
+    block: 'start'
+  });
 });

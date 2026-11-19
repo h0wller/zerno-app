@@ -41,13 +41,13 @@ test.describe('Delivery card cart state', () => {
 
     expect(Math.abs(after.height - before.height), 'cart state must not grow the product card')
       .toBeLessThanOrEqual(1);
-    expect(button.height, 'in-cart CTA must keep the standard control height').toBeLessThanOrEqual(48);
+    expect(button.height, 'in-cart CTA must keep the standard 44px control height').toBe(44);
     expect(button.width, 'in-cart CTA remains a 44px hit target').toBeGreaterThanOrEqual(44);
     expect(button.whiteSpace, 'in-cart CTA label must stay on one line').toBe('nowrap');
-    expect(parseFloat(button.fontSize), 'compact in-cart state remains legible').toBeGreaterThanOrEqual(14);
+    expect(parseFloat(button.fontSize), 'restored quantity label uses the compact typography').toBe(11);
     expect(button.scrollWidth, 'in-cart CTA label must fit inside the button')
       .toBeLessThanOrEqual(button.clientWidth + 1);
-    expect(button.text).toBe('✓');
+    expect(button.text).toBe('В корзине · 1');
     expect(button.ariaLabel).toBe('В корзине · 1. Добавить ещё');
     const stepRow = await card.locator('.steprow').evaluate(node => ({ width: node.clientWidth, scrollWidth: node.scrollWidth }));
     expect(stepRow.scrollWidth, 'quantity controls must stay inside the product card').toBeLessThanOrEqual(stepRow.width + 1);
@@ -82,4 +82,141 @@ test.describe('Delivery card cart state', () => {
     await card.locator('.steprow [data-step="-1"]').click();
     await expect.poll(() => page.evaluate(() => JSON.parse(localStorage.getItem('zt_cart'))[0].qty)).toBe(1);
   });
+});
+
+
+test('card entrance uses backwards fill and releases the desktop hover lift in both brands', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
+  await page.addInitScript(() => {
+    localStorage.setItem('zt_onb', '1');
+    localStorage.removeItem('zt_cart');
+    sessionStorage.setItem('splashDone', '1');
+    window.__cardMotionEvents = [];
+    document.addEventListener('animationstart', (event) => {
+      if (!event.target || !event.target.matches || !event.target.matches('.card')) return;
+      const style = getComputedStyle(event.target);
+      window.__cardMotionEvents.push({
+        phase: 'start',
+        animationName: event.animationName,
+        productId: event.target.getAttribute('data-product-id') || event.target.getAttribute('data-item-id') || event.target.id || event.target.className,
+        fillMode: style.animationFillMode,
+        duration: style.animationDuration
+      });
+    }, true);
+    document.addEventListener('animationend', (event) => {
+      if (!event.target || !event.target.matches || !event.target.matches('.card')) return;
+      window.__cardMotionEvents.push({
+        phase: 'end',
+        animationName: event.animationName,
+        productId: event.target.getAttribute('data-product-id') || event.target.getAttribute('data-item-id') || event.target.id || event.target.className
+      });
+    }, true);
+  });
+
+  for (const storefront of [
+    { brand: 'coffee', grid: '#grid' },
+    { brand: 'delivery', grid: '#deliveryGrid' }
+  ]) {
+    await page.goto('/?brand=' + storefront.brand, { waitUntil: 'domcontentloaded' });
+    const card = page.locator(storefront.grid + ' > .card:not(.skeleton-card)').first();
+    await expect(card).toBeVisible({ timeout: 15000 });
+    const productId = await card.evaluate(element => element.getAttribute('data-product-id') || element.getAttribute('data-item-id') || element.id || element.className);
+
+    await expect.poll(() => page.evaluate((id) => window.__cardMotionEvents.some((event) =>
+      event.phase === 'start' && event.animationName === 'card-enter' &&
+      event.productId === id && event.fillMode === 'backwards' &&
+      event.duration === '0.18s'
+    ), productId)).toBe(true);
+    await expect.poll(() => page.evaluate((id) => window.__cardMotionEvents.some((event) =>
+      event.phase === 'end' && event.animationName === 'card-enter' && event.productId === id
+    ), productId)).toBe(true);
+
+    await card.hover();
+    await expect.poll(() => card.evaluate((element) => {
+      const matrix = new DOMMatrixReadOnly(getComputedStyle(element).transform);
+      return matrix.m42;
+    })).toBeLessThan(-1);
+  }
+});
+
+test('quantity stepper has 120ms press feedback without changing its hit target', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
+  await page.addInitScript(() => {
+    localStorage.setItem('zt_onb', '1');
+    localStorage.removeItem('zt_cart');
+    sessionStorage.setItem('splashDone', '1');
+  });
+  await page.goto('/?brand=delivery', { waitUntil: 'domcontentloaded' });
+
+  const card = page.locator('#deliveryGrid .card:not(.skeleton-card)')
+    .filter({ has: page.locator('.opts input[type="radio"]') })
+    .first();
+  await expect(card).toBeVisible({ timeout: 15000 });
+  const option = card.locator('.opts input[type="radio"]').first();
+  if (await option.count()) await option.check();
+  await card.locator('[data-add]').click();
+
+  const step = card.locator('.steprow .step:visible').first();
+  await expect(step).toBeVisible();
+  const box = await step.boundingBox();
+  expect(box.height).toBeGreaterThanOrEqual(44);
+  expect(box.width).toBeGreaterThanOrEqual(44);
+
+  await step.hover();
+  await page.mouse.down();
+  await expect.poll(() => step.evaluate((element) => {
+    const matrix = new DOMMatrixReadOnly(getComputedStyle(element).transform);
+    return matrix.m11;
+  })).toBeLessThan(0.97);
+  const pressed = await step.evaluate((element) => {
+    const style = getComputedStyle(element);
+    const matrix = new DOMMatrixReadOnly(style.transform);
+    return {
+      duration: style.transitionDuration,
+      scaleX: matrix.m11,
+      scaleY: matrix.m22,
+      filter: style.filter
+    };
+  });
+  await page.mouse.up();
+
+  expect(pressed.duration.split(',').map(value => value.trim())).toEqual(['0.12s', '0.12s']);
+  expect(pressed.scaleX).toBeCloseTo(0.96, 2);
+  expect(pressed.scaleY).toBeCloseTo(0.96, 2);
+  expect(pressed.filter).toContain('brightness(0.96)');
+});
+
+
+test('delivery option validation keeps its message but removes shake under reduced motion', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
+  await page.addInitScript(() => {
+    localStorage.setItem('zt_onb', '1');
+    localStorage.removeItem('zt_cart');
+    sessionStorage.setItem('splashDone', '1');
+  });
+  await page.goto('/?brand=delivery');
+  await page.waitForFunction(() =>
+    window.brand === 'delivery' &&
+    typeof window.renderDeliveryMenu === 'function'
+  );
+
+  const card = page.locator('#deliveryGrid .card:not(.skeleton-card)')
+    .filter({ has: page.locator('.opts input[type="radio"]') })
+    .first();
+  await expect(card).toBeVisible();
+  const options = card.locator('.opts');
+  const addButton = card.locator('[data-add]');
+
+  await addButton.click();
+  await expect(options.locator('.opts-error')).toBeVisible();
+  await expect(options).toHaveClass(/shake/);
+  await expect.poll(() => options.evaluate((element) => getComputedStyle(element).animationName))
+    .toBe('shake');
+
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await expect.poll(() => options.evaluate((element) => getComputedStyle(element).animationName))
+    .toBe('none');
+  await expect(options.locator('.opts-error')).toBeVisible();
 });

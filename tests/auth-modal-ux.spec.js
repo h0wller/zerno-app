@@ -111,6 +111,7 @@ test('auth modal closes with Escape and restores the invoking control focus', as
     const trigger = document.createElement('button');
     trigger.id = 'authTestTrigger';
     trigger.textContent = 'Open profile';
+    trigger.style.cssText = 'position:fixed;top:8px;left:8px;z-index:2000;';
     trigger.addEventListener('click', () => window.openAuth(false));
     document.body.appendChild(trigger);
   });
@@ -244,6 +245,7 @@ test('auth modal closes on backdrop click but stays open for card clicks', async
     const trigger = document.createElement('button');
     trigger.id = 'authBackdropTrigger';
     trigger.textContent = 'Open profile';
+    trigger.style.cssText = 'position:fixed;top:8px;left:8px;z-index:2000;';
     trigger.addEventListener('click', () => window.openAuth(false));
     document.body.appendChild(trigger);
   });
@@ -829,4 +831,374 @@ test('registration exposes the SMS control only after the server opts in', async
     body: await page.screenshot({ fullPage: false }),
     contentType: 'image/png',
   });
+});
+
+test('reduced motion removes auth overlay travel without changing focus or layout', async ({ page }, testInfo) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.addInitScript(() => {
+    localStorage.setItem('zt_onb', '1');
+    sessionStorage.setItem('splashDone', '1');
+  });
+
+  const viewports = [
+    { name: 'portrait', width: 390, height: 844 },
+    { name: 'compact-landscape', width: 844, height: 390 },
+    { name: 'desktop', width: 1280, height: 900 },
+  ];
+
+  for (const brand of ['coffee', 'delivery']) {
+    for (const viewport of viewports) {
+      await page.setViewportSize({ width: viewport.width, height: viewport.height });
+      await page.goto('/?brand=' + brand);
+      await page.waitForFunction(() => typeof window.openAuth === 'function');
+      await page.waitForFunction(() => {
+        const names = ['90-modals.css', '160-14-auth-modal.css'];
+        return names.every((name) => {
+          const link = Array.from(document.querySelectorAll('link[rel="stylesheet"]'))
+            .find((item) => item.href.includes(name));
+          return link && link.media === 'all' && Array.from(document.styleSheets)
+            .some((sheet) => sheet.href === link.href);
+        });
+      });
+
+      await page.evaluate(() => {
+        const trigger = document.createElement('button');
+        trigger.id = 'reducedMotionAuthTrigger';
+        trigger.type = 'button';
+        trigger.textContent = 'Open account';
+        trigger.style.cssText = 'position:fixed;top:8px;left:8px;z-index:99999;opacity:0;';
+        trigger.addEventListener('click', () => window.openAuth(false));
+        document.body.appendChild(trigger);
+      });
+
+      const trigger = page.locator('#reducedMotionAuthTrigger');
+      const modal = page.locator('#authModal');
+      const card = modal.locator('.modal-card');
+      const overlay = page.locator('#overlay');
+
+      await trigger.click();
+      await expect(modal).toBeVisible();
+      await expect(modal).toHaveAttribute('role', 'dialog');
+      await expect(modal).toHaveAttribute('aria-modal', 'true');
+      await expect(modal.locator('#regName')).toBeFocused();
+      await expect(overlay).toHaveAttribute('aria-hidden', 'false');
+      await expect(overlay).toHaveCSS('opacity', '1');
+
+      await expect.poll(() => overlay.evaluate((element) => getComputedStyle(element).transitionDuration))
+        .toBe('0s');
+      await expect.poll(() => card.evaluate((element) => {
+        const duration = getComputedStyle(element).transitionDuration.split(',')[0].trim();
+        const value = Number.parseFloat(duration);
+        return duration.endsWith('ms') ? value / 1000 : value;
+      })).toBeLessThanOrEqual(0.00001);
+
+      const openImage = await page.screenshot({ fullPage: false });
+      await testInfo.attach('auth-reduced-' + brand + '-' + viewport.name + '-open.png', {
+        body: openImage,
+        contentType: 'image/png',
+      });
+
+      await page.keyboard.press('Escape');
+      await expect(modal).not.toHaveClass(/show/);
+      await expect(trigger).toBeFocused();
+      await expect(overlay).toHaveAttribute('aria-hidden', 'true');
+      await expect(overlay).toHaveCSS('pointer-events', 'none');
+      await expect(overlay).toHaveCSS('opacity', '0');
+
+      const closedImage = await page.screenshot({ fullPage: false });
+      await testInfo.attach('auth-reduced-' + brand + '-' + viewport.name + '-closed.png', {
+        body: closedImage,
+        contentType: 'image/png',
+      });
+    }
+  }
+});
+
+
+test('PIN error feedback and fullscreen QR are static under reduced motion', async ({ page }, testInfo) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.addInitScript(() => {
+    localStorage.setItem('zt_onb', '1');
+    sessionStorage.setItem('splashDone', '1');
+  });
+  await page.goto('/?brand=delivery');
+  await page.waitForFunction(() =>
+    typeof window.openPin === 'function' && typeof window.openQRFull === 'function'
+  );
+  await page.evaluate(() => window.openPin());
+  const pinInput = page.locator('#pinInput');
+  await expect(page.locator('#pinModal')).toHaveClass(/show/);
+  await pinInput.evaluate((element) => element.classList.add('err'));
+  await expect(pinInput).toHaveCSS('animation-name', 'none');
+  await expect(pinInput).toHaveCSS('animation-duration', '0s');
+  await testInfo.attach('pin-error-reduced-delivery-390x844.png', {
+    body: await page.screenshot({ fullPage: false }),
+    contentType: 'image/png',
+  });
+
+  await page.evaluate(() => {
+    window.closePin();
+    window.me = { name: 'Motion Test', phone: '+70000000000', qr: 'motion-test', stamps: 0, free: 0 };
+    window.openQRFull();
+  });
+  const qrModal = page.locator('#qrModal');
+  const qrCanvas = page.locator('#qrFull');
+  await expect(qrModal).toHaveClass(/show/);
+  await expect(qrCanvas).toHaveCSS('animation-name', 'none');
+  await expect(qrCanvas).toHaveCSS('animation-duration', '0s');
+  await expect(qrModal.locator('.qrcard')).toHaveCSS('transition-duration', '0s');
+  await testInfo.attach('fullscreen-qr-reduced-delivery-390x844.png', {
+    body: await page.screenshot({ fullPage: false }),
+    contentType: 'image/png',
+  });
+  await page.evaluate(() => window.closeQRFull());
+});
+
+
+test('generic modal and shared overlay are immediate under reduced motion', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.addInitScript(() => {
+    localStorage.setItem('zt_onb', '1');
+    sessionStorage.setItem('splashDone', '1');
+  });
+  await page.goto('/?brand=coffee');
+  await page.waitForFunction(() => typeof window.syncOverlay === 'function');
+  await page.evaluate(() => {
+    document.getElementById('emModal').classList.add('show');
+    window.syncOverlay();
+  });
+
+  const modal = page.locator('#emModal');
+  const card = modal.locator('.modal-card');
+  const overlay = page.locator('#overlay');
+  await expect(modal).toHaveClass(/show/);
+  await expect(card).toBeVisible();
+  await expect(overlay).toHaveClass(/show/);
+  await expect(overlay).toHaveAttribute('aria-hidden', 'false');
+  await expect(overlay).toHaveCSS('transition-duration', '0s');
+  await expect(card).toHaveCSS('transition-duration', '0s');
+
+  await page.evaluate(() => {
+    document.getElementById('emModal').classList.remove('show');
+    window.syncOverlay();
+  });
+  await expect(overlay).toHaveAttribute('aria-hidden', 'true');
+  await expect(overlay).toHaveCSS('pointer-events', 'none');
+});
+
+
+test('confetti does not start or keep running under reduced motion', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.addInitScript(() => {
+    localStorage.setItem('zt_onb', '1');
+    sessionStorage.setItem('splashDone', '1');
+  });
+  await page.goto('/?brand=coffee');
+  await page.waitForFunction(() => typeof window.confetti === 'function');
+
+  await page.evaluate(() => {
+    const canvas = document.getElementById('fx');
+    const getContext = canvas.getContext.bind(canvas);
+    window.__confettiContextCalls = 0;
+    canvas.getContext = function (...args) {
+      window.__confettiContextCalls += 1;
+      return getContext(...args);
+    };
+    window.confetti();
+  });
+
+  await expect.poll(() => page.evaluate(() => window.__confettiContextCalls)).toBe(0);
+});
+
+
+test('active confetti loop stops on a live switch to reduced motion', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
+  await page.addInitScript(() => {
+    localStorage.setItem('zt_onb', '1');
+    sessionStorage.setItem('splashDone', '1');
+  });
+  await page.goto('/?brand=coffee');
+  await page.waitForFunction(() => typeof window.confetti === 'function');
+  await page.evaluate(() => {
+    window.__motionRafCalls = 0;
+    window.__motionRafCallback = null;
+    window.requestAnimationFrame = (callback) => {
+      window.__motionRafCalls += 1;
+      window.__motionRafCallback = callback;
+      return window.__motionRafCalls;
+    };
+    window.confetti();
+  });
+  expect(await page.evaluate(() => window.__motionRafCalls)).toBe(1);
+
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.evaluate(() => window.__motionRafCallback());
+  expect(await page.evaluate(() => window.__motionRafCalls)).toBe(1);
+});
+
+
+test('confetti cancels its active frame and clears the canvas while the document is hidden', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
+  await page.addInitScript(() => {
+    localStorage.setItem('zt_onb', '1');
+    sessionStorage.setItem('splashDone', '1');
+  });
+  await page.goto('/?brand=coffee');
+  await page.waitForFunction(() => typeof window.confetti === 'function');
+
+  await page.evaluate(() => {
+    let visibility = 'visible';
+    const pendingFrames = new Map();
+    let nextFrameId = 0;
+    window.__pendingConfettiFrames = pendingFrames;
+    window.__confettiClearCalls = 0;
+    Object.defineProperty(document, 'visibilityState', {
+      configurable: true,
+      get: () => visibility
+    });
+    window.requestAnimationFrame = (callback) => {
+      const id = ++nextFrameId;
+      pendingFrames.set(id, callback);
+      return id;
+    };
+    window.cancelAnimationFrame = (id) => pendingFrames.delete(id);
+
+    const context = {
+      clearRect: () => { window.__confettiClearCalls += 1; },
+      save: () => {},
+      translate: () => {},
+      rotate: () => {},
+      fillRect: () => {},
+      restore: () => {},
+      set fillStyle(_value) {}
+    };
+    document.getElementById('fx').getContext = () => context;
+    window.__setConfettiVisibility = (next) => {
+      visibility = next;
+      document.dispatchEvent(new Event('visibilitychange'));
+    };
+    window.confetti();
+  });
+
+  expect(await page.evaluate(() => window.__pendingConfettiFrames.size)).toBe(1);
+
+  await page.evaluate(() => window.__setConfettiVisibility('hidden'));
+  expect(await page.evaluate(() => window.__pendingConfettiFrames.size)).toBe(0);
+  expect(await page.evaluate(() => window.__confettiClearCalls)).toBeGreaterThanOrEqual(2);
+
+  await page.evaluate(() => window.confetti());
+  expect(await page.evaluate(() => window.__pendingConfettiFrames.size)).toBe(0);
+
+  await page.evaluate(() => window.__setConfettiVisibility('visible'));
+  expect(await page.evaluate(() => window.__pendingConfettiFrames.size)).toBe(0);
+  await page.evaluate(() => window.confetti());
+  expect(await page.evaluate(() => window.__pendingConfettiFrames.size)).toBe(1);
+});
+
+
+test('ambient service hints stop pulsing and entering under reduced motion', async ({ page }) => {
+  await page.addInitScript(() => {
+    localStorage.setItem('zt_onb', '1');
+    sessionStorage.setItem('splashDone', '1');
+  });
+  await page.goto('/?brand=coffee');
+  await page.waitForFunction(() => {
+    const link = Array.from(document.querySelectorAll('link[rel="stylesheet"]'))
+      .find((item) => item.href.includes('130-service.css'));
+    return link && link.media === 'all' && Array.from(document.styleSheets)
+      .some((sheet) => sheet.href === link.href);
+  });
+
+  await page.evaluate(() => {
+    const host = document.createElement('div');
+    host.id = 'motionAmbientFixtures';
+    host.innerHTML = [
+      '<div class="mbonus"><span class="mb-free">Подарок</span></div>',
+      '<button type="button" class="demoBtn glow">Подсказка</button>',
+      '<span class="ava pulse-hint">A</span>',
+      '<div class="pushHint">Подсказка</div>',
+      '<div class="freeBanner">Бесплатная доставка</div>'
+    ].join('');
+    document.body.appendChild(host);
+  });
+
+  const names = await page.evaluate(() => {
+    const host = document.getElementById('motionAmbientFixtures');
+    const read = (selector) => {
+      const style = getComputedStyle(host.querySelector(selector));
+      return { animation: style.animationName, transition: style.transitionDuration };
+    };
+    return {
+      gift: read('.mb-free'),
+      demo: read('.demoBtn'),
+      avatar: read('.ava'),
+      pushHint: read('.pushHint'),
+      freeBanner: read('.freeBanner'),
+      mbonus: read('.mbonus')
+    };
+  });
+  expect(names.gift.animation).toBe('freePulse');
+  expect(names.demo.animation).toBe('glowPulse');
+  expect(names.avatar.animation).toBe('pulse-hint');
+  expect(names.pushHint.animation).toBe('tin');
+  expect(names.freeBanner.animation).toBe('rise');
+
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await expect.poll(() => page.evaluate(() => {
+    const host = document.getElementById('motionAmbientFixtures');
+    return Array.from(host.querySelectorAll('.mb-free, .demoBtn, .ava, .pushHint, .freeBanner'))
+      .map((element) => getComputedStyle(element).animationName);
+  })).toEqual(['none', 'none', 'none', 'none', 'none']);
+  await expect(page.locator('#motionAmbientFixtures .mbonus')).toHaveCSS('transition-duration', '0s');
+});
+
+
+test('Telegram confirmation badge is immediate under reduced motion for both brands', async ({ page }, testInfo) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.addInitScript(() => {
+    localStorage.setItem('zt_onb', '1');
+    sessionStorage.setItem('splashDone', '1');
+  });
+
+  for (const brand of ['coffee', 'delivery']) {
+    await page.emulateMedia({ reducedMotion: 'no-preference' });
+    await page.goto('/?brand=' + brand);
+    await page.waitForFunction(() => {
+      const link = Array.from(document.querySelectorAll('link[rel="stylesheet"]'))
+        .find((item) => item.href.includes('160-01-rail-fab-mobile.css'));
+      return link && link.media === 'all' && Array.from(document.styleSheets)
+        .some((sheet) => sheet.href === link.href);
+    });
+
+    // Open the actual registration modal and expose its owned Telegram status row.
+    await page.evaluate(() => window.openAuth(false));
+    const modal = page.locator('#authModal');
+    await expect(modal).toHaveClass(/show/);
+
+    const badge = page.locator('#regTgRow');
+    await badge.evaluate((element) => {
+      element.hidden = false;
+      // registration.js assigns this class when Telegram verification succeeds.
+      element.className = 'auth-badge-confirmed';
+      element.textContent = '✅ Номер подтверждён — завершите регистрацию';
+    });
+    await expect(badge).toBeVisible();
+    await badge.scrollIntoViewIfNeeded();
+    await expect(badge).toHaveCSS('animation-name', 'badgeSlideIn');
+    await expect(badge).toHaveCSS('animation-duration', '0.35s');
+    await testInfo.attach('telegram-verification-badge-' + brand + '-normal-390x844.png', {
+      body: await page.screenshot({ fullPage: false }),
+      contentType: 'image/png',
+    });
+
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await expect(badge).toHaveCSS('animation-name', 'none');
+    await expect(badge).toBeVisible();
+    await expect(badge).toContainText('Номер подтверждён — завершите регистрацию');
+    await testInfo.attach('telegram-verification-badge-' + brand + '-reduced-390x844.png', {
+      body: await page.screenshot({ fullPage: false }),
+      contentType: 'image/png',
+    });
+  }
 });

@@ -83,42 +83,51 @@
   left: 0;
   top: calc(100% + 8px);
   z-index: 1000;
+  box-sizing: border-box;
   flex-direction: column;
+  align-items: stretch;
   gap: 4px;
-  width: 232px;
-  min-width: 220px;
-  max-width: 88vw;
-  border: 1.5px solid var(--line);
-  border-radius: 14px;
-  background: var(--card, #FFFFFF);
-  box-shadow: 0 12px 28px rgba(16, 20, 24, .18);
-  padding: 6px;
+  width: max-content;
+  min-width: min(176px, calc(100vw - 24px));
+  max-width: min(232px, calc(100vw - 24px));
+  border: var(--venue-menu-border, 1px solid var(--line));
+  border-radius: 16px;
+  background: var(--venue-menu-bg, var(--card, #FFFFFF));
+  box-shadow: var(--venue-menu-shadow, 0 12px 28px rgba(16, 20, 24, .18));
+  padding: 7px;
   animation: fadeIn .2s ease;
 }
 .venueWrap #brandSeg.open {
   display: flex;
 }
 .venueWrap #brandSeg button {
-  width: 100%;
-  border: 0;
+  box-sizing: border-box;
+  align-self: stretch;
+  width: auto;
+  min-width: 0;
+  border: 1px solid transparent;
   border-radius: 10px;
-  padding: 9px 12px;
-  font: 600 13.5px "Golos Text", sans-serif;
+  padding: 10px 12px;
+  font: 650 13px/1.2 var(--venue-option-font, "Golos Text"), system-ui, sans-serif;
   background: transparent;
-  color: var(--ink);
+  color: var(--venue-option-color, var(--ink));
   text-align: left;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 9px;
+  white-space: nowrap;
   cursor: pointer;
 }
 .venueWrap #brandSeg button:hover {
-  background: rgba(0, 0, 0, .05);
+  background: var(--venue-option-hover-bg, rgba(0, 0, 0, .05));
 }
 .venueWrap #brandSeg button.on {
-  background: var(--tint-cool);
-  color: var(--flame);
-  font-weight: 700;
+  border: var(--venue-option-active-border, 1px solid transparent);
+  border-radius: 9px;
+  background: var(--venue-option-active-bg, var(--tint-cool));
+  color: var(--venue-option-active-color, var(--flame));
+  box-shadow: var(--venue-option-active-shadow, none);
+  font-weight: 750;
 }
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(-4px); }
@@ -215,12 +224,12 @@
   transform: none;
 }
 #deliveryGrid .cta.incart {
-  border-color: var(--flame);
+  border: var(--cta-border, var(--card-border));
   color: var(--flame);
 }
 #deliveryGrid .cta.added {
   background: var(--btn-fire-bg, var(--flame));
-  border-color: var(--btn-fire-bg, var(--flame));
+  border: var(--btn-fire-border, var(--card-border));
   color: var(--btn-fire-color, #FFFFFF);
 }
 .addonChip {

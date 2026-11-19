@@ -131,7 +131,9 @@ test('mobile support uses an icon and delivery search keeps an inset from the me
     const button = page.locator('#chatFab');
     await expect(button).toBeVisible();
     await expect(button.locator('svg')).toHaveCount(1);
-    await expect(button.locator('svg path').first()).toHaveAttribute('d', /M3 13/);
+    await expect(button.locator('svg')).toHaveAttribute('viewBox', '0 0 24 24');
+    await expect(button.locator('svg path').first()).toHaveAttribute('d', /^M12 3C6\.5 3 2 6\.9/);
+    await expect(button.locator('svg path').first()).toHaveAttribute('fill', '#fff');
     await expect(button).toHaveAttribute('aria-label', /поддерж/i);
     if (brand === 'delivery') {
       const spacing = await page.locator('#deliveryView .menu-head').evaluate(el => {
@@ -258,3 +260,85 @@ test('legacy staff_chat deep link opens the requested conversation', async ({ pa
   await expect.poll(() => requestedKey).toBe(key);
   await expect(page.locator('#scDialog')).toContainText('Нужен заказ');
 });
+
+test('chat motion uses short spatial transitions and no permanent ambient pulse', async ({ page }) => {
+  const viewports = [
+    { width: 390, height: 844 },
+    { width: 667, height: 375 }
+  ];
+
+  for (const brand of ['coffee', 'delivery']) {
+    for (const viewport of viewports) {
+      await page.setViewportSize(viewport);
+      await page.emulateMedia({ reducedMotion: 'no-preference' });
+      await prepare(page, '/?brand=' + brand);
+
+      const fab = page.locator('#chatFab');
+      const panel = page.locator('#chatPanel');
+      await expect(fab).toBeVisible();
+
+      const idlePulse = await fab.evaluate((element) =>
+        getComputedStyle(element, '::before').animationName
+      );
+      expect(idlePulse).toBe('none');
+
+      await fab.click();
+      await expect(panel).toHaveClass(/open/);
+      await expect.poll(() => panel.evaluate((element) => {
+        const value = getComputedStyle(element).transitionDuration.split(',')[0].trim();
+        const duration = Number.parseFloat(value);
+        return value.endsWith('ms') ? duration / 1000 : duration;
+      })).toBeCloseTo(0.3, 3);
+
+      await page.evaluate(() => window.addMsg('bot', 'Проверка сообщения для motion system'));
+      const message = page.locator('#chatMsgs .msg').last();
+      await expect(message).toBeVisible();
+      const messageDuration = await message.evaluate((element) => {
+        const value = getComputedStyle(element).animationDuration.split(',')[0].trim();
+        const duration = Number.parseFloat(value);
+        return value.endsWith('ms') ? duration : duration * 1000;
+      });
+      expect(messageDuration).toBe(180);
+
+      const hint = page.locator('#chatHintsBar .chatHint').first();
+      await expect(hint).toBeVisible();
+      await hint.evaluate((element) => element.classList.add('pulse'));
+      const hintAnimation = await hint.evaluate((element) => getComputedStyle(element).animationName);
+      expect(hintAnimation).toBe('hintPulse');
+
+      await page.emulateMedia({ reducedMotion: 'reduce' });
+      await expect.poll(() => panel.evaluate((element) => getComputedStyle(element).transitionDuration))
+        .toBe('0s');
+      await expect.poll(() => fab.evaluate((element) =>
+        getComputedStyle(element, '::before').animationName
+      )).toBe('none');
+      await expect.poll(() => message.evaluate((element) =>
+        getComputedStyle(element).animationName
+      )).toBe('none');
+      await expect.poll(() => hint.evaluate((element) =>
+        getComputedStyle(element).animationName
+      )).toBe('none');
+
+      const finalState = await panel.evaluate((element) => {
+        const rect = element.getBoundingClientRect();
+        return {
+          opacity: getComputedStyle(element).opacity,
+          pointerEvents: getComputedStyle(element).pointerEvents,
+          width: rect.width,
+          height: rect.height,
+          documentWidth: document.documentElement.scrollWidth,
+          viewportWidth: window.innerWidth
+        };
+      });
+      expect(finalState.opacity).toBe('1');
+      expect(finalState.pointerEvents).toBe('auto');
+      expect(finalState.width).toBeGreaterThan(0);
+      expect(finalState.height).toBeGreaterThan(0);
+      expect(finalState.documentWidth).toBeLessThanOrEqual(finalState.viewportWidth + 1);
+
+      await page.locator('#chatClose').click();
+      await expect(panel).not.toHaveClass(/open/);
+    }
+  }
+});
+

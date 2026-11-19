@@ -57,6 +57,14 @@ for (const width of [1024, 1440]) {
     const chips = bar.locator('.subchip');
     await expect(chips).toHaveCount(9);
 
+    const viewport = page.locator('#deliveryView .subfilter-viewport');
+    const viewportSpacing = await viewport.evaluate((element) => ({
+      marginBottom: getComputedStyle(element).marginBottom,
+      barMarginBottom: getComputedStyle(element.querySelector('#deliverySubFilter')).marginBottom,
+    }));
+    expect(viewportSpacing.marginBottom, 'subfilter viewport sits directly above catalog cards').toBe('0px');
+    expect(viewportSpacing.barMarginBottom, 'subfilter row has no trailing margin').toBe('0px');
+
     const geometry = await bar.evaluate((element) => {
       const rect = element.getBoundingClientRect();
       const chipRects = Array.from(element.querySelectorAll('.subchip')).map((chip) => {
@@ -81,13 +89,14 @@ for (const width of [1024, 1440]) {
     expect(geometry.rows, 'the filters must stay on one horizontal line').toBe(1);
     expect(geometry.flexWrap).toBe('nowrap');
     expect(geometry.overflowX).toBe('auto');
-    expect(geometry.scrollWidth, 'the full filter set should be reachable by horizontal scrolling')
-      .toBeGreaterThan(geometry.clientWidth);
+    const hasOverflow = geometry.scrollWidth > geometry.clientWidth + 1;
     expect(await page.evaluate(() =>
       document.documentElement.scrollWidth <= document.documentElement.clientWidth + 1
     )).toBe(true);
 
-    await expect(bar).toHaveClass(/has-overflow/);
+    const lastFilter = chips.last();
+    if (hasOverflow) {
+      await expect(bar).toHaveClass(/has-overflow/);
     const viewport = page.locator('#deliveryView .subfilter-viewport');
     await expect(viewport).toBeVisible();
     const cueMetrics = await viewport.evaluate((element) => {
@@ -173,8 +182,18 @@ for (const width of [1024, 1440]) {
       getComputedStyle(element.parentElement, '::after').opacity
     )).toBe('1');
 
-    const lastFilter = chips.last();
-    await bar.evaluate((element) => { element.scrollLeft = element.scrollWidth; });
+    } else {
+      expect(geometry.scrollWidth).toBeLessThanOrEqual(geometry.clientWidth + 1);
+      expect(geometry.chipRects.at(-1).right, 'when all chips fit, the last filter remains fully visible')
+        .toBeLessThanOrEqual(geometry.right + 1);
+      await expect(bar).not.toHaveClass(/has-overflow/);
+      await expect(bar).not.toHaveClass(/at-end/);
+    }
+
+    if (hasOverflow) {
+      await bar.evaluate((element) => { element.scrollLeft = element.scrollWidth; });
+    }
+    await expect(lastFilter).toBeVisible();
     await lastFilter.click();
     await expect(lastFilter).toHaveClass(/on/);
     await expect(page.locator('#deliveryGrid [data-product-id="desktop-filter-cheese"]')).toBeVisible();

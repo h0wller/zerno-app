@@ -293,8 +293,9 @@ test.describe('Pour accessibility audit — delivery brand', () => {
         width: box.width,
         viewportWidth: viewport.clientWidth,
         groupWidth: group.getBoundingClientRect().width,
+        expectedGroups: Math.max(1, Math.ceil(viewport.clientWidth / group.getBoundingClientRect().width) + 1) * 2,
         groups: track.children.length,
-        cloneHidden: track.children[1]?.getAttribute('aria-hidden')
+        clonesHidden: Array.from(track.children).slice(1).every(group => group.getAttribute('aria-hidden') === 'true')
       };
     });
     expect(ticker.animationName).toBe('zt-marquee');
@@ -305,8 +306,9 @@ test.describe('Pour accessibility audit — delivery brand', () => {
     expect(ticker.left).toBe(0);
     expect(ticker.width).toBe(ticker.viewportWidth);
     expect(ticker.groupWidth).toBeGreaterThan(ticker.viewportWidth);
-    expect(ticker.groups).toBe(2);
-    expect(ticker.cloneHidden).toBe('true');
+    expect(ticker.groups, 'ticker group count must equal admin-extra.js copiesPerCycle × 2').toBe(ticker.expectedGroups);
+    expect(ticker.clonesHidden).toBe(true);
+    
     expect(ticker.animationPlayState).toBe('running');
 
     const attachedLayout = await page.locator('header.topbar').evaluate((header) => {
@@ -398,7 +400,7 @@ test.describe('Pour accessibility audit — delivery brand', () => {
 
       const rail = document.getElementById('deliveryRail');
       const railProbe = document.createElement('button');
-      railProbe.className = 'on';
+      // Measure the inactive label against the opaque rail surface.
       rail.appendChild(railProbe);
 
       const ticker = document.getElementById('tickerTrack');
@@ -413,7 +415,15 @@ test.describe('Pour accessibility audit — delivery brand', () => {
         activeModeText: getComputedStyle(active).color,
         tickerBackground: getComputedStyle(ticker).backgroundColor,
         tickerText: getComputedStyle(ticker).color,
-        railBackground: getComputedStyle(railProbe).backgroundColor,
+        railBackground: (() => {
+          const surface = document.createElement('div');
+          surface.style.backgroundColor = getComputedStyle(document.documentElement)
+            .getPropertyValue('--category-rail-bg').trim();
+          document.body.appendChild(surface);
+          const value = getComputedStyle(surface).backgroundColor;
+          surface.remove();
+          return value;
+        })(),
         railText: getComputedStyle(railProbe).color,
         venueBackground: getComputedStyle(venue).backgroundColor,
         venueText: getComputedStyle(arrow).color,

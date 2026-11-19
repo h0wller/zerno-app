@@ -150,6 +150,40 @@ html .wrap > #panel:not(.open):not(.show) {
     overflow-x: auto;
   }
 }
+/* Short landscape has little vertical space: keep the venue switcher compact like mobile. */
+@media (min-width: 821px) and (orientation: landscape) and (max-height: 480px) {
+  html body header.topbar .venueWrap {
+    position: relative;
+    display: flex;
+    flex: 0 0 52px;
+    width: 52px;
+    min-width: 52px;
+    max-width: 52px;
+    justify-content: flex-start;
+  }
+  html body header.topbar .venueWrap > #venueToggle.venueToggle {
+    box-sizing: border-box;
+    flex: 0 0 44px;
+    width: 44px;
+    min-width: 44px;
+    max-width: 44px;
+    height: 44px;
+    min-height: 44px;
+    max-height: 44px;
+    padding: 0;
+    gap: 3px;
+    justify-content: center;
+  }
+  html body header.topbar .venueWrap > #venueToggle.venueToggle .vt-label {
+    display: none;
+  }
+  html body header.topbar .venueWrap > #venueToggle.venueToggle .vt-arrow {
+    display: inline-block;
+    font-size: 10px;
+    margin-left: 0;
+  }
+}
+
 /* [4] Search на 821-1180: не растягивается */
 @media (min-width: 821px) and (max-width: 1180px) {
   .mh-top .mh-right {

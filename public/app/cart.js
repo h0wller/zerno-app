@@ -1612,7 +1612,13 @@ function renderCartBase() {
 
     setTimeout(function () {
       var grid = document.getElementById("deliveryGrid");
-      if (grid) grid.scrollIntoView({ behavior: "smooth", block: "start" });
+      if (!grid) return;
+      var reducedMotion = typeof window.matchMedia === "function" &&
+        window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      grid.scrollIntoView({
+        behavior: reducedMotion ? "auto" : "smooth",
+        block: "start"
+      });
     }, 100);
   });
 

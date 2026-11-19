@@ -83,7 +83,7 @@
     if (clean.length !== l.length) write(clean);
   }
 
-  var sheet = null, editId = null;
+  var sheet = null, editId = null, closeTimer = 0;
 
   function fVal(n) { var el = sheet ? sheet.querySelector('[data-abs-f="' + n + '"]') : null; return el ? el.value.trim() : ''; }
   function fSet(n, v) { var el = sheet ? sheet.querySelector('[data-abs-f="' + n + '"]') : null; if (el) el.value = v || ''; }
@@ -178,6 +178,13 @@
       if (e.target && e.target.getAttribute && e.target.getAttribute('data-abs-f') === 'place') syncPlace();
     });
 
+    sheet.addEventListener('transitionend', function (e) {
+      if (e.target !== sheet || (e.propertyName !== 'opacity' && e.propertyName !== 'transform') || sheet.classList.contains('open')) return;
+      if (closeTimer) window.clearTimeout(closeTimer);
+      closeTimer = 0;
+      sheet.hidden = true;
+    });
+
     /* v4: клик вне. Обработчик шторки уже мог перерисовать список и отцепить e.target от DOM
        (удаление/сохранение) — closest() по такому узлу #addrBookSheet не найдёт и шторка закроется.
        composedPath() зафиксирован на момент диспатча, поэтому устойчив к перерисовке. */
@@ -191,7 +198,7 @@
       closeSheet();
     });
     document.addEventListener('keydown', function (e) {
-      if (e.key === 'Escape' && sheet && !sheet.hidden) closeSheet();
+      if (e.key === 'Escape' && sheet && !sheet.hidden) { e.preventDefault(); closeSheet(); }
     });
     return sheet;
   }
@@ -270,9 +277,37 @@
     renderList();
   }
 
-  function openSheet() { ensureSheet();
-    document.querySelectorAll('.addr-book-menu').forEach(function (n) { n.remove(); }); /* UI-DEDUP v4 */ stopEdit(); prune(); renderList(); sheet.hidden = false; sheet.classList.add('open'); }
-  function closeSheet() { if (!sheet) return; sheet.hidden = true; sheet.classList.remove('open'); stopEdit(); }
+  function openSheet() {
+    ensureSheet();
+    if (closeTimer) window.clearTimeout(closeTimer);
+    closeTimer = 0;
+    document.querySelectorAll('.addr-book-menu').forEach(function (n) { n.remove(); }); /* UI-DEDUP v4 */
+    stopEdit(); prune(); renderList();
+    sheet.hidden = false;
+    /* Commit the hidden state before adding .open so the entry transition has a real start frame. */
+    void sheet.offsetWidth;
+    sheet.classList.add('open');
+  }
+  function closeSheet() {
+    if (!sheet || sheet.hidden) return;
+    if (closeTimer) window.clearTimeout(closeTimer);
+    closeTimer = 0;
+    sheet.classList.remove('open');
+    stopEdit();
+
+    var reduceMotion = window.matchMedia &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reduceMotion) {
+      sheet.hidden = true;
+      return;
+    }
+
+    /* transitionend is primary; the fallback handles interrupted/unsupported transitions. */
+    closeTimer = window.setTimeout(function () {
+      closeTimer = 0;
+      if (sheet && !sheet.classList.contains('open')) sheet.hidden = true;
+    }, 280);
+  }
 
   function init() {
     ensureButton();

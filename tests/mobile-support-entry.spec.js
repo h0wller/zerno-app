@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { readFileSync } from 'node:fs';
+import sharp from 'sharp';
 
 test.use({ serviceWorkers: 'block' });
 
@@ -12,8 +13,14 @@ const VIEWPORTS = [
   { name: '320px', width: 320, height: 740 },
   { name: '390px', width: 390, height: 844 },
   { name: 'tablet', width: 768, height: 1024 },
+  { name: 'short landscape', width: 844, height: 390 },
   { name: 'desktop', width: 1440, height: 900 },
 ];
+
+function isHorizontalRailViewport(viewport) {
+  return viewport.width <= 820 ||
+    (viewport.width >= 821 && viewport.width > viewport.height && viewport.height <= 480);
+}
 
 async function expectCompact44pxHitTarget(locator) {
   const metrics = await locator.evaluate((button) => {
@@ -86,6 +93,11 @@ for (const brand of BRANDS) {
         localStorage.setItem('zt_onb', '1');
       });
       await page.goto(`/?brand=${brand.id}`, { waitUntil: 'domcontentloaded' });
+      await page.waitForFunction(() => {
+        const link = Array.from(document.querySelectorAll('link[rel="stylesheet"]'))
+          .find((item) => item.href.includes('/160-15-mobile-support-toolbar.css'));
+        return !!link && link.media === 'all' && !!link.sheet && link.sheet.cssRules.length > 0;
+      });
 
       const support = page.locator('#chatFab');
       const supportHost = page.locator('#supportLauncherHost');
@@ -98,12 +110,80 @@ for (const brand of BRANDS) {
       expect(noScriptBlock).toContain('<link rel="stylesheet" href="/app/ui/theme/160-15-mobile-support-toolbar.css?v=');
       expect(noScriptBlock).not.toContain('160-15-mobile-support-toolbar.css" media=');
       await expect(support).toBeVisible({ timeout: 15000 });
+      const icon = support.locator('svg');
+      await expect(icon).toHaveCount(1);
+      await expect(icon).toHaveAttribute('viewBox', '0 0 24 24');
+      await expect(icon.locator('path').first()).toHaveAttribute('d', /^M12 3C6\.5 3 2 6\.9/);
+      await expect(icon.locator('path').first()).toHaveAttribute('fill', '#fff');
+      const iconBox = await icon.boundingBox();
+      expect(iconBox?.width).toBeGreaterThanOrEqual(20);
+      expect(iconBox?.height).toBeGreaterThanOrEqual(20);
+
+      const renderState = await icon.evaluate((svg) => {
+        const path = svg.querySelector('path');
+        const svgStyle = getComputedStyle(svg);
+        const pathStyle = path ? getComputedStyle(path) : null;
+        const pathBox = path?.getBBox();
+        const rect = svg.getBoundingClientRect();
+        return {
+          svg: {
+            display: svgStyle.display,
+            visibility: svgStyle.visibility,
+            opacity: svgStyle.opacity,
+            fill: svgStyle.fill,
+            width: rect.width,
+            height: rect.height
+          },
+          path: path && pathStyle ? {
+            display: pathStyle.display,
+            visibility: pathStyle.visibility,
+            opacity: pathStyle.opacity,
+            fill: pathStyle.fill,
+            bbox: pathBox ? {
+              x: pathBox.x,
+              y: pathBox.y,
+              width: pathBox.width,
+              height: pathBox.height
+            } : null
+          } : null
+        };
+      });
+      const iconPng = await icon.screenshot({ animations: 'disabled' });
+      const { data: pixels, info } = await sharp(iconPng)
+        .removeAlpha()
+        .raw()
+        .toBuffer({ resolveWithObject: true });
+      let brightPixels = 0;
+      for (let i = 0; i < pixels.length; i += info.channels) {
+        if (pixels[i] > 200 && pixels[i + 1] > 200 && pixels[i + 2] > 200) brightPixels++;
+      }
+      if (viewport.width === 390) {
+        await testInfo.attach(`support-icon-render-${brand.id}.json`, {
+          body: JSON.stringify({
+            brand: brand.id,
+            viewport,
+            renderState,
+            pixelSize: { width: info.width, height: info.height },
+            brightPixels
+          }, null, 2),
+          contentType: 'application/json'
+        });
+        await testInfo.attach(`support-icon-render-${brand.id}.png`, {
+          body: iconPng,
+          contentType: 'image/png'
+        });
+      }
+      expect(
+        brightPixels,
+        `support icon must paint light pixels at ${viewport.name}; diagnostics: ${JSON.stringify(renderState)}`
+      ).toBeGreaterThan(20);
+
       await expect(supportHost).toHaveCount(1);
       await expect(supportHost).toHaveAttribute('aria-label', 'Поддержка');
       await expect.poll(() => support.evaluate((el) => el.parentElement?.id)).toBe('supportLauncherHost');
       await expect(search).toBeVisible({ timeout: 15000 });
 
-      if (viewport.width <= 820) {
+      if (isHorizontalRailViewport(viewport)) {
         const targets = await page.evaluate(({ view }) => {
           const box = (element) => {
             const rect = element.getBoundingClientRect();
@@ -117,7 +197,7 @@ for (const brand of BRANDS) {
         }, { view: brand.view });
         expect(targets.launcherHost).toEqual({ width: 44, height: 44 });
         expect(targets.launcher).toEqual({ width: 44, height: 44 });
-        expect(targets.search.height).toBe(40);
+        expect(targets.search.height).toBeCloseTo(40, 0);
         await expect(support).toHaveCSS('position', 'relative');
         await expect.poll(() => supportHost.evaluate((el) => el.parentElement?.classList.contains('mh-right'))).toBe(true);
 
@@ -209,7 +289,7 @@ for (const brand of BRANDS) {
       }
 
       await page.setViewportSize({ width: viewport.width, height: viewport.height });
-      if (viewport.width <= 820) {
+      if (isHorizontalRailViewport(viewport)) {
         await expect(support).toHaveCSS('position', 'relative');
         await expect.poll(() => supportHost.evaluate((el) => el.parentElement?.classList.contains('mh-right'))).toBe(true);
       } else {

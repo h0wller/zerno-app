@@ -8,7 +8,7 @@ import { linkTelegram } from '../domain/telegram-link.js';
 import { grantWelcome, redeem } from '../domain/loyalty.js';
 import { fmtPhone, ph10 } from '../utils/phone.js';
 import { hashPin, safeEqual } from '../utils/security.js';
-import { lockedSeconds, registerFail, clearLock, getOtpSendState, recordOtpSend } from '../utils/auth-rate-limits.js';
+import { lockedSeconds, registerFail, clearLock, getOtpSendState, getOtpSendBlockReason, recordOtpSend } from '../utils/auth-rate-limits.js';
 import { otpStore, isOtpLive, consumeOtp } from '../utils/otp.js';
 import { nowISO } from '../utils/id-time.js';
 import { sendSms } from '../services/sms.js';
@@ -20,6 +20,31 @@ import { validate, RegisterSchema, LoginSchema, SetupPinSchema, ActivateCodeSche
 import { TG_BOT_USERNAME, ADMIN_CODE, CASHIER_CODE, DISPATCH_CODE, SMS_AUTH_ENABLED } from '../config.js';
 
 export const authRouter = express.Router();
+
+function createCustomerWithSource(res, name, phone, pin, source) {
+  const result = createCustomer(name, phone, pin);
+  if (result.err) {
+    res.status(result.code).json({ error: result.err });
+    return null;
+  }
+  if (source === QR_SOURCE) {
+    db.prepare('UPDATE customers SET src=? WHERE id=?').run(QR_SOURCE, result.customer.id);
+  }
+  return result;
+}
+
+function respondWithCustomer(res, customerId) {
+  res.json({ customer: cust(db.prepare('SELECT * FROM customers WHERE id=?').get(customerId)) });
+}
+
+function respondOtpSendBlock(res, reason) {
+  if (!reason) return false;
+  const error = reason === 'cooldown'
+    ? 'Код уже отправлен — повтор через минуту'
+    : 'Слишком много отправок — попробуйте позже';
+  res.status(429).json({ error });
+  return true;
+}
 
 // Isolated test seam: never registered in production.
 if (process.env.NODE_ENV === 'test') {
@@ -117,13 +142,8 @@ authRouter.post('/api/auth/tg-link', (req, res) => {
   // 4. Создаем нового клиента сразу верифицированным через Telegram
   const finalName = String(req.body.name || '').trim() || tgName;
   const pin = String(req.body.pin || '').trim();
-  const r = createCustomer(finalName, p, pin);
-  if (r.err) return res.status(r.code).json({ error: r.err });
-
-  // F3.61: tg-link создаёт профиль только после подтверждения контакта в боте — номер доказан,
-  // consent проставляется сервером. Но если клиент принёс src=QR_SOURCE (сканирование с постера),
-  // источник регистрации сохраняем так же, как в /api/auth/register (иначе бонус за QR не начислится).
-  if (req.body.src === QR_SOURCE) db.prepare('UPDATE customers SET src=? WHERE id=?').run(QR_SOURCE, r.customer.id);
+  const r = createCustomerWithSource(res, finalName, p, pin, req.body.src);
+  if (!r) return;
   const linked = linkTelegram(db, r.customer.id, tgId);
   if (!linked.ok) {
     db.prepare('DELETE FROM customers WHERE id=?').run(r.customer.id);
@@ -153,13 +173,8 @@ authRouter.post('/api/auth/request-reg-otp', async (req, res) => {
   if (wait > 0) return res.status(429).json({ error: `Слишком часто. Пауза ${wait} сек.` });
 
   const now = Date.now();
-  const sendState = getOtpSendState('register', p);
-  if (sendState && now - sendState.lastSent < 60000) {
-    return res.status(429).json({ error: 'Код уже отправлен — повтор через минуту' });
-  }
-  if (sendState && now < sendState.windowEnds && sendState.sent >= 5) {
-    return res.status(429).json({ error: 'Слишком много отправок — попробуйте позже' });
-  }
+  const sendBlockReason = getOtpSendBlockReason(getOtpSendState('register', p), now);
+  if (respondOtpSendBlock(res, sendBlockReason)) return;
 
   if (via === 'tg') {
     const token = crypto.randomBytes(16).toString('hex');
@@ -239,10 +254,10 @@ authRouter.post('/api/auth/register', validate(RegisterSchema), (req, res) => {
     consumeOtp('reg:' + p, entry => !!entry.code && entry.code === code);
   }
 
-  const r = createCustomer(req.body.name || '', req.body.phone || '', req.body.pin || '');
-  if (r.err) return res.status(r.code).json({ error: r.err });
-  // Откуда пришёл гость (сейчас только QR с постера). Бонус начисляется позже, при подтверждении.
-  if (req.body.src === QR_SOURCE) db.prepare('UPDATE customers SET src=? WHERE id=?').run(QR_SOURCE, r.customer.id);
+  const r = createCustomerWithSource(
+    res, req.body.name || '', req.body.phone || '', req.body.pin || '', req.body.src
+  );
+  if (!r) return;
 
   if (okSms) {
     db.prepare('UPDATE customers SET verified=1 WHERE id=?').run(r.customer.id);
@@ -367,13 +382,8 @@ authRouter.post('/api/auth/request-otp', async (req, res) => {
   if (ipWait > 0) return res.status(429).json({ error: `Слишком часто. Пауза ${ipWait} сек.` });
 
   const now = Date.now();
-  const sendState = getOtpSendState('login', p);
-  if (sendState && now - sendState.lastSent < 60000) {
-    return res.status(429).json({ error: 'Код уже отправлен — повтор через минуту' });
-  }
-  if (sendState && now < sendState.windowEnds && sendState.sent >= 5) {
-    return res.status(429).json({ error: 'Слишком много отправок — попробуйте позже' });
-  }
+  const sendBlockReason = getOtpSendBlockReason(getOtpSendState('login', p), now);
+  if (respondOtpSendBlock(res, sendBlockReason)) return;
 
   const code = String(crypto.randomInt(1000, 10000));
   let via = 'telegram';
@@ -471,7 +481,7 @@ authRouter.get('/api/me', userGuard, (req, res) => res.json({ customer: cust(req
 authRouter.put('/api/me', userGuard, (req, res) => {
   const name = String(req.body.name || '').trim() || 'Гость';
   db.prepare('UPDATE customers SET name=? WHERE id=?').run(name, req.user.id);
-  res.json({ customer: cust(db.prepare('SELECT * FROM customers WHERE id=?').get(req.user.id)) });
+  respondWithCustomer(res, req.user.id);
 });
 
 // Удаление профиля клиента. Персональные данные стираются, заказы остаются без привязки
@@ -501,7 +511,7 @@ authRouter.delete('/api/me', userGuard, (req, res) => {
 authRouter.put('/api/me/notify', userGuard, (req, res) => {
   db.prepare('UPDATE customers SET notify_tg=?, notify_web=? WHERE id=?')
     .run(req.body.tg ? 1 : 0, req.body.web ? 1 : 0, req.user.id);
-  res.json({ customer: cust(db.prepare('SELECT * FROM customers WHERE id=?').get(req.user.id)) });
+  respondWithCustomer(res, req.user.id);
 });
 
 authRouter.post('/api/redeem', userGuard, (req, res) => {

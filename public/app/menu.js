@@ -15,15 +15,58 @@ function coffeePool() {
   });
 }
 
-$('#rail').innerHTML = CATS.map(
-  c => `<button data-cat="${c.id}"><span class="re">${c.e}</span>${c.l}</button>`
-).join('');
+function ensureRailButtons() {
+  const rail = $('#rail');
+  const current = new Map(
+    Array.from(rail.querySelectorAll('button[data-cat]')).map(button => [button.dataset.cat, button])
+  );
+  CATS.forEach(c => {
+    if (current.has(c.id)) return;
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.dataset.cat = c.id;
+    button.setAttribute('aria-label', c.l);
+    button.title = c.l;
+    button.innerHTML = '<span class="re">' + c.e + '</span><span class="category-label">' + c.l + '</span>';
+    rail.appendChild(button);
+  });
+  rail.querySelectorAll('button[data-cat]').forEach(button => {
+    if (!CATS.some(c => c.id === button.dataset.cat)) button.remove();
+  });
+}
+ensureRailButtons();
+
+$('#rail').setAttribute('role', 'group');
+$('#rail').setAttribute('aria-label', 'Категории меню');
 
 function renderRail() {
-  document.querySelectorAll('#rail button').forEach(b =>
-    b.classList.toggle('on', b.dataset.cat === cat)
-  );
+  document.querySelectorAll('#rail button').forEach(b => {
+    const selected = b.dataset.cat === cat;
+    b.classList.toggle('on', selected);
+    b.setAttribute('aria-pressed', selected ? 'true' : 'false');
+  });
 }
+
+window.scrollMenuContentToStart = function (contentSelector, railSelector, preservePinned) {
+  void railSelector;
+  void preservePinned;
+  const content = document.querySelector(contentSelector);
+  if (!content) return;
+  let viewportTop = 12;
+  const topbar = document.querySelector('header.topbar');
+  const topbarStyle = topbar ? window.getComputedStyle(topbar) : null;
+  if (topbarStyle && (topbarStyle.position === 'sticky' || topbarStyle.position === 'fixed')) {
+    viewportTop = Math.ceil(topbar.getBoundingClientRect().bottom) + 12;
+  }
+  const targetTop = content.getBoundingClientRect().top
+    + (window.scrollY || document.documentElement.scrollTop || 0);
+  const reduceMotion = window.matchMedia &&
+    window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  window.scrollTo({
+    top: Math.max(0, targetTop - viewportTop),
+    behavior: reduceMotion ? 'auto' : 'smooth'
+  });
+};
 
 $('#rail').addEventListener('click', e => {
   const b = e.target.closest('[data-cat]');
@@ -31,11 +74,16 @@ $('#rail').addEventListener('click', e => {
   const wasSelected = b.dataset.cat === cat;
   cat = b.dataset.cat;
   if (wasSelected) {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    window.scrollToTopWithoutRailFade();
     return;
   }
   window.renderRail();
   window.renderMenu();
+  if (window.usesHorizontalCategoryRailViewport &&
+      window.usesHorizontalCategoryRailViewport() &&
+      typeof window.scrollMenuContentToStart === 'function') {
+    requestAnimationFrame(() => window.scrollMenuContentToStart('#grid', '#rail', false));
+  }
 });
 
 $('#searchInput').addEventListener('input', e => {
@@ -115,7 +163,6 @@ function renderMenu() {
   const gridEl = $('#grid');
   if (!gridEl) return;
 
-  gridEl.innerHTML = '';
   requestAnimationFrame(() => {
     gridEl.innerHTML =
       list
@@ -182,6 +229,7 @@ function renderMenu() {
     const a = $('#addCard');
     if (a) a.onclick = () => openEditor(null);
     if (typeof fixLcp === 'function') fixLcp();
+    if (typeof window.alignRailWithCard === 'function') requestAnimationFrame(window.alignRailWithCard);
   });
   const a = $('#addCard');
   if (a) a.onclick = () => openEditor(null);

@@ -3,6 +3,8 @@
     'use strict';
 
     const DELETE_ACCOUNT_LABEL = 'Удалить аккаунт';
+    const SETTINGS_SECTION_START = '<section class="settings-section';
+    const SETTINGS_SECTION_END = '</section>';
 
     if (document.getElementById('settingsModal')) return;
 
@@ -15,32 +17,32 @@
             '<h3 id="settingsTitle">Настройки</h3>' +
             '<div class="msub">Безопасность, уведомления и аккаунт</div>' +
 
-            '<section class="settings-section" aria-label="Безопасность">' +
+            SETTINGS_SECTION_START + '" aria-label="Безопасность">' +
                 '<div class="set-row">' +
                     '<span>🔐 PIN-код</span>' +
                     '<button class="btn ghost" id="setPinGo2" type="button">Задать или изменить</button>' +
                 '</div>' +
-            '</section>' +
+            SETTINGS_SECTION_END +
 
-            '<section class="settings-section settings-staff-section" id="staffAccessSection" hidden aria-label="Доступ сотрудника">' +
+            SETTINGS_SECTION_START + ' settings-staff-section" id="staffAccessSection" hidden aria-label="Доступ сотрудника">' +
                 '<div class="settings-section-title">Для сотрудников</div>' +
                 '<button class="settings-staff-access-action" id="activateBtn" type="button" hidden>Доступ сотрудника</button>' +
-            '</section>' +
+            SETTINGS_SECTION_END +
 
-            '<section class="settings-section" aria-label="Каналы уведомлений">' +
+            SETTINGS_SECTION_START + '" aria-label="Каналы уведомлений">' +
                 '<div class="settings-section-title">Каналы уведомлений</div>' +
                 '<div class="settings-channel-row">' +
                     '<label class="chk"><input type="checkbox" id="ntTg2"> 🤖 Telegram</label>' +
                     '<label class="chk"><input type="checkbox" id="ntWeb2"> 🔔 Браузер</label>' +
                 '</div>' +
-            '</section>' +
+            SETTINGS_SECTION_END +
 
-            '<section class="settings-section settings-account-section" aria-label="Управление аккаунтом">' +
+            SETTINGS_SECTION_START + ' settings-account-section" aria-label="Управление аккаунтом">' +
                 '<div class="settings-section-title">Аккаунт</div>' +
                 '<button class="settings-account-action" id="logoutBtn" type="button">⇄ Выйти и сменить аккаунт</button>' +
-            '</section>' +
+            SETTINGS_SECTION_END +
 
-            '<section class="settings-section settings-danger-zone" aria-label="Опасная зона">' +
+            SETTINGS_SECTION_START + ' settings-danger-zone" aria-label="Опасная зона">' +
                 '<div class="settings-section-title">Опасная зона</div>' +
                 '<p>Удаление профиля необратимо. Имя и телефон будут удалены, история заказов сохранится без персональных данных.</p>' +
                 '<button class="settings-account-action is-danger" id="deleteAccBtn" type="button" aria-expanded="false" aria-controls="deleteConfirmPanel">Удалить аккаунт и данные</button>' +
@@ -54,7 +56,7 @@
                         '<button class="btn danger" id="deleteConfirmBtn" type="button" disabled>' + DELETE_ACCOUNT_LABEL + '</button>' +
                     '</div>' +
                 '</div>' +
-            '</section>' +
+            SETTINGS_SECTION_END +
         '</div>';
     document.body.appendChild(modal);
 
@@ -185,22 +187,8 @@
             }
             return;
         }
-        if (event.key !== 'Tab') return;
-        var focusable = Array.prototype.slice.call(card.querySelectorAll(
-            'button:not([disabled]), input:not([disabled]), [href], [tabindex]:not([tabindex="-1"])'
-        )).filter(function (element) {
-            return !element.closest('[hidden]');
-        });
-        if (!focusable.length) return;
-        var first = focusable[0];
-        var last = focusable[focusable.length - 1];
-        if (event.shiftKey && document.activeElement === first) {
-            event.preventDefault();
-            last.focus();
-        } else if (!event.shiftKey && document.activeElement === last) {
-            event.preventDefault();
-            first.focus();
-        }
+        window.trapModalFocus(event, card,
+            'button:not([disabled]), input:not([disabled]), [href], [tabindex]:not([tabindex="-1"])');
     }, true);
 
     window.openProfileSettings = openSettings;

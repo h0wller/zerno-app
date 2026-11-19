@@ -122,7 +122,7 @@ body .wrap #deliveryRail button.on{
     border-radius: 8px;
   }
 }
-.mbonus .mb-free[hidden]{
+.mbonus [hidden].mb-free{
   display: none !important;
 }
 
@@ -320,6 +320,11 @@ html body .auth-badge-confirmed.auth-badge-confirmed{
   from { opacity: 0; transform: translateY(-8px) scale(0.98); }
   to { opacity: 1; transform: translateY(0) scale(1); }
 }
+@media (prefers-reduced-motion: reduce) {
+  html body .auth-badge-confirmed.auth-badge-confirmed {
+    animation: none;
+  }
+}
 /* Упрощённый вид формы внутри Telegram Mini App */
 html body #authModal.tg-mode #regTgBtn,
 html body #authModal.tg-mode .mhint{
@@ -337,7 +342,7 @@ html body #authModal.tg-mode .mhint{
 .cartFab{
   position: fixed;
   bottom: calc(16px + env(safe-area-inset-bottom, 0px));
-  left: 50%;
+  left: 50vw;
   right: auto;
   transform: translateX(-50%) scale(0.92);
   z-index: 90;
@@ -809,6 +814,13 @@ html body #authModal.tg-mode .mhint{
   border: 1.5px dashed var(--amber, #F2D9A5);
   animation: preorder-timer-in 0.3s both, preorder-pulse 2s ease-in-out infinite;
 }
+
+/* The mobile profile drawer is offscreen while closed; keep its waiting badge static there. */
+@media (max-width: 1180px) and (prefers-reduced-motion: no-preference) {
+  #panel:not(.open) .preorder-timer-waiting {
+    animation: preorder-timer-in 0.3s both;
+  }
+}
 .preorder-timer-active {
   background: var(--tint-success, #E4EFE2);
   color: var(--status-success, #1E7A4E);
@@ -834,3 +846,37 @@ html body #authModal.tg-mode .mhint{
 #checkoutStreet.field-error{ animation: none; transition: none; }
 }
 
+
+
+/* Cart FAB is hidden whenever the cart sheet owns the primary checkout action. */
+html body.cart-open #cartFab,
+html body:has(#cartPanel.open) #cartFab {
+  visibility: hidden;
+  pointer-events: none;
+}
+
+/* Keep the cart pill in its own lane above the detached category capsule. */
+@media (max-width: 820px),
+       (min-width: 821px) and (orientation: landscape) and (max-height: 480px) {
+  html body #cartFab.cartFab {
+    bottom: calc(var(--rail-total-h) + 12px);
+  }
+
+  body.cart-open #cartFab,
+  body:has(#cartPanel.open) #cartFab {
+    visibility: hidden;
+    pointer-events: none;
+  }
+
+  html body #mbonusBtn,
+  html body #scanFab,
+  html body .fab-scan {
+    bottom: calc(var(--rail-total-h) + 12px);
+  }
+
+  html body:has(#cartFab.visible:not([hidden])) #mbonusBtn,
+  html body:has(#cartFab.visible:not([hidden])) #scanFab,
+  html body:has(#cartFab.visible:not([hidden])) .fab-scan {
+    bottom: calc(var(--rail-total-h) + 12px + 64px + 12px);
+  }
+}
