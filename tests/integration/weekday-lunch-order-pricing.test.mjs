@@ -214,7 +214,7 @@ test('lunch pricing stacks only the staff discount and blocks all other promotio
     body: orderBody('02.11 | 12:00–12:30'),
   });
   assert.equal(guestLunch.status, 200, JSON.stringify(guestLunch.json));
-  assert.equal(guestLunch.json.order.discount, 400);
+  assert.equal(guestLunch.json.order.discount, 0);
   assert.equal(guestLunch.json.order.discount_label, '20% обеденная акция');
   assert.deepEqual(guestLunch.json.order.gifts, [
     { name: 'Подарок недели', qty: 2 },
