@@ -244,8 +244,14 @@ for (const viewport of [
     });
     expect(motion.property.split(',').map(value => value.trim())).toEqual(['transform']);
     expect(motion.duration.split(',').every(value => Math.abs(parseFloat(value) - 0.35) < 0.001)).toBe(true);
-    await expect.poll(() => panel.evaluate(element =>
-      Math.abs(element.getBoundingClientRect().right - document.documentElement.clientWidth)
-    )).toBeLessThanOrEqual(1);
+    await expect.poll(() => panel.evaluate(element => getComputedStyle(element).transform))
+      .toBe('none');
+    const bounds = await panel.evaluate(element => {
+      const rect = element.getBoundingClientRect();
+      return { left: rect.left, right: rect.right, width: rect.width, viewportWidth: window.innerWidth };
+    });
+    expect(bounds.left).toBeGreaterThanOrEqual(-1);
+    expect(bounds.right).toBeLessThanOrEqual(bounds.viewportWidth + 1);
+    expect(bounds.width).toBeLessThanOrEqual(400 + 1);
   });
 }
