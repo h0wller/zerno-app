@@ -189,7 +189,7 @@ test('quantity stepper has 120ms press feedback without changing its hit target'
 });
 
 
-test('delivery option validation scroll is instant under reduced motion', async ({ page }) => {
+test('delivery option validation scroll follows normal and reduced motion preferences', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.addInitScript(() => {
     localStorage.setItem('zt_onb', '1');
@@ -206,19 +206,27 @@ test('delivery option validation scroll is instant under reduced motion', async 
     .filter({ has: page.locator('.opts input[type="radio"]') })
     .first();
   await expect(card).toBeVisible();
+  const addButton = card.locator('[data-add]');
   await card.locator('.opts input[type="radio"]').first().evaluate((element) => {
     element.scrollIntoView = (options) => window.__validationScrollCalls.push(options);
     element.closest('.opts').scrollIntoView = (options) => window.__validationScrollCalls.push(options);
   });
 
-  await card.locator('[data-add]').click();
-  await expect(card.locator('.opts .opts-error')).toBeVisible();
-  await expect.poll(() => page.evaluate(() => window.__validationScrollCalls.length)).toBe(2);
-  const calls = await page.evaluate(() => window.__validationScrollCalls);
-  expect(calls).toEqual([
-    { block: 'center', behavior: 'auto' },
-    { block: 'center', behavior: 'auto' }
-  ]);
+  for (const motion of [
+    { preference: 'reduce', behavior: 'auto' },
+    { preference: 'no-preference', behavior: 'smooth' }
+  ]) {
+    await page.emulateMedia({ reducedMotion: motion.preference });
+    await page.evaluate(() => { window.__validationScrollCalls = []; });
+    await addButton.click();
+    await expect(card.locator('.opts .opts-error')).toBeVisible();
+    await expect.poll(() => page.evaluate(() => window.__validationScrollCalls.length)).toBe(2);
+    const calls = await page.evaluate(() => window.__validationScrollCalls);
+    expect(calls).toEqual([
+      { block: 'center', behavior: motion.behavior },
+      { block: 'center', behavior: motion.behavior }
+    ]);
+  }
 });
 
 test('delivery option validation keeps its message but removes shake under reduced motion', async ({ page }) => {
