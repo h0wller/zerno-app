@@ -62,4 +62,23 @@ test.describe('Initial catalog image priorities', () => {
     await expect.poll(() => page.evaluate(() => window.__coffeeGridWrites)).toBe(1);
   });
 
+
+  test('coffee prioritizes only the actual LCP card image', async ({ page }) => {
+    await page.addInitScript(() => {
+      localStorage.setItem('zt_onb', '1');
+      localStorage.setItem('zt_inst_hide', '1');
+      sessionStorage.setItem('splashDone', '1');
+    });
+    await page.goto('/?brand=coffee');
+    const images = page.locator('#grid > .card img');
+    await expect(images.first()).toBeAttached();
+    await expect.poll(() => images.count()).toBeGreaterThan(1);
+    await expect.poll(async () => images.evaluateAll((nodes) =>
+      nodes.filter((image) => image.getAttribute('fetchpriority') === 'high').length
+    )).toBe(1);
+    await expect.poll(async () => images.evaluateAll((nodes) =>
+      nodes.filter((image) => image.getAttribute('loading') === 'eager').length
+    )).toBe(1);
+  });
+
 });
