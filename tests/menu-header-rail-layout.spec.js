@@ -1366,6 +1366,12 @@ test('category rail uses one surface and viewport-appropriate selected treatment
         expect(styles.buttonHeight).toBe(44);
       } else {
         expect(styles.iconBackground, brand + ' desktop active icon keeps its brand chip').not.toBe('rgba(0, 0, 0, 0)');
+        if (brand === 'delivery') {
+          expect(styles.iconBorder, 'delivery desktop selected icon uses a 2px chocolate frame').toBe('2px');
+          expect(styles.iconBorderColor, 'delivery desktop selected icon frame uses chocolate').toBe('rgb(58, 42, 28)');
+        } else {
+          expect(styles.iconBorder, 'coffee desktop selected icon has no frame').toBe('0px');
+        }
         expect(styles.buttonBackground, brand + ' desktop active tab stays unfilled').toBe('rgba(0, 0, 0, 0)');
         expect(styles.buttonRadius).toBe('0px');
         expect(styles.pseudo.content).not.toBe('none');
