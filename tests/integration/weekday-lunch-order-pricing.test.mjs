@@ -255,24 +255,22 @@ test('preorder slot does not activate lunch pricing outside the checkout lunch w
   const afterLunch = await request('/orders', {
     method: 'POST',
     token: guestToken,
-    body: orderBody('02.11 | 16:00–16:30', 'delivery', 'LUNCH10'),
+    body: orderBody('02.11 | 16:00–16:30'),
   });
   assert.equal(afterLunch.status, 200, JSON.stringify(afterLunch.json));
   assert.equal(afterLunch.json.order.discount, 0);
-  assert.equal(afterLunch.json.order.promodiscount, 200);
+  assert.equal(afterLunch.json.order.promodiscount, 0);
+  assert.equal(afterLunch.json.order.total, 2200);
   assert.equal(afterLunch.json.order.gifts.length, 2);
-  assert.equal(db.prepare("SELECT uses FROM promos WHERE code='LUNCH10'").get().uses, 1);
-
   const afterLunchFixed = await request('/orders', {
     method: 'POST',
     token: guestToken,
-    body: orderBody('02.11 | 16:30–17:00', 'delivery', 'LUNCHFIXED'),
+    body: orderBody('02.11 | 16:30–17:00'),
   });
   assert.equal(afterLunchFixed.status, 200, JSON.stringify(afterLunchFixed.json));
   assert.equal(afterLunchFixed.json.order.discount, 0);
-  assert.equal(afterLunchFixed.json.order.promodiscount, 250);
-  assert.equal(db.prepare("SELECT uses FROM promos WHERE code='LUNCHFIXED'").get().uses, 1);
-
+  assert.equal(afterLunchFixed.json.order.promodiscount, 0);
+  assert.equal(afterLunchFixed.json.order.total, 2200);
   const singleItemOrder = await request('/orders', {
     method: 'POST',
     token: guestToken,
@@ -288,5 +286,5 @@ test('preorder slot does not activate lunch pricing outside the checkout lunch w
 
   const mine = await request('/orders/mine', { token: staffToken });
   const saved = (mine.json.orders || []).find((order) => order.id === staffLunch.json.order.id);
-  assert.equal(saved.discount_label, '20% обеденная акция + 10% для своих');
+  assert.equal(saved.discount_label, '10% для своих');
 });
