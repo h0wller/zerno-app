@@ -9,6 +9,17 @@ test('delivery selected category and cart CTA use the shared flame with chocolat
   });
   await page.goto('/?brand=delivery', { waitUntil: 'domcontentloaded' });
 
+  const pizzaCategory = page.locator('#deliveryRail [data-dcat="pizza"]');
+  if (!(await pizzaCategory.evaluate((node) => node.classList.contains('on')))) {
+    await pizzaCategory.click();
+  }
+  const activeSubfilter = page.locator('#deliverySubFilterViewport:not([hidden]) .subchip.on');
+  await expect(activeSubfilter).toBeVisible({ timeout: 15000 });
+  await expect.poll(() => activeSubfilter.evaluate((node) => {
+    const style = getComputedStyle(node, '::before');
+    return { background: style.backgroundColor, borderColor: style.borderTopColor };
+  })).toEqual({ background: 'rgb(192, 59, 42)', borderColor: 'rgb(58, 42, 28)' });
+
   const activeCategoryIcon = page.locator('#deliveryRail button.on .re');
   await expect(activeCategoryIcon).toBeVisible({ timeout: 15000 });
   await expect.poll(() => activeCategoryIcon.evaluate((node) => {
