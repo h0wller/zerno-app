@@ -62,12 +62,7 @@ window.scrollMenuContentToStart = function (contentSelector, railSelector, prese
   }
   const targetTop = content.getBoundingClientRect().top
     + (window.scrollY || document.documentElement.scrollTop || 0);
-  const reduceMotion = window.matchMedia &&
-    window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  window.scrollTo({
-    top: Math.max(0, targetTop - viewportTop),
-    behavior: reduceMotion ? 'auto' : 'smooth'
-  });
+  window.scrollToWithoutRailFade(Math.max(0, targetTop - viewportTop));
 };
 
 $('#rail').addEventListener('click', e => {
