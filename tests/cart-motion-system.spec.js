@@ -52,7 +52,7 @@ async function expectCartAtRest(panel, viewport, open) {
       visibility: style.visibility,
       display: style.display,
       pointerEvents: style.pointerEvents,
-      viewportWidth: window.innerWidth,
+      layoutViewportWidth: document.documentElement.clientWidth,
     };
   });
 
@@ -67,7 +67,7 @@ async function expectCartAtRest(panel, viewport, open) {
       expect(geometry.top).toBeGreaterThanOrEqual(viewport.height - 1);
     }
   } else if (open) {
-    expect(Math.abs(geometry.right - geometry.viewportWidth)).toBeLessThanOrEqual(1);
+    expect(Math.abs(geometry.right - geometry.layoutViewportWidth)).toBeLessThanOrEqual(1);
     expect(geometry.width).toBeGreaterThan(0);
     expect(geometry.width).toBeLessThanOrEqual(Math.min(430, viewport.width));
   } else {

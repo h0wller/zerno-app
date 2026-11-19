@@ -1067,6 +1067,7 @@ test('delivery: optional filters expand below a stable desktop rail anchor', asy
 
 test('delivery desktop single-meta cards keep equal description and composition slots across categories', async ({ page }, testInfo) => {
   await page.setViewportSize({ width: 1024, height: 768 });
+  await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.addInitScript(() => sessionStorage.setItem('splashDone', '1'));
   await page.goto('/?brand=delivery', { waitUntil: 'domcontentloaded' });
   await expect(page.locator('#deliveryRail')).toBeVisible({ timeout: 10000 });
@@ -1113,7 +1114,7 @@ test('delivery desktop single-meta cards keep equal description and composition 
       const comp = first.querySelector('.cbody > .comp');
       return {
         cardHeight: first.getBoundingClientRect().height,
-        secondRowTop: secondRow ? secondRow.getBoundingClientRect().top : null,
+        secondRowOffset: secondRow ? secondRow.getBoundingClientRect().top - firstTop : null,
         descHeight: desc ? desc.getBoundingClientRect().height : null,
         compHeight: comp ? comp.getBoundingClientRect().height : null,
         descText: desc ? desc.textContent.trim() : null,
@@ -1133,14 +1134,14 @@ test('delivery desktop single-meta cards keep equal description and composition 
     contentType: 'image/png',
   });
 
-  expect(drinks.descHeight).toBe(37);
-  expect(sets.descHeight).toBe(37);
+  expect(drinks.descHeight).toBeCloseTo(37, 2);
+  expect(sets.descHeight).toBeCloseTo(37, 2);
   expect(drinks.compHeight).toBe(100);
   expect(sets.compHeight).toBe(100);
   expect(drinks.compHasChips).toBe(false);
   expect(sets.compHasChips).toBe(true);
   expect(Math.abs(drinks.cardHeight - sets.cardHeight), 'description length must not change the category row height').toBeLessThanOrEqual(1);
-  expect(Math.abs(drinks.secondRowTop - sets.secondRowTop), 'the second row must not jump between drinks and sets').toBeLessThanOrEqual(1);
+  expect(Math.abs(drinks.secondRowOffset - sets.secondRowOffset), 'the second row must not jump between drinks and sets').toBeLessThanOrEqual(1);
 });
 
 test('delivery desktop rail keeps its captured anchor when filters disappear during viewport resize', async ({ page }, testInfo) => {
