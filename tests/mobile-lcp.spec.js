@@ -38,4 +38,28 @@ test.describe('Initial catalog image priorities', () => {
     await heroRequest;
     await expect(page.locator('#deliveryGrid > .card img').first()).toHaveAttribute('fetchpriority', 'high');
   });
+
+  test('coffee startup replaces the catalog grid only once after menu data arrives', async ({ page }) => {
+    await page.addInitScript(() => {
+      const descriptor = Object.getOwnPropertyDescriptor(Element.prototype, 'innerHTML');
+      window.__coffeeGridWrites = 0;
+      Object.defineProperty(Element.prototype, 'innerHTML', {
+        configurable: descriptor.configurable,
+        enumerable: descriptor.enumerable,
+        get: descriptor.get,
+        set(value) {
+          if (this.id === 'grid') window.__coffeeGridWrites += 1;
+          return descriptor.set.call(this, value);
+        }
+      });
+      localStorage.setItem('zt_onb', '1');
+      localStorage.setItem('zt_inst_hide', '1');
+      sessionStorage.setItem('splashDone', '1');
+    });
+
+    await page.goto('/?brand=coffee');
+    await expect(page.locator('#grid article').first()).toBeAttached();
+    await expect.poll(() => page.evaluate(() => window.__coffeeGridWrites)).toBe(2);
+  });
+
 });
