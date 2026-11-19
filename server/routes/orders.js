@@ -372,10 +372,8 @@ ordersRouter.post('/api/orders', verifiedCustomerGuard, (req, res) => {
 
   let isPreorder = 0;
   let preorderDate = '';
-  let slotValidation = null;
-
   if (slotStr !== 'asap') {
-    slotValidation = validateDeliverySlot(slotStr, now);
+    const slotValidation = validateDeliverySlot(slotStr, now);
     if (!slotValidation.valid) {
       return res.status(400).json({
         error: 'Выбранный интервал больше недоступен или не соответствует графику. Обновите время и выберите другой слот.',
