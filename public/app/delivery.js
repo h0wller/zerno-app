@@ -799,16 +799,19 @@ function resolveDeliveryAddSelection(addButton, product) {
     if (optionsBox) {
       const error = optionsBox.querySelector('.opts-error');
       if (error) error.hidden = false;
+      const reduceMotion = typeof window.matchMedia === 'function' &&
+        window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      const scrollBehavior = reduceMotion ? 'auto' : 'smooth';
       const firstOption = optionsBox.querySelector('input[type="radio"]');
       if (firstOption) {
         if (error) firstOption.setAttribute('aria-describedby', error.id);
         firstOption.focus();
-        firstOption.scrollIntoView({ block: 'center', behavior: 'smooth' });
+        firstOption.scrollIntoView({ block: 'center', behavior: scrollBehavior });
       }
       optionsBox.classList.remove('shake');
       void optionsBox.offsetWidth;
       optionsBox.classList.add('shake');
-      optionsBox.scrollIntoView({ block: 'center', behavior: 'smooth' });
+      optionsBox.scrollIntoView({ block: 'center', behavior: scrollBehavior });
     }
     return null;
   }
