@@ -75,6 +75,8 @@ test.describe('Mobile profile swipe close', () => {
     expect(opening.tgSyncCalls).toBe(0);
     const panel = page.locator('#panel');
     await expect(panel).toHaveClass(/open/);
+    const transitionProperty = await panel.evaluate(element => getComputedStyle(element).transitionProperty);
+    expect(transitionProperty.split(',').map(value => value.trim())).toEqual(['transform']);
     // The panel slides in over 350ms; assert its final geometry, not the mid-transition frame.
     await expect.poll(() => panel.evaluate((element) => {
       const rect = element.getBoundingClientRect();
@@ -208,4 +210,43 @@ for (const brand of ['coffee', 'delivery']) {
       expect(closed.transform).not.toBe('none');
     });
   }
+}
+
+
+for (const viewport of [
+  { name: 'mobile portrait', width: 390, height: 844 },
+  { name: 'compact landscape', width: 844, height: 390 },
+  { name: 'tablet drawer', width: 1024, height: 768 },
+]) {
+  test(`profile drawer uses transform-only motion at ${viewport.name}`, async ({ page }) => {
+    await page.setViewportSize({ width: viewport.width, height: viewport.height });
+    await page.addInitScript(() => {
+      localStorage.setItem('zt_onb', '1');
+      sessionStorage.setItem('splashDone', '1');
+    });
+    await page.goto('/?brand=coffee', { waitUntil: 'domcontentloaded' });
+    await page.waitForFunction(() => typeof window.openPanel === 'function');
+    await page.waitForFunction(() => {
+      const sheets = Array.from(document.querySelectorAll('link[rel="stylesheet"]'))
+        .filter(link => link.href.includes('/app/ui/theme/'));
+      return sheets.length > 0 && sheets.every(link => link.media !== 'print' && link.sheet !== null);
+    });
+
+    const panel = page.locator('#panel');
+    await page.evaluate(() => window.openPanel('profile'));
+    await expect(panel).toHaveClass(/open/);
+    const motion = await panel.evaluate(element => {
+      const style = getComputedStyle(element);
+      return {
+        property: style.transitionProperty,
+        duration: style.transitionDuration,
+        timing: style.transitionTimingFunction
+      };
+    });
+    expect(motion.property.split(',').map(value => value.trim())).toEqual(['transform']);
+    expect(motion.duration.split(',').every(value => Math.abs(parseFloat(value) - 0.35) < 0.001)).toBe(true);
+    await expect.poll(() => panel.evaluate(element =>
+      Math.abs(element.getBoundingClientRect().right - window.innerWidth)
+    )).toBeLessThanOrEqual(1);
+  });
 }
