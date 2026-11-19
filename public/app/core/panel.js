@@ -11,30 +11,47 @@ function setTab() {
     if (legacyBonus) legacyBonus.hidden = true;
 }
 
+function syncPanelOverlay() {
+    // syncOverlay already owns MainButton and Telegram BackButton synchronization.
+    if (typeof syncOverlay === 'function') syncOverlay();
+    else if (window.TgUx && typeof window.TgUx.sync === 'function') window.TgUx.sync();
+}
+
+function loadProfileOrdersAfterOpen(panel) {
+    if (window.brand !== 'delivery' || !window.me || typeof window.loadMyOrders !== 'function') return;
+    var load = function () {
+        if (!panel || panel.classList.contains('open') || window.innerWidth > 1180) {
+            window.loadMyOrders();
+        }
+    };
+    // Let the drawer's opening frame be painted before order hydration touches its DOM.
+    if (window.innerWidth > 1180) {
+        load();
+        return;
+    }
+    requestAnimationFrame(function () {
+        requestAnimationFrame(load);
+    });
+}
+
 function openPanel() {
     setTab();
-    if (window.brand === 'delivery' && window.me && typeof window.loadMyOrders === 'function') {
-        window.loadMyOrders();
+    var panel = document.getElementById('panel');
+    if (window.innerWidth <= 1180 && panel) {
+        if (!panel.classList.contains('open')) panelReturnFocus = document.activeElement;
+        panel.classList.add('open');
+        var back = panel.querySelector('.tabs .btn-back');
+        if (back) back.focus({ preventScroll: true });
+        syncPanelOverlay();
     }
-    if (window.innerWidth <= 1180) {
-        var panel = document.getElementById('panel');
-        if (panel) {
-            if (!panel.classList.contains('open')) panelReturnFocus = document.activeElement;
-            panel.classList.add('open');
-            var back = panel.querySelector('.tabs .btn-back');
-            if (back) back.focus();
-        }
-        if (typeof syncOverlay === 'function') syncOverlay();
-        if (window.TgUx) window.TgUx.sync();
-    }
+    loadProfileOrdersAfterOpen(panel);
 }
 
 function closePanel() {
     if (window.innerWidth <= 1180) {
         var panel = document.getElementById('panel');
         if (panel) panel.classList.remove('open');
-        if (typeof syncOverlay === 'function') syncOverlay();
-        if (window.TgUx) window.TgUx.sync();
+        syncPanelOverlay();
         if (panelReturnFocus && panelReturnFocus.isConnected) panelReturnFocus.focus({ preventScroll: true });
         panelReturnFocus = null;
     }
