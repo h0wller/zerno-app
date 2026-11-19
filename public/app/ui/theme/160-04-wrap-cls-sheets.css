@@ -359,3 +359,11 @@
   }
 }
 }
+
+/* Profile drawer: preserve off-canvas/open transforms but remove spatial travel for reduced motion. */
+@media (prefers-reduced-motion: reduce) {
+  html body div.wrap > aside#panel.panel,
+  html body .panel {
+    transition: none;
+  }
+}
