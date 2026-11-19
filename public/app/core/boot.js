@@ -125,7 +125,7 @@ async function verifyStaffSession() {
 
 async function loadInitialCatalog(earlyDeliveryLoad) {
   if (window.brand !== 'delivery') {
-    if (typeof loadMenu === 'function') await loadMenu();
+    if (typeof loadMenu === 'function') await loadMenu({ render: false });
     return;
   }
 
