@@ -1382,7 +1382,7 @@ test('category rail uses one surface and viewport-appropriate selected treatment
         return channel <= 0.04045 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4;
       });
       const textLuminance = 0.2126 * luminance[0] + 0.7152 * luminance[1] + 0.0722 * luminance[2];
-      const contrastBackground = horizontalRail ? styles.buttonBackground : styles.railBackground;
+      const contrastBackground = horizontalRail && brand === 'coffee' ? styles.buttonBackground : styles.railBackground;
       const bgRgb = contrastBackground.match(/[0-9.]+/g).map(Number);
       const bgLum = bgRgb.slice(0, 3).map(value => {
         const channel = value / 255;
@@ -2444,6 +2444,9 @@ test('mobile menu header and category rail use compact vertical geometry', async
           titleSearchGap: rect(search).top - rect(heading).bottom,
           rail: railRect,
           activeBackground: activeStyle?.backgroundColor ?? 'rgba(0, 0, 0, 0)',
+          activeIconBackground: active?.querySelector('.re')
+            ? getComputedStyle(active.querySelector('.re')).backgroundColor
+            : 'rgba(0, 0, 0, 0)',
           buttonRadius: activeStyle?.borderTopLeftRadius ?? '0px',
           buttonHeight: active?.getBoundingClientRect().height ?? 0,
         };
@@ -2453,7 +2456,12 @@ test('mobile menu header and category rail use compact vertical geometry', async
       expect(geometry.titleSearchGap, 'search should sit close below the menu title').toBeLessThanOrEqual(14);
       expect(geometry.rail.height, 'category rail should use compact 56px height').toBe(56);
       expect(geometry.buttonHeight, 'compact rail must preserve a comfortable touch target').toBeGreaterThanOrEqual(44);
-      expect(geometry.activeBackground, 'selected category is indicated by a filled tab').not.toBe('rgba(0, 0, 0, 0)');
+      if (brand.brand === 'coffee') {
+        expect(geometry.activeBackground, 'coffee selected category keeps its blue filled tab').toBe('rgb(18, 58, 107)');
+      } else {
+        expect(geometry.activeBackground, 'delivery selected tab stays transparent').toBe('rgba(0, 0, 0, 0)');
+        expect(geometry.activeIconBackground, 'delivery selected icon uses the flame fill').toBe('rgb(192, 59, 42)');
+      }
       expect(geometry.buttonRadius, 'selected category uses a compact pill treatment').toBe('20px');
       await testInfo.attach(`compact-menu-${brand.brand}-${viewport.width}px`, {
         body: await page.screenshot({ animations: 'disabled' }),
