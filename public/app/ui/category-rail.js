@@ -7,7 +7,9 @@ var observedRailTopbar = null;
 var railStickyLayout = null;
 var railDesktopAnchor = new WeakMap();
 var railFadeTimer = null;
-var fadedRail = null;
+var fadedElements = [];
+var programmaticScrollToTop = false;
+var programmaticScrollToTopTimer = null;
 var railScrollTick = false;
 
 function usesFloatingCategoryRailViewport() {
@@ -184,26 +186,83 @@ function activeRail() {
   return document.getElementById(isDelivery ? 'deliveryRail' : 'rail');
 }
 
-function markRailScrolling() {
+function clearScrollFade() {
+  if (railFadeTimer) window.clearTimeout(railFadeTimer);
+  railFadeTimer = null;
+  fadedElements.forEach(function (element) {
+    if (element && element.classList) element.classList.remove('is-scroll-fading');
+  });
+  fadedElements = [];
+}
+
+function currentScrollFadeTargets() {
+  var targets = [];
   var rail = activeRail();
+  if (rail) targets.push(rail);
+
+  var cartFab = document.getElementById('cartFab');
+  var cartOpen = document.body.classList.contains('cart-open') ||
+    !!document.querySelector('#cartPanel.open');
+  if (cartFab && !cartFab.hidden && cartFab.classList.contains('visible') && !cartOpen) {
+    targets.push(cartFab);
+  }
+  return targets;
+}
+
+function markRailScrolling() {
+  if (programmaticScrollToTop) return;
+
   /* Preserve #269: fade only portrait/tablet rails; compact landscape is not faded. */
   if (!window.matchMedia || !window.matchMedia('(max-width: 820px)').matches) {
-    if (railFadeTimer) window.clearTimeout(railFadeTimer);
-    if (fadedRail) fadedRail.classList.remove('is-scroll-fading');
-    fadedRail = null;
-    railFadeTimer = null;
+    clearScrollFade();
     return;
   }
-  if (fadedRail && fadedRail !== rail) fadedRail.classList.remove('is-scroll-fading');
-  fadedRail = rail;
-  if (fadedRail) fadedRail.classList.add('is-scroll-fading');
+
+  var targets = currentScrollFadeTargets();
+  fadedElements.forEach(function (element) {
+    if (targets.indexOf(element) === -1) element.classList.remove('is-scroll-fading');
+  });
+  fadedElements = targets;
+  fadedElements.forEach(function (element) {
+    element.classList.add('is-scroll-fading');
+  });
+
   if (railFadeTimer) window.clearTimeout(railFadeTimer);
-  railFadeTimer = window.setTimeout(function () {
-    if (fadedRail) fadedRail.classList.remove('is-scroll-fading');
-    fadedRail = null;
-    railFadeTimer = null;
-  }, 520);
+  railFadeTimer = window.setTimeout(clearScrollFade, 520);
 }
+
+function finishProgrammaticScrollToTop() {
+  if (programmaticScrollToTopTimer) {
+    window.clearTimeout(programmaticScrollToTopTimer);
+    programmaticScrollToTopTimer = null;
+  }
+  programmaticScrollToTop = false;
+}
+
+function cancelProgrammaticScrollToTop() {
+  if (!programmaticScrollToTop) return;
+  finishProgrammaticScrollToTop();
+}
+
+window.scrollToTopWithoutRailFade = function () {
+  finishProgrammaticScrollToTop();
+  clearScrollFade();
+  var currentY = window.scrollY || document.documentElement.scrollTop || 0;
+  if (currentY <= 0) return;
+
+  programmaticScrollToTop = true;
+  var reduceMotion = window.matchMedia &&
+    window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  window.scrollTo({ top: 0, behavior: reduceMotion ? 'auto' : 'smooth' });
+
+  /* scrollend is authoritative; timeout is a fallback for older WebKit versions. */
+  programmaticScrollToTopTimer = window.setTimeout(finishProgrammaticScrollToTop, 2500);
+};
+
+window.addEventListener('scrollend', finishProgrammaticScrollToTop, { passive: true });
+['wheel', 'touchstart', 'pointerdown'].forEach(function (eventName) {
+  window.addEventListener(eventName, cancelProgrammaticScrollToTop, { passive: true });
+});
 
 window.alignRailWithCard = alignRailWithCard;
 window.usesHorizontalCategoryRailViewport = usesFloatingCategoryRailViewport;
