@@ -99,7 +99,7 @@ staffRouter.post('/api/staff/customers', staffGuard, (req, res) => {
         pinSet: true,
         pinPreserved: false
       };
-    })();
+    }).immediate();
   } catch (error) {
     if (error?.code === 'SQLITE_CONSTRAINT_UNIQUE') {
       return res.status(409).json({ error: 'Профиль с этим номером уже создаётся. Найдите гостя и повторите попытку.' });
