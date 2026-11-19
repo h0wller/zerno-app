@@ -242,3 +242,34 @@ for (const brand of ['coffee', 'delivery']) {
     await expect(rail.locator('button[aria-pressed="true"]')).toHaveAttribute(dataAttribute, await next.getAttribute(dataAttribute));
   });
 }
+
+
+for (const brand of ['coffee', 'delivery']) {
+  test(`${brand} category rail supports keyboard selection with an accessible current state`, async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.addInitScript(() => sessionStorage.setItem('splashDone', '1'));
+    await page.goto('/?brand=' + brand, { waitUntil: 'domcontentloaded' });
+    const rail = page.locator(brand === 'coffee' ? '#rail' : '#deliveryRail');
+    const attribute = brand === 'coffee' ? 'data-cat' : 'data-dcat';
+    const target = rail.locator('button:not(.on)').first();
+    const targetId = await target.getAttribute(attribute);
+    await target.focus();
+    await target.press('Enter');
+    await expect(rail.locator('button[aria-pressed="true"]')).toHaveAttribute(attribute, targetId);
+    await expect(rail.locator('button[aria-current="location"]')).toHaveAttribute(attribute, targetId);
+    expect(await rail.ariaSnapshot()).toContain('current');
+  });
+}
+
+test('delivery category rail remains operable by touch', async ({ page }, testInfo) => {
+  test.skip(!testInfo.project.use.hasTouch, 'Touch input is exercised in the Mobile Chrome project');
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.addInitScript(() => sessionStorage.setItem('splashDone', '1'));
+  await page.goto('/?brand=delivery', { waitUntil: 'domcontentloaded' });
+  const rail = page.locator('#deliveryRail');
+  const target = rail.locator('button:not(.on)').first();
+  const targetId = await target.getAttribute('data-dcat');
+  await target.tap();
+  await expect(rail.locator('button[aria-pressed="true"]')).toHaveAttribute('data-dcat', targetId);
+  await expect(rail.locator('button[aria-current="location"]')).toHaveAttribute('data-dcat', targetId);
+});
