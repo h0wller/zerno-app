@@ -86,7 +86,7 @@ SMS.ru сохранён как будущий платный канал авто
 | Метод и путь | Назначение | Доступ |
 |---|---|---|
 | `GET /api/staff/customers` | Поиск клиентов | staffGuard |
-| `POST /api/staff/customers` | Создать профиль клиента сотрудником | staffGuard |
+| `POST /api/staff/customers` | Создать или активировать профиль гостя; принимает `name`, `phone`, `pin` (4 цифры), повторный номер безопасно переиспользует профиль | staffGuard |
 | `POST /api/staff/stamp` | Начислить один штамп клиенту | staffGuard |
 | `POST /api/staff/redeem` | Списать бесплатный кофе | staffGuard |
 | `POST /api/redeem` | Списать доступный бесплатный кофе текущего пользователя | userGuard |

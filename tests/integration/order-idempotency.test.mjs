@@ -445,7 +445,7 @@ test('staff-created customer remains verified and can order after proving phone 
   const created = await request('/staff/customers', {
     method: 'POST',
     token: adminToken,
-    body: { name: 'Staff Created Order Guest', phone },
+    body: { name: 'Staff Created Order Guest', phone, pin: '1357' },
   });
   assert.equal(created.status, 200, JSON.stringify(created.json));
   assert.equal(created.json.customer.verified, 1);

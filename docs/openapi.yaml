@@ -1088,13 +1088,22 @@ paths:
       responses: { '200': { description: Массив customers } }
     post:
       tags: [Staff]
-      summary: Создать или активировать профиль гостя
+      summary: Создать или активировать профиль гостя и задать PIN
       security: [{ BearerAuth: [] }]
       requestBody:
         required: true
         content:
           application/json:
-            schema: { type: object, required: [name, phone], properties: { name: { type: string }, phone: { type: string } } }
+            schema:
+              type: object
+              required: [name, phone, pin]
+              properties:
+                name: { type: string, minLength: 2, maxLength: 24 }
+                phone: { type: string, minLength: 10 }
+                pin:
+                  type: string
+                  pattern: '^[0-9]{4}$'
+                  description: Четырёхзначный PIN; хранится только в виде хеша. Повторный запрос не заменяет уже установленный PIN.
       responses: { '200': { description: Возвращает customer } }
 
   /api/staff/log:
