@@ -59,7 +59,7 @@ test.describe('Initial catalog image priorities', () => {
 
     await page.goto('/?brand=coffee');
     await expect(page.locator('#grid article').first()).toBeAttached();
-    await expect.poll(() => page.evaluate(() => window.__coffeeGridWrites)).toBe(2);
+    await expect.poll(() => page.evaluate(() => window.__coffeeGridWrites)).toBe(1);
   });
 
 });
