@@ -84,7 +84,7 @@ for (const brand of BRANDS) {
       await expect.poll(() => subfilters.evaluate(el => Number.parseFloat(getComputedStyle(el).opacity))).toBeGreaterThan(0.9);
     }
 
-    await page.evaluate(() => window.scrollTo(500, 0));
+    await page.evaluate(() => window.scrollTo(0, 500));
     await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(300);
     await expect(rail).toHaveClass(/is-scroll-fading/);
     if (brand.brand === 'delivery') await expect(cartFab).toHaveClass(/is-scroll-fading/);
