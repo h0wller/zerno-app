@@ -200,3 +200,45 @@ test('delivery subfilters remain visible while the primary category rail fades d
   await expect(subfilters).toHaveCSS('opacity', '1');
   await expect(firstSubfilter).toHaveCSS('opacity', '1');
 });
+
+
+for (const width of [390, 820, 1024]) {
+  test(`delivery scroll spy exposes the visible category without changing filter selection at ${width}px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: width === 390 ? 844 : 900 });
+    await page.addInitScript(() => sessionStorage.setItem('splashDone', '1'));
+    await page.goto('/?brand=delivery', { waitUntil: 'domcontentloaded' });
+    const rail = page.locator('#deliveryRail');
+    await expect(rail.locator('button[data-dcat]')).toHaveCount(5, { timeout: 15000 });
+    const selectedBeforeScroll = await rail.locator('button[aria-pressed="true"]').getAttribute('data-dcat');
+    expect(selectedBeforeScroll).toBeTruthy();
+
+    await page.evaluate(() => {
+      window.scrollTo(0, Math.min(900, document.documentElement.scrollHeight));
+      window.__syncDeliveryScrollSpy?.();
+    });
+
+    await expect.poll(() => rail.locator('button[aria-current="location"]').count()).toBe(1);
+    const current = rail.locator('button[aria-current="location"]');
+    await expect(current).toHaveClass(/on/);
+    await expect(current).toHaveAttribute('data-dcat');
+    await expect(rail.locator('button[aria-pressed="true"]')).toHaveAttribute('data-dcat', selectedBeforeScroll);
+    await expect(rail.locator('button[aria-pressed="true"]')).toHaveAttribute('aria-pressed', 'true');
+    await expect(rail.locator('button[aria-current="location"]')).toHaveCount(1);
+  });
+}
+
+for (const brand of ['coffee', 'delivery']) {
+  test(`${brand} category selection exposes one pressed control and clears stale current state`, async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.addInitScript(() => sessionStorage.setItem('splashDone', '1'));
+    await page.goto('/?brand=' + brand, { waitUntil: 'domcontentloaded' });
+    const rail = page.locator(brand === 'coffee' ? '#rail' : '#deliveryRail');
+    const dataAttribute = brand === 'coffee' ? 'data-cat' : 'data-dcat';
+    await expect(rail.locator('button[aria-pressed="true"]')).toHaveCount(1, { timeout: 15000 });
+    const next = rail.locator('button:not(.on)').first();
+    await next.click();
+    await expect(rail.locator('button[aria-pressed="true"]')).toHaveCount(1);
+    await expect(rail.locator('button[aria-current="location"]')).toHaveCount(1);
+    await expect(rail.locator('button[aria-pressed="true"]')).toHaveAttribute(dataAttribute, await next.getAttribute(dataAttribute));
+  });
+}
