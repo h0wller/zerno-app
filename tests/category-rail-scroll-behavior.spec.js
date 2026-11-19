@@ -237,10 +237,13 @@ for (const brand of ['coffee', 'delivery']) {
     const dataAttribute = brand === 'coffee' ? 'data-cat' : 'data-dcat';
     await expect(rail.locator('button[aria-pressed="true"]')).toHaveCount(1, { timeout: 15000 });
     const next = rail.locator('button:not(.on)').first();
+    const nextId = await next.getAttribute(dataAttribute);
+    const selectedTarget = rail.locator(`button[${dataAttribute}="${nextId}"]`);
     await next.click();
     await expect(rail.locator('button[aria-pressed="true"]')).toHaveCount(1);
     await expect(rail.locator('button[aria-current="location"]')).toHaveCount(1);
-    await expect(rail.locator('button[aria-pressed="true"]')).toHaveAttribute(dataAttribute, await next.getAttribute(dataAttribute));
+    await expect(rail.locator('button[aria-pressed="true"]')).toHaveAttribute(dataAttribute, nextId);
+    await expect(selectedTarget).toHaveAttribute('aria-current', 'location');
   });
 }
 
@@ -254,11 +257,12 @@ for (const brand of ['coffee', 'delivery']) {
     const attribute = brand === 'coffee' ? 'data-cat' : 'data-dcat';
     const target = rail.locator('button:not(.on)').first();
     const targetId = await target.getAttribute(attribute);
+    const selectedTarget = rail.locator(`button[${attribute}="${targetId}"]`);
     await target.focus();
     await target.press('Enter');
     await expect(rail.locator('button[aria-pressed="true"]')).toHaveAttribute(attribute, targetId);
     await expect(rail.locator('button[aria-current="location"]')).toHaveAttribute(attribute, targetId);
-    await expect(target).toHaveAttribute('aria-current', 'location');
+    await expect(selectedTarget).toHaveAttribute('aria-current', 'location');
   });
 }
 
