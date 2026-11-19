@@ -1088,7 +1088,7 @@ paths:
       responses: { '200': { description: Массив customers } }
     post:
       tags: [Staff]
-      summary: Создать или активировать профиль гостя
+      summary: Создать или активировать профиль гостя и задать PIN
       security: [{ BearerAuth: [] }]
       requestBody:
         required: true
