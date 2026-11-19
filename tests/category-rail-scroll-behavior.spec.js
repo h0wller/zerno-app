@@ -258,7 +258,7 @@ for (const brand of ['coffee', 'delivery']) {
     await target.press('Enter');
     await expect(rail.locator('button[aria-pressed="true"]')).toHaveAttribute(attribute, targetId);
     await expect(rail.locator('button[aria-current="location"]')).toHaveAttribute(attribute, targetId);
-    expect(await rail.ariaSnapshot()).toContain('location');
+    await expect(target).toHaveAttribute('aria-current', 'location');
   });
 }
 
