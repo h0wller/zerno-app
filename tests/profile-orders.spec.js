@@ -880,6 +880,7 @@ test('preorder waiting pulse pauses while the mobile profile drawer is closed an
 });
 
 test('empty latest-order refresh keeps the following profile section anchored', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
     let releaseResponse;
     let markRequestStarted;
     const requestStarted = new Promise(resolve => { markRequestStarted = resolve; });
