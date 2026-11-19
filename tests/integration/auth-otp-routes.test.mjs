@@ -169,9 +169,9 @@ test('cashier-created guests get a PIN immediately and duplicate registration re
   assert.equal(replacementPinRejected.status, 403);
 
   const crossPathDuplicate = await api('/api/auth/register', {
-    name: 'Auth Registration Duplicate', phone, pin: '7777', consent: true
+    name: 'Duplicate Auth Guest', phone, pin: '7777', consent: true
   });
-  assert.equal(crossPathDuplicate.status, 409);
+  assert.equal(crossPathDuplicate.status, 409, JSON.stringify(crossPathDuplicate.json));
 
   const pendingPhone = '+7 900 000-09-91';
   const pending = await api('/api/auth/register', {
