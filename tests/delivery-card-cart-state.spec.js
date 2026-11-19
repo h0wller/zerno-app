@@ -304,9 +304,9 @@ test('delivery quantity stepper stops press scaling under runtime reduced motion
     transitionDuration: '0s',
     filter: 'brightness(0.96)',
   });
+  // Releasing the active press dispatches the click. The quantity-one item
+  // must be removed even though reduced motion cancelled the visual press.
   await page.mouse.up();
-
-  await step.click();
   await expect.poll(() => page.evaluate(() =>
     JSON.parse(localStorage.getItem('zt_cart') || '[]')
   )).toEqual([]);
