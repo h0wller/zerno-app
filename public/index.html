@@ -1628,6 +1628,35 @@ html[data-brand="delivery"] {
         headers: { Accept: 'application/json' }
       });
 
+      // Discover the current coffee LCP image as soon as the early menu request resolves.
+      // Clone the response so the normal API consumer can still read its body.
+      if (endpoint === '/api/menu') {
+        pending.then(function (response) {
+          if (!response || !response.ok) return null;
+          return response.clone().json();
+        }).then(function (payload) {
+          var items = payload && Array.isArray(payload.items) ? payload.items : [];
+          var first = items.find(function (item) {
+            return item && item.cat === 'coffee' && item.on && item.img;
+          });
+          if (!first) return;
+
+          var preload = document.createElement('link');
+          preload.id = 'zt-menu-lcp-preload';
+          preload.rel = 'preload';
+          preload.as = 'image';
+          preload.href = first.img;
+          preload.type = 'image/webp';
+          preload.setAttribute('fetchpriority', 'high');
+          if (first.imgSrcset) {
+            preload.setAttribute('imagesrcset', first.imgSrcset);
+            preload.setAttribute('imagesizes',
+              '(max-width: 519px) calc(100vw - 110px), (max-width: 1180px) 42vw, (max-width: 1599px) 30vw, 23vw');
+          }
+          document.head.appendChild(preload);
+        }).catch(function () {});
+      }
+
       window.fetch = function (input, options) {
         try {
           var url = typeof input === 'string' ? input : input.url;
