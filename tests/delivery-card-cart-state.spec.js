@@ -220,3 +220,48 @@ test('delivery option validation keeps its message but removes shake under reduc
     .toBe('none');
   await expect(options.locator('.opts-error')).toBeVisible();
 });
+
+for (const reducedMotion of ['no-preference', 'reduce']) {
+  test(`delivery option validation scroll respects ${reducedMotion}`, async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.emulateMedia({ reducedMotion });
+    await page.addInitScript(() => {
+      localStorage.setItem('zt_onb', '1');
+      localStorage.removeItem('zt_cart');
+      sessionStorage.setItem('splashDone', '1');
+      window.__deliveryOptionScrollCalls = [];
+      const nativeScrollIntoView = Element.prototype.scrollIntoView;
+      Element.prototype.scrollIntoView = function (options) {
+        if (this.closest && this.closest('#deliveryGrid .opts')) {
+          window.__deliveryOptionScrollCalls.push({
+            target: this.matches('input[type="radio"]') ? 'option' : 'options',
+            behavior: options && options.behavior || 'auto',
+            block: options && options.block || 'start'
+          });
+          return;
+        }
+        return nativeScrollIntoView.call(this, options);
+      };
+    });
+
+    await page.goto('/?brand=delivery', { waitUntil: 'domcontentloaded' });
+    const card = page.locator('#deliveryGrid .card:not(.skeleton-card)')
+      .filter({ has: page.locator('.opts input[type="radio"]') })
+      .first();
+    await expect(card).toBeVisible({ timeout: 15000 });
+
+    await card.locator('[data-add]').click();
+    await expect(card.locator('.opts-error')).toBeVisible();
+    await expect(card.locator('.opts')).toHaveClass(/shake/);
+    await expect(card.locator('.opts input[type="radio"]').first()).toBeFocused();
+
+    await expect.poll(() => page.evaluate(() => window.__deliveryOptionScrollCalls.length))
+      .toBe(2);
+    const scrollCalls = await page.evaluate(() => window.__deliveryOptionScrollCalls);
+    const expectedBehavior = reducedMotion === 'reduce' ? 'auto' : 'smooth';
+    expect(scrollCalls).toEqual([
+      { target: 'option', behavior: expectedBehavior, block: 'center' },
+      { target: 'options', behavior: expectedBehavior, block: 'center' }
+    ]);
+  });
+}
