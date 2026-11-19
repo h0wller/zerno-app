@@ -83,3 +83,84 @@ test.describe('Delivery card cart state', () => {
     await expect.poll(() => page.evaluate(() => JSON.parse(localStorage.getItem('zt_cart'))[0].qty)).toBe(1);
   });
 });
+
+
+test('card entrance uses backwards fill and releases the desktop hover lift in both brands', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
+  await page.addInitScript(() => {
+    localStorage.setItem('zt_onb', '1');
+    localStorage.removeItem('zt_cart');
+    sessionStorage.setItem('splashDone', '1');
+  });
+
+  for (const storefront of [
+    { brand: 'coffee', grid: '#grid' },
+    { brand: 'delivery', grid: '#deliveryGrid' }
+  ]) {
+    await page.goto('/?brand=' + storefront.brand, { waitUntil: 'domcontentloaded' });
+    const card = page.locator(storefront.grid + ' > .card:not(.skeleton-card)').first();
+    await expect(card).toBeVisible({ timeout: 15000 });
+
+    await expect.poll(() => card.evaluate((element) => getComputedStyle(element).animationName))
+      .toBe('card-enter');
+    await expect.poll(() => card.evaluate((element) => getComputedStyle(element).animationFillMode))
+      .toBe('backwards');
+    await expect.poll(() => card.evaluate((element) => getComputedStyle(element).animationDuration))
+      .toBe('0.18s');
+    await expect.poll(() => card.evaluate((element) => {
+      const animation = element.getAnimations().find((item) => item.animationName === 'card-enter');
+      return !animation || animation.playState === 'finished';
+    })).toBe(true);
+
+    await card.hover();
+    await expect.poll(() => card.evaluate((element) => {
+      const matrix = new DOMMatrixReadOnly(getComputedStyle(element).transform);
+      return matrix.m42;
+    })).toBeLessThan(-1);
+  }
+});
+
+test('quantity stepper has 120ms press feedback without changing its hit target', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
+  await page.addInitScript(() => {
+    localStorage.setItem('zt_onb', '1');
+    localStorage.removeItem('zt_cart');
+    sessionStorage.setItem('splashDone', '1');
+  });
+  await page.goto('/?brand=delivery', { waitUntil: 'domcontentloaded' });
+
+  const card = page.locator('#deliveryGrid .card:not(.skeleton-card)')
+    .filter({ has: page.locator('.opts input[type="radio"]') })
+    .first();
+  await expect(card).toBeVisible({ timeout: 15000 });
+  const option = card.locator('.opts input[type="radio"]').first();
+  if (await option.count()) await option.check();
+  await card.locator('[data-add]').click();
+
+  const step = card.locator('.steprow .step:visible').first();
+  await expect(step).toBeVisible();
+  const box = await step.boundingBox();
+  expect(box.height).toBeGreaterThanOrEqual(44);
+  expect(box.width).toBeGreaterThanOrEqual(44);
+
+  await step.hover();
+  await page.mouse.down();
+  const pressed = await step.evaluate((element) => {
+    const style = getComputedStyle(element);
+    const matrix = new DOMMatrixReadOnly(style.transform);
+    return {
+      duration: style.transitionDuration,
+      scaleX: matrix.m11,
+      scaleY: matrix.m22,
+      filter: style.filter
+    };
+  });
+  await page.mouse.up();
+
+  expect(pressed.duration).toBe('0.12s');
+  expect(pressed.scaleX).toBeCloseTo(0.96, 2);
+  expect(pressed.scaleY).toBeCloseTo(0.96, 2);
+  expect(pressed.filter).toContain('brightness(0.96)');
+});
