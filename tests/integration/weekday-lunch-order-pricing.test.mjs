@@ -197,7 +197,7 @@ test('preorder slot does not activate lunch pricing outside the checkout lunch w
   assert.equal(registrationFreeDelivery.json.order.fee, 0);
   assert.equal(registrationFreeDelivery.json.order.promodiscount, 0);
   assert.equal(registrationFreeDelivery.json.order.promo, registrationFreeCode);
-  assert.equal(registrationFreeDelivery.json.order.total, 1600);
+  assert.equal(registrationFreeDelivery.json.order.total, 2000);
   assert.equal(db.prepare("SELECT uses FROM promos WHERE code=?").get(registrationFreeCode).uses, 1);
   assert.equal(db.prepare("SELECT COUNT(*) AS n FROM promo_use WHERE promo='signup-free-ship'").get().n, 1);
   const freeDeliveryAfterUse = await request('/me/free-delivery', { token: guestToken });
