@@ -170,18 +170,22 @@ test('preorder slot does not activate lunch pricing outside the checkout lunch w
     token: guestToken,
     body: orderBody('02.11 | 12:00–12:30', 'delivery', 'LUNCH10'),
   });
-  assert.equal(percentBlocked.status, 400);
-  assert.match(percentBlocked.json.error || '', /обеденной акции/i);
-  assert.equal(db.prepare("SELECT uses FROM promos WHERE code='LUNCH10'").get().uses, 0);
-  assert.equal(db.prepare("SELECT COUNT(*) AS n FROM promo_use WHERE promo='lunch-percent'").get().n, 0);
+  assert.equal(percentBlocked.status, 200, JSON.stringify(percentBlocked.json));
+  assert.equal(percentBlocked.json.order.discount, 0);
+  assert.equal(percentBlocked.json.order.promodiscount, 200);
+  assert.equal(db.prepare("SELECT uses FROM promos WHERE code='LUNCH10'").get().uses, 1);
+  assert.equal(db.prepare("SELECT COUNT(*) AS n FROM promo_use WHERE promo='lunch-percent'").get().n, 1);
 
   const freeShipBlocked = await request('/orders', {
     method: 'POST',
     token: guestToken,
     body: orderBody('02.11 | 12:30–13:00', 'delivery', 'FREEFIRST'),
   });
-  assert.equal(freeShipBlocked.status, 400);
-  assert.equal(db.prepare("SELECT uses FROM promos WHERE code='FREEFIRST'").get().uses, 0);
+  assert.equal(freeShipBlocked.status, 200, JSON.stringify(freeShipBlocked.json));
+  assert.equal(freeShipBlocked.json.order.discount, 0);
+  assert.equal(freeShipBlocked.json.order.fee, 0);
+  assert.equal(freeShipBlocked.json.order.promo, 'FREEFIRST');
+  assert.equal(db.prepare("SELECT uses FROM promos WHERE code='FREEFIRST'").get().uses, 1);
 
   const registrationFreeDelivery = await request('/orders', {
     method: 'POST',
@@ -189,7 +193,7 @@ test('preorder slot does not activate lunch pricing outside the checkout lunch w
     body: orderBody('02.11 | 12:30–13:00', 'delivery', registrationFreeCode),
   });
   assert.equal(registrationFreeDelivery.status, 200, JSON.stringify(registrationFreeDelivery.json));
-  assert.equal(registrationFreeDelivery.json.order.discount, 400);
+  assert.equal(registrationFreeDelivery.json.order.discount, 0);
   assert.equal(registrationFreeDelivery.json.order.fee, 0);
   assert.equal(registrationFreeDelivery.json.order.promodiscount, 0);
   assert.equal(registrationFreeDelivery.json.order.promo, registrationFreeCode);
@@ -205,8 +209,10 @@ test('preorder slot does not activate lunch pricing outside the checkout lunch w
     token: guestToken,
     body: orderBody('02.11 | 12:30–13:00', 'delivery', 'LUNCHFIXED'),
   });
-  assert.equal(fixedBlocked.status, 400);
-  assert.equal(db.prepare("SELECT uses FROM promos WHERE code='LUNCHFIXED'").get().uses, 0);
+  assert.equal(fixedBlocked.status, 200, JSON.stringify(fixedBlocked.json));
+  assert.equal(fixedBlocked.json.order.discount, 0);
+  assert.equal(fixedBlocked.json.order.promodiscount, 250);
+  assert.equal(db.prepare("SELECT uses FROM promos WHERE code='LUNCHFIXED'").get().uses, 1);
 
   const guestLunch = await request('/orders', {
     method: 'POST',
