@@ -215,12 +215,12 @@ test('lunch pricing stacks only the staff discount and blocks all other promotio
   });
   assert.equal(guestLunch.status, 200, JSON.stringify(guestLunch.json));
   assert.equal(guestLunch.json.order.discount, 0);
-  assert.equal(guestLunch.json.order.discount_label, '20% обеденная акция');
+  assert.equal(guestLunch.json.order.discount_label, '');
   assert.deepEqual(guestLunch.json.order.gifts, [
     { name: 'Подарок недели', qty: 2 },
     { name: 'Пицца месяца — подарок', qty: 1 },
   ]);
-  assert.equal(guestLunch.json.order.total, 1800);
+  assert.equal(guestLunch.json.order.total, 2200);
 
   const staffLunch = await request('/orders', {
     method: 'POST',
@@ -229,13 +229,13 @@ test('lunch pricing stacks only the staff discount and blocks all other promotio
   });
   assert.equal(staffLunch.status, 200, JSON.stringify(staffLunch.json));
   assert.equal(staffLunch.json.order.by_staff, 1);
-  assert.equal(staffLunch.json.order.discount, 600);
-  assert.equal(staffLunch.json.order.discount_label, '20% обеденная акция + 10% для своих');
+  assert.equal(staffLunch.json.order.discount, 200);
+  assert.equal(staffLunch.json.order.discount_label, '10% для своих');
   assert.deepEqual(staffLunch.json.order.gifts, [
     { name: 'Подарок недели', qty: 2 },
     { name: 'Пицца месяца — подарок', qty: 1 },
   ]);
-  assert.equal(staffLunch.json.order.total, 1600);
+  assert.equal(staffLunch.json.order.total, 2000);
 
   const pickupLunch = await request('/orders', {
     method: 'POST',
