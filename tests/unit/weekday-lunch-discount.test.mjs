@@ -13,13 +13,15 @@ test('обеденная акция действует по будням с 11:0
   assert.equal(isWeekdayLunchDiscountActive({ dayOfWeek: 0, hour: 12, minute: 0 }), false);
 });
 
-test('предзаказ использует время начала выбранного слота', () => {
-  const beforeLunch = validateDeliverySlot('02.11 | 12:00–12:30', new Date('2026-11-02T08:00:00.000Z'));
-  const afterLunch = validateDeliverySlot('02.11 | 16:00–16:30', new Date('2026-11-02T08:00:00.000Z'));
-  assert.equal(beforeLunch.valid, true);
-  assert.equal(isWeekdayLunchDiscountActive(beforeLunch), true);
-  assert.equal(afterLunch.valid, true);
-  assert.equal(isWeekdayLunchDiscountActive(afterLunch), false);
+test('предзаказ не переносит обеденную скидку на время выбранного слота', () => {
+  const checkoutBeforeLunch = getDeliveryHours(new Date('2026-11-02T08:00:00.000Z'));
+  const checkoutDuringLunch = getDeliveryHours(new Date('2026-11-02T09:00:00.000Z'));
+  const lunchSlot = validateDeliverySlot('02.11 | 12:00–12:30', new Date('2026-11-02T08:00:00.000Z'));
+  const afterLunchSlot = validateDeliverySlot('02.11 | 16:00–16:30', new Date('2026-11-02T08:00:00.000Z'));
+  assert.equal(lunchSlot.valid, true);
+  assert.equal(afterLunchSlot.valid, true);
+  assert.equal(isWeekdayLunchDiscountActive(checkoutBeforeLunch), false);
+  assert.equal(isWeekdayLunchDiscountActive(checkoutDuringLunch), true);
 });
 
 test('в обеденное окно скидка для своих складывается с 20% от исходной суммы', () => {
