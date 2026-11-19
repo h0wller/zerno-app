@@ -62,18 +62,6 @@ $('#giveStampBtn').onclick = async () => {
   } catch (e) { toast(e.message, '⚠️'); }
 };
 
-$('#redeemBtn').onclick = async () => {
-  if (!found) return;
-  try {
-    const r = await api('/staff/redeem', { method: 'POST', body: { id: found.id } });
-    found = r.customer;
-    showCust(found);
-    renderLog();
-    renderProfile();
-    toast('Бесплатный кофе списан', '🎁');
-  } catch (e) { toast(e.message, '⚠️'); }
-};
-
 const toggleNgModal = () => {
   const c = $('#ngCard');
   if (!c) return;
@@ -153,27 +141,74 @@ function cashierClean(){
 showCust=(function(_sc){return function(u,last){window.__foundId=u&&u.id;return _sc(u,last);};})(showCust);
 
 (function(){
-  if(document.getElementById('redeemPick'))return;
-  var m=document.createElement('div');m.id='redeemPick';
-  m.innerHTML='<div class="omCard" style="max-width:420px"><button type="button" class="omClose">✕</button><h3 style="margin:0 0 12px">🎁 Какой кофе списать?</h3><div id="rpList" style="display:grid;gap:8px"></div></div>';
-  document.body.appendChild(m);
-  m.addEventListener('click',function(e){if(e.target===m||e.target.closest('.omClose'))m.classList.remove('show');});
-  document.getElementById('rpList').innerHTML=['Эспрессо','Американо','Капучино','Латте','Флэт уайт','Батч брю'].map(function(n){return '<button type="button" class="btn ghost" data-rp="'+n+'" style="width:100%">'+n+'</button>';}).join('');
-  m.addEventListener('click',async function(e){
-    var b=e.target.closest('[data-rp]');if(!b)return;
-    var id=window.__foundId;if(!id)return toast('Гость не найден','⚠️');
-    try{var r=await api('/staff/redeem',{method:'POST',body:{id:id,item:b.dataset.rp}});
-      m.classList.remove('show');toast('Списано: '+b.dataset.rp,'🎁');
-      try{showCust(r.customer);}catch(e2){}
-    }catch(err){toast(err.message,'⚠️');}
-  });
-  var rb=document.getElementById('redeemBtn');
-  if(rb)rb.addEventListener('click',function(e){
-    e.stopImmediatePropagation();e.preventDefault();
-    document.getElementById('redeemPick').classList.add('show');
-  },true);
-})();
+  var modal = document.getElementById('redeemPick');
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.id = 'redeemPick';
+    modal.setAttribute('role', 'dialog');
+    modal.setAttribute('aria-modal', 'true');
+    modal.setAttribute('aria-labelledby', 'redeemPickTitle');
+    modal.innerHTML = '<div class="omCard" style="max-width:420px"><button type="button" class="omClose" aria-label="Закрыть">✕</button><h3 id="redeemPickTitle" style="margin:0 0 12px">🎁 Какой кофе списать?</h3><div id="rpList" style="display:grid;gap:8px"></div></div>';
+    document.body.appendChild(modal);
+  }
 
+  var drinks = ['Эспрессо','Американо','Капучино','Латте','Флэт уайт','Батч брю'];
+  var list = modal.querySelector('#rpList');
+  if (list && !list.children.length) {
+    list.innerHTML = drinks.map(function(name) {
+      return '<button type="button" class="btn ghost" data-rp="' + name + '" style="width:100%">' + name + '</button>';
+    }).join('');
+  }
+
+  var redeemButton = document.getElementById('redeemBtn');
+  function closePicker() {
+    modal.classList.remove('show');
+    if (typeof window.syncOverlay === 'function') window.syncOverlay();
+    if (redeemButton && !redeemButton.hidden) redeemButton.focus();
+  }
+
+  if (redeemButton) {
+    redeemButton.onclick = function(event) {
+      event.preventDefault();
+      if (!found || Number(found.free) < 1) return;
+      modal.classList.add('show');
+      if (typeof window.syncOverlay === 'function') window.syncOverlay();
+      var firstDrink = modal.querySelector('[data-rp]');
+      if (firstDrink) firstDrink.focus();
+    };
+  }
+
+  modal.addEventListener('click', async function(event) {
+    if (event.target === modal || event.target.closest('.omClose')) {
+      closePicker();
+      return;
+    }
+    var drinkButton = event.target.closest('[data-rp]');
+    if (!drinkButton) return;
+    if (!found || Number(found.free) < 1) {
+      closePicker();
+      return toast('У гостя нет доступных подарков', '⚠️');
+    }
+
+    var buttons = Array.from(modal.querySelectorAll('[data-rp]'));
+    buttons.forEach(function(button) { button.disabled = true; });
+    try {
+      var result = await api('/staff/redeem', {
+        method: 'POST',
+        body: { id: found.id, item: drinkButton.dataset.rp }
+      });
+      closePicker();
+      showCust(result.customer);
+      renderLog();
+      if (typeof renderProfile === 'function') renderProfile();
+      toast('Списано: ' + drinkButton.dataset.rp, '🎁');
+    } catch (error) {
+      toast(error.message || 'Не удалось списать подарок', '⚠️');
+    } finally {
+      buttons.forEach(function(button) { button.disabled = false; });
+    }
+  });
+})();
 (function(){
 window.renderLog = renderLog; /* Ф5.6-финал шаг 2-fix: голый вызов из catalog setMode */
 })();
