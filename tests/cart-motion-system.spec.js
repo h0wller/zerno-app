@@ -40,6 +40,24 @@ async function expectCartAtRest(panel, viewport, open) {
   const geometry = await panel.evaluate((element) => {
     const rect = element.getBoundingClientRect();
     const style = getComputedStyle(element);
+    const root = document.documentElement;
+    const body = document.body;
+    const wrap = document.querySelector('.wrap');
+    const ancestors = [];
+    for (let node = element.parentElement; node; node = node.parentElement) {
+      const computed = getComputedStyle(node);
+      const rect = node.getBoundingClientRect();
+      ancestors.push({
+        node: node.tagName.toLowerCase() + (node.id ? '#' + node.id : '') + (typeof node.className === 'string' && node.className ? '.' + node.className.trim().replace(/\\s+/g, '.') : ''),
+        right: rect.right,
+        position: computed.position,
+        transform: computed.transform,
+        filter: computed.filter,
+        perspective: computed.perspective,
+        contain: computed.contain,
+        willChange: computed.willChange,
+      });
+    }
     return {
       left: rect.left,
       right: rect.right,
@@ -52,7 +70,20 @@ async function expectCartAtRest(panel, viewport, open) {
       visibility: style.visibility,
       display: style.display,
       pointerEvents: style.pointerEvents,
-      layoutViewportRight: document.querySelector('.wrap').getBoundingClientRect().right,
+      rightCss: style.right,
+      innerWidth: window.innerWidth,
+      visualViewportWidth: window.visualViewport?.width ?? null,
+      rootClientWidth: root.clientWidth,
+      rootScrollWidth: root.scrollWidth,
+      rootRectRight: root.getBoundingClientRect().right,
+      rootOverflowY: getComputedStyle(root).overflowY,
+      rootScrollbarGutter: getComputedStyle(root).scrollbarGutter,
+      bodyClientWidth: body.clientWidth,
+      bodyRectRight: body.getBoundingClientRect().right,
+      wrapClientWidth: wrap.clientWidth,
+      wrapOffsetWidth: wrap.offsetWidth,
+      wrapRectRight: wrap.getBoundingClientRect().right,
+      ancestors,
     };
   });
 
@@ -67,7 +98,7 @@ async function expectCartAtRest(panel, viewport, open) {
       expect(geometry.top).toBeGreaterThanOrEqual(viewport.height - 1);
     }
   } else if (open) {
-    expect(Math.abs(geometry.right - geometry.layoutViewportRight)).toBeLessThanOrEqual(1);
+    expect(Math.abs(geometry.right - geometry.wrapRectRight), JSON.stringify(geometry)).toBeLessThanOrEqual(1);
     expect(geometry.width).toBeGreaterThan(0);
     expect(geometry.width).toBeLessThanOrEqual(Math.min(430, viewport.width));
   } else {

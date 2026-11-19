@@ -282,6 +282,11 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
     expect(before.scrollWidth).toBeLessThanOrEqual(before.viewportWidth + 1);
 
     await waitForDeferredTheme(page);
+    // Compare layout at rest: card-enter changes only the visual transform, not layout geometry.
+    await page.locator('#deliveryGrid > .card').first().evaluate(async (card) => {
+      await Promise.all(card.getAnimations({ subtree: true })
+        .map((animation) => animation.finished.catch(() => {})));
+    });
     const after = await measure();
     const imagePriorities = await page.evaluate(() => {
       const cards = Array.from(document.querySelectorAll('#deliveryGrid > .card[data-product-id]'));
