@@ -17,8 +17,8 @@ test.describe('Initial catalog image priorities', () => {
       sessionStorage.setItem('splashDone', '1');
     });
     await page.goto('/?brand=coffee');
-    await expect(page.locator('#grid article').first()).toBeAttached();
-    await page.waitForTimeout(700);
+    await expect(page.locator('#grid > .card img').first()).toBeAttached({ timeout: 15000 });
+    await expect.poll(() => page.evaluate(() => Array.isArray(window.MENU) && window.MENU.length > 0)).toBe(true);
 
     expect(deliveryHeroRequests).toHaveLength(0);
   });
