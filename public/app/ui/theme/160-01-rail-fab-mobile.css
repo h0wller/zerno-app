@@ -320,6 +320,11 @@ html body .auth-badge-confirmed.auth-badge-confirmed{
   from { opacity: 0; transform: translateY(-8px) scale(0.98); }
   to { opacity: 1; transform: translateY(0) scale(1); }
 }
+@media (prefers-reduced-motion: reduce) {
+  html body .auth-badge-confirmed.auth-badge-confirmed {
+    animation: none;
+  }
+}
 /* Упрощённый вид формы внутри Telegram Mini App */
 html body #authModal.tg-mode #regTgBtn,
 html body #authModal.tg-mode .mhint{
@@ -808,6 +813,13 @@ html body #authModal.tg-mode .mhint{
   color: var(--status-alert, #B26A05);
   border: 1.5px dashed var(--amber, #F2D9A5);
   animation: preorder-timer-in 0.3s both, preorder-pulse 2s ease-in-out infinite;
+}
+
+/* The mobile profile drawer is offscreen while closed; keep its waiting badge static there. */
+@media (max-width: 1180px) and (prefers-reduced-motion: no-preference) {
+  #panel:not(.open) .preorder-timer-waiting {
+    animation: preorder-timer-in 0.3s both;
+  }
 }
 .preorder-timer-active {
   background: var(--tint-success, #E4EFE2);

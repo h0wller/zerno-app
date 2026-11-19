@@ -501,8 +501,8 @@ html.is-audit .overlay {
   opacity: 0 !important;
   pointer-events: none !important;
 }
-html.is-audit body > *:not(#brandSplashStatic):not(#cartFab),
-html.no-splash body > *:not(#brandSplashStatic):not(.ticker.is-empty):not(#cartFab) {
+html.is-audit body > *:not(#brandSplashStatic):not(#cartFab):not(#cartPanel),
+html.no-splash body > *:not(#brandSplashStatic):not(.ticker.is-empty):not(#cartFab):not(#cartPanel) {
   visibility: visible !important;
 }
 
@@ -527,9 +527,19 @@ html[data-brand="delivery"] #menuView {
 #redeemPick:not(.show),
 #ordersModal:not(.show),
 #qrModal:not(.show),
-#cartPanel:not(.open),
 #chatPanel:not(.open) {
   display: none !important;
+}
+
+/* First-frame mirror: keep the cart in the render tree so its owner can animate
+   both directions; visibility also removes closed sheet controls from focus order. */
+#cartPanel:not(.open) {
+  visibility: hidden;
+  pointer-events: none;
+}
+#cartPanel.open {
+  visibility: visible;
+  pointer-events: auto;
 }
 
 /* ─── 4. critical FOUC-guard: первый кадр шапки, сетки .wrap и марки (стабилизация CLS) ─── */
@@ -1105,7 +1115,7 @@ body {
   #brandSplash .spBtns { grid-template-columns: 1fr 1fr; }
 }
 @keyframes spRise {
-  from { opacity: 0; transform: translateY(16px); }
+  from { opacity: 1; transform: translateY(16px); }
   to { opacity: 1; transform: none; }
 }
 @keyframes spFloat {

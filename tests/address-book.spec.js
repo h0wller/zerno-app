@@ -33,7 +33,10 @@ test.describe('Мои адреса: шторка и сохранение', () =>
     localStorage.setItem('zt_saved_addresses', JSON.stringify(l));
     if (l.length) localStorage.setItem('zt_saved_address', JSON.stringify(l[0]));
   }, list);
-  const load = (page) => page.addScriptTag({ path: 'public/app/core/address-book.js' });
+  const load = async (page) => {
+    await page.addStyleTag({ path: 'public/app/ui/theme/160-01-rail-fab-mobile.css' });
+    await page.addScriptTag({ path: 'public/app/core/address-book.js' });
+  };
   const sheetOpen = (page) => page.evaluate(() => !document.getElementById('addrBookSheet').hidden);
   const stored = (page) => page.evaluate(() => JSON.parse(localStorage.getItem('zt_saved_addresses') || '[]'));
 
@@ -105,4 +108,68 @@ test.describe('Мои адреса: шторка и сохранение', () =>
     await expect(page.locator('.abs-row')).toHaveCount(1);
     await expect(page.locator('.abs-title')).toHaveText('Янтарный, Советская, 70Г');
   });
+  test('normal motion keeps the address sheet mounted through its spatial exit', async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'no-preference' });
+    await load(page);
+    const sheet = page.locator('#addrBookSheet');
+
+    await page.evaluate(() => {
+      window.__addressBookTransitionRuns = [];
+      document.addEventListener('transitionrun', (event) => {
+        if (event.target && event.target.id === 'addrBookSheet') {
+          window.__addressBookTransitionRuns.push(event.propertyName);
+        }
+      }, true);
+    });
+
+    await page.click('#addrBookBtn');
+    await expect(sheet).toBeVisible();
+    await expect(sheet).toHaveClass(/open/);
+    await expect(sheet).toHaveCSS('transition-duration', '0.22s, 0.22s');
+    await expect.poll(() => page.evaluate(() => window.__addressBookTransitionRuns))
+      .toContain('opacity');
+    await expect.poll(() => sheet.evaluate((element) => getComputedStyle(element).opacity))
+      .toBe('1');
+
+    await page.evaluate(() => {
+      window.__addressBookTransitionRuns = [];
+      window.AddressBook.close();
+    });
+    await expect(sheet).not.toHaveClass(/open/);
+    await expect(sheet).toBeVisible();
+    await expect.poll(() => page.evaluate(() => window.__addressBookTransitionRuns))
+      .toContain('opacity');
+    await expect(sheet).toBeHidden({ timeout: 1000 });
+  });
+
+  test('reduced motion closes the address sheet immediately', async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await load(page);
+    const sheet = page.locator('#addrBookSheet');
+
+    await page.click('#addrBookBtn');
+    await expect(sheet).toBeVisible();
+    await expect(sheet).toHaveCSS('transition-duration', '0s');
+
+    await page.evaluate(() => window.AddressBook.close());
+    await expect(sheet).toBeHidden();
+  });
+
+  test('rapid address-sheet reopen cancels a pending close', async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'no-preference' });
+    await load(page);
+    const sheet = page.locator('#addrBookSheet');
+
+    await page.click('#addrBookBtn');
+    await expect(sheet).toBeVisible();
+    await page.evaluate(() => window.AddressBook.close());
+    await expect(sheet).toBeVisible();
+
+    await page.evaluate(() => window.AddressBook.open());
+    await expect(sheet).toHaveClass(/open/);
+    await page.waitForTimeout(300);
+    await expect(sheet).toBeVisible();
+    await expect(sheet).toHaveClass(/open/);
+  });
+
 });

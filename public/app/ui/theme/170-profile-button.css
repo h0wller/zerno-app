@@ -935,6 +935,11 @@
   #profileBox .phead { grid-template-columns: 44px minmax(0, 1fr) 44px; gap: 8px; }
 }
 @media (prefers-reduced-motion: reduce) {
+  #profileTopBtn,
+  #profileTopBtn:hover,
+  .tabs .btn-back,
+  .profile-stamps-track > span,
+  .friday-info-chevron,
   #profileBox .profile-name-edit-icon,
   #profileBox #profileSettingsBtn,
   #profileBox .profile-name-action,
@@ -948,6 +953,10 @@
   #profileBox .friday-info-review,
   #profileBox .friday-info-link,
   #profileBox .myOrderCard .moTrack { transition: none; }
+
+  #profileTopBtn:hover {
+    transform: none;
+  }
 }
 
 

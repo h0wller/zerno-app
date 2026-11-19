@@ -6,7 +6,7 @@ const BRANDS = [
 ];
 
 for (const brand of BRANDS) {
-  test(`${brand.brand}: tapping the selected category returns to the page top`, async ({ page }) => {
+  test(`${brand.brand}: tapping the selected category returns to the page top`, async ({ page }, testInfo) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.addInitScript(() => sessionStorage.setItem('splashDone', '1'));
     await page.goto('/?brand=' + brand.brand, { waitUntil: 'domcontentloaded' });
@@ -48,6 +48,10 @@ for (const brand of BRANDS) {
       await expect(cartFab).not.toHaveClass(/is-scroll-fading/);
       await expect.poll(() => cartFab.evaluate(el => Number.parseFloat(getComputedStyle(el).opacity))).toBeGreaterThan(0.9);
     }
+    await testInfo.attach('category-scroll-' + brand.brand + '-category-to-top-390x844', {
+      body: await page.screenshot({ animations: 'disabled' }),
+      contentType: 'image/png',
+    });
     await expect(page.locator('#scrollTopBtn')).toHaveCount(0);
   });
 
