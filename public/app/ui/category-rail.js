@@ -244,19 +244,25 @@ function cancelProgrammaticScrollToTop() {
   finishProgrammaticScrollToTop();
 }
 
-window.scrollToTopWithoutRailFade = function () {
+/* Any scroll started by the app itself (retap of the active category, switching category)
+   must not fade the rail: the user did not scroll, so the capsule has to stay visible. */
+window.scrollToWithoutRailFade = function (top) {
   finishProgrammaticScrollToTop();
   clearScrollFade();
   var currentY = window.scrollY || document.documentElement.scrollTop || 0;
-  if (currentY <= 0) return;
+  if (top <= 0 ? currentY <= 0 : Math.abs(currentY - top) < 1) return;
 
   programmaticScrollToTop = true;
   var reduceMotion = window.matchMedia &&
     window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  window.scrollTo({ top: 0, behavior: reduceMotion ? 'auto' : 'smooth' });
+  window.scrollTo({ top: top, behavior: reduceMotion ? 'auto' : 'smooth' });
 
   /* scrollend is authoritative; timeout is a fallback for older WebKit versions. */
   programmaticScrollToTopTimer = window.setTimeout(finishProgrammaticScrollToTop, 2500);
+};
+
+window.scrollToTopWithoutRailFade = function () {
+  window.scrollToWithoutRailFade(0);
 };
 
 window.addEventListener('scrollend', finishProgrammaticScrollToTop, { passive: true });

@@ -115,6 +115,33 @@ for (const brand of BRANDS) {
 
 
 for (const brand of BRANDS) {
+  test(`${brand.brand}: switching category from a scrolled page does not fade the rail`, async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.addInitScript(() => sessionStorage.setItem('splashDone', '1'));
+    await page.goto('/?brand=' + brand.brand, { waitUntil: 'domcontentloaded' });
+    const rail = page.locator(brand.rail);
+    await expect(page.locator(brand.active)).toBeVisible({ timeout: 15000 });
+    await page.evaluate(() => window.scrollTo(0, 700));
+    await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(300);
+    await expect.poll(() => rail.evaluate(el => el.classList.contains('is-scroll-fading')), { timeout: 5000 }).toBe(false);
+
+    await page.evaluate(() => {
+      window.__categorySwitchFadeStates = [];
+      window.addEventListener('scroll', () => {
+        window.__categorySwitchFadeStates.push(!!document.querySelector('#rail.is-scroll-fading, #deliveryRail.is-scroll-fading'));
+      }, { passive: true });
+    });
+    await rail.locator('button:not(.on)').first().click();
+    await expect.poll(() => page.evaluate(() => window.scrollY), { timeout: 5000 }).not.toBe(700);
+    await expect.poll(() => page.evaluate(() => window.__categorySwitchFadeStates.length)).toBeGreaterThan(0);
+    const states = await page.evaluate(() => window.__categorySwitchFadeStates);
+    expect(states.every(faded => !faded), 'rail must not fade while the app scrolls to the new category').toBe(true);
+    await expect.poll(() => rail.evaluate(el => Number.parseFloat(getComputedStyle(el).opacity))).toBeGreaterThan(0.9);
+  });
+}
+
+
+for (const brand of BRANDS) {
   test(`${brand.brand}: landscape layout keeps the category rail visible`, async ({ page }, testInfo) => {
     await page.setViewportSize({ width: 844, height: 390 });
     await page.addInitScript(() => sessionStorage.setItem('splashDone', '1'));
