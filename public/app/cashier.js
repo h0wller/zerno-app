@@ -75,31 +75,34 @@ $('#newGuestBtn').onclick = toggleNgModal;
 const ng2 = $('#newGuestBtn2');
 if (ng2) ng2.onclick = toggleNgModal;
 
-$('#ngCancel').onclick = () => { $('#ngCard').hidden = true; };
+$('#ngCancel').onclick = () => { $('#ngCard').hidden = true; $('#ngPin').value = ''; };
 
 $('#ngSave').onclick = async () => {
-  const name = $('#ngName').value.trim(), phone = $('#ngPhone').value;
+  const name = $('#ngName').value.trim();
+  const phone = $('#ngPhone').value;
+  const pin = $('#ngPin').value.trim();
   if (name.length < 2) return toast('Введите имя гостя', '✍️');
   if (ph10(phone).length < 10) return toast('Введите номер полностью', '📵');
+  if (!/^\\d{4}$/.test(pin)) return toast('PIN гостя должен состоять ровно из 4 цифр', '🔐');
   try {
-    const r = await api('/staff/customers', { method: 'POST', body: { name, phone } });
+    const r = await api('/staff/customers', {
+      method: 'POST',
+      body: { name, phone, pin }
+    });
     $('#ngCard').hidden = true;
     $('#ngName').value = '';
     $('#ngPhone').value = '';
+    $('#ngPin').value = '';
     showCust(r.customer);
     renderLog();
-    toast(`Профиль создан: ${esc(name)}. Можно начислять штампы`, '✅');
-  } catch (e) {
-    if (e.code === 409 || (e.code === 400 && /exists/i.test(e.message || ''))) { /* Ф5.24: exists-fallthrough сервера */
-      try {
-        const f = await api('/staff/customers?search=' + encodeURIComponent(phone));
-        if (f.customers.length) {
-          $('#ngCard').hidden = true;
-          showCust(f.customers[0]);
-          return toast(`Профиль уже есть по этому номеру: ${esc(f.customers[0].name)}`, '🔔');
-        }
-      } catch (_) {}
+    if (r.created) {
+      toast(`Профиль создан: ${esc(r.customer.name)}. Передайте гостю PIN для входа`, '✅');
+    } else if (r.pinPreserved) {
+      toast(`Профиль уже существует. Его прежний PIN сохранён`, '🔔');
+    } else {
+      toast(`Профиль найден и активирован. PIN установлен`, '✅');
     }
+  } catch (e) {
     toast(e.message, '⚠️');
   }
 };
