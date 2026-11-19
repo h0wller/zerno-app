@@ -472,6 +472,7 @@ test('mobile category tabs match the catalog width and distribute evenly for bot
             borderBottomStyle: style.borderBottomStyle,
             iconBackground: iconStyle?.backgroundColor ?? null,
             iconBorder: iconStyle?.borderTopWidth ?? null,
+            iconBorderColor: iconStyle?.borderTopColor ?? null,
             iconRadius: iconStyle?.borderTopLeftRadius ?? null,
             fontFamily: style.fontFamily,
             active: button.getAttribute('aria-pressed') === 'true',
@@ -563,17 +564,28 @@ test('mobile category tabs match the catalog width and distribute evenly for bot
         expect(button.radius, brand.brand + ' category uses a compact selected-state pill shape').toBe('20px');
         if (!button.active) {
           expect(button.background, brand.brand + ' inactive category remains visually quiet').toBe('rgba(0, 0, 0, 0)');
+          expect(button.iconBackground, brand.brand + ' inactive icon remains visually quiet').toBe('rgba(0, 0, 0, 0)');
+          expect(button.iconBorder, brand.brand + ' inactive icon has no frame').toBe('0px');
+        } else if (brand.brand === 'coffee') {
+          expect(button.background, 'coffee selected category keeps its blue filled tab').toBe('rgb(18, 58, 107)');
+          expect(button.iconBackground, 'coffee selected icon does not duplicate the tab fill').toBe('rgba(0, 0, 0, 0)');
+          expect(button.iconBorder, 'coffee selected icon has no frame').toBe('0px');
         } else {
-          expect(button.background, brand.brand + ' selected category uses a filled state').not.toBe('rgba(0, 0, 0, 0)');
+          expect(button.background, 'delivery selected tab remains unfilled').toBe('rgba(0, 0, 0, 0)');
+          expect(button.iconBackground, 'delivery selected icon uses the flame token').toBe('rgb(192, 59, 42)');
+          expect(button.iconBorder, 'delivery selected icon uses the chocolate frame').toBe('2px');
+          expect(button.iconBorderColor, 'delivery selected icon frame uses the chocolate token').toBe('rgb(58, 42, 28)');
         }
         expect(button.borderTop, brand.brand + ' category has no extra top border').toBe('0px');
-        expect(button.iconBackground, brand.brand + ' icon does not carry a duplicate selected chip').toBe('rgba(0, 0, 0, 0)');
-        expect(button.iconBorder, brand.brand + ' icon has no frame').toBe('0px');
         expect(button.iconRadius, brand.brand + ' icon keeps its brand-specific shape')
           .toBe(brand.brand === 'coffee' ? '50%' : '8px');
       }
 
-      expect(geometry.activeBackground, brand.brand + ' selected tab is filled').not.toBe('rgba(0, 0, 0, 0)');
+      if (brand.brand === 'coffee') {
+        expect(geometry.activeBackground, 'coffee selected tab is blue-filled').toBe('rgb(18, 58, 107)');
+      } else {
+        expect(geometry.activeBackground, 'delivery selected tab itself remains transparent').toBe('rgba(0, 0, 0, 0)');
+      }
       expect(geometry.activeBorderBottom, brand.brand + ' selected tab has no legacy underline').toBe('0px');
 
       if (geometry.filterTop !== null) {
@@ -1297,6 +1309,8 @@ test('category rail uses one surface and viewport-appropriate selected treatment
         return {
           iconRect: { width: rect.width, height: rect.height },
           iconBackground: iconStyle.backgroundColor,
+          iconBorder: iconStyle.borderTopWidth,
+          iconBorderColor: iconStyle.borderTopColor,
           iconRadius: iconStyle.borderRadius,
           inactiveIconBackground: inactiveIconStyle.backgroundColor,
           inactiveIconBorder: inactiveIconStyle.borderWidth,
@@ -1336,8 +1350,15 @@ test('category rail uses one surface and viewport-appropriate selected treatment
       expect(styles.inactiveBackground, brand + ' inactive tab must not have a fill').toBe('rgba(0, 0, 0, 0)');
       expect(styles.inactiveBorder, brand + ' inactive tab must not have a frame').toBe('0px');
       if (horizontalRail) {
-        expect(styles.iconBackground, brand + ' selected icon does not duplicate the tab fill').toBe('rgba(0, 0, 0, 0)');
-        expect(styles.buttonBackground, brand + ' selected tab uses a filled state').not.toBe('rgba(0, 0, 0, 0)');
+        if (brand === 'coffee') {
+          expect(styles.iconBackground, 'coffee selected icon does not duplicate the tab fill').toBe('rgba(0, 0, 0, 0)');
+          expect(styles.buttonBackground, 'coffee selected tab remains blue-filled').toBe('rgb(18, 58, 107)');
+        } else {
+          expect(styles.iconBackground, 'delivery selected icon uses the flame fill').toBe('rgb(192, 59, 42)');
+          expect(styles.iconBorder, 'delivery selected icon uses a 2px chocolate frame').toBe('2px');
+          expect(styles.iconBorderColor, 'delivery selected icon frame uses chocolate').toBe('rgb(58, 42, 28)');
+          expect(styles.buttonBackground, 'delivery selected tab remains unfilled').toBe('rgba(0, 0, 0, 0)');
+        }
         expect(styles.buttonRadius).toBe('20px');
         expect(styles.pseudo.content).toBe('none');
         expect(styles.pseudo.display).toBe('none');
@@ -1594,8 +1615,21 @@ test('horizontal rail baseline diagnostics and first-paint geometry', async ({ b
       expect(hydrated.computed.inactiveIcon.backgroundColor, `${brand.brand} ${viewport.name}: inactive icon has no chip`).toBe('rgba(0, 0, 0, 0)');
       if (usesHorizontalRail(viewport)) {
         expect(hydrated.activeAfter.content, `${brand.brand} ${viewport.name}: mobile selected state has no underline`).toBe('none');
-        expect(hydrated.computed.button.backgroundColor,
-          `${brand.brand} ${viewport.name}: selected category uses a filled tab`).not.toBe('rgba(0, 0, 0, 0)');
+        if (brand.brand === 'coffee') {
+          expect(hydrated.computed.button.backgroundColor,
+            `${brand.brand} ${viewport.name}: coffee selected category keeps its blue tab`).toBe('rgb(18, 58, 107)');
+          expect(hydrated.computed.activeIcon.backgroundColor,
+            `${brand.brand} ${viewport.name}: coffee icon stays transparent`).toBe('rgba(0, 0, 0, 0)');
+        } else {
+          expect(hydrated.computed.button.backgroundColor,
+            `${brand.brand} ${viewport.name}: delivery tab stays transparent`).toBe('rgba(0, 0, 0, 0)');
+          expect(hydrated.computed.activeIcon.backgroundColor,
+            `${brand.brand} ${viewport.name}: delivery icon uses flame`).toBe('rgb(192, 59, 42)');
+          expect(hydrated.computed.activeIcon.borderTopWidth,
+            `${brand.brand} ${viewport.name}: delivery icon uses chocolate outline`).toBe('2px');
+          expect(hydrated.computed.activeIcon.borderTopColor,
+            `${brand.brand} ${viewport.name}: delivery outline uses chocolate token`).toBe('rgb(58, 42, 28)');
+        }
       } else {
         expect(hydrated.activeAfter.content, `${brand.brand} ${viewport.name}: desktop active underline exists`).not.toBe('none');
         expect(hydrated.activeAfter.height, `${brand.brand} ${viewport.name}: desktop underline height`).toBe('3px');
