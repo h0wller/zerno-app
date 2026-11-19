@@ -105,6 +105,11 @@ addEventListener("keydown", (e) => {
     closeQRFull();
     closePromo();
     closeDash();
+    const staffChatModal = document.getElementById("staffChatModal");
+    if (staffChatModal && staffChatModal.classList.contains("show") &&
+        typeof window.closeStaffChat === "function") {
+      window.closeStaffChat();
+    }
     $("#chatPanel").classList.remove("open");
     const cartPanel = document.getElementById("cartPanel");
     if (cartPanel) cartPanel.classList.remove("open");

@@ -878,3 +878,72 @@ test('preorder waiting pulse pauses while the mobile profile drawer is closed an
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await expect(timer).toHaveCSS('animation-name', 'none');
 });
+
+test('empty latest-order refresh keeps the following profile section anchored', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    let releaseResponse;
+    let markRequestStarted;
+    const requestStarted = new Promise(resolve => { markRequestStarted = resolve; });
+    const responseGate = new Promise(resolve => { releaseResponse = resolve; });
+
+    await page.addInitScript(() => {
+      localStorage.setItem('zt_onb', '1');
+      localStorage.setItem('zt_inst_hide', '1');
+      sessionStorage.setItem('splashDone', '1');
+    });
+    await page.route('**/api/orders/mine', async route => {
+      markRequestStarted();
+      await responseGate;
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ orders: [] })
+      });
+    });
+
+    await page.goto('/?brand=delivery');
+    await page.waitForFunction(() =>
+      typeof window.setUser === 'function' &&
+      typeof window.renderProfile === 'function' &&
+      typeof window.openPanel === 'function' &&
+      typeof window.__profileMeReady === 'function' &&
+      Array.isArray(window.DMENU) && window.DMENU.length > 0
+    );
+    await page.evaluate(() => {
+      const customer = {
+        id: 'profile-layout-refresh',
+        name: 'Тестовый гость',
+        phone: '+7 900 000-00-09',
+        role: 'guest',
+        cups: 2,
+        stamps: 2,
+        free: 0,
+        qr: 'profile-layout-refresh',
+        history: [],
+        verified: 1
+      };
+      window.setUser('profile-layout-refresh-token', customer);
+      window.__profileMeReady();
+      window.renderProfile();
+      window.openPanel('profile');
+    });
+    await expect(page.locator('#panel')).toHaveClass(/open/);
+
+    await requestStarted;
+    await expect(page.locator('#myOrders')).toContainText('Загрузка заказа…');
+    const before = await page.evaluate(() => ({
+      hostHeight: document.querySelector('#myOrders').getBoundingClientRect().height,
+      nextY: document.querySelector('#fridayInfo').getBoundingClientRect().y
+    }));
+
+    releaseResponse();
+    await expect(page.locator('#myOrders')).toContainText('Заказов пока нет');
+    const after = await page.evaluate(() => ({
+      hostHeight: document.querySelector('#myOrders').getBoundingClientRect().height,
+      nextY: document.querySelector('#fridayInfo').getBoundingClientRect().y
+    }));
+
+    expect(before.hostHeight).toBeGreaterThanOrEqual(64);
+    expect(Math.abs(after.nextY - before.nextY), 'content after the latest-order slot does not move').toBeLessThanOrEqual(1);
+    expect(Math.abs(after.hostHeight - before.hostHeight), 'latest-order slot retains its reserved height').toBeLessThanOrEqual(1);
+  });
