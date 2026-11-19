@@ -1626,36 +1626,34 @@ html[data-brand="delivery"] {
       var nativeFetch = window.fetch;
       var pending = nativeFetch.call(window, endpoint, {
         headers: { Accept: 'application/json' }
-      });
-
-      // Discover the current coffee LCP image as soon as the early menu request resolves.
-      // Clone the response so the normal API consumer can still read its body.
-      if (endpoint === '/api/menu') {
-        pending.then(function (response) {
-          if (!response || !response.ok) return null;
-          return response.clone().json();
-        }).then(function (payload) {
+      }).then(function (response) {
+        if (endpoint !== '/api/menu' || !response || !response.ok) return response;
+        // Do not release the response to loadMenu() until the matching image preload is in the DOM.
+        return response.clone().json().then(function (payload) {
           var items = payload && Array.isArray(payload.items) ? payload.items : [];
           var first = items.find(function (item) {
             return item && item.cat === 'coffee' && item.on && item.img;
           });
-          if (!first) return;
-
-          var preload = document.createElement('link');
-          preload.id = 'zt-menu-lcp-preload';
-          preload.rel = 'preload';
-          preload.as = 'image';
-          preload.href = first.img;
-          preload.type = 'image/webp';
-          preload.setAttribute('fetchpriority', 'high');
-          if (first.imgSrcset) {
-            preload.setAttribute('imagesrcset', first.imgSrcset);
-            preload.setAttribute('imagesizes',
-              '(max-width: 519px) calc(100vw - 110px), (max-width: 1180px) 42vw, (max-width: 1599px) 30vw, 23vw');
+          if (first) {
+            var preload = document.createElement('link');
+            preload.id = 'zt-menu-lcp-preload';
+            preload.rel = 'preload';
+            preload.as = 'image';
+            preload.href = first.img;
+            preload.type = 'image/webp';
+            preload.setAttribute('fetchpriority', 'high');
+            if (first.imgSrcset) {
+              preload.setAttribute('imagesrcset', first.imgSrcset);
+              preload.setAttribute('imagesizes',
+                '(max-width: 519px) calc(100vw - 110px), (max-width: 1180px) 42vw, (max-width: 1599px) 30vw, 23vw');
+            }
+            document.head.appendChild(preload);
           }
-          document.head.appendChild(preload);
-        }).catch(function () {});
-      }
+          return response;
+        }, function () {
+          return response;
+        });
+      });
 
       window.fetch = function (input, options) {
         try {
