@@ -150,7 +150,7 @@ after(async () => {
   }
 });
 
-test('lunch pricing stacks only the staff discount and blocks all other promotions', async () => {
+test('preorder slot does not activate lunch pricing outside the checkout lunch window', async () => {
   const { token: guestToken, customerId: guestId } = await register('Lunch Guest', '+7 900 100-00-11');
   const { token: staffToken } = await register('Lunch Staff', '+7 900 100-00-12');
   const registrationFreeCode = 'SIGNUPFREE1';
@@ -243,8 +243,8 @@ test('lunch pricing stacks only the staff discount and blocks all other promotio
     body: orderBody('02.11 | 13:00–13:30', 'pickup'),
   });
   assert.equal(pickupLunch.status, 200, JSON.stringify(pickupLunch.json));
-  assert.equal(pickupLunch.json.order.discount, 400);
-  assert.equal(pickupLunch.json.order.discount_label, '20% обеденная акция');
+  assert.equal(pickupLunch.json.order.discount, 200);
+  assert.equal(pickupLunch.json.order.discount_label, '10% самовывоз');
 
   const afterLunch = await request('/orders', {
     method: 'POST',
