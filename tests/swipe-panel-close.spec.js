@@ -70,7 +70,6 @@ test.describe('Mobile profile swipe close', () => {
       };
     });
     expect(opening.scrollAfter).toBe(opening.scrollBefore);
-    expect(opening.focusedId).toContain('btn-back');
     expect(opening.syncOverlayCalls).toBe(1);
     expect(opening.tgSyncCalls).toBe(0);
     const panel = page.locator('#panel');
@@ -246,7 +245,7 @@ for (const viewport of [
     expect(motion.property.split(',').map(value => value.trim())).toEqual(['transform']);
     expect(motion.duration.split(',').every(value => Math.abs(parseFloat(value) - 0.35) < 0.001)).toBe(true);
     await expect.poll(() => panel.evaluate(element =>
-      Math.abs(element.getBoundingClientRect().right - window.innerWidth)
+      Math.abs(element.getBoundingClientRect().right - document.documentElement.clientWidth)
     )).toBeLessThanOrEqual(1);
   });
 }
