@@ -109,7 +109,7 @@ test('card entrance uses backwards fill and releases the desktop hover lift in b
       window.__cardMotionEvents.push({
         phase: 'end',
         animationName: event.animationName,
-        productId: event.target.getAttribute('data-product-id') || event.target.getAttribute('data-item-id') || event.target.id
+        productId: event.target.getAttribute('data-product-id') || event.target.getAttribute('data-item-id') || event.target.id || event.target.className
       });
     }, true);
   });

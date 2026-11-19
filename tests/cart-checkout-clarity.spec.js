@@ -522,6 +522,10 @@ test('cart keeps the current selected price and explains every amount without gu
   await expect(addressSheet).toBeVisible();
   await expect(addressSheet).toHaveClass(/open/);
   await expect(addressSheet.locator('.abs-row')).toHaveCount(2);
+  await expect.poll(() => addressSheet.evaluate((el) => {
+    const matrix = new DOMMatrixReadOnly(getComputedStyle(el).transform);
+    return Math.abs(matrix.m42);
+  })).toBeLessThanOrEqual(0.5);
   const addressSheetGeometry = await addressSheet.evaluate((el) => {
     const rect = el.getBoundingClientRect();
     const close = el.querySelector('.abs-close').getBoundingClientRect();

@@ -174,7 +174,6 @@ body.in-tg .topbar {
 }
 #grid .card,
 #deliveryGrid .card {
-  animation: none;
   min-width: 0;
   width: 100%;
   box-sizing: border-box;
