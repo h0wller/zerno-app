@@ -121,3 +121,67 @@ test.describe('Mobile profile swipe close', () => {
     expect(after.layoutShift - before.layoutShift).toBeLessThan(0.001);
   });
 });
+
+for (const brand of ['coffee', 'delivery']) {
+  for (const viewport of [
+    { name: 'portrait', width: 390, height: 844 },
+    { name: 'compact-landscape', width: 844, height: 390 },
+    { name: 'tablet', width: 1024, height: 768 },
+  ]) {
+    test(`${brand}: profile drawer opens and closes immediately under reduced motion (${viewport.name})`, async ({ page }) => {
+      await page.setViewportSize({ width: viewport.width, height: viewport.height });
+      await page.emulateMedia({ reducedMotion: 'reduce' });
+      await page.addInitScript(() => {
+        localStorage.setItem('zt_onb', '1');
+        sessionStorage.setItem('splashDone', '1');
+      });
+
+      await page.goto('/?brand=' + brand, { waitUntil: 'domcontentloaded' });
+      await page.waitForFunction(() =>
+        typeof window.openPanel === 'function' &&
+        typeof window.closePanel === 'function'
+      );
+      await page.waitForFunction(() => {
+        const stylesheets = Array.from(document.querySelectorAll('link[rel="stylesheet"]'))
+          .filter(link => link.href.includes('/app/ui/theme/'));
+        return stylesheets.length > 0 &&
+          stylesheets.every(link => link.media !== 'print' && link.sheet !== null);
+      });
+
+      const panel = page.locator('#panel');
+      await page.evaluate(() => window.openPanel('profile'));
+      await expect(panel).toHaveClass(/open/);
+
+      const opened = await panel.evaluate(element => {
+        const style = getComputedStyle(element);
+        const rect = element.getBoundingClientRect();
+        return {
+          transitionDuration: style.transitionDuration,
+          transform: style.transform,
+          left: rect.left,
+          right: rect.right,
+          width: rect.width,
+          viewportWidth: window.innerWidth
+        };
+      });
+      expect(opened.transitionDuration.split(',').every(value => Number.parseFloat(value) === 0))
+        .toBe(true);
+      expect(opened.transform).toBe('none');
+      expect(opened.left).toBeGreaterThanOrEqual(-1);
+      expect(opened.right).toBeLessThanOrEqual(opened.viewportWidth + 1);
+      expect(opened.width).toBeLessThanOrEqual(400 + 1);
+
+      await page.evaluate(() => window.closePanel());
+      await expect(panel).not.toHaveClass(/open/);
+      await expect(page.locator('#overlay')).toHaveCSS('pointer-events', 'none');
+
+      const closed = await panel.evaluate(element => ({
+        transitionDuration: getComputedStyle(element).transitionDuration,
+        transform: getComputedStyle(element).transform,
+      }));
+      expect(closed.transitionDuration.split(',').every(value => Number.parseFloat(value) === 0))
+        .toBe(true);
+      expect(closed.transform).not.toBe('none');
+    });
+  }
+}
