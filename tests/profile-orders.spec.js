@@ -885,6 +885,11 @@ test('empty latest-order refresh keeps the following profile section anchored', 
     const requestStarted = new Promise(resolve => { markRequestStarted = resolve; });
     const responseGate = new Promise(resolve => { releaseResponse = resolve; });
 
+    await page.addInitScript(() => {
+      localStorage.setItem('zt_onb', '1');
+      localStorage.setItem('zt_inst_hide', '1');
+      sessionStorage.setItem('splashDone', '1');
+    });
     await page.route('**/api/orders/mine', async route => {
       markRequestStarted();
       await responseGate;
@@ -895,15 +900,33 @@ test('empty latest-order refresh keeps the following profile section anchored', 
       });
     });
 
+    await page.goto('/?brand=delivery');
+    await page.waitForFunction(() =>
+      typeof window.setUser === 'function' &&
+      typeof window.renderProfile === 'function' &&
+      typeof window.openPanel === 'function' &&
+      typeof window.__profileMeReady === 'function' &&
+      Array.isArray(window.DMENU) && window.DMENU.length > 0
+    );
     await page.evaluate(() => {
       const customer = {
-        ...window.me,
         id: 'profile-layout-refresh',
-        phone: '+7 900 000-00-09'
+        name: 'Тестовый гость',
+        phone: '+7 900 000-00-09',
+        role: 'guest',
+        cups: 2,
+        stamps: 2,
+        free: 0,
+        qr: 'profile-layout-refresh',
+        history: [],
+        verified: 1
       };
       window.setUser('profile-layout-refresh-token', customer);
+      window.__profileMeReady();
       window.renderProfile();
+      window.openPanel('profile');
     });
+    await expect(page.locator('#panel')).toHaveClass(/open/);
 
     await requestStarted;
     await expect(page.locator('#myOrders')).toContainText('Загрузка заказа…');
