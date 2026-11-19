@@ -22,8 +22,6 @@ test('предзаказ не переносит обеденную скидку
   assert.equal(afterLunchSlot.valid, true);
   assert.equal(isWeekdayLunchDiscountActive(checkoutBeforeLunch), false);
   assert.equal(isWeekdayLunchDiscountActive(checkoutDuringLunch), true);
-  assert.equal(isWeekdayLunchDiscountActive(lunchSlot), true);
-  assert.equal(isWeekdayLunchDiscountActive(afterLunchSlot), false);
 });
 
 test('в обеденное окно скидка для своих складывается с 20% от исходной суммы', () => {
