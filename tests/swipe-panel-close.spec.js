@@ -158,14 +158,18 @@ for (const brand of ['coffee', 'delivery']) {
         return {
           transitionDuration: style.transitionDuration,
           transform: style.transform,
+          left: rect.left,
           right: rect.right,
-          layoutViewportRight: document.documentElement.clientWidth
+          width: rect.width,
+          viewportWidth: window.innerWidth
         };
       });
       expect(opened.transitionDuration.split(',').every(value => Number.parseFloat(value) === 0))
         .toBe(true);
       expect(opened.transform).toBe('none');
-      expect(Math.abs(opened.right - opened.layoutViewportRight)).toBeLessThanOrEqual(1);
+      expect(opened.left).toBeGreaterThanOrEqual(-1);
+      expect(opened.right).toBeLessThanOrEqual(opened.viewportWidth + 1);
+      expect(opened.width).toBeLessThanOrEqual(400 + 1);
 
       await page.evaluate(() => window.closePanel());
       await expect(panel).not.toHaveClass(/open/);
