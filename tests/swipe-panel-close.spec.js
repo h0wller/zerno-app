@@ -44,11 +44,35 @@ test.describe('Mobile profile swipe close', () => {
       requestAnimationFrame(() => requestAnimationFrame(resolve))
     )));
 
-    await page.evaluate(() => {
+    const opening = await page.evaluate(() => {
+      window.__syncOverlayCalls = 0;
+      const rawSyncOverlay = window.syncOverlay;
+      window.syncOverlay = function () {
+        window.__syncOverlayCalls += 1;
+        return rawSyncOverlay.apply(this, arguments);
+      };
+      window.__tgSyncCalls = 0;
+      const rawTgSync = window.TgUx.sync;
+      window.TgUx.sync = function () {
+        window.__tgSyncCalls += 1;
+        return rawTgSync.apply(this, arguments);
+      };
       window.scrollTo(0, 400);
-      document.getElementById('profileTopBtn').focus();
+      const scrollBefore = window.scrollY;
+      document.getElementById('profileTopBtn').focus({ preventScroll: true });
       window.openPanel('profile');
+      return {
+        scrollBefore,
+        scrollAfter: window.scrollY,
+        focusedId: document.activeElement && document.activeElement.className,
+        syncOverlayCalls: window.__syncOverlayCalls,
+        tgSyncCalls: window.__tgSyncCalls
+      };
     });
+    expect(opening.scrollAfter).toBe(opening.scrollBefore);
+    expect(opening.focusedId).toContain('btn-back');
+    expect(opening.syncOverlayCalls).toBe(1);
+    expect(opening.tgSyncCalls).toBe(0);
     const panel = page.locator('#panel');
     await expect(panel).toHaveClass(/open/);
     // The panel slides in over 350ms; assert its final geometry, not the mid-transition frame.
