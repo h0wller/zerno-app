@@ -877,4 +877,50 @@ test('preorder waiting pulse pauses while the mobile profile drawer is closed an
 
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await expect(timer).toHaveCSS('animation-name', 'none');
+
+  test('empty latest-order refresh keeps the following profile section anchored', async ({ page }) => {
+    let releaseResponse;
+    let markRequestStarted;
+    const requestStarted = new Promise(resolve => { markRequestStarted = resolve; });
+    const responseGate = new Promise(resolve => { releaseResponse = resolve; });
+
+    await page.route('**/api/orders/mine', async route => {
+      markRequestStarted();
+      await responseGate;
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ orders: [] })
+      });
+    });
+
+    await page.evaluate(() => {
+      const customer = {
+        ...window.me,
+        id: 'profile-layout-refresh',
+        phone: '+7 900 000-00-09'
+      };
+      window.setUser('profile-layout-refresh-token', customer);
+      window.renderProfile();
+    });
+
+    await requestStarted;
+    await expect(page.locator('#myOrders')).toContainText('Загрузка заказа…');
+    const before = await page.evaluate(() => ({
+      hostHeight: document.querySelector('#myOrders').getBoundingClientRect().height,
+      nextY: document.querySelector('#fridayInfo').getBoundingClientRect().y
+    }));
+
+    releaseResponse();
+    await expect(page.locator('#myOrders')).toContainText('Заказов пока нет');
+    const after = await page.evaluate(() => ({
+      hostHeight: document.querySelector('#myOrders').getBoundingClientRect().height,
+      nextY: document.querySelector('#fridayInfo').getBoundingClientRect().y
+    }));
+
+    expect(before.hostHeight).toBeGreaterThanOrEqual(64);
+    expect(Math.abs(after.nextY - before.nextY), 'content after the latest-order slot does not move').toBeLessThanOrEqual(1);
+    expect(Math.abs(after.hostHeight - before.hostHeight), 'latest-order slot retains its reserved height').toBeLessThanOrEqual(1);
+  });
+
 });
