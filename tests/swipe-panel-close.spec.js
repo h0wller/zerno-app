@@ -159,13 +159,13 @@ for (const brand of ['coffee', 'delivery']) {
           transitionDuration: style.transitionDuration,
           transform: style.transform,
           right: rect.right,
-          viewportWidth: window.innerWidth
+          layoutViewportRight: document.documentElement.clientWidth
         };
       });
       expect(opened.transitionDuration.split(',').every(value => Number.parseFloat(value) === 0))
         .toBe(true);
       expect(opened.transform).toBe('none');
-      expect(Math.abs(opened.right - viewport.width)).toBeLessThanOrEqual(1);
+      expect(Math.abs(opened.right - opened.layoutViewportRight)).toBeLessThanOrEqual(1);
 
       await page.evaluate(() => window.closePanel());
       await expect(panel).not.toHaveClass(/open/);
