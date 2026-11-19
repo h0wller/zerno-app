@@ -406,7 +406,7 @@ ordersRouter.post('/api/orders', verifiedCustomerGuard, (req, res) => {
     }
   }
 
-  const lunchPromoActive = isWeekdayLunchDiscountActive(slotValidation || hoursNow);
+  const lunchPromoActive = isWeekdayLunchDiscountActive(hoursNow);
   const byStaff = STAFF_ROLES.includes(req.user.role) ? 1 : 0;
   const pricing = calculateOrderDiscounts({
     subtotal: sum, method, byStaff, lunchPromo: lunchPromoActive,
