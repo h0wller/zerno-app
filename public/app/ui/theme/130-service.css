@@ -309,7 +309,8 @@ body.is-cashier .cust .acts{
 #cartPanel input:focus,
 #cartPanel select:focus,
 #cartPanel textarea:focus{
-  outline: none;
+  outline: 2px solid var(--staff-focus-ring, #123A6B);
+  outline-offset: 2px;
   border-color: var(--flame);
   box-shadow: 0 0 0 3px rgba(192, 59, 42, 0.14);
 }

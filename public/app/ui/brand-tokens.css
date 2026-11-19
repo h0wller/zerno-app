@@ -199,7 +199,7 @@ body[data-brand="coffee"] {
   --composition-chip-color: #123A6B;
 
     --nutrition-text: var(--ink, #101418);
-  --nutrition-muted: #6E7A85;
+  --nutrition-muted: #5B6873;
   --nutrition-surface: #F8FAFC;
   --nutrition-border: var(--line, #D8DFE4);
   --nutrition-accent: var(--flame, #123A6B);
@@ -212,7 +212,7 @@ body[data-brand="coffee"] {
   --nutrition-toggle-active-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   --loyalty-card-bg: #FBF7F0;
   --loyalty-qr-bg: #FFFFFF;
-  --loyalty-muted: #71808D;
+  --loyalty-muted: #5B6873;
   --loyalty-accent: #123A6B;
   --loyalty-gift-text: #4A3100;
   --loyalty-border: rgba(18, 58, 107, 0.14);
@@ -305,6 +305,7 @@ body[data-brand="delivery"] {
   --category-label-font: "Unbounded", "Golos Text", system-ui, sans-serif;
   --category-label-size: 10px;
   --category-label-weight: 700;
+  --category-rail-shadow: 0 0 0 2px var(--fr-choc, #3A2A1C), 4px 4px 0 var(--fr-choc, #3A2A1C);
 
   /* ── Карточки доставки: крафтовый фон, шоколадная обводка ── */
   --card-bg: var(--fr-paper, #F6EEE1);
@@ -449,7 +450,7 @@ body[data-brand="delivery"] {
   --composition-chip-color: var(--fr-choc, #3A2A1C);
 
     --nutrition-text: var(--fr-choc, #3A2A1C);
-  --nutrition-muted: rgba(58, 42, 28, 0.68);
+  --nutrition-muted: rgba(58, 42, 28, 0.75);
   --nutrition-surface: var(--fr-paper, #F6EEE1);
   --nutrition-border: var(--fr-choc, #3A2A1C);
   --nutrition-accent: var(--flame, #C03B2A);

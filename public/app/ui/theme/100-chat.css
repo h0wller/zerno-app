@@ -264,7 +264,8 @@
   color: #101418;
 }
 .chat-i input:focus{
-  outline: none;
+  outline: 2px solid var(--staff-focus-ring, #123A6B);
+  outline-offset: 2px;
   border-color: var(--flame);
 }
 .chat-i button{

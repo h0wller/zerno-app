@@ -92,7 +92,8 @@
   transition: 0.2s;
 }
 .findrow input:focus{
-  outline: none;
+  outline: 2px solid var(--staff-focus-ring, #123A6B);
+  outline-offset: 2px;
   border-color: var(--flame);
 }
 .cash-findrow{
