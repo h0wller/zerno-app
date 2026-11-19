@@ -82,7 +82,7 @@ sticky слева на весь скролл
     border-radius: 26px;
     background: var(--category-rail-bg, var(--card, var(--panel, #FFFFFF)));
     color: var(--ink, #101418);
-    box-shadow: 0 10px 28px rgba(16, 20, 24, 0.18);
+    box-shadow: var(--category-rail-shadow, 0 10px 28px rgba(16, 20, 24, 0.18));
     z-index: 80;
     overflow: hidden;
     overscroll-behavior: contain;
@@ -147,9 +147,9 @@ sticky слева на весь скролл
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    font-size: clamp(8px, 2.3vw, 10px);
+    font-size: clamp(10px, 2.56vw, var(--category-label-size, 10px));
     line-height: 1.1;
-    letter-spacing: -0.25px;
+    letter-spacing: -0.4px;
   }
 
   html body div.wrap > nav.rail#rail button.on,

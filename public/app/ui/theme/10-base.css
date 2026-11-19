@@ -21,7 +21,7 @@ textarea{
   font-family: inherit;
 }
 :focus-visible{
-  outline: 3px solid rgba(18, 58, 107, 0.45);
+  outline: 3px solid var(--staff-focus-ring, #123A6B);
   outline-offset: 2px;
   border-radius: 8px;
 }
