@@ -83,7 +83,15 @@ for (const brand of CASES) {
           overflowX: getComputedStyle(element).overflowX,
           scrollWidth: element.scrollWidth,
           clientWidth: element.clientWidth,
-          activeBackground: getComputedStyle(element.querySelector('button.on')).backgroundColor,
+          activeBackground: getComputedStyle(
+            element.querySelector('button.on .re') || element.querySelector('button.on')
+          ).backgroundColor,
+          activeIconBorderWidth: getComputedStyle(
+            element.querySelector('button.on .re') || element.querySelector('button.on')
+          ).borderTopWidth,
+          activeIconBorderColor: getComputedStyle(
+            element.querySelector('button.on .re') || element.querySelector('button.on')
+          ).borderTopColor,
           backdropFilter: getComputedStyle(element).backdropFilter,
           viewportWidth: window.innerWidth,
           viewportHeight: window.innerHeight,
@@ -141,7 +149,11 @@ for (const brand of CASES) {
       brand.brand + ' categories remain visible without scrolling').toBe(true);
       expect(categoryButtons.every(button => button.accessibleName.length > 0),
         brand.brand + ' icon-only controls retain accessible names').toBe(true);
-      expect(geometry.activeBackground, 'selected category uses a filled state').not.toBe('rgba(0, 0, 0, 0)');
+      expect(geometry.activeBackground, 'selected category icon uses a filled state').not.toBe('rgba(0, 0, 0, 0)');
+      if (brand.brand === 'delivery') {
+        expect(geometry.activeIconBorderWidth, 'delivery selected category icon uses the tokenized chocolate outline').toBe('2px');
+        expect(geometry.activeIconBorderColor, 'delivery selected category icon uses the chocolate brand token').toBe('rgb(58, 42, 28)');
+      }
       expect(geometry.backdropFilter, 'supported browsers enhance the surface with blur').toContain('blur');
       expect(geometry.height, 'rail uses the compact or regular mobile height')
         .toBe(viewport.expectedHeight);
