@@ -44,6 +44,8 @@ function renderRail() {
     const selected = b.dataset.cat === cat;
     b.classList.toggle('on', selected);
     b.setAttribute('aria-pressed', selected ? 'true' : 'false');
+    if (selected) b.setAttribute('aria-current', 'location');
+    else b.removeAttribute('aria-current');
   });
 }
 
