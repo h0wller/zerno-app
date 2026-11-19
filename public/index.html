@@ -3885,22 +3885,37 @@ html body #tickerTrack .tickerGroup > span {
   }
   html body #menuView #grid > .card > .cbody,
   html body #deliveryView #deliveryGrid > .card > .cbody {
-    padding-top:8px;
-    gap:4px;
+    padding-top:6px;
+    gap:2px;
+  }
+  html body #deliveryView #deliveryGrid .card .cbody > h3 {
+    display:block;
+    block-size:auto;
+    min-block-size:0;
+    flex:0 0 auto;
+    font-size:14px;
+    line-height:1.2;
+    -webkit-line-clamp:unset;
+    -webkit-box-orient:initial;
+    overflow:visible;
+  }
+  html body #deliveryView #deliveryGrid .card .cbody .desc {
+    font-size:11px;
+    line-height:1.2;
   }
     html body #menuView #grid > .card > .media,
   html body #deliveryView #deliveryGrid > .card > .media {
     box-sizing:border-box;
-    flex:0 0 24px;
+    flex:0 0 20px;
     width:100%;
-    height:24px;
-    min-height:24px;
-    max-height:24px;
+    height:20px;
+    min-height:20px;
+    max-height:20px;
     aspect-ratio:auto;
   }
   html body #menuView #grid > .card > .media .em,
   html body #deliveryView #deliveryGrid > .card > .media .em {
-    font-size:24px;
+    font-size:20px;
     line-height:1;
   }
   html body div.wrap {

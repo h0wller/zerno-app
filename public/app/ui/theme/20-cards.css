@@ -333,7 +333,25 @@ body.editing .card:hover{
 @media (min-width: 821px) and (orientation: landscape) and (max-height: 480px) {
   #grid > .card > .cbody,
   #deliveryGrid > .card > .cbody {
-    padding-top: 8px;
-    gap: 4px;
+    padding-top: 6px;
+    gap: 2px;
+  }
+
+  /* Keep the full delivery text visible while removing desktop-only reserved slots. */
+  #deliveryView #deliveryGrid .card .cbody > h3 {
+    display: block;
+    block-size: auto;
+    min-block-size: 0;
+    flex: 0 0 auto;
+    font-size: 14px;
+    line-height: 1.2;
+    -webkit-line-clamp: unset;
+    -webkit-box-orient: initial;
+    overflow: visible;
+  }
+
+  #deliveryView #deliveryGrid .card .cbody .desc {
+    font-size: 11px;
+    line-height: 1.2;
   }
 }
