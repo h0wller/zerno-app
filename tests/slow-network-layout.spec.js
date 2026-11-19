@@ -324,7 +324,8 @@ test.describe('Slow network: first viewport stays styled before deferred CSS', (
     expect(after.rail.height, 'deferred theme keeps the first-paint rail height').toBe(before.rail.height);
     expect(after.subfilterSlot).toEqual(before.subfilterSlot);
     // The first paint uses fallback font metrics; after deferred fonts/CSS resolve,
-    // the CTA may move by at most 2px. Width and target size must remain identical,
+    // the CTA position and card height must remain stable within the measured 2px budget.
+    // Keep the strict geometry assertion; fix the reservation at the card owner, not here.
     // while the aggregate layout-shift budget below remains strictly enforced.
     expect(after.addButton.x).toBe(before.addButton.x);
     expect(after.addButton.width).toBe(before.addButton.width);
