@@ -113,6 +113,10 @@ test('cashier gift redemption waits for drink selection and submits exactly once
   await expect(modal).toHaveClass(/show/);
   await expect(modal).toBeVisible();
   expect(redemptions).toHaveLength(0);
+  await testInfo.attach('cashier-gift-drink-picker-open.png', {
+    body: await page.screenshot({ animations: 'disabled' }),
+    contentType: 'image/png'
+  });
 
   await modal.locator('.omClose').click();
   await expect(modal).not.toHaveClass(/show/);
@@ -130,8 +134,4 @@ test('cashier gift redemption waits for drink selection and submits exactly once
   await expect(modal).not.toHaveClass(/show/);
   await expect(page.locator('#custFree')).toBeHidden();
 
-  await testInfo.attach('cashier-gift-drink-picker-open.png', {
-    body: await page.screenshot({ animations: 'disabled' }),
-    contentType: 'image/png'
-  });
 });
