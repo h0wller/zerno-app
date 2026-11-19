@@ -70,8 +70,13 @@ staffRouter.post('/api/staff/customers', staffGuard, (req, res) => {
               pin=CASE WHEN COALESCE(pin, '')='' THEN ? ELSE pin END
           WHERE id=?
         `).run(pinAlreadySet ? existing.pin : hashPin(pin), existing.id);
-        addHist(existing.id, 'Профиль проверен кассиром', 'Кассир');
-        logEv(existing.name, 'Проверка профиля кассиром');
+        if (wasUnverified) {
+          addHist(existing.id, 'Профиль проверен кассиром', 'Кассир');
+          logEv(existing.name, 'Проверка профиля кассиром');
+        } else if (!pinAlreadySet) {
+          addHist(existing.id, 'PIN задан кассиром', 'Кассир');
+          logEv(existing.name, 'PIN задан кассиром');
+        }
         return {
           customer: db.prepare('SELECT * FROM customers WHERE id=?').get(existing.id),
           reused: true,
@@ -82,10 +87,9 @@ staffRouter.post('/api/staff/customers', staffGuard, (req, res) => {
         };
       }
 
-      const created = createCustomer(name, normalizedPhone, pin);
+      const created = createCustomer(name, normalizedPhone, pin, 'Кассир');
       if (created?.err) return { error: created.err, code: created.code || 400 };
       db.prepare('UPDATE customers SET verified=1 WHERE id=?').run(created.customer.id);
-      addHist(created.customer.id, 'Профиль создан кассиром', 'Кассир');
       logEv(created.customer.name, 'Создан профиль кассиром');
       return {
         customer: db.prepare('SELECT * FROM customers WHERE id=?').get(created.customer.id),
