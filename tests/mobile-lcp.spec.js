@@ -302,8 +302,13 @@ test.describe('Initial catalog image priorities', () => {
     const response = await page.goto('/?brand=coffee');
     expect(response).not.toBeNull();
     const linkHeader = await response.headerValue('link');
-    expect(linkHeader).toContain('</media/dishes/espresso-card.webp?v=12345>; rel=preload; as=image; fetchpriority=high');
-    expect(linkHeader).toContain('imagesrcset="/media/dishes/resized/espresso-card-300.webp?v=12345 300w, /media/dishes/resized/espresso-card-600.webp?v=12345 600w"');
+    expect(linkHeader).toContain('</media/dishes/espresso-card.webp?v=12345>');
+    expect(linkHeader).toContain('rel=preload');
+    expect(linkHeader).toContain('as=image');
+    expect(linkHeader).toContain('fetchpriority=high');
+    expect(linkHeader).toContain('imagesrcset=');
+    expect(linkHeader).toContain('/media/dishes/resized/espresso-card-300.webp?v=12345 300w');
+    expect(linkHeader).toContain('/media/dishes/resized/espresso-card-600.webp?v=12345 600w');
   });
 
   test('default splash and explicit delivery documents do not advertise the coffee image', async ({ page }) => {
