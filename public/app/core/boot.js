@@ -124,6 +124,10 @@ async function verifyStaffSession() {
 }
 
 async function loadInitialCatalog(earlyDeliveryLoad) {
+  // While the splash is visible, the stored brand is only a hint. The splash
+  // handler owns loading the catalog after the user explicitly chooses a brand.
+  if (window.__brandSplashPending === true) return;
+
   if (window.brand !== 'delivery') {
     if (typeof loadMenu === 'function') await loadMenu({ render: false });
     return;
@@ -131,12 +135,6 @@ async function loadInitialCatalog(earlyDeliveryLoad) {
 
   var isStaffRole = window.me && ['admin', 'cashier', 'dispatch'].indexOf(window.me.role) !== -1;
   var deliveryLoad = earlyDeliveryLoad;
-  // The splash may have been pending during boot and the user can choose delivery
-  // after session verification has completed. In that case load it now.
-  if (!deliveryLoad && typeof window.loadDelivery === 'function') {
-    window.__dlReq = 1;
-    deliveryLoad = window.__dlPromise = window.loadDelivery();
-  }
 
   // Once /api/me confirms a staff role, replace the public list with the
   // full catalog (including stopped items) required by staff tools.
