@@ -132,6 +132,25 @@ test.describe('Splash Screen — Мобильные режимы (Web, TMA, Stan
     await expect(page.locator('#grid > .skeleton-card')).toHaveCount(0);
   });
 
+  test('выбор доставки со splash загружает каталог, даже если сохранён бренд кофейни', async ({ page }) => {
+    await page.addInitScript(() => {
+      localStorage.setItem('zt_brand', 'coffee');
+      localStorage.removeItem('zt_onb');
+      sessionStorage.removeItem('splashDone');
+      localStorage.setItem('zt_inst_hide', '1');
+    });
+
+    await page.goto('/');
+    const splash = page.locator('#brandSplashStatic, #brandSplash').first();
+    await expect(splash).toBeVisible();
+    await splash.locator('[data-go="delivery"]').click();
+
+    await expect(page.locator('html')).toHaveAttribute('data-brand', 'delivery');
+    const grid = page.locator('#deliveryGrid');
+    await expect(grid.locator('.card:not(.skeleton-card)').first()).toBeVisible({ timeout: 15000 });
+    await expect(grid.locator('.skeleton-card')).toHaveCount(0);
+  });
+
   test('splash: инлайн-владелец клика ведёт в приложение через ?brand=', async ({ page }) => {
     const errs = [];
     page.on('pageerror', (e) => errs.push(e.message));
