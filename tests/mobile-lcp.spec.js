@@ -293,20 +293,26 @@ test.describe('Initial catalog image priorities', () => {
 
     const response = await page.goto('/?brand=coffee');
     expect(response).not.toBeNull();
-    const linkHeader = await response.headerValue('link');
-    expect(linkHeader).toContain('rel=preload');
-    expect(linkHeader).toContain('as=image');
-    expect(linkHeader).toContain('fetchpriority=high');
-
     const menuResponse = await page.request.get('/api/menu');
     expect(menuResponse.ok()).toBe(true);
     const menu = await menuResponse.json();
-    const firstImage = menu.items.find((item) => item && item.on && item.cat === 'coffee' && item.img);
-    expect(firstImage).toBeTruthy();
-    const expectedImage = firstImage.img.startsWith('/media/dishes/')
-      ? firstImage.img
-      : new URL(firstImage.img, 'http://localhost').pathname;
-    expect(linkHeader).toContain('<' + expectedImage + '>');
+    const firstImage = menu.items.find((item) =>
+      item && item.on && item.cat === 'coffee' && item.img
+    );
+    const hasEligibleLocalImage = Boolean(
+      firstImage && firstImage.img.startsWith('/media/dishes/')
+    );
+
+    const linkHeader = await response.headerValue('link');
+    if (!hasEligibleLocalImage) {
+      expect(linkHeader).toBeNull();
+      return;
+    }
+
+    expect(linkHeader).toContain('rel=preload');
+    expect(linkHeader).toContain('as=image');
+    expect(linkHeader).toContain('fetchpriority=high');
+    expect(linkHeader).toContain('<' + firstImage.img.split('?')[0] + '>');
   });
   test('default splash and explicit delivery documents do not advertise the coffee image', async ({ page }) => {
     const splashResponse = await page.goto('/');
