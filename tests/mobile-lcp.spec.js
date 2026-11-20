@@ -1,5 +1,43 @@
 import { test, expect } from '@playwright/test';
 
+function imageCatalogItems(brand) {
+  const delivery = brand === 'delivery';
+  return Array.from({ length: 6 }, (_, index) => ({
+    id: `${brand}-image-${index + 1}`,
+    section: delivery ? 'delivery' : 'coffee',
+    cat: delivery ? 'pizza' : 'coffee',
+    e: delivery ? '🍕' : '☕',
+    name: `${delivery ? 'Пицца' : 'Кофе'} ${index + 1}`,
+    desc: 'Тестовая позиция с изображением',
+    comp: ['тестовый состав'],
+    vol: delivery ? '25/35 см' : '200 мл',
+    price: delivery ? '0' : '180',
+    on: 1,
+    opts: delivery ? [
+      { l: '25 см, пышное', w: '415 г', p: 535, sz: 25 },
+      { l: '35 см, пышное', w: '750 г', p: 735, sz: 35 },
+      { l: '25 см, тонкое', w: '335 г', p: 435, sz: 25 },
+      { l: '35 см, тонкое', w: '550 г', p: 635, sz: 35 }
+    ] : [],
+    img: `/media/dishes/${brand}-image-${index + 1}.webp?v=1`,
+    imgSrcset: `/media/dishes/resized/${brand}-image-${index + 1}-300.webp?v=1 300w, /media/dishes/resized/${brand}-image-${index + 1}-600.webp?v=1 600w`
+  }));
+}
+
+async function routeImageCatalog(page, brand) {
+  const endpoint = brand === 'delivery' ? '**/dmenu**' : '**/api/menu';
+  await page.route(endpoint, (route) => route.fulfill({
+    status: 200,
+    contentType: 'application/json',
+    body: JSON.stringify({ items: imageCatalogItems(brand), updatedAt: Date.now() })
+  }));
+  await page.route('**/media/dishes/**', (route) => route.fulfill({
+    status: 200,
+    contentType: 'image/webp',
+    body: Buffer.from('UklGRiQAAABXRUJQVlA4IBgAAAAwAQCdASoBAAEAAUAmJaQAA3AA/vz0AAA=', 'base64')
+  }));
+}
+
 test.describe('Initial catalog image priorities', () => {
   test.use({ serviceWorkers: 'block' });
 
@@ -17,14 +55,16 @@ test.describe('Initial catalog image priorities', () => {
       localStorage.setItem('zt_inst_hide', '1');
       sessionStorage.setItem('splashDone', '1');
     });
+    await routeImageCatalog(page, 'coffee');
     await page.goto('/?brand=coffee');
-    await expect(page.locator('#grid > .card img').first()).toBeAttached({ timeout: 15000 });
+    await expect(page.locator('#grid > .card').first()).toBeAttached({ timeout: 15000 });
     await expect.poll(() => page.evaluate(() => Array.isArray(window.MENU) && window.MENU.length > 0)).toBe(true);
 
     expect(deliveryHeroRequests).toHaveLength(0);
   });
 
   test('delivery startup retains its first-card hero request', async ({ page }) => {
+    await routeImageCatalog(page, 'delivery');
     await page.addInitScript(() => {
       localStorage.setItem('zt_brand', 'delivery');
       localStorage.setItem('zt_onb', '1');
@@ -42,6 +82,7 @@ test.describe('Initial catalog image priorities', () => {
   });
 
   test('coffee startup replaces the catalog grid only once after menu data arrives', async ({ page }) => {
+    await routeImageCatalog(page, 'coffee');
     await page.addInitScript(() => {
       const descriptor = Object.getOwnPropertyDescriptor(Element.prototype, 'innerHTML');
       window.__coffeeGridWrites = 0;
@@ -90,6 +131,7 @@ test.describe('Initial catalog image priorities', () => {
   }
 
   test('coffee eagerly loads every image in the actual first row after viewport changes', async ({ page }) => {
+    await routeImageCatalog(page, 'coffee');
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.addInitScript(() => {
       localStorage.setItem('zt_brand', 'coffee');
@@ -109,6 +151,7 @@ test.describe('Initial catalog image priorities', () => {
   });
 
   test('delivery eagerly loads every image in the actual first row after viewport changes', async ({ page }) => {
+    await routeImageCatalog(page, 'delivery');
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.addInitScript(() => {
       localStorage.setItem('zt_brand', 'delivery');
