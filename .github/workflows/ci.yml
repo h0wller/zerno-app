@@ -239,11 +239,17 @@ jobs:
         run: npm run build:client
       - name: Prepare merge-base build
         env:
-          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PR_BASE_REF: ${{ github.event.pull_request.base.ref }}
           PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
           set -euo pipefail
-          BASE_SHA="$(git merge-base "$PR_BASE_SHA" "$PR_HEAD_SHA")"
+          # PR event base.sha can lag a force-pushed base branch. Compare against
+          # the current remote base ref, then use the actual common ancestor.
+          git fetch --no-tags origin "$PR_BASE_REF"
+          BASE_REF_SHA="$(git rev-parse FETCH_HEAD)"
+          BASE_SHA="$(git merge-base "$BASE_REF_SHA" "$PR_HEAD_SHA")"
+          echo "LCP_BASE_REF=$PR_BASE_REF" >> "$GITHUB_ENV"
+          echo "LCP_BASE_REF_SHA=$BASE_REF_SHA" >> "$GITHUB_ENV"
           echo "LCP_BASE_SHA=$BASE_SHA" >> "$GITHUB_ENV"
           git worktree add --detach "$RUNNER_TEMP/zerno-lcp-base" "$BASE_SHA"
           ln -s "$GITHUB_WORKSPACE/node_modules" "$RUNNER_TEMP/zerno-lcp-base/node_modules"
@@ -258,7 +264,7 @@ jobs:
           CHROME_PATH="$(find "$HOME/.cache/ms-playwright" -type f -name chrome | head -n 1)"
           test -n "$CHROME_PATH" && test -x "$CHROME_PATH"
           echo "Chrome: $CHROME_PATH"
-          echo "Baseline: $LCP_BASE_SHA"
+          echo "Current base branch: $LCP_BASE_REF@$LCP_BASE_REF_SHA"\n          echo "Common ancestor baseline: $LCP_BASE_SHA"
           echo "PR head: $PR_HEAD_SHA"
 
           run_variant() {
