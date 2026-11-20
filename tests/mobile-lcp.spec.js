@@ -12,6 +12,7 @@ test.describe('Initial catalog image priorities', () => {
     });
 
     await page.addInitScript(() => {
+      localStorage.setItem('zt_brand', 'coffee');
       localStorage.setItem('zt_onb', '1');
       localStorage.setItem('zt_inst_hide', '1');
       sessionStorage.setItem('splashDone', '1');
@@ -25,6 +26,7 @@ test.describe('Initial catalog image priorities', () => {
 
   test('delivery startup retains its first-card hero request', async ({ page }) => {
     await page.addInitScript(() => {
+      localStorage.setItem('zt_brand', 'delivery');
       localStorage.setItem('zt_onb', '1');
       localStorage.setItem('zt_inst_hide', '1');
       sessionStorage.setItem('splashDone', '1');
@@ -52,6 +54,7 @@ test.describe('Initial catalog image priorities', () => {
           return descriptor.set.call(this, value);
         }
       });
+      localStorage.setItem('zt_brand', 'coffee');
       localStorage.setItem('zt_onb', '1');
       localStorage.setItem('zt_inst_hide', '1');
       sessionStorage.setItem('splashDone', '1');
@@ -89,6 +92,7 @@ test.describe('Initial catalog image priorities', () => {
   test('coffee eagerly loads every image in the actual first row after viewport changes', async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.addInitScript(() => {
+      localStorage.setItem('zt_brand', 'coffee');
       localStorage.setItem('zt_onb', '1');
       localStorage.setItem('zt_inst_hide', '1');
       sessionStorage.setItem('splashDone', '1');
@@ -107,6 +111,7 @@ test.describe('Initial catalog image priorities', () => {
   test('delivery eagerly loads every image in the actual first row after viewport changes', async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.addInitScript(() => {
+      localStorage.setItem('zt_brand', 'delivery');
       localStorage.setItem('zt_onb', '1');
       localStorage.setItem('zt_inst_hide', '1');
       sessionStorage.setItem('splashDone', '1');
@@ -147,6 +152,7 @@ test.describe('Initial catalog image priorities', () => {
         }
       });
       observer.observe(document, { childList: true, subtree: true });
+      localStorage.setItem('zt_brand', 'coffee');
       localStorage.setItem('zt_onb', '1');
       localStorage.setItem('zt_inst_hide', '1');
       sessionStorage.setItem('splashDone', '1');
