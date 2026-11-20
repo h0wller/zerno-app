@@ -214,7 +214,8 @@ app.use((req, res, next) => {
   if (!firstCoffeeImage) return next();
 
   const image = menuImageForResponse(firstCoffeeImage.img, PUBLIC_DIR);
-  if (!image) return next();
+  // Only local dish files are eligible: do not put data: or arbitrary external URLs in Link headers.
+  if (!image || !image.startsWith('/media/dishes/')) return next();
 
   const srcset = menuImageSrcsetForResponse(image, PUBLIC_DIR);
   const parameters = [
