@@ -103,6 +103,18 @@
     if (typeof window.syncBrandViews === 'function') window.syncBrandViews();
     if (typeof window.applyAuthBrand === 'function') window.applyAuthBrand();
     if (choice === 'delivery' && typeof window.loadDelivery === 'function') {
+      // The brand is now known: start the delivery hero image without preloading it
+      // on visits where the splash may instead lead to the coffee catalog.
+      if (!document.getElementById('zt-delivery-lcp-preload')) {
+        var deliveryPreload = document.createElement('link');
+        deliveryPreload.id = 'zt-delivery-lcp-preload';
+        deliveryPreload.rel = 'preload';
+        deliveryPreload.as = 'image';
+        deliveryPreload.href = '/media/dishes/1-card.webp';
+        deliveryPreload.type = 'image/webp';
+        deliveryPreload.setAttribute('fetchpriority', 'high');
+        document.head.appendChild(deliveryPreload);
+      }
       window.loadDelivery();
     } else if (
       choice === 'coffee' &&
