@@ -81,8 +81,7 @@
     })();
     </script>
     <style id="critical-css">
-/* Prevent the static delivery skeleton image from being fetched before splash brand choice. */
-html.brand-splash-pending #deliveryView { display:none !important; }
+/* The delivery hero uses a deferred data URL until the selected view is revealed. */
 /* Keep the support slot's width stable before syncChatFab relocates its landmark. */
 @media (max-width:820px) {
   :is(#menuView, #deliveryView) .menu-head .mh-top .mh-right:not(:has(> #supportLauncherHost))::after {
@@ -4293,7 +4292,7 @@ html body #tickerTrack .tickerGroup > span {
         <div class="grid" id="deliveryGrid">
           <article class="card" data-product-id="1">
             <div class="media" style="--tint:#F3E2CE">
-              <img src="/media/dishes/1-card.webp"
+              <img data-deferred-src="/media/dishes/1-card.webp"
                    alt="Маргарита"
                    loading="lazy" fetchpriority="auto" decoding="async" data-lcp="1"
                    width="300" height="180"
