@@ -550,4 +550,51 @@ test.describe('Registration & Auth Suite (F3.61 - F3.63)', () => {
   });
   });
 
+
+  test('staff activation immediately reveals the role switcher without a reload', async ({ page }) => {
+    await page.addInitScript(() => {
+      localStorage.setItem('zt_user', 'guest-to-cashier-token');
+    });
+    await page.route('**/api/**', async (route) => {
+      const pathname = new URL(route.request().url()).pathname;
+      let body = { ok: true, items: [], orders: [], pending: [], customers: [], threads: [], msgs: [], promos: [] };
+      if (pathname === '/api/me') {
+        body = { customer: {
+          id: 'guest-to-cashier',
+          name: 'Guest To Cashier',
+          phone: '+7 999 100-00-02',
+          role: 'guest',
+          cups: 0, stamps: 0, free: 0, history: [], qr: 'guest-to-cashier'
+        } };
+      } else if (pathname === '/api/auth/activate') {
+        body = { customer: {
+          id: 'guest-to-cashier',
+          name: 'Guest To Cashier',
+          phone: '+7 999 100-00-02',
+          role: 'cashier',
+          cups: 0, stamps: 0, free: 0, history: [], qr: 'guest-to-cashier'
+        } };
+      }
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(body)
+      });
+    });
+
+    await page.goto('/?brand=coffee');
+    await page.waitForFunction(() => window.me && window.me.role === 'guest');
+    await page.evaluate(() => window.openPin());
+    await page.fill('#pinInput', 'test-cashier-code');
+    await page.click('#pinGo');
+
+    await expect.poll(() => page.evaluate(() => ({
+      role: window.me && window.me.role,
+      staffRole: document.documentElement.getAttribute('data-staff-role'),
+      ready: document.documentElement.hasAttribute('data-staff-ready')
+    }))).toEqual({ role: 'cashier', staffRole: 'cashier', ready: true });
+    await expect(page.locator('#modeSeg')).toBeVisible();
+    await expect(page.locator('#modeSeg [data-mode="cashier"]')).toHaveText('Кассир');
+  });
+
 });
