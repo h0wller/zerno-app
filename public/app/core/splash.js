@@ -125,6 +125,8 @@
       // Fetch coffee data now so removing the splash cannot expose empty skeleton cards.
       window.loadMenu();
     }
+    // The splash choice is now explicit; later brand-view syncs may load the selected catalog.
+    window.__brandSplashPending = false;
     if (window.chatState && typeof window.chatState.setChatCtx === 'function') {
       window.chatState.setChatCtx(choice);
     }
