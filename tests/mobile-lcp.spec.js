@@ -282,4 +282,38 @@ test.describe('Initial catalog image priorities', () => {
     expect(imageRequests).toHaveLength(1);
   });
 
+
+  test('explicit coffee document advertises the first active coffee image in its Link header', async ({ page }) => {
+    await routeImageCatalog(page, 'coffee');
+    await page.route('**/api/menu', async (route) => route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        items: [{
+          id: 'espresso', cat: 'coffee', section: 'coffee', name: 'Эспрессо',
+          desc: '', comp: [], opts: [], price: '180', e: '☕', on: 1,
+          img: '/media/dishes/espresso-card.webp?v=12345',
+          imgSrcset: '/media/dishes/resized/espresso-card-300.webp?v=12345 300w, /media/dishes/resized/espresso-card-600.webp?v=12345 600w'
+        }],
+        updatedAt: Date.now()
+      })
+    }));
+
+    const response = await page.goto('/?brand=coffee');
+    expect(response).not.toBeNull();
+    const linkHeader = await response.headerValue('link');
+    expect(linkHeader).toContain('</media/dishes/espresso-card.webp?v=12345>; rel=preload; as=image; fetchpriority=high');
+    expect(linkHeader).toContain('imagesrcset="/media/dishes/resized/espresso-card-300.webp?v=12345 300w, /media/dishes/resized/espresso-card-600.webp?v=12345 600w"');
+  });
+
+  test('default splash and explicit delivery documents do not advertise the coffee image', async ({ page }) => {
+    const splashResponse = await page.goto('/');
+    expect(splashResponse).not.toBeNull();
+    expect(await splashResponse.headerValue('link')).toBeNull();
+
+    const deliveryResponse = await page.goto('/?brand=delivery');
+    expect(deliveryResponse).not.toBeNull();
+    expect(await deliveryResponse.headerValue('link')).toBeNull();
+  });
+
 });
