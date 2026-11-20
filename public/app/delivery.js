@@ -423,7 +423,7 @@ function renderSingleMetaHtml(p) {
 
 function syncDeliveryImagePriorities() {
   var grid = document.getElementById('deliveryGrid');
-  if (!grid) return;
+  if (!grid || !grid.getClientRects().length) return;
   var cards = Array.from(grid.querySelectorAll(':scope > .card[data-product-id]'));
   if (!cards.length) return;
 
