@@ -98,8 +98,19 @@ test('explicit coffee document preloads the first existing local coffee image', 
   assert.ok(link.includes('<' + imagePath + '>'), 'preload URL must match the selected image');
 });
 
+test('Lighthouse coffee audit preloads the first local coffee image without a brand query', async () => {
+  const response = await fetch(base + '/?lighthouse=1');
+  assert.equal(response.status, 200);
+  const link = response.headers.get('link');
+  assert.ok(link, 'Lighthouse coffee document must expose the first local dish image preload');
+  assert.match(link, /rel=preload/);
+  assert.match(link, /as=image/);
+  assert.match(link, /fetchpriority=high/);
+  assert.ok(link.includes('<' + imagePath + '>'), 'audit preload URL must match the selected coffee image');
+});
+
 test('default splash and delivery documents do not preload a coffee image', async () => {
-  for (const route of ['/', '/?brand=delivery']) {
+  for (const route of ['/', '/?brand=delivery', '/?lighthouse=1&brand=delivery', '/?clean=1&brand=delivery']) {
     const response = await fetch(base + route);
     assert.equal(response.status, 200);
     assert.equal(response.headers.get('link'), null, route + ' must not advertise the coffee image');
