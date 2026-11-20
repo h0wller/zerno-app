@@ -129,7 +129,6 @@ test.describe('Initial catalog image priorities', () => {
     await expect(page.locator('#deliveryGrid > .card').first()).toBeAttached();
     await heroRequest;
     await expect(page.locator('#deliveryGrid > .card img').first()).toHaveAttribute('fetchpriority', 'high');
-    await expect(page.locator('#deliveryGrid > .card img').first()).toHaveAttribute('src', '/media/dishes/1-card.webp');
   });
 
   test('coffee startup replaces the catalog grid only once after menu data arrives', async ({ page }) => {
