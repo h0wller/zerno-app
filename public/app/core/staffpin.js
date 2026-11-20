@@ -21,7 +21,11 @@ function openPin() {
             body: { code: v },
           });
           me = r.customer;
+          if (typeof window.applyStaffRoleState === 'function') {
+            window.applyStaffRoleState(me);
+          }
           window.closePin();
+          if (typeof window.syncBrandViews === 'function') window.syncBrandViews();
           renderModes();
           renderProfile();
           toast(
