@@ -117,7 +117,11 @@
         deliveryPreload.setAttribute('fetchpriority', 'high');
         document.head.appendChild(deliveryPreload);
       }
-      window.loadDelivery();
+      // syncBrandViews may already have started this request; keep one fetch owner.
+      if (!window.__dlPromise && !window.__dlReq) {
+        window.__dlReq = 1;
+        window.__dlPromise = window.loadDelivery();
+      }
     } else if (
       choice === 'coffee' &&
       typeof window.loadMenu === 'function' &&
@@ -125,7 +129,9 @@
     ) {
       // Boot may have loaded only the delivery catalog before the splash choice.
       // Fetch coffee data now so removing the splash cannot expose empty skeleton cards.
-      window.loadMenu();
+      window.__coffeeMenuPromise = window.loadMenu();
+    } else if (choice === 'coffee' && typeof window.renderAll === 'function') {
+      window.renderAll();
     }
     // The splash choice is now explicit; later brand-view syncs may load the selected catalog.
     window.__brandSplashPending = false;
