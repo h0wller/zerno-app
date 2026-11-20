@@ -259,7 +259,18 @@ function syncViewsVisibility(showCoffee, showDeliv) {
   var rl = document.getElementById('rail');
   var dr = document.getElementById('deliveryRail');
   if (mv) { mv.hidden = !showCoffee; mv.style.display = showCoffee ? '' : 'none'; }
-  if (dv) { dv.hidden = false; dv.style.display = showDeliv ? 'block' : 'none'; }
+  if (dv) {
+    dv.hidden = false;
+    dv.style.display = showDeliv ? 'block' : 'none';
+    // The initial delivery card is inert HTML; its image is activated only after delivery is selected.
+    if (showDeliv) {
+      var hero = dv.querySelector('#deliveryGrid > .card[data-product-id="1"] img[data-deferred-src]');
+      if (hero) {
+        hero.src = hero.dataset.deferredSrc;
+        hero.removeAttribute('data-deferred-src');
+      }
+    }
+  }
   if (rl) rl.style.display = showCoffee ? '' : 'none';
   if (dr) dr.style.display = showDeliv ? '' : 'none';
 }
