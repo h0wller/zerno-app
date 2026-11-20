@@ -6,7 +6,6 @@ import net from 'node:net';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { randomUUID } from 'node:crypto';
 import Database from 'better-sqlite3';
 
 async function reservePort() {
