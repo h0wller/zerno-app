@@ -110,6 +110,7 @@ test.describe('Initial catalog image priorities', () => {
     await expect(page.locator('html')).toHaveAttribute('data-brand', 'coffee');
     await expect.poll(() => page.evaluate(() => Array.isArray(window.MENU) && window.MENU.length > 0)).toBe(true);
     await expect.poll(() => deliveryHeroRequests.length).toBe(0);
+    await expect(page.locator('#deliveryGrid > .card img').first()).not.toHaveAttribute('src', '/media/dishes/1-card.webp');
   });
 
   test('delivery startup retains its first-card hero request', async ({ page }) => {
@@ -128,6 +129,7 @@ test.describe('Initial catalog image priorities', () => {
     await expect(page.locator('#deliveryGrid > .card').first()).toBeAttached();
     await heroRequest;
     await expect(page.locator('#deliveryGrid > .card img').first()).toHaveAttribute('fetchpriority', 'high');
+    await expect(page.locator('#deliveryGrid > .card img').first()).toHaveAttribute('src', '/media/dishes/1-card.webp');
   });
 
   test('coffee startup replaces the catalog grid only once after menu data arrives', async ({ page }) => {
