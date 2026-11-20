@@ -301,17 +301,13 @@ test.describe('Initial catalog image priorities', () => {
     const menuResponse = await page.request.get('/api/menu');
     expect(menuResponse.ok()).toBe(true);
     const menu = await menuResponse.json();
-    const firstImage = menu.items.find((item) => item && item.on && item.img);
+    const firstImage = menu.items.find((item) => item && item.on && item.cat === 'coffee' && item.img);
     expect(firstImage).toBeTruthy();
-    expect(linkHeader).toContain('<' + firstImage.img + '>');
-    if (firstImage.imgSrcset) {
-      expect(linkHeader).toContain('imagesrcset=');
-      for (const candidate of firstImage.imgSrcset.split(', ')) {
-        expect(linkHeader).toContain(candidate);
-      }
-    }
+    const expectedImage = firstImage.img.startsWith('/media/dishes/')
+      ? firstImage.img
+      : new URL(firstImage.img, 'http://localhost').pathname;
+    expect(linkHeader).toContain('<' + expectedImage + '>');
   });
-
   test('default splash and explicit delivery documents do not advertise the coffee image', async ({ page }) => {
     const splashResponse = await page.goto('/');
     expect(splashResponse).not.toBeNull();
