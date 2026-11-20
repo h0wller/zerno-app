@@ -102,8 +102,22 @@
 
     if (typeof window.syncBrandViews === 'function') window.syncBrandViews();
     if (typeof window.applyAuthBrand === 'function') window.applyAuthBrand();
-    if (choice === 'delivery' && typeof window.loadDelivery === 'function') {
-      window.loadDelivery();
+
+    // The splash is the single entry point for choosing a catalog. Boot may have
+    // skipped its initial fetch while the choice was pending, so start the chosen
+    // catalog here and reuse any in-flight delivery request started by syncBrandViews.
+    if (choice === 'coffee' && typeof window.loadMenu === 'function') {
+      var coffeeItems = Array.isArray(window.MENU) ? window.MENU : [];
+      if (coffeeItems.length === 0) {
+        window.__coffeeMenuPromise = window.loadMenu();
+      } else if (typeof window.renderAll === 'function') {
+        window.renderAll();
+      }
+    } else if (choice === 'delivery' && typeof window.loadDelivery === 'function') {
+      if (!window.__dlPromise && !window.__dlReq) {
+        window.__dlReq = 1;
+        window.__dlPromise = window.loadDelivery();
+      }
     }
     if (window.chatState && typeof window.chatState.setChatCtx === 'function') {
       window.chatState.setChatCtx(choice);
