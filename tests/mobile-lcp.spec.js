@@ -24,13 +24,16 @@ function imageCatalogItems(brand) {
   }));
 }
 
-async function routeImageCatalog(page, brand) {
+async function routeImageCatalog(page, brand, { delayMs = 0 } = {}) {
   const endpoint = brand === 'delivery' ? '**/dmenu**' : '**/api/menu';
-  await page.route(endpoint, (route) => route.fulfill({
-    status: 200,
-    contentType: 'application/json',
-    body: JSON.stringify({ items: imageCatalogItems(brand), updatedAt: Date.now() })
-  }));
+  await page.route(endpoint, async (route) => {
+    if (delayMs > 0) await new Promise((resolve) => setTimeout(resolve, delayMs));
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ items: imageCatalogItems(brand), updatedAt: Date.now() })
+    });
+  });
   await page.route('**/media/dishes/**', (route) => route.fulfill({
     status: 200,
     contentType: 'image/webp',
@@ -55,7 +58,7 @@ test.describe('Initial catalog image priorities', () => {
       localStorage.setItem('zt_inst_hide', '1');
       sessionStorage.setItem('splashDone', '1');
     });
-    await routeImageCatalog(page, 'coffee');
+    await routeImageCatalog(page, 'coffee', { delayMs: 350 });
     await page.goto('/?brand=coffee');
     await expect(page.locator('#grid > .card').first()).toBeAttached({ timeout: 15000 });
     await expect.poll(() => page.evaluate(() => Array.isArray(window.MENU) && window.MENU.length > 0)).toBe(true);
