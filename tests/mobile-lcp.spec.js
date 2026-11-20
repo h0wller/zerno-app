@@ -123,9 +123,21 @@ test.describe('Initial catalog image priorities', () => {
   });
 
 
-  test('coffee early menu response preloads the exact first-card image URL', async ({ page }) => {
+  test('coffee early menu response preloads the exact first-card image once', async ({ page }) => {
     const firstImage = '/media/dishes/espresso-card.webp?v=12345';
     const firstSrcset = '/media/dishes/resized/espresso-card-300.webp?v=12345 300w, /media/dishes/resized/espresso-card-600.webp?v=12345 600w';
+    const imageRequests = [];
+    await page.setViewportSize({ width: 390, height: 844 });
+    page.on('request', (request) => {
+      if (new URL(request.url()).pathname.includes('espresso-card')) imageRequests.push(request.url());
+    });
+    await page.route('**/media/dishes/**', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'image/webp',
+        body: Buffer.from('UklGRiIAAABXRUJQVlA4IBYAAAAwAQCdASoBAAEAAUAmJaQAA3AA/v89WAAAAA==', 'base64')
+      });
+    });
     await page.addInitScript(() => {
       window.__preloadExistedAtFirstCoffeeImage = null;
       const observer = new MutationObserver(() => {
@@ -162,6 +174,12 @@ test.describe('Initial catalog image priorities', () => {
     await expect(preload).toHaveAttribute('imagesrcset', firstSrcset);
     await expect(preload).toHaveAttribute('fetchpriority', 'high');
     await expect.poll(() => page.evaluate(() => window.__preloadExistedAtFirstCoffeeImage)).toBe(true);
+
+    const image = page.locator('#grid > .card img').first();
+    await expect.poll(() => image.evaluate((node) => node.complete && node.naturalWidth > 0)).toBe(true);
+    const currentSrc = await image.evaluate((node) => node.currentSrc);
+    await expect.poll(() => imageRequests.filter((url) => url === currentSrc).length).toBe(1);
+    expect(imageRequests).toHaveLength(1);
   });
 
 });
