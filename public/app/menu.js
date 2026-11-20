@@ -15,6 +15,22 @@ function coffeePool() {
   });
 }
 
+function visibleCoffeeItems() {
+  const pool = coffeePool();
+  const list = query
+    ? pool.filter(p =>
+        (p.name + ' ' + p.desc + ' ' + (p.comp || []).join(' ')).toLowerCase().includes(query)
+      )
+    : pool.filter(p => p.cat === cat);
+  return editMode ? list : list.filter(p => p.on);
+}
+
+function reorderCoffeePool(visibleIds) {
+  const visible = new Set(visibleIds);
+  let next = 0;
+  return coffeePool().map(p => visible.has(p.id) ? visibleIds[next++] : p.id);
+}
+
 function ensureRailButtons() {
   const rail = $('#rail');
   const current = new Map(
@@ -111,12 +127,7 @@ function findDishForZoom(src, name, explicitItem) {
 }
 
 function renderMenu() {
-  let list = query
-    ? coffeePool().filter(p =>
-        (p.name + ' ' + p.desc + ' ' + (p.comp || []).join(' ')).toLowerCase().includes(query)
-      )
-    : coffeePool().filter(p => p.cat === cat);
-  if (!editMode) list = list.filter(p => p.on);
+  const list = visibleCoffeeItems();
 
   const getFallbackPrice = item => {
     if (!item) return null;
@@ -838,8 +849,9 @@ window.openItemModifiersModal = openItemModifiersModal;
 /* ── F3.70: DnD порядка кофейни ── */
 attachGridDnD(document.getElementById('grid'), {
   canDrag: canDragMenu,
-  getIds: () => coffeePool().map(p => p.id),
-  onReorder: async (ids) => {
+  getIds: () => visibleCoffeeItems().map(p => p.id),
+  onReorder: async (visibleIds) => {
+    const ids = reorderCoffeePool(visibleIds);
     await api('/menu/reorder', { method: 'PUT', body: { brand: 'coffee', ids } });
     await loadMenu();
   },
