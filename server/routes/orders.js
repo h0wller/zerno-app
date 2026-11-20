@@ -441,13 +441,6 @@ ordersRouter.post('/api/orders', verifiedCustomerGuard, (req, res) => {
     let promoDiscount = 0;
     let orderFee = fee;
 
-    if (lunchPromoActive && pc && !isRegistrationFreeDelivery) {
-      return {
-        status: 400,
-        error: 'Во время обеденной акции промокоды и другие скидки не применяются',
-      };
-    }
-
     if (pc) {
       const p = db.prepare('SELECT * FROM promos WHERE code=?').get(pc);
       if (!p || !p.active || (p.scope || 'coffee') !== 'delivery') {
@@ -464,6 +457,14 @@ ordersRouter.post('/api/orders', verifiedCustomerGuard, (req, res) => {
       }
       if (p.owner && p.owner !== req.user.id) {
         return { status: 400, error: 'Промокод не найден для доставки' };
+      }
+      // Return the promo's own lifecycle error before the lunch-promo conflict.
+      // A spent one-time free-shipping code must stay 410 even during lunch hours.
+      if (lunchPromoActive && !isRegistrationFreeDelivery) {
+        return {
+          status: 400,
+          error: 'Во время обеденной акции промокоды и другие скидки не применяются',
+        };
       }
       if (p.kind === 'freeship') {
         // Первая доставка бесплатно: сумма блюд не меняется, обнуляется только плата за доставку.
