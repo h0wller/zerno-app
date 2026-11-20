@@ -63,6 +63,29 @@ test.describe('Initial catalog image priorities', () => {
   });
 
 
+  async function assertFirstRowPriorities(page, gridSelector) {
+    const cards = page.locator(`${gridSelector} > .card`);
+    await expect.poll(async () => cards.evaluateAll((nodes) => {
+      if (!nodes.length) return false;
+      const top = nodes[0].offsetTop;
+      const firstRow = nodes
+        .filter((node) => Math.abs(node.offsetTop - top) < 1)
+        .map((node) => node.querySelector('.media img[src]'))
+        .filter(Boolean);
+      const otherRows = nodes
+        .filter((node) => node.offsetTop > top + 1)
+        .map((node) => node.querySelector('.media img[src]'))
+        .filter(Boolean);
+      return firstRow.length > 0 &&
+        firstRow.every((image) => image.getAttribute('loading') === 'eager') &&
+        firstRow[0].getAttribute('fetchpriority') === 'high' &&
+        firstRow.slice(1).every((image) => image.getAttribute('fetchpriority') !== 'high') &&
+        otherRows.every((image) => image.getAttribute('loading') === 'lazy');
+    })).toBe(true);
+
+    await expect(page.locator(`${gridSelector} > .card img[fetchpriority="high"]`)).toHaveCount(1);
+  }
+
   test('coffee eagerly loads every image in the actual first row after viewport changes', async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.addInitScript(() => {
@@ -71,39 +94,32 @@ test.describe('Initial catalog image priorities', () => {
       sessionStorage.setItem('splashDone', '1');
     });
     await page.goto('/?brand=coffee');
-    const cards = page.locator('#grid > .card');
-    await expect(cards.first()).toBeAttached();
+    await expect(page.locator('#grid > .card').first()).toBeAttached();
     await expect.poll(() => page.locator('#grid > .card img').count()).toBeGreaterThan(1);
 
-    const assertFirstRowPriorities = async () => {
-      await expect.poll(async () => page.locator('#grid > .card').evaluateAll((nodes) => {
-        const first = nodes.find((node) => node.getClientRects().length);
-        if (!first) return false;
-        const top = first.getBoundingClientRect().top;
-        const firstRow = nodes
-          .filter((node) => Math.abs(node.getBoundingClientRect().top - top) < 1)
-          .map((node) => node.querySelector('.media img'))
-          .filter(Boolean);
-        const otherRows = nodes
-          .filter((node) => node.getBoundingClientRect().top >= top + 1)
-          .map((node) => node.querySelector('.media img'))
-          .filter(Boolean);
-        return firstRow.length > 0 &&
-          firstRow.every((image) => image.getAttribute('loading') === 'eager') &&
-          firstRow[0].getAttribute('fetchpriority') === 'high' &&
-          firstRow.slice(1).every((image) => image.getAttribute('fetchpriority') !== 'high') &&
-          otherRows.every((image) => image.getAttribute('loading') === 'lazy');
-      })).toBe(true);
-
-      const highCount = await page.locator('#grid > .card img[fetchpriority="high"]').count();
-      expect(highCount).toBe(1);
-    };
-
-    await assertFirstRowPriorities();
+    await assertFirstRowPriorities(page, '#grid');
     await page.setViewportSize({ width: 390, height: 844 });
-    await assertFirstRowPriorities();
+    await assertFirstRowPriorities(page, '#grid');
     await page.setViewportSize({ width: 1440, height: 900 });
-    await assertFirstRowPriorities();
+    await assertFirstRowPriorities(page, '#grid');
+  });
+
+  test('delivery eagerly loads every image in the actual first row after viewport changes', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.addInitScript(() => {
+      localStorage.setItem('zt_onb', '1');
+      localStorage.setItem('zt_inst_hide', '1');
+      sessionStorage.setItem('splashDone', '1');
+    });
+    await page.goto('/?brand=delivery');
+    await expect(page.locator('#deliveryGrid > .card').first()).toBeAttached();
+    await expect.poll(() => page.locator('#deliveryGrid > .card img').count()).toBeGreaterThan(1);
+
+    await assertFirstRowPriorities(page, '#deliveryGrid');
+    await page.setViewportSize({ width: 390, height: 844 });
+    await assertFirstRowPriorities(page, '#deliveryGrid');
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await assertFirstRowPriorities(page, '#deliveryGrid');
   });
 
 
