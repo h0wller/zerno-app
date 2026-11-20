@@ -14,7 +14,7 @@
 | Модуль | Владеет | Контракты |
 | --- | --- | --- |
 | `public/app/main.js` | Единственная ESM-точка входа; порядок импортов = порядок инициализации; `boot.js` строго последним | — |
-| `public/app/core/boot.js` | `renderAll()`, `boot()`; ЕДИНСТВЕННАЯ регистрация SW (SKIP_WAITING + reload только при hadController); install-баннер; iOS-хинт; IMG-FB v1 (фолбэк webp→svg при ошибке загрузки) | `window.renderAll`, `window.boot` |
+| `public/app/core/boot.js` | `renderAll()`, `boot()`; подтверждение сессии и синхронизация проверенной staff-роли (`applyStaffRoleState`); ЕДИНСТВЕННАЯ регистрация SW (SKIP_WAITING + reload только при hadController); install-баннер; iOS-хинт; IMG-FB v1 (фолбэк webp→svg при ошибке загрузки) | `window.renderAll`, `window.boot`, `window.applyStaffRoleState` |
 | `public/sw.js` | `STATIC_CACHE` — App Shell (cache-first + фоновая ревалидация); `MEDIA_CACHE` — svg network-first (no-cache), png/webp SWR; `API_CACHE` — /api/menu SWR 5 мин | — |
 | `public/index.html` (инлайн, СЛОЙ 4) | early-brand-guard; critical-fouc-guard; perf-bridge (Lighthouse); TgUx-стаб; префетч /api/menu и /api/dmenu; lcp-inline-css; FOUC-guard Ф3.51 (первый кадр шапки/марки/тикера); владелец клика сплэша; early-chrome-guard. Легаси-дубль регистрации SW — кандидат на удаление (владелец boot.js) | — |
 
