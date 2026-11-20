@@ -430,7 +430,7 @@ function sv() {
   });
 
   if (typeof cartFabShow === 'function') cartFabShow();
-  if (showDeliv && typeof window.DMENU !== 'undefined' && !window.DMENU.length &&
+  if (window.__brandSplashPending !== true && showDeliv && typeof window.DMENU !== 'undefined' && !window.DMENU.length &&
       typeof window.loadDelivery === 'function' && !window.__dlReq) {
     window.__dlReq = 1;
     window.__dlPromise = window.loadDelivery();
