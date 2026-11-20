@@ -28,6 +28,7 @@
         // 2) если это диплинк на конкретную вкладку/действие (?tab=chat, ?support=choose)
         // 3) в обычном браузере (!isPwa && !isTg), если в URL явно открыт ?brand=delivery или ?brand=coffee
         var explicit = splashDone || isActionDeepLink || (!isPwa && !isTg && !!urlBrand);
+        window.__brandSplashPending = !explicit;
         var b = urlBrand || stored || (localStorage.getItem('zt_onb') ? 'delivery' : 'coffee');
         var roleHint = localStorage.getItem('zt_role');
         if (localStorage.getItem('zt_user') && ['admin', 'cashier', 'dispatch'].indexOf(roleHint) !== -1) {
@@ -1617,6 +1618,8 @@ html[data-brand="delivery"] {
     (function () {
       var endpoint = '';
       try {
+        // The splash choice is not known yet; do not prefetch either brand's catalog.
+        if (window.__brandSplashPending === true) return;
         if (localStorage.getItem('zt_user')) return;
         var params = new URLSearchParams(location.search);
         var brand = params.get('brand') || localStorage.getItem('zt_brand') || 'coffee';
