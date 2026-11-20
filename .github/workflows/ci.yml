@@ -104,6 +104,10 @@ jobs:
           NODE
       - name: Install Playwright Chromium
         run: npx playwright install chromium
+      - name: Set deterministic bonus test clock
+        if: matrix.group == 'Bonuses'
+        run: |
+          echo "ZERNO_TEST_NOW=$(TZ=Europe/Kaliningrad date +'%Y-%m-%dT16:00:00%:z')" >> "$GITHUB_ENV"
       - name: Run isolated regression group
         run: npx playwright test ${{ matrix.specs }} --project="${{ matrix.project }}" --workers=${{ matrix.workers }}
         env:
