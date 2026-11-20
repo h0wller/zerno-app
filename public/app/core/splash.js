@@ -104,6 +104,14 @@
     if (typeof window.applyAuthBrand === 'function') window.applyAuthBrand();
     if (choice === 'delivery' && typeof window.loadDelivery === 'function') {
       window.loadDelivery();
+    } else if (
+      choice === 'coffee' &&
+      typeof window.loadMenu === 'function' &&
+      (!Array.isArray(window.MENU) || window.MENU.length === 0)
+    ) {
+      // Boot may have loaded only the delivery catalog before the splash choice.
+      // Fetch coffee data now so removing the splash cannot expose empty skeleton cards.
+      window.loadMenu();
     }
     if (window.chatState && typeof window.chatState.setChatCtx === 'function') {
       window.chatState.setChatCtx(choice);
