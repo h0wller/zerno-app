@@ -772,7 +772,7 @@ await loadMenu();
 /* ── Ф6.2: приоритет изображений по фактическому первому ряду ── */
 function syncCoffeeImagePriorities() {
   var grid = document.getElementById('grid');
-  if (!grid) return;
+  if (!grid || !grid.getClientRects().length) return;
   var cards = Array.from(grid.querySelectorAll(':scope > .card[data-item-id]'));
   if (!cards.length) return;
 
