@@ -769,7 +769,42 @@ await loadMenu();
 }
 });
 
-/* ── Ф6.2: LCP-картинка первого экрана — eager + fetchpriority ── */
+/* ── Ф6.2: приоритет изображений по фактическому первому ряду ── */
+function syncCoffeeImagePriorities() {
+  var grid = document.getElementById('grid');
+  if (!grid) return;
+  var cards = Array.from(grid.querySelectorAll(':scope > .card[data-item-id]'));
+  if (!cards.length) return;
+
+  var firstRowTop = cards[0].getBoundingClientRect().top;
+  var hasHighPriorityImage = false;
+  cards.forEach(function (card) {
+    var image = card.querySelector('.media img[src]');
+    if (!image) return;
+    var isFirstRow = Math.abs(card.getBoundingClientRect().top - firstRowTop) <= 1;
+    image.setAttribute('loading', isFirstRow ? 'eager' : 'lazy');
+    var isLcpImage = isFirstRow && !hasHighPriorityImage;
+    image.setAttribute('fetchpriority', isLcpImage ? 'high' : 'auto');
+    if (isLcpImage) hasHighPriorityImage = true;
+  });
+}
+
+var coffeeImagePriorityFrame = 0;
+function scheduleCoffeeImagePriorities() {
+  if (coffeeImagePriorityFrame) return;
+  coffeeImagePriorityFrame = requestAnimationFrame(function () {
+    coffeeImagePriorityFrame = 0;
+    syncCoffeeImagePriorities();
+  });
+}
+
+window.addEventListener('resize', scheduleCoffeeImagePriorities, { passive: true });
+window.addEventListener('load', scheduleCoffeeImagePriorities, { once: true });
+if (document.fonts && document.fonts.ready) {
+  document.fonts.ready.then(scheduleCoffeeImagePriorities);
+}
+
+/* Сохраняем совместимый контракт для первого изображения обеих витрин. */
 function fixLcp() {
   var f = document.querySelector('#grid img, #deliveryGrid img');
   if (f && !f.dataset.lcp) {
@@ -779,6 +814,7 @@ function fixLcp() {
       f.fetchPriority = 'high';
     } catch (e) {}
   }
+  syncCoffeeImagePriorities();
 }
 window.fixLcp = fixLcp;
 if (document.readyState === 'loading') {
