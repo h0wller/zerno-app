@@ -29,6 +29,7 @@
         // 3) в обычном браузере (!isPwa && !isTg), если в URL явно открыт ?brand=delivery или ?brand=coffee
         var explicit = splashDone || isActionDeepLink || (!isPwa && !isTg && !!urlBrand);
         window.__brandSplashPending = !explicit;
+        if (!explicit) document.documentElement.classList.add('brand-splash-pending');
         var b = urlBrand || stored || (localStorage.getItem('zt_onb') ? 'delivery' : 'coffee');
         var roleHint = localStorage.getItem('zt_role');
         if (localStorage.getItem('zt_user') && ['admin', 'cashier', 'dispatch'].indexOf(roleHint) !== -1) {
@@ -80,6 +81,8 @@
     })();
     </script>
     <style id="critical-css">
+/* Prevent the static delivery skeleton image from being fetched before splash brand choice. */
+html.brand-splash-pending #deliveryView { display:none !important; }
 /* Keep the support slot's width stable before syncChatFab relocates its landmark. */
 @media (max-width:820px) {
   :is(#menuView, #deliveryView) .menu-head .mh-top .mh-right:not(:has(> #supportLauncherHost))::after {
