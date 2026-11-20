@@ -200,7 +200,7 @@ html body div.wrap > #deliveryRail {
   display: flex;
   flex-direction: column;
   gap: 10px;
-  align-self:stretch;
+  align-self:start;
   width:80px;
   min-width: 80px;
   height: fit-content;
@@ -212,11 +212,6 @@ html body div.wrap > #deliveryRail {
   scrollbar-width: none;
   z-index: 10;
 }
-
-
-/* Both brand rails fill the menu section's grid row. */
-html body div.wrap > #rail,
-html body div.wrap > #deliveryRail { align-self:stretch; height:auto; max-height:none; }
 @media (min-width: 1181px) {
   html body div.wrap > .rail,
   html body div.wrap > #rail,
