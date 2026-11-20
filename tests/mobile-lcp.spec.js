@@ -86,16 +86,12 @@ test.describe('Initial catalog image priorities', () => {
     await page.addInitScript(() => {
       const descriptor = Object.getOwnPropertyDescriptor(Element.prototype, 'innerHTML');
       window.__coffeeGridWrites = 0;
-      window.__coffeeGridWriteStacks = [];
       Object.defineProperty(Element.prototype, 'innerHTML', {
         configurable: descriptor.configurable,
         enumerable: descriptor.enumerable,
         get: descriptor.get,
         set(value) {
-          if (this.id === 'grid') {
-            window.__coffeeGridWrites += 1;
-            window.__coffeeGridWriteStacks.push(new Error().stack);
-          }
+          if (this.id === 'grid') window.__coffeeGridWrites += 1;
           return descriptor.set.call(this, value);
         }
       });
@@ -107,12 +103,7 @@ test.describe('Initial catalog image priorities', () => {
 
     await page.goto('/?brand=coffee');
     await expect(page.locator('#grid article').first()).toBeAttached();
-    const gridWriteState = await page.evaluate(() => ({
-      count: window.__coffeeGridWrites,
-      stacks: window.__coffeeGridWriteStacks
-    }));
-    console.log('Initial coffee grid writes:', JSON.stringify(gridWriteState));
-    expect(gridWriteState.count).toBe(1);
+    await expect.poll(() => page.evaluate(() => window.__coffeeGridWrites)).toBe(1);
   });
 
 
