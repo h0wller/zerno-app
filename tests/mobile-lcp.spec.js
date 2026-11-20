@@ -69,6 +69,46 @@ test.describe('Initial catalog image priorities', () => {
     expect(deliveryHeroRequests).toHaveLength(0);
   });
 
+  test('splash coffee choice does not preload the hidden delivery hero', async ({ page }) => {
+    const deliveryHeroRequests = [];
+    page.on('request', (request) => {
+      if (new URL(request.url()).pathname === '/media/dishes/1-card.webp') {
+        deliveryHeroRequests.push(request.url());
+      }
+    });
+
+    await page.addInitScript(() => {
+      localStorage.setItem('zt_brand', 'delivery');
+      localStorage.setItem('zt_onb', '1');
+      localStorage.setItem('zt_inst_hide', '1');
+      localStorage.removeItem('zt_user');
+      sessionStorage.removeItem('splashDone');
+    });
+    await page.route('**/api/menu', async (route) => route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ items: imageCatalogItems('coffee'), updatedAt: Date.now() })
+    }));
+    await page.route('**/api/dmenu', async (route) => route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ items: imageCatalogItems('delivery'), updatedAt: Date.now() })
+    }));
+    await page.route('**/media/dishes/**', (route) => route.fulfill({
+      status: 200,
+      contentType: 'image/webp',
+      body: Buffer.from('UklGRiQAAABXRUJQVlA4IBgAAAAwAQCdASoBAAEAAUAmJaQAA3AA/vz0AAA=', 'base64')
+    }));
+
+    await page.goto('/');
+    const splash = page.locator('#brandSplashStatic, #brandSplash').first();
+    await expect(splash).toBeVisible();
+    await splash.locator('[data-go="coffee"]').click();
+    await expect(page.locator('html')).toHaveAttribute('data-brand', 'coffee');
+    await expect.poll(() => page.evaluate(() => Array.isArray(window.MENU) && window.MENU.length > 0)).toBe(true);
+    await expect.poll(() => deliveryHeroRequests.length).toBe(0);
+  });
+
   test('delivery startup retains its first-card hero request', async ({ page }) => {
     await routeImageCatalog(page, 'delivery');
     await page.addInitScript(() => {
