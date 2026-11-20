@@ -263,7 +263,7 @@ function syncViewsVisibility(showCoffee, showDeliv) {
     dv.hidden = false;
     dv.style.display = showDeliv ? 'block' : 'none';
     // The initial delivery card is inert HTML; its image is activated only after delivery is selected.
-    if (showDeliv) {
+    if (showDeliv && window.__brandSplashPending !== true) {
       var hero = dv.querySelector('#deliveryGrid > .card[data-product-id="1"] img[data-deferred-src]');
       if (hero) {
         hero.src = hero.dataset.deferredSrc;
