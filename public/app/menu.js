@@ -804,9 +804,13 @@ if (document.fonts && document.fonts.ready) {
   document.fonts.ready.then(scheduleCoffeeImagePriorities);
 }
 
-/* Сохраняем совместимый контракт для первого изображения обеих витрин. */
+/* Приоритет LCP принадлежит только активной витрине.
+   Не повышаем скрытый hero второго бренда до eager/high. */
 function fixLcp() {
-  var f = document.querySelector('#grid img, #deliveryGrid img');
+  var activeGrid = window.brand === 'delivery'
+    ? document.getElementById('deliveryGrid')
+    : document.getElementById('grid');
+  var f = activeGrid && activeGrid.querySelector('.card:not(.skeleton-card) .media img[src]');
   if (f && !f.dataset.lcp) {
     f.dataset.lcp = '1';
     f.loading = 'eager';
@@ -814,7 +818,7 @@ function fixLcp() {
       f.fetchPriority = 'high';
     } catch (e) {}
   }
-  syncCoffeeImagePriorities();
+  if (window.brand !== 'delivery') syncCoffeeImagePriorities();
 }
 window.fixLcp = fixLcp;
 if (document.readyState === 'loading') {
