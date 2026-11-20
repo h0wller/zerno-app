@@ -129,7 +129,7 @@
     ) {
       // Boot may have loaded only the delivery catalog before the splash choice.
       // Fetch coffee data now so removing the splash cannot expose empty skeleton cards.
-      window.__coffeeMenuPromise = window.loadMenu();
+      window.loadMenu();
     } else if (choice === 'coffee' && typeof window.renderAll === 'function') {
       window.renderAll();
     }
