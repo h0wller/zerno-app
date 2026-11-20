@@ -103,6 +103,9 @@ test.describe('Initial catalog image priorities', () => {
     await page.goto('/');
     const splash = page.locator('#brandSplashStatic, #brandSplash').first();
     await expect(splash).toBeVisible();
+    // The boot must wait for the explicit brand choice instead of fetching the
+    // previously stored delivery catalog while the splash is still visible.
+    await expect.poll(() => page.evaluate(() => window.__dlReq || 0)).toBe(0);
     await splash.locator('[data-go="coffee"]').click();
     await expect(page.locator('html')).toHaveAttribute('data-brand', 'coffee');
     await expect.poll(() => page.evaluate(() => Array.isArray(window.MENU) && window.MENU.length > 0)).toBe(true);
