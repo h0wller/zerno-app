@@ -60,6 +60,9 @@ test.describe('Initial catalog image priorities', () => {
     await expect(page.locator('#grid > .card').first()).toBeAttached({ timeout: 15000 });
     await expect.poll(() => page.evaluate(() => Array.isArray(window.MENU) && window.MENU.length > 0)).toBe(true);
 
+    const hiddenDeliveryHero = page.locator('#deliveryGrid > .card img').first();
+    await expect(hiddenDeliveryHero).toHaveAttribute('loading', 'lazy');
+    await expect(hiddenDeliveryHero).toHaveAttribute('fetchpriority', 'auto');
     expect(deliveryHeroRequests).toHaveLength(0);
   });
 
