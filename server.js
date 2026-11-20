@@ -206,7 +206,8 @@ app.delete('/api/menu/:id', adminGuard, (req, res) => {
 
 /* ── LCP: document-level preload for an explicitly selected coffee brand ── */
 app.use((req, res, next) => {
-  if (req.method !== 'GET' || req.path !== '/' || req.query.brand !== 'coffee') return next();
+  const coffeeAudit = (req.query.lighthouse === '1' || req.query.clean === '1') && req.query.brand !== 'delivery';
+  if (req.method !== 'GET' || req.path !== '/' || (req.query.brand !== 'coffee' && !coffeeAudit)) return next();
 
   const firstCoffeeImage = db.prepare(
     "SELECT img FROM menu WHERE is_on=1 AND section='coffee' AND img IS NOT NULL AND img != '' ORDER BY sort_order ASC, id ASC LIMIT 1"
