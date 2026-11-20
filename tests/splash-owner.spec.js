@@ -113,6 +113,30 @@ test.describe('Splash Screen — Мобильные режимы (Web, TMA, Stan
     await expect(page.locator('html')).toHaveClass(/no-splash/);
   });
 
+
+  for (const choice of ['coffee', 'delivery']) {
+    test(`splash choice ${choice} always hydrates the selected catalog`, async ({ page }) => {
+      const staleBrand = choice === 'coffee' ? 'delivery' : 'coffee';
+      await page.addInitScript(({ staleBrand }) => {
+        localStorage.setItem('zt_brand', staleBrand);
+        localStorage.removeItem('zt_onb');
+        sessionStorage.removeItem('splashDone');
+        localStorage.setItem('zt_inst_hide', '1');
+      }, { staleBrand });
+
+      await page.goto('/');
+      const splash = page.locator('#brandSplashStatic, #brandSplash').first();
+      await expect(splash).toBeVisible();
+
+      await splash.locator(`[data-go="${choice}"]`).click();
+      await expect(page.locator('html')).toHaveAttribute('data-brand', choice);
+
+      const grid = page.locator(choice === 'coffee' ? '#grid' : '#deliveryGrid');
+      await expect(grid.locator('.card:not(.skeleton-card)').first()).toBeVisible({ timeout: 15000 });
+      await expect(grid.locator('.skeleton-card')).toHaveCount(0);
+    });
+  }
+
   test('splash: инлайн-владелец клика ведёт в приложение через ?brand=', async ({ page }) => {
     const errs = [];
     page.on('pageerror', (e) => errs.push(e.message));
