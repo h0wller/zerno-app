@@ -135,7 +135,7 @@ test.describe('Initial catalog image priorities', () => {
       await route.fulfill({
         status: 200,
         contentType: 'image/webp',
-        body: Buffer.from('UklGRiIAAABXRUJQVlA4IBYAAAAwAQCdASoBAAEAAUAmJaQAA3AA/v89WAAAAA==', 'base64')
+        body: Buffer.from('UklGRiQAAABXRUJQVlA4IBgAAAAwAQCdASoBAAEAAUAmJaQAA3AA/vz0AAA=', 'base64')
       });
     });
     await page.addInitScript(() => {
