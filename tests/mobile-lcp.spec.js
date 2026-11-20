@@ -44,6 +44,22 @@ async function routeImageCatalog(page, brand, { delayMs = 0 } = {}) {
 test.describe('Initial catalog image priorities', () => {
   test.use({ serviceWorkers: 'block' });
 
+  test('Lighthouse audit selects coffee deterministically even when delivery is stored', async ({ page }) => {
+    await routeImageCatalog(page, 'coffee');
+    await page.addInitScript(() => {
+      localStorage.setItem('zt_brand', 'delivery');
+      localStorage.setItem('zt_onb', '1');
+      localStorage.setItem('zt_inst_hide', '1');
+      sessionStorage.removeItem('splashDone');
+    });
+
+    await page.goto('/?lighthouse=1');
+    await expect(page.locator('html')).toHaveAttribute('data-brand', 'coffee');
+    await expect(page.locator('#brandSplashStatic, #brandSplash')).toHaveCount(0);
+    await expect.poll(() => page.evaluate(() => Array.isArray(window.MENU) && window.MENU.length > 0)).toBe(true);
+    await expect(page.locator('#grid > .card').first()).toBeVisible();
+  });
+
   test('coffee startup does not request the hidden delivery hero image', async ({ page }) => {
     const deliveryHeroRequests = [];
     page.on('request', (request) => {
