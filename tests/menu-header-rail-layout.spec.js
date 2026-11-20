@@ -663,13 +663,23 @@ test('desktop category navigation uses one rail surface and a selected icon chip
       const columns = await grid.evaluate((element) => getComputedStyle(element).gridTemplateColumns.split(' ').filter(Boolean).length);
       expect(layout.position).toBe('relative');
       expect(layout.width).toBeLessThanOrEqual(80);
-      const catalogBottomDelta = await page.evaluate(({ railSelector, gridSelector }) => {
+      const railGeometry = await page.evaluate(({ railSelector, gridSelector }) => {
         const rail = document.querySelector(railSelector).getBoundingClientRect();
         const grid = document.querySelector(gridSelector).getBoundingClientRect();
-        return Math.abs(rail.bottom - grid.bottom);
+        return {
+          railTop: rail.top,
+          railBottom: rail.bottom,
+          railHeight: rail.height,
+          gridTop: grid.top,
+          gridBottom: grid.bottom,
+        };
       }, { railSelector: brand.rail, gridSelector: brand.brand === 'coffee' ? '#grid' : '#deliveryGrid' });
-      expect(catalogBottomDelta, brand.brand + ' desktop rail spans the full catalog row before scrolling')
+      expect(Math.abs(railGeometry.railTop - railGeometry.gridTop), brand.brand + ' desktop rail starts with the catalog')
         .toBeLessThanOrEqual(4);
+      expect(railGeometry.railBottom, brand.brand + ' desktop rail keeps intrinsic height before scrolling')
+        .toBeLessThan(railGeometry.gridBottom - 100);
+      expect(railGeometry.railHeight, brand.brand + ' desktop rail does not stretch to the catalog height')
+        .toBeLessThanOrEqual(460);
       expect(layout.railBackground).not.toBe('rgba(0, 0, 0, 0)');
       expect(layout.railBorder).toBe('0px');
       expect(layout.radius).toBe('16px');
@@ -2563,9 +2573,10 @@ test('both brand rails align to the catalog row on desktop', async ({page}) => {
       return {gt:grid.top,gb:grid.bottom,rt:rect.top,rb:rect.bottom,pos:getComputedStyle(rail).position,align:getComputedStyle(rail).alignSelf};
     },{railSelector:brand.rail,gridSelector});
     expect(Math.abs(m.rt-m.gt)).toBeLessThanOrEqual(2);
-    expect(Math.abs(m.rb-m.gb)).toBeLessThanOrEqual(4);
+    expect(m.rb).toBeLessThan(m.gb - 100);
+    expect(m.rb - m.rt, 'desktop rail keeps its intrinsic category height on the first screen').toBeLessThanOrEqual(460);
     expect(m.pos).toBe('relative');
-    expect(m.align).toBe('stretch');
+    expect(m.align).toBe('start');
   }
 });
 
