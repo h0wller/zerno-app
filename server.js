@@ -203,6 +203,34 @@ app.delete('/api/menu/:id', adminGuard, (req, res) => {
   touch(); res.json({ ok: true });
 });
 
+
+/* ── LCP: document-level preload for an explicitly selected coffee brand ── */
+app.use((req, res, next) => {
+  if (req.method !== 'GET' || req.path !== '/' || req.query.brand !== 'coffee') return next();
+
+  const firstCoffeeImage = db.prepare(
+    "SELECT img FROM menu WHERE is_on=1 AND section='coffee' AND img IS NOT NULL AND img != '' ORDER BY sort_order ASC, id ASC LIMIT 1"
+  ).get();
+  if (!firstCoffeeImage) return next();
+
+  const image = menuImageForResponse(firstCoffeeImage.img, PUBLIC_DIR);
+  if (!image) return next();
+
+  const srcset = menuImageSrcsetForResponse(image, PUBLIC_DIR);
+  const parameters = [
+    '<' + image + '>',
+    'rel=preload',
+    'as=image',
+    'fetchpriority=high'
+  ];
+  if (srcset) {
+    parameters.push('imagesrcset="' + srcset.replace(/"/g, '') + '"');
+    parameters.push('imagesizes="(max-width: 519px) calc(100vw - 110px), (max-width: 1180px) 42vw, (max-width: 1599px) 30vw, 23vw"');
+  }
+  res.setHeader('Link', parameters.join('; '));
+  next();
+});
+
 /* ── статика с кэшированием (7 дней для JS/CSS, 1 год для медиа) ── */
 app.use(express.static(PUBLIC_DIR, {
   maxAge: '7d',
