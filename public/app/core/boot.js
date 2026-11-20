@@ -91,9 +91,22 @@ function preloadDeliveryCatalog() {
   return window.__dlPromise = window.loadDelivery();
 }
 
+function applyStaffRoleState(customer) {
+  var staffRole = customer && ['admin', 'cashier', 'dispatch'].indexOf(customer.role) !== -1
+    ? customer.role
+    : '';
+  try {
+    if (staffRole) localStorage.setItem('zt_role', staffRole);
+    else localStorage.removeItem('zt_role');
+  } catch (_) {}
+  if (staffRole) document.documentElement.setAttribute('data-staff-role', staffRole);
+  else document.documentElement.removeAttribute('data-staff-role');
+  document.documentElement.setAttribute('data-staff-ready', '1');
+}
+
 async function verifyStaffSession() {
   if (!window.USER_TOKEN) {
-    document.documentElement.setAttribute('data-staff-ready', '1');
+    applyStaffRoleState(null);
     return;
   }
 
@@ -101,23 +114,12 @@ async function verifyStaffSession() {
   const authTimeout = setTimeout(() => authController.abort(), 12000);
   try {
     window.me = (await api('/me', { signal: authController.signal })).customer;
-    var staffRole = window.me && ['admin', 'cashier', 'dispatch'].indexOf(window.me.role) !== -1
-      ? window.me.role
-      : '';
-    try {
-      if (staffRole) localStorage.setItem('zt_role', staffRole);
-      else localStorage.removeItem('zt_role');
-    } catch (_) {}
-    if (staffRole) document.documentElement.setAttribute('data-staff-role', staffRole);
-    else document.documentElement.removeAttribute('data-staff-role');
-    document.documentElement.setAttribute('data-staff-ready', '1');
+    applyStaffRoleState(window.me);
   } catch (e) {
     window.me = null;
     window.USER_TOKEN = null;
     localStorage.removeItem(typeof T_USER !== 'undefined' ? T_USER : 'zt_user');
-    localStorage.removeItem('zt_role');
-    document.documentElement.removeAttribute('data-staff-role');
-    document.documentElement.setAttribute('data-staff-ready', '1');
+    applyStaffRoleState(null);
   } finally {
     clearTimeout(authTimeout);
   }
@@ -324,6 +326,7 @@ registerSW();
 /* ── Экспорт (контракт F1.3) ── */
 window.renderAll = renderAll;
 window.boot = boot;
+window.applyStaffRoleState = applyStaffRoleState;
 
 console.info(
   '%c🌊 …и кофе · ребрендинг',
