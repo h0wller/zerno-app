@@ -2,7 +2,7 @@
 "use strict";
 
       /* ── меню ── */
-      async function loadMenu() {
+      async function loadMenu(options) {
         try {
           const r = await api(
             me && ["admin", "cashier", "dispatch"].indexOf(me.role) !== -1 ? "/menu/all" : "/menu",
@@ -10,7 +10,7 @@
           MENU = r.items;
           meta.updatedAt = r.updatedAt;
           renderUpd();
-          renderMenu();
+          if (!options || options.render !== false) renderMenu();
         } catch (e) {
           toast(e.message, "⚠️");
         }

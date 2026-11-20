@@ -423,16 +423,16 @@ function renderSingleMetaHtml(p) {
 
 function syncDeliveryImagePriorities() {
   var grid = document.getElementById('deliveryGrid');
-  if (!grid) return;
+  if (!grid || !grid.getClientRects().length) return;
   var cards = Array.from(grid.querySelectorAll(':scope > .card[data-product-id]'));
   if (!cards.length) return;
 
-  var firstRowTop = cards[0].getBoundingClientRect().top;
+  var firstRowTop = cards[0].offsetTop;
   var hasHighPriorityImage = false;
   cards.forEach(function (card) {
     var image = card.querySelector('.media img[src]');
     if (!image) return;
-    var isFirstRow = Math.abs(card.getBoundingClientRect().top - firstRowTop) <= 1;
+    var isFirstRow = Math.abs(card.offsetTop - firstRowTop) <= 1;
     image.setAttribute('loading', isFirstRow ? 'eager' : 'lazy');
     var isLcpImage = isFirstRow && !hasHighPriorityImage;
     image.setAttribute('fetchpriority', isLcpImage ? 'high' : 'auto');

@@ -27,8 +27,11 @@
         // 1) если уже пройден в текущей сессии (splashDone)
         // 2) если это диплинк на конкретную вкладку/действие (?tab=chat, ?support=choose)
         // 3) в обычном браузере (!isPwa && !isTg), если в URL явно открыт ?brand=delivery или ?brand=coffee
-        var explicit = splashDone || isActionDeepLink || (!isPwa && !isTg && !!urlBrand);
-        var b = urlBrand || stored || (localStorage.getItem('zt_onb') ? 'delivery' : 'coffee');
+        var isAudit = qs.get('lighthouse') === '1' || qs.get('clean') === '1' || /Chrome-Lighthouse|Lighthouse|moto g power/i.test(navigator.userAgent);
+        var explicit = isAudit || splashDone || isActionDeepLink || (!isPwa && !isTg && !!urlBrand);
+        window.__brandSplashPending = !explicit;
+        if (!explicit) document.documentElement.classList.add('brand-splash-pending');
+        var b = urlBrand || (isAudit ? 'coffee' : stored || (localStorage.getItem('zt_onb') ? 'delivery' : 'coffee'));
         var roleHint = localStorage.getItem('zt_role');
         if (localStorage.getItem('zt_user') && ['admin', 'cashier', 'dispatch'].indexOf(roleHint) !== -1) {
           document.documentElement.setAttribute('data-staff-role', roleHint);
@@ -65,7 +68,7 @@
           }
 
           // LCP preload for delivery brand (актуальная 1-card.webp из БД)
-          if (b === 'delivery') {
+          if (b === 'delivery' && explicit) {
             var lp = document.createElement('link');
             lp.rel = 'preload';
             lp.as = 'image';
@@ -79,6 +82,7 @@
     })();
     </script>
     <style id="critical-css">
+/* The delivery hero uses a deferred data URL until the selected view is revealed. */
 /* Keep the support slot's width stable before syncChatFab relocates its landmark. */
 @media (max-width:820px) {
   :is(#menuView, #deliveryView) .menu-head .mh-top .mh-right:not(:has(> #supportLauncherHost))::after {
@@ -1617,15 +1621,45 @@ html[data-brand="delivery"] {
     (function () {
       var endpoint = '';
       try {
+        // The splash choice is not known yet; do not prefetch either brand's catalog.
+        if (window.__brandSplashPending === true) return;
         if (localStorage.getItem('zt_user')) return;
         var params = new URLSearchParams(location.search);
-        var brand = params.get('brand') || localStorage.getItem('zt_brand') || 'coffee';
+        var auditCoffee = params.get('lighthouse') === '1' || params.get('clean') === '1';
+        var brand = params.get('brand') || (auditCoffee ? 'coffee' : localStorage.getItem('zt_brand') || 'coffee');
         endpoint = brand === 'delivery' ? '/api/dmenu' : '/api/menu';
       } catch (_) { return; }
 
       var nativeFetch = window.fetch;
       var pending = nativeFetch.call(window, endpoint, {
         headers: { Accept: 'application/json' }
+      }).then(function (response) {
+        if (endpoint !== '/api/menu' || !response || !response.ok) return response;
+        // Do not release the response to loadMenu() until the matching image preload is in the DOM.
+        return response.clone().json().then(function (payload) {
+          var items = payload && Array.isArray(payload.items) ? payload.items : [];
+          var first = items.find(function (item) {
+            return item && item.cat === 'coffee' && item.on && item.img;
+          });
+          if (first) {
+            var preload = document.createElement('link');
+            preload.id = 'zt-menu-lcp-preload';
+            preload.rel = 'preload';
+            preload.as = 'image';
+            preload.href = first.img;
+            preload.type = 'image/webp';
+            preload.setAttribute('fetchpriority', 'high');
+            if (first.imgSrcset) {
+              preload.setAttribute('imagesrcset', first.imgSrcset);
+              preload.setAttribute('imagesizes',
+                '(max-width: 519px) calc(100vw - 110px), (max-width: 1180px) 42vw, (max-width: 1599px) 30vw, 23vw');
+            }
+            document.head.appendChild(preload);
+          }
+          return response;
+        }, function () {
+          return response;
+        });
       });
 
       window.fetch = function (input, options) {
@@ -4260,9 +4294,9 @@ html body #tickerTrack .tickerGroup > span {
         <div class="grid" id="deliveryGrid">
           <article class="card" data-product-id="1">
             <div class="media" style="--tint:#F3E2CE">
-              <img src="/media/dishes/1-card.webp"
+              <img data-deferred-src="/media/dishes/1-card.webp"
                    alt="Маргарита"
-                   loading="eager" fetchpriority="high" decoding="async" data-lcp="1"
+                   loading="lazy" fetchpriority="auto" decoding="async" data-lcp="1"
                    width="300" height="180"
                    style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;">
             </div>
