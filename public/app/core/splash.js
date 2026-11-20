@@ -91,6 +91,7 @@
     } catch (e) {}
 
     hideSplashDom();
+    document.documentElement.classList.remove('brand-splash-pending');
 
     window.brand = choice;
     document.documentElement.setAttribute('data-brand', choice);
