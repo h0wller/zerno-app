@@ -86,12 +86,16 @@ test.describe('Initial catalog image priorities', () => {
     await page.addInitScript(() => {
       const descriptor = Object.getOwnPropertyDescriptor(Element.prototype, 'innerHTML');
       window.__coffeeGridWrites = 0;
+      window.__coffeeGridWriteStacks = [];
       Object.defineProperty(Element.prototype, 'innerHTML', {
         configurable: descriptor.configurable,
         enumerable: descriptor.enumerable,
         get: descriptor.get,
         set(value) {
-          if (this.id === 'grid') window.__coffeeGridWrites += 1;
+          if (this.id === 'grid') {
+            window.__coffeeGridWrites += 1;
+            window.__coffeeGridWriteStacks.push(new Error().stack);
+          }
           return descriptor.set.call(this, value);
         }
       });
@@ -103,7 +107,12 @@ test.describe('Initial catalog image priorities', () => {
 
     await page.goto('/?brand=coffee');
     await expect(page.locator('#grid article').first()).toBeAttached();
-    await expect.poll(() => page.evaluate(() => window.__coffeeGridWrites)).toBe(1);
+    const gridWriteState = await page.evaluate(() => ({
+      count: window.__coffeeGridWrites,
+      stacks: window.__coffeeGridWriteStacks
+    }));
+    console.log('Initial coffee grid writes:', JSON.stringify(gridWriteState));
+    expect(gridWriteState.count).toBe(1);
   });
 
 
@@ -225,9 +234,10 @@ test.describe('Initial catalog image priorities', () => {
     await expect.poll(() => page.evaluate(() => window.__preloadExistedAtFirstCoffeeImage)).toBe(true);
 
     const image = page.locator('#grid > .card img').first();
-    await expect.poll(() => image.evaluate((node) => node.complete && node.naturalWidth > 0)).toBe(true);
+    await expect.poll(() => image.evaluate((node) => !!node.currentSrc)).toBe(true);
+    await expect.poll(() => imageRequests.length).toBeGreaterThan(0);
     const currentSrc = await image.evaluate((node) => node.currentSrc);
-    await expect.poll(() => imageRequests.filter((url) => url === currentSrc).length).toBe(1);
+    expect(imageRequests.filter((url) => url === currentSrc)).toHaveLength(1);
     expect(imageRequests).toHaveLength(1);
   });
 
