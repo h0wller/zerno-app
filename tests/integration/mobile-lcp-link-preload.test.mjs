@@ -130,7 +130,14 @@ test('Lighthouse coffee audit preloads the first local coffee image without a br
   const response = await fetch(base + '/?lighthouse=1');
   assert.equal(response.status, 200);
   const link = response.headers.get('link');
-  assert.ok(link, 'Lighthouse coffeetest('delivery document preloads the first visible pizza when a sauce sorts before it', async () => {
+  assert.ok(link, 'Lighthouse coffee document must expose the first local dish image preload');
+  assert.match(link, /rel=preload/);
+  assert.match(link, /as=image/);
+  assert.match(link, /fetchpriority=high/);
+  assert.ok(link.includes('<' + imagePath + '>'), 'audit preload URL must match the selected coffee image');
+});
+
+test('delivery document preloads the first visible pizza when a sauce sorts before it', async () => {
   const response = await fetch(base + '/?brand=delivery');
   assert.equal(response.status, 200);
   const link = response.headers.get('link');
@@ -141,13 +148,6 @@ test('Lighthouse coffee audit preloads the first local coffee image without a br
   assert.match(link, /as=image/);
   assert.match(link, /fetchpriority=high/);
   assert.match(link, /imagesrcset=/);
-});
-
- document must expose the first local dish image preload');
-  assert.match(link, /rel=preload/);
-  assert.match(link, /as=image/);
-  assert.match(link, /fetchpriority=high/);
-  assert.ok(link.includes('<' + imagePath + '>'), 'audit preload URL must match the selected coffee image');
 });
 
 test('explicit delivery document preloads its first responsive hero image', async () => {
