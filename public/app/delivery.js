@@ -505,6 +505,25 @@ function updateFirstDeliveryCard(gridEl, firstCard, list) {
   firstCard.classList.toggle('stopped', !p0.on);
   firstCard.classList.toggle('stable-meta-card', usesStableSimpleMetaSlots(p0, p0.opts || []));
 
+  const firstImage = firstCard.querySelector('.media img');
+  if (firstImage && p0.img) {
+    firstImage.alt = p0.name || '';
+    if (p0.imgSrcset) {
+      firstImage.setAttribute('srcset', p0.imgSrcset);
+      firstImage.setAttribute('sizes', '(max-width: 519px) calc(100vw - 110px), (max-width: 1180px) 42vw, (max-width: 1599px) 30vw, 23vw');
+    } else {
+      firstImage.removeAttribute('srcset');
+      firstImage.removeAttribute('sizes');
+    }
+    firstImage.setAttribute('loading', 'eager');
+    firstImage.setAttribute('fetchpriority', 'high');
+    firstImage.setAttribute('decoding', 'async');
+    firstImage.dataset.zoom = 'true';
+    firstImage.dataset.zoomSrc = p0.img.replace('-card.webp', '-zoom.webp');
+    if (firstImage.getAttribute('src') !== p0.img) firstImage.src = p0.img;
+    firstImage.removeAttribute('data-deferred-src');
+  }
+
   const cbody0 = firstCard.querySelector('.cbody');
   if (cbody0) {
     const opts0 = p0.opts || [];
@@ -541,12 +560,14 @@ function updateFirstDeliveryCard(gridEl, firstCard, list) {
 function renderDeliveryGrid(list) {
   const gridEl = $('#deliveryGrid');
   const firstCard = gridEl && gridEl.querySelector('.card:not(.skeleton-card)');
-  const firstImg = firstCard && firstCard.querySelector('.media img[src]');
+  const firstImg = firstCard && firstCard.querySelector('.media img');
+  const firstImageUrl = firstImg &&
+    (firstImg.getAttribute('src') || firstImg.getAttribute('data-deferred-src'));
   const canKeepFirst = !!(
     firstCard &&
     firstImg &&
     list.length > 0 &&
-    firstImg.getAttribute('src') === list[0].img
+    firstImageUrl === list[0].img
   );
 
   if (canKeepFirst) {
