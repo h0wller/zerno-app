@@ -56,7 +56,11 @@ before(async () => {
   const resizedDir = path.join(dishesDir, 'resized');
   fs.mkdirSync(resizedDir, { recursive: true });
   fs.writeFileSync(path.join(resizedDir, 'preload-fixture-delivery-card-300.webp'), imageBytes);
-  fs.writeFileSync(path.join(resizedDir, 'preload-fixture-delivery-card-600.webp'), imageBytes);
+  // The 600px derivative can be larger than its 640px source after recompression.
+  fs.writeFileSync(
+    path.join(resizedDir, 'preload-fixture-delivery-card-600.webp'),
+    Buffer.concat([imageBytes, Buffer.alloc(1024, 0)])
+  );
 
   child = spawn(process.execPath, ['server.js'], {
     cwd: root,
@@ -126,7 +130,8 @@ test('explicit delivery document preloads its first responsive hero image', asyn
   assert.match(link, /fetchpriority=high/);
   assert.match(link, /imagesrcset=/);
   assert.match(link, /preload-fixture-delivery-card-300\.webp/);
-  assert.match(link, /preload-fixture-delivery-card-600\.webp/);
+  assert.ok(link.includes(deliveryImagePath + ' 640w'), 'smaller original must replace the oversized 600px derivative');
+  assert.doesNotMatch(link, /preload-fixture-delivery-card-600\.webp/);
   assert.match(link, /imagesizes=/);
 });
 
