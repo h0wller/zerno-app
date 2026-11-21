@@ -99,8 +99,8 @@ before(async () => {
 
   db = new Database(dbPath);
   db.prepare('UPDATE menu SET img=?, sort_order=-1 WHERE id=?').run(imagePath, 'esp');
-  db.prepare(\"UPDATE menu SET cat='sauces', img=?, sort_order=-2 WHERE id=?\").run(sauceImagePath, 'pz-marg');
-  db.prepare(\"UPDATE menu SET cat='pizza', img=?, sort_order=-1 WHERE id=?\").run(deliveryImagePath, 'pz-hamgr');
+  db.prepare("UPDATE menu SET cat='sauces', img=?, sort_order=-2 WHERE id=?").run(sauceImagePath, 'pz-marg');
+  db.prepare("UPDATE menu SET cat='pizza', img=?, sort_order=-1 WHERE id=?").run(deliveryImagePath, 'pz-hamgr');
 });
 
 after(async () => {
