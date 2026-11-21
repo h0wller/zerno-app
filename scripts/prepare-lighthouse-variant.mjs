@@ -71,6 +71,7 @@ else if(/^C[1-5]$/.test(variant)){
  const html2=html.replace(current,desired);
  const temp=path.join(report,'variant-'+variant+'.html');fs.writeFileSync(temp,html2);
  const patchFile=path.join(report,variant+'.patch');
+ let patch;
  // Generate a canonical patch from the current file to the transformed file.
  const tmp=fs.mkdtempSync(path.join(os.tmpdir(),'lcp-'+variant+'-'));
  try{
