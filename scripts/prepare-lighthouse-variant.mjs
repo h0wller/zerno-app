@@ -52,16 +52,20 @@ else if(/^C[1-5]$/.test(variant)){
  }
  if(variant==='C3'){
   const from="return response.clone().json().then(function (payload) {";
-  const to="return response.json().then(function (payload) {";
+  const to="var streams = response.body.tee();\n          var appResponse = new Response(streams[0], { status: response.status, statusText: response.statusText, headers: response.headers });\n          return new Response(streams[1]).json().then(function (payload) {";
   if(!desired.includes(from)) throw Error('C3: clone JSON marker not found');
-  desired=desired.replace(from,to).replace("          }, function () {\n            return response;\n          });","          }).then(function (payload) {\n            return new Response(JSON.stringify(payload), { status: response.status, statusText: response.statusText, headers: response.headers });\n          }, function () { return response; });");
+  desired=desired.replace(from,to).replace("            return response;\n          }, function () {\n            return response;\n          });","            return appResponse;\n          }, function () {\n            return appResponse;\n          });");
  }
  if(variant==='C4'){
   desired=desired.replace("      var pending = null;","      var pending = null;\n      var splashWasPending = window.__brandSplashPending === true;");
   desired=desired.replace("          return response.clone().json().then(function (payload) {","          if (!splashWasPending) return response;\n          return response.clone().json().then(function (payload) {");
  }
  if(variant==='C5'){
-  desired=desired.replace("          return response.clone().json().then(function (payload) {","          if (brand !== 'delivery') return response;\n          return response.clone().json().then(function (payload) {");
+  const from="        }).then(function (response) {\n          if (!response || !response.ok) return response;\n          return response.clone().json().then(function (payload) {";
+  const to="        });\n        if (brand === 'delivery') {\n          promise.then(function (response) {\n            if (!response || !response.ok) return;\n            response.clone().json().then(function (payload) {";
+  if(!desired.includes(from)) throw Error('C5: response clone chain start not found');
+  desired=desired.replace(from,to);
+  desired=desired.replace("            return response;\n          }, function () {\n            return response;\n          });\n        });","            }).catch(function () {});\n          }).catch(function () {});\n        }");
  }
  if(desired===current) throw Error(variant+': generated block unchanged');
  const html2=html.replace(current,desired);
