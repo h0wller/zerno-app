@@ -203,7 +203,7 @@ test.describe('Initial catalog image priorities', () => {
     expect(await dishResourceCount('/sauce-card')).toBe(0);
   });
 
-  test('first catalog hero skips entrance animation while later cards retain it', async ({ page }) => {
+  test('first catalog hero keeps card motion while only its image receives high priority', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.emulateMedia({ reducedMotion: 'no-preference' });
 
@@ -220,10 +220,26 @@ test.describe('Initial catalog image priorities', () => {
       const grid = page.locator(brand === 'delivery' ? '#deliveryGrid' : '#grid');
       await expect.poll(() => grid.locator(':scope > .card:not(.skeleton-card)').count()).toBeGreaterThan(1);
 
-      const firstCard = grid.locator(':scope > .card:not(.skeleton-card)').first();
-      const secondCard = grid.locator(':scope > .card:not(.skeleton-card)').nth(1);
-      await expect.poll(() => firstCard.evaluate(card => getComputedStyle(card).animationName)).toBe('none');
+      const cards = grid.locator(':scope > .card:not(.skeleton-card)');
+      const firstCard = cards.first();
+      const secondCard = cards.nth(1);
+      await expect.poll(() => firstCard.evaluate(card => getComputedStyle(card).animationName)).toBe('card-enter');
       await expect.poll(() => secondCard.evaluate(card => getComputedStyle(card).animationName)).toBe('card-enter');
+
+      const firstRowTop = await firstCard.evaluate(card => card.getBoundingClientRect().top);
+      const firstRowImages = await cards.evaluateAll((nodes, top) => nodes
+        .filter(card => Math.abs(card.getBoundingClientRect().top - top) <= 1)
+        .map(card => card.querySelector('.media img[src]'))
+        .filter(Boolean)
+        .map(image => ({
+          loading: image.getAttribute('loading'),
+          priority: image.getAttribute('fetchpriority')
+        })), firstRowTop);
+      expect(firstRowImages.length).toBeGreaterThan(0);
+      expect(firstRowImages.filter(image => image.priority === 'high')).toHaveLength(1);
+      expect(firstRowImages[0]).toEqual({ loading: 'eager', priority: 'high' });
+      await expect(firstCard.locator('.media img')).toHaveAttribute('loading', 'eager');
+      await expect(firstCard.locator('.media img')).toHaveAttribute('fetchpriority', 'high');
     }
   });
 
