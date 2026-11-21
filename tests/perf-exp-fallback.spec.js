@@ -121,3 +121,45 @@ test('C8 adds one first-category image preload after JSON and does not request t
   expect(firstItemRequests.length).toBeLessThanOrEqual(1);
   expect(mediaRequests.some((pathname) => pathname === '/media/dishes/1-card.webp')).toBe(false);
 });
+
+
+for (const variant of ['C7', 'C8']) {
+  test(variant + ' does not guess a brand when zt_brand is absent', async ({ page }) => {
+    const apiRequests = [];
+    await installHtmlVariantRoute(page, variant);
+    await page.addInitScript(() => {
+      localStorage.removeItem('zt_brand');
+      localStorage.setItem('zt_onb', '1');
+      localStorage.setItem('zt_inst_hide', '1');
+      localStorage.removeItem('zt_user');
+      sessionStorage.removeItem('splashDone');
+    });
+    await page.route('**/api/menu', async (route) => {
+      apiRequests.push('/api/menu');
+      return route.fulfill({
+        status: 200, contentType: 'application/json',
+        body: JSON.stringify({ items: menuItems('coffee'), updatedAt: Date.now() }),
+      });
+    });
+    await page.route('**/api/dmenu', async (route) => {
+      apiRequests.push('/api/dmenu');
+      return route.fulfill({
+        status: 200, contentType: 'application/json',
+        body: JSON.stringify({ items: menuItems('delivery'), updatedAt: Date.now() }),
+      });
+    });
+    await page.route('**/media/dishes/**', (route) => route.fulfill({
+      status: 200, contentType: 'image/webp', body: imageBytes,
+    }));
+
+    await page.goto('/');
+    const splash = page.locator('#brandSplashStatic, #brandSplash').first();
+    await expect(splash).toBeVisible();
+    await page.waitForTimeout(150);
+    expect(apiRequests, 'no speculative brand request without a saved prediction').toEqual([]);
+
+    await splash.locator('[data-go="delivery"]').click();
+    await expect(page.locator('#deliveryGrid > .card').first()).toBeVisible({ timeout: 15000 });
+    expect(apiRequests).toEqual(['/api/dmenu']);
+  });
+}
