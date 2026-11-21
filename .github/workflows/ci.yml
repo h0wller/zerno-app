@@ -296,6 +296,10 @@ jobs:
           run_variant F 3212
           run_variant C7 3213
           run_variant C1 3214
+      - name: Verify C7 splash and saved-brand regressions
+        run: |
+          npx playwright test tests/mobile-lcp.spec.js --project=chromium --workers=1 --grep "C7|saved zt_brand"
+          node --test tests/integration/mobile-lcp-link-preload.test.mjs
       - name: Upload splash series results
         if: always()
         uses: actions/upload-artifact@v7

@@ -176,6 +176,18 @@ test('Lighthouse delivery audit preloads the first responsive delivery image', a
   assert.match(link, /imagesizes=/);
 });
 
+test('C7 benchmark patch predicts catalog JSON without DOM or image preload ownership', () => {
+  const source = fs.readFileSync(path.join(root, 'scripts/prepare-lighthouse-variant.mjs'), 'utf8');
+  const start = source.indexOf("else if(variant==='C7'){");
+  const end = source.indexOf("\nelse if(variant==='F')", start);
+  assert.ok(start >= 0 && end > start, 'C7 benchmark patch generator must exist');
+  const c7 = source.slice(start, end);
+  assert.match(c7, /earlyCatalog/);
+  assert.match(c7, /nativeFetch\.call\(window, predictedEndpoint/);
+  assert.doesNotMatch(c7, /document\.createElement|document\.getElementById|appendChild|rel\s*=\s*['"]preload['"]/,
+    'C7 must fetch catalog JSON only and must not mutate catalog DOM or create image preloads');
+});
+
 test('forced splash does not emit a server image preload', async () => {
   const response = await fetch(base + '/?splash=1');
   assert.equal(response.status, 200);
