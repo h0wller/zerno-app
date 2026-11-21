@@ -71,7 +71,6 @@ else if(/^C[1-5]$/.test(variant)){
  const html2=html.replace(current,desired);
  const temp=path.join(report,'variant-'+variant+'.html');fs.writeFileSync(temp,html2);
  const patchFile=path.join(report,variant+'.patch');
- let patch;try{patch=execFileSync('git',['diff','--no-index','--no-ext-diff','--','/dev/null',temp],{encoding:'utf8',stdio:['ignore','pipe','pipe']});}catch(e){patch=e.stdout||'';}
  // Generate a canonical patch from the current file to the transformed file.
  const tmp=fs.mkdtempSync(path.join(os.tmpdir(),'lcp-'+variant+'-'));
  try{
