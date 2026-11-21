@@ -8,13 +8,13 @@ if(!url||!label||delays.some(x=>![0,3000].includes(x))||brands.some(x=>!['coffee
 const apiPaths=new Set(['/api/menu','/api/dmenu']), throughput=1638.4*1024/8;
 async function runOnce(browser,brand,delayMs,run){
  const context=await browser.newContext({viewport:{width:360,height:800},deviceScaleFactor:1.75,isMobile:true,hasTouch:true,serviceWorkers:'block'});
- const row={label,brand,delayMs,run,requests:[],console:[]}, byId=new Map(); let target=null, clickAt=null;
+ const row={label,brand,delayMs,run,requests:[],console:[]}, byId=new Map(); let targetUrls=[], clickAt=null;
  try{
   await context.addInitScript(()=>{try{localStorage.setItem('zt_inst_hide','1');}catch{}});
   const page=await context.newPage();
   page.on('console',m=>{if(['error','warning'].includes(m.type()))row.console.push({type:m.type(),text:m.text()});});
   page.on('pageerror',e=>row.console.push({type:'pageerror',text:e.message}));
-  page.on('response',async r=>{if(new URL(r.url()).pathname!==(brand==='delivery'?'/api/dmenu':'/api/menu')||!r.ok())return;try{const p=await r.json(),cat=brand==='delivery'?'pizza':'coffee',first=p.items?.find(x=>x?.on&&x.img&&x.cat===cat);if(first?.img)target=new URL(first.img,url).href;row.apiItemsCount=p.items?.length??null;}catch(e){row.console.push({type:'api-json-error',text:e.message});}});
+  page.on('response',async r=>{if(new URL(r.url()).pathname!==(brand==='delivery'?'/api/dmenu':'/api/menu')||!r.ok())return;try{const p=await r.json(),cat=brand==='delivery'?'pizza':'coffee',first=p.items?.find(x=>x?.on&&x.img&&x.cat===cat);if(first?.img){targetUrls=[first.img,...(first.imgSrcset||'').split(',').map(x=>x.trim().split(/\\s+/)[0]).filter(Boolean)].map(x=>new URL(x,url).href);}row.apiItemsCount=p.items?.length??null;}catch(e){row.console.push({type:'api-json-error',text:e.message});}});
   const cdp=await context.newCDPSession(page);await cdp.send('Network.enable');
   await cdp.send('Network.emulateNetworkConditions',{offline:false,latency:150,downloadThroughput:throughput,uploadThroughput:throughput});
   await cdp.send('Emulation.setCPUThrottlingRate',{rate:4});
@@ -27,10 +27,10 @@ async function runOnce(browser,brand,delayMs,run){
   clickAt=Date.now();row.clickAt=clickAt;await choice.click();
   const deadline=Date.now()+25000;let cardAt=null;
   while(Date.now()<deadline&&cardAt===null){
-   if(target){const found=await page.evaluate(({brandName,targetUrl})=>{const grid=document.querySelector(brandName==='delivery'?'#deliveryGrid':'#grid');return !!grid&&[...grid.querySelectorAll('.card:not(.skeleton-card) .media img')].some(i=>{if(!i.currentSrc||!i.complete||i.naturalWidth<=0||!i.getClientRects().length)return false;try{return new URL(i.currentSrc).href===targetUrl;}catch{return false;}});},{brandName:brand,targetUrl:target});if(found)cardAt=Date.now();}
+   if(targetUrls.length){const found=await page.evaluate(({brandName,targetList})=>{const grid=document.querySelector(brandName==='delivery'?'#deliveryGrid':'#grid');return !!grid&&[...grid.querySelectorAll('.card:not(.skeleton-card) .media img')].some(i=>{if(!i.currentSrc||!i.complete||i.naturalWidth<=0||!i.getClientRects().length)return false;try{return targetList.includes(new URL(i.currentSrc).href);}catch{return false;}});},{brandName:brand,targetList:targetUrls});if(found)cardAt=Date.now();}
    if(cardAt===null)await page.waitForTimeout(50);
   }
-  row.clickToCardMs=cardAt===null?null:cardAt-clickAt;row.firstCatalogItemUrl=target;
+  row.clickToCardMs=cardAt===null?null:cardAt-clickAt;row.firstCatalogItemUrls=targetUrls;
   const before=row.requests.filter(x=>x.startedAt<clickAt),after=row.requests.filter(x=>x.startedAt>=clickAt);
   row.bytesBeforeClick=before.filter(x=>x.finishedAt!==null&&x.finishedAt<=clickAt).reduce((s,x)=>s+x.encodedDataLength,0);
   row.requestsBeforeClick=before.length;row.requestsAfterClick=after.length;
