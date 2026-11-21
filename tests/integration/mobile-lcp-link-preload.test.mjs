@@ -28,6 +28,7 @@ const dbPath = path.join(tempDir, 'test.db');
 const root = path.resolve(import.meta.dirname, '../..');
 const imagePath = '/media/dishes/preload-fixture-card.webp';
 const deliveryImagePath = '/media/dishes/preload-fixture-delivery-card.webp';
+const sauceImagePath = '/media/dishes/preload-fixture-sauce-card.webp';
 const imageBytes = Buffer.from('UklGRiQAAABXRUJQVlA4IBgAAAAwAQCdASoBAAEAAUAmJaQAA3AA/vz0AAA=', 'base64');
 function webpHeader(width, height) {
   const buffer = Buffer.alloc(30);
@@ -68,6 +69,7 @@ before(async () => {
   fs.writeFileSync(path.join(publicDir, 'index.html'), '<!doctype html><title>preload fixture</title>');
   fs.writeFileSync(path.join(dishesDir, 'preload-fixture-card.webp'), imageBytes);
   fs.writeFileSync(path.join(dishesDir, 'preload-fixture-delivery-card.webp'), webpHeader(600, 375));
+  fs.writeFileSync(path.join(dishesDir, 'preload-fixture-sauce-card.webp'), imageBytes);
   const resizedDir = path.join(dishesDir, 'resized');
   fs.mkdirSync(resizedDir, { recursive: true });
   fs.writeFileSync(path.join(resizedDir, 'preload-fixture-delivery-card-300.webp'), webpHeader(300, 188));
@@ -97,7 +99,8 @@ before(async () => {
 
   db = new Database(dbPath);
   db.prepare('UPDATE menu SET img=?, sort_order=-1 WHERE id=?').run(imagePath, 'esp');
-  db.prepare('UPDATE menu SET img=?, sort_order=-1 WHERE id=?').run(deliveryImagePath, 'pz-marg');
+  db.prepare(\"UPDATE menu SET cat='sauces', img=?, sort_order=-2 WHERE id=?\").run(sauceImagePath, 'pz-marg');
+  db.prepare(\"UPDATE menu SET cat='pizza', img=?, sort_order=-1 WHERE id=?\").run(deliveryImagePath, 'pz-hamgr');
 });
 
 after(async () => {
@@ -127,7 +130,20 @@ test('Lighthouse coffee audit preloads the first local coffee image without a br
   const response = await fetch(base + '/?lighthouse=1');
   assert.equal(response.status, 200);
   const link = response.headers.get('link');
-  assert.ok(link, 'Lighthouse coffee document must expose the first local dish image preload');
+  assert.ok(link, 'Lighthouse coffeetest('delivery document preloads the first visible pizza when a sauce sorts before it', async () => {
+  const response = await fetch(base + '/?brand=delivery');
+  assert.equal(response.status, 200);
+  const link = response.headers.get('link');
+  assert.ok(link, 'delivery HTML response must expose its first visible pizza image preload');
+  assert.ok(link.includes('<' + deliveryImagePath + '>'), 'preload must target the first pizza, not the earlier sauce');
+  assert.doesNotMatch(link, /preload-fixture-sauce-card/);
+  assert.match(link, /rel=preload/);
+  assert.match(link, /as=image/);
+  assert.match(link, /fetchpriority=high/);
+  assert.match(link, /imagesrcset=/);
+});
+
+ document must expose the first local dish image preload');
   assert.match(link, /rel=preload/);
   assert.match(link, /as=image/);
   assert.match(link, /fetchpriority=high/);
