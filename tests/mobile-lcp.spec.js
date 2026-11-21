@@ -220,6 +220,40 @@ test.describe('Initial catalog image priorities', () => {
     expect(heroRequests.filter(url => url === currentSrc)).toHaveLength(1);
   });
 
+  test('delivery preloader applies the static hero source before catalog rendering', async ({ page }) => {
+    await routeDeliveryHero(page);
+    await page.addInitScript(() => {
+      let applyDeliveryHero;
+      window.__deliveryHeroPrimedBeforeCatalog = false;
+      Object.defineProperty(window, '__ztApplyDeliveryHero', {
+        configurable: true,
+        get() { return applyDeliveryHero; },
+        set(callback) {
+          applyDeliveryHero = function (item) {
+            const applied = callback(item);
+            const grid = document.getElementById('deliveryGrid');
+            if (applied && grid && grid.dataset.catalogReady !== '1') {
+              window.__deliveryHeroPrimedBeforeCatalog = true;
+            }
+            return applied;
+          };
+        }
+      });
+      localStorage.setItem('zt_brand', 'delivery');
+      localStorage.setItem('zt_onb', '1');
+      localStorage.setItem('zt_inst_hide', '1');
+      sessionStorage.setItem('splashDone', '1');
+    });
+
+    await page.goto('/?brand=delivery');
+    await expect.poll(() => page.evaluate(() => window.__deliveryHeroPrimedBeforeCatalog)).toBe(true);
+    const grid = page.locator('#deliveryGrid');
+    const image = grid.locator('> .card:first-child .media img');
+    await expect(image).toHaveAttribute('src', deliveryHeroFixture.img);
+    await expect(image).toHaveAttribute('srcset', deliveryHeroFixture.imgSrcset);
+    await expect(grid).toHaveAttribute('data-catalog-ready', '1');
+  });
+
   test('splash does not start delivery image work before the user selects delivery', async ({ page }) => {
     const deliveryMenuRequests = [];
     page.on('request', request => {
