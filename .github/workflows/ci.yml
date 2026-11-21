@@ -283,7 +283,9 @@ jobs:
           VARIANT: ${{ matrix.variant }}
           BASE_SHA: ${{ needs.lighthouse-variant-config.outputs.base_sha }}
           HEAD_SHA: ${{ needs.lighthouse-variant-config.outputs.head_sha }}
-          RUNS: ${{ needs.lighthouse-variant-config.outputs.runs }}\n          DEVTOOLS_VARIANTS: ${{ join(fromJSON(needs.lighthouse-variant-config.outputs.variants), ' ') }}\n          DEVTOOLS_RUNS: 5
+          RUNS: ${{ needs.lighthouse-variant-config.outputs.runs }}
+          DEVTOOLS_VARIANTS: ${{ needs.lighthouse-variant-config.outputs.devtools_variants }}
+          DEVTOOLS_RUNS: 5
         run: |
           set -euo pipefail
           REPORT_DIR="$RUNNER_TEMP/lighthouse-reports"
