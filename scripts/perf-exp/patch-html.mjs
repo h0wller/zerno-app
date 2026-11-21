@@ -56,7 +56,7 @@ export function patchHtmlDocument(html, variant) {
 
   const requestMarker = [
     '        var promise = nativeFetch.call(window, endpoint, {',
-    '          headers: { Accept: "application/json" }',
+    '          headers: { Accept: \'application/json\' }',
     '        }).then(function (response) {',
   ].join('\n');
   const requestReplacement = [
@@ -79,16 +79,16 @@ export function patchHtmlDocument(html, variant) {
   const preloadBlock = [
     '              var existing = document.getElementById(id);',
     '              if (existing) existing.remove();',
-    '              var preload = document.createElement("link");',
+    '              var preload = document.createElement(\'link\');',
     '              preload.id = id;',
-    '              preload.rel = "preload";',
-    '              preload.as = "image";',
+    '              preload.rel = \'preload\';',
+    '              preload.as = \'image\';',
     '              preload.href = first.img;',
-    '              preload.type = "image/webp";',
-    '              preload.setAttribute("fetchpriority", "high");',
+    '              preload.type = \'image/webp\';',
+    '              preload.setAttribute(\'fetchpriority\', \'high\');',
     '              if (first.imgSrcset) {',
-    '                preload.setAttribute("imagesrcset", first.imgSrcset);',
-    '                preload.setAttribute("imagesizes", imageSizes);',
+    '                preload.setAttribute(\'imagesrcset\', first.imgSrcset);',
+    '                preload.setAttribute(\'imagesizes\', imageSizes);',
     '              }',
     '              document.head.appendChild(preload);',
   ].join('\n');
