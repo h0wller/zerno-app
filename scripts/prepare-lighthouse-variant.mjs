@@ -38,6 +38,51 @@ if(variant==='B'){
  if(!content.includes('await loadMenu();')||content.includes('await loadMenu({ render: false });'))throw Error('B: patch did not change only the intended boot.js call');
  hashes[f+'#loadInitialCatalog']=hash(content.slice(content.indexOf('async function loadInitialCatalog'),content.indexOf('\nasync function boot')));
 }else if(variant==='C')patchIndex('zt-lcp-head','<script id="zt-lcp-head">');
+else if(/^C[1-5]$/.test(variant)){
+ const file='public/index.html',html=fs.readFileSync(path.join(project,file),'utf8');
+ const marker='<script id="zt-lcp-head">',current=block(html,marker,variant+' head').text;
+ const baseHtml=show(base,file),baseBlock=block(baseHtml,marker,'base '+variant).text;
+ let desired=current;
+ if(variant==='C1') desired=baseBlock;
+ if(variant==='C2'){
+  const start=desired.indexOf("              var preload = document.createElement('link');");
+  const end=desired.indexOf("              if (brand === 'delivery') {",start);
+  if(start<0||end<0) throw Error('C2: preload creation block markers not found');
+  desired=desired.slice(0,start)+desired.slice(end);
+ }
+ if(variant==='C3'){
+  const from="return response.clone().json().then(function (payload) {";
+  const to="return response.json().then(function (payload) {";
+  if(!desired.includes(from)) throw Error('C3: clone JSON marker not found');
+  desired=desired.replace(from,to).replace("          }, function () {\n            return response;\n          });","          }).then(function (payload) {\n            return new Response(JSON.stringify(payload), { status: response.status, statusText: response.statusText, headers: response.headers });\n          }, function () { return response; });");
+ }
+ if(variant==='C4'){
+  desired=desired.replace("      var pending = null;","      var pending = null;\n      var splashWasPending = window.__brandSplashPending === true;");
+  desired=desired.replace("          return response.clone().json().then(function (payload) {","          if (!splashWasPending) return response;\n          return response.clone().json().then(function (payload) {");
+ }
+ if(variant==='C5'){
+  desired=desired.replace("          return response.clone().json().then(function (payload) {","          if (brand !== 'delivery') return response;\n          return response.clone().json().then(function (payload) {");
+ }
+ if(desired===current) throw Error(variant+': generated block unchanged');
+ const html2=html.replace(current,desired);
+ const temp=path.join(report,'variant-'+variant+'.html');fs.writeFileSync(temp,html2);
+ const patchFile=path.join(report,variant+'.patch');
+ let patch;try{patch=execFileSync('git',['diff','--no-index','--no-ext-diff','--','/dev/null',temp],{encoding:'utf8',stdio:['ignore','pipe','pipe']});}catch(e){patch=e.stdout||'';}
+ // Generate a canonical patch from the current file to the transformed file.
+ const tmp=fs.mkdtempSync(path.join(os.tmpdir(),'lcp-'+variant+'-'));
+ try{
+  fs.mkdirSync(path.join(tmp,'a/public'),{recursive:true});fs.mkdirSync(path.join(tmp,'b/public'),{recursive:true});
+  fs.writeFileSync(path.join(tmp,'a',file),html);fs.writeFileSync(path.join(tmp,'b',file),html2);
+  try{patch=execFileSync('git',['diff','--no-index','--no-ext-diff','--','a/'+file,'b/'+file],{cwd:tmp,encoding:'utf8',stdio:['ignore','pipe','pipe']});}catch(e){if(e.status!==1)throw e;patch=e.stdout;}
+  patch=patch.replaceAll('a/a/public/index.html','a/public/index.html').replaceAll('b/b/public/index.html','b/public/index.html');
+  fs.writeFileSync(patchFile,patch);
+  execFileSync('git',['apply','--check',patchFile],{cwd:project,stdio:'pipe'});
+  execFileSync('git',['apply',patchFile],{cwd:project,stdio:'pipe'});
+ }finally{fs.rmSync(tmp,{recursive:true,force:true});}
+ const applied=block(fs.readFileSync(path.join(project,file),'utf8'),marker,variant+' applied').text;
+ if(applied!==desired) throw Error(variant+': applied block mismatch');
+ hashes[variant]={head:hash(current),applied:hash(applied),base:hash(baseBlock)};
+}
 else if(variant==='D')patchIndex('zt-early-brand-guard','<script id="zt-early-brand-guard">');
 else if(variant==='E'){
  execFileSync('git',['checkout',base,'--','public/app/core/state.js','public/app/core/splash.js'],{cwd:project,stdio:'pipe'});

@@ -31,5 +31,5 @@ run_lighthouse(){
 }
 for brand in coffee delivery; do
  for sample in $(seq 1 "$RUNS"); do run_lighthouse "$brand" simulate "$sample"; done
- if [ "$VARIANT" = A ] || [ "$VARIANT" = F ]; then run_lighthouse "$brand" devtools 1; fi
+ if [[ " ${DEVTOOLS_VARIANTS:-A F} " == *" $VARIANT "* ]]; then for sample in $(seq 1 "${DEVTOOLS_RUNS:-5}"); do run_lighthouse "$brand" devtools "$sample"; done; fi
 done

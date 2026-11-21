@@ -5,14 +5,23 @@
   "variants": [
     "A",
     "B",
-    "C",
+    "C1",
+    "C2",
+    "C3",
+    "C4",
+    "C5",
     "D",
     "E",
     "F"
   ],
   "devtoolsVariants": [
     "A",
-    "F"
+    "F",
+    "C1",
+    "C2",
+    "C3",
+    "C4",
+    "C5"
   ],
   "variantContracts": {
     "A": {
@@ -44,6 +53,31 @@
       "label": "base control",
       "domOwner": "Pinned base revision owners per docs/module-map.md.",
       "moduleMapContract": "Exact pinned base tree."
+    },
+    "C1": {
+      "label": "base zt-lcp-head; fetch/interception only",
+      "domOwner": "index.html early bootstrap; splash.js chooses brand; hydrated catalog DOM remains menu.js/delivery.js.",
+      "moduleMapContract": "No DOM ownership change; restore only marked head block from pinned base."
+    },
+    "C2": {
+      "label": "clone JSON without dynamic preload link",
+      "domOwner": "index.html bootstrap; delivery.js retains hydrated hero ownership.",
+      "moduleMapContract": "Parse cloned response but do not create a dynamic preload link."
+    },
+    "C3": {
+      "label": "dynamic preload without response.clone()",
+      "domOwner": "index.html bootstrap; delivery.js retains hydrated hero ownership.",
+      "moduleMapContract": "Consume original response JSON and reconstruct an equivalent Response for app interception."
+    },
+    "C4": {
+      "label": "dynamic preload only for splash selection",
+      "domOwner": "index.html bootstrap; splash.js owns explicit selection; hydrated catalog remains menu.js/delivery.js.",
+      "moduleMapContract": "Dynamic clone/preload only if splash was pending at document start; explicit brand relies on server Link header."
+    },
+    "C5": {
+      "label": "delivery-only non-blocking preload side effect",
+      "domOwner": "index.html bootstrap; delivery.js owns delivery hero reconciliation; menu.js owns coffee catalog.",
+      "moduleMapContract": "Original response remains app critical path; only delivery gets cloned JSON/preload side effect."
     }
   }
 }

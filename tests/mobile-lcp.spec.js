@@ -129,6 +129,49 @@ test.describe('Initial catalog image priorities', () => {
     await expect(page.locator('#deliveryGrid > .card img').first()).not.toHaveAttribute('src', '/media/dishes/1-card.webp');
   });
 
+  test('coffee splash selection primes only after choice and requests only the coffee catalog', async ({ page }) => {
+    const apiRequests = [];
+    const preloadAtChoice = [];
+    page.on('request', request => {
+      const pathname = new URL(request.url()).pathname;
+      if (pathname === '/api/menu' || pathname === '/api/dmenu') apiRequests.push(pathname);
+    });
+    await page.addInitScript(() => {
+      localStorage.setItem('zt_brand', 'delivery');
+      localStorage.setItem('zt_onb', '1');
+      localStorage.setItem('zt_inst_hide', '1');
+      localStorage.removeItem('zt_user');
+      sessionStorage.removeItem('splashDone');
+    });
+    await page.route('**/api/menu', route => route.fulfill({
+      status: 200, contentType: 'application/json',
+      body: JSON.stringify({ items: imageCatalogItems('coffee'), updatedAt: Date.now() })
+    }));
+    await page.route('**/api/dmenu', route => route.fulfill({
+      status: 200, contentType: 'application/json',
+      body: JSON.stringify({ items: imageCatalogItems('delivery'), updatedAt: Date.now() })
+    }));
+    await page.route('**/media/dishes/**', route => route.fulfill({
+      status: 200, contentType: 'image/webp',
+      body: Buffer.from('UklGRiQAAABXRUJQVlA4IBgAAAAwAQCdASoBAAEAAUAmJaQAA3AA/vz0AAA=', 'base64')
+    }));
+    await page.goto('/');
+    const splash = page.locator('#brandSplashStatic, #brandSplash').first();
+    await expect(splash).toBeVisible();
+    await expect.poll(() => page.evaluate(() => performance.getEntriesByType('resource').some(e => e.name.includes('zt-menu-lcp-preload')))).toBe(false);
+    expect(apiRequests).toEqual([]);
+    await splash.locator('[data-go="coffee"]').click();
+    await expect(page.locator('html')).toHaveAttribute('data-brand', 'coffee');
+    await expect.poll(() => apiRequests.filter(x => x === '/api/menu').length).toBe(1);
+    await expect.poll(() => page.evaluate(() => !!document.querySelector('link#zt-menu-lcp-preload'))).toBe(true);
+    expect(apiRequests.filter(x => x === '/api/dmenu')).toHaveLength(0);
+    await expect.poll(() => page.evaluate(() => Array.isArray(window.MENU) && window.MENU.length > 0)).toBe(true);
+    const preload = await page.locator('link#zt-menu-lcp-preload').getAttribute('href');
+    expect(preload).toContain('/media/dishes/coffee-image-1.webp');
+    preloadAtChoice.push(preload);
+    expect(preloadAtChoice).toHaveLength(1);
+  });
+
   test('splash delivery choice preloads the first visible pizza when another category sorts first', async ({ page }) => {
     const sauceItem = {
       ...deliveryHeroFixture,

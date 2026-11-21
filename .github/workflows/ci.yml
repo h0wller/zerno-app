@@ -237,8 +237,8 @@ jobs:
           const c=JSON.parse(fs.readFileSync('scripts/lighthouse-variants.json','utf8'));
           if(c.runs!==5) throw Error('scripts/lighthouse-variants.json: runs must equal 5');
           if(!/^[a-f0-9]{40}$/.test(c.baseSha)||!/^[a-f0-9]{40}$/.test(c.headSha)) throw Error('baseSha/headSha must be pinned 40-character SHAs');
-          if(JSON.stringify(c.variants)!==JSON.stringify(['A','B','C','D','E','F'])) throw Error('Expected variants A-F in declared order');
-          if(JSON.stringify(c.devtoolsVariants)!==JSON.stringify(['A','F'])) throw Error('DevTools pass is reserved for A and F');
+          if(JSON.stringify(c.variants)!==JSON.stringify(['A','B','C1','C2','C3','C4','C5','D','E','F'])) throw Error('Expected variants A-F plus C1-C5 in declared order');
+          if(JSON.stringify(c.devtoolsVariants)!==JSON.stringify(['A','F','C1','C2','C3','C4','C5'])) throw Error('Expected DevTools for A, F and C1-C5');
           fs.appendFileSync(process.env.GITHUB_OUTPUT,'variants='+JSON.stringify(c.variants)+'\n');
           fs.appendFileSync(process.env.GITHUB_OUTPUT,'runs='+c.runs+'\n');
           fs.appendFileSync(process.env.GITHUB_OUTPUT,'base_sha='+c.baseSha+'\n');
@@ -281,7 +281,7 @@ jobs:
           VARIANT: ${{ matrix.variant }}
           BASE_SHA: ${{ needs.lighthouse-variant-config.outputs.base_sha }}
           HEAD_SHA: ${{ needs.lighthouse-variant-config.outputs.head_sha }}
-          RUNS: ${{ needs.lighthouse-variant-config.outputs.runs }}
+          RUNS: ${{ needs.lighthouse-variant-config.outputs.runs }}\n          DEVTOOLS_VARIANTS: ${{ join(fromJSON(needs.lighthouse-variant-config.outputs.variants), ' ') }}\n          DEVTOOLS_RUNS: 5
         run: |
           set -euo pipefail
           REPORT_DIR="$RUNNER_TEMP/lighthouse-reports"
