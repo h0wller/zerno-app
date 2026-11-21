@@ -61,11 +61,6 @@
     transform: translateY(0);
   }
 }
-/* Keep the actual catalog hero paint immediate; retain the entrance motion for later cards. */
-#grid > .card:first-child,
-#deliveryGrid > .card:first-child {
-  animation: none;
-}
 @media (hover: hover) and (pointer: fine){
   .card:hover{
     transform: translateY(-4px);
