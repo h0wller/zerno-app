@@ -1644,6 +1644,17 @@ html[data-brand="delivery"] {
                 preload.setAttribute('imagesizes', imageSizes);
               }
               document.head.appendChild(preload);
+              if (brand === 'delivery') {
+                // delivery.js owns this DOM mutation; retain the payload if its owner
+                // has not registered yet, then let it activate the static hero early.
+                window.__ztPendingDeliveryHero = first;
+                if (
+                  typeof window.__ztApplyDeliveryHero === 'function' &&
+                  window.__ztApplyDeliveryHero(first)
+                ) {
+                  window.__ztPendingDeliveryHero = null;
+                }
+              }
             }
             return response;
           }, function () {
