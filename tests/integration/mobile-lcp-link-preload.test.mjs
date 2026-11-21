@@ -176,6 +176,12 @@ test('Lighthouse delivery audit preloads the first responsive delivery image', a
   assert.match(link, /imagesizes=/);
 });
 
+test('forced splash does not emit a server image preload', async () => {
+  const response = await fetch(base + '/?splash=1');
+  assert.equal(response.status, 200);
+  assert.equal(response.headers.get('link'), null);
+});
+
 test('default splash has no catalog preload and delivery documents do not preload coffee', async () => {
   const splashResponse = await fetch(base + '/');
   assert.equal(splashResponse.status, 200);

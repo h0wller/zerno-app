@@ -1,5 +1,38 @@
 import { test, expect } from '@playwright/test';
 
+
+async function installC7HeadPatch(page) {
+  await page.route('**/*', async (route) => {
+    if (new URL(route.request().url()).pathname !== '/') return route.continue();
+    const response = await route.fetch();
+    let html = await response.text();
+    const marker = '      var pending = null;';
+    const early = marker + `
+      var earlyCatalog = null;
+      try {
+        if (window.__brandSplashPending === true && !localStorage.getItem('zt_user')) {
+          var predictedBrand = localStorage.getItem('zt_brand') || 'coffee';
+          var predictedEndpoint = predictedBrand === 'delivery' ? '/api/dmenu' : '/api/menu';
+          earlyCatalog = {
+            brand: predictedBrand,
+            endpoint: predictedEndpoint,
+            promise: nativeFetch.call(window, predictedEndpoint, { headers: { Accept: 'application/json' } })
+          };
+        }
+      } catch (_) {}
+`;
+    if (!html.includes(marker)) throw new Error('C7 test fixture: head marker not found');
+    html = html.replace(marker, early);
+    const from = '        var promise = nativeFetch.call(window, endpoint, {';
+    const to = `        var reusable = earlyCatalog && earlyCatalog.brand === brand ? earlyCatalog.promise : null;
+        if (reusable) earlyCatalog = null;
+        var promise = reusable || nativeFetch.call(window, endpoint, {`;
+    if (!html.includes(from)) throw new Error('C7 test fixture: prime marker not found');
+    html = html.replace(from, to);
+    await route.fulfill({ response, body: html });
+  });
+}
+
 function imageCatalogItems(brand) {
   const delivery = brand === 'delivery';
   return Array.from({ length: 6 }, (_, index) => ({
@@ -663,6 +696,80 @@ test.describe('Initial catalog image priorities', () => {
     const deliveryResponse = await page.goto('/?brand=delivery');
     expect(deliveryResponse).not.toBeNull();
     expect(await deliveryResponse.headerValue('link')).toBeNull();
+  });
+
+
+  test('C7 reuses the predicted coffee JSON after the matching splash choice', async ({ page }) => {
+    const apiRequests = [];
+    await page.addInitScript(() => {
+      localStorage.setItem('zt_brand', 'coffee');
+      localStorage.setItem('zt_onb', '1');
+      localStorage.setItem('zt_inst_hide', '1');
+      localStorage.removeItem('zt_user');
+      sessionStorage.removeItem('splashDone');
+    });
+    await installC7HeadPatch(page);
+    await page.route('**/api/menu', async (route) => {
+      apiRequests.push('/api/menu');
+      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ items: imageCatalogItems('coffee'), updatedAt: Date.now() }) });
+    });
+    await page.route('**/api/dmenu', async (route) => {
+      apiRequests.push('/api/dmenu');
+      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ items: imageCatalogItems('delivery'), updatedAt: Date.now() }) });
+    });
+    await page.route('**/media/dishes/**', route => route.fulfill({ status: 200, contentType: 'image/webp', body: Buffer.from('UklGRiQAAABXRUJQVlA4IBgAAAAwAQCdASoBAAEAAUAmJaQAA3AA/vz0AAA=', 'base64') }));
+    await page.goto('/');
+    await expect(page.locator('#brandSplashStatic, #brandSplash').first()).toBeVisible();
+    await expect.poll(() => apiRequests.filter(x => x === '/api/menu').length).toBe(1);
+    await page.locator('#brandSplashStatic [data-go="coffee"], #brandSplash [data-go="coffee"]').first().click();
+    await expect(page.locator('#grid > .card').first()).toBeVisible();
+    expect(apiRequests.filter(x => x === '/api/menu')).toHaveLength(1);
+    expect(apiRequests.filter(x => x === '/api/dmenu')).toHaveLength(0);
+  });
+
+  test('C7 falls back to the selected coffee request when saved zt_brand predicts delivery', async ({ page }) => {
+    const apiRequests = [];
+    const deliveryHeroRequests = [];
+    await page.addInitScript(() => {
+      localStorage.setItem('zt_brand', 'delivery');
+      localStorage.setItem('zt_onb', '1');
+      localStorage.setItem('zt_inst_hide', '1');
+      localStorage.removeItem('zt_user');
+      sessionStorage.removeItem('splashDone');
+    });
+    await installC7HeadPatch(page);
+    await page.route('**/api/menu', async route => {
+      apiRequests.push('/api/menu');
+      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ items: imageCatalogItems('coffee'), updatedAt: Date.now() }) });
+    });
+    await page.route('**/api/dmenu', async route => {
+      apiRequests.push('/api/dmenu');
+      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ items: imageCatalogItems('delivery'), updatedAt: Date.now() }) });
+    });
+    await page.route('**/media/dishes/**', route => {
+      if (new URL(route.request().url()).pathname === '/media/dishes/1-card.webp') deliveryHeroRequests.push(route.request().url());
+      return route.fulfill({ status: 200, contentType: 'image/webp', body: Buffer.from('UklGRiQAAABXRUJQVlA4IBgAAAAwAQCdASoBAAEAAUAmJaQAA3AA/vz0AAA=', 'base64') });
+    });
+    await page.goto('/');
+    await expect(page.locator('#brandSplashStatic, #brandSplash').first()).toBeVisible();
+    await expect.poll(() => apiRequests.filter(x => x === '/api/dmenu').length).toBe(1);
+    await page.locator('#brandSplashStatic [data-go="coffee"], #brandSplash [data-go="coffee"]').first().click();
+    await expect(page.locator('#grid > .card').first()).toBeVisible();
+    expect(apiRequests.filter(x => x === '/api/menu')).toHaveLength(1);
+    expect(deliveryHeroRequests).toHaveLength(0);
+  });
+
+  test('saved zt_brand does not bypass the explicit splash choice', async ({ page }) => {
+    await page.addInitScript(() => {
+      localStorage.setItem('zt_brand', 'delivery');
+      localStorage.setItem('zt_onb', '1');
+      localStorage.setItem('zt_inst_hide', '1');
+      sessionStorage.removeItem('splashDone');
+    });
+    await page.goto('/');
+    await expect(page.locator('#brandSplashStatic, #brandSplash').first()).toBeVisible();
+    await page.locator('#brandSplashStatic [data-go="coffee"], #brandSplash [data-go="coffee"]').first().click();
+    await expect(page.locator('html')).toHaveAttribute('data-brand', 'coffee');
   });
 
 });
