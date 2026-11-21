@@ -139,11 +139,13 @@ test.describe('Initial catalog image priorities', () => {
     });
 
     const heroRequest = page.waitForRequest((request) =>
-      new URL(request.url()).pathname === '/media/dishes/1-card.webp'
+      new URL(request.url()).pathname.includes('/delivery-image-1')
     );
     await page.goto('/?brand=delivery');
     await expect(page.locator('#deliveryGrid > .card').first()).toBeAttached();
     await heroRequest;
+    await expect(page.locator('#deliveryGrid > .card img').first()).toHaveAttribute('src', '/media/dishes/delivery-image-1.webp');
+    await expect(page.locator('#deliveryGrid > .card img').first()).toHaveAttribute('srcset', '/media/dishes/resized/delivery-image-1-300.webp?v=1 300w, /media/dishes/resized/delivery-image-1-600.webp?v=1 600w');
     await expect(page.locator('#deliveryGrid > .card img').first()).toHaveAttribute('fetchpriority', 'high');
   });
 
