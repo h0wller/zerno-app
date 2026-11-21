@@ -204,17 +204,20 @@ app.delete('/api/menu/:id', adminGuard, (req, res) => {
 });
 
 
-/* ── LCP: document-level preload for an explicitly selected coffee brand ── */
+/* ── LCP: document-level preload for the explicitly selected brand ── */
 app.use((req, res, next) => {
-  const coffeeAudit = (req.query.lighthouse === '1' || req.query.clean === '1') && req.query.brand !== 'delivery';
-  if (req.method !== 'GET' || req.path !== '/' || (req.query.brand !== 'coffee' && !coffeeAudit)) return next();
+  const isAudit = req.query.lighthouse === '1' || req.query.clean === '1';
+  const brand = req.query.brand === 'delivery'
+    ? 'delivery'
+    : (req.query.brand === 'coffee' || isAudit ? 'coffee' : null);
+  if (req.method !== 'GET' || req.path !== '/' || !brand) return next();
 
-  const firstCoffeeImage = db.prepare(
-    "SELECT img FROM menu WHERE is_on=1 AND section='coffee' AND img IS NOT NULL AND img != '' ORDER BY sort_order ASC, id ASC LIMIT 1"
-  ).get();
-  if (!firstCoffeeImage) return next();
+  const firstMenuImage = db.prepare(
+    "SELECT img FROM menu WHERE is_on=1 AND section=? AND img IS NOT NULL AND img != '' ORDER BY sort_order ASC, id ASC LIMIT 1"
+  ).get(brand);
+  if (!firstMenuImage) return next();
 
-  const image = menuImageForResponse(firstCoffeeImage.img, PUBLIC_DIR);
+  const image = menuImageForResponse(firstMenuImage.img, PUBLIC_DIR);
   // Only local dish files are eligible: do not put data: or arbitrary external URLs in Link headers.
   if (!image || !image.startsWith('/media/dishes/')) return next();
 
