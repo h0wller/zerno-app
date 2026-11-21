@@ -126,7 +126,7 @@ jobs:
           ready http://127.0.0.1:3211 "$A_LOG"
           ready http://127.0.0.1:3212 "$F_LOG"
           (cd "$A_DIR" && DB_PATH="$A_DB" PUBLIC_DIR="$A_DIR/public" node scripts/lighthouse-fixture.mjs)
-          (cd "$A_DIR" && DB_PATH="$F_DB" PUBLIC_DIR="$F_DIR/public" node scripts/lighthouse-fixture.mjs)
+          (cd "$F_DIR" && DB_PATH="$F_DB" PUBLIC_DIR="$F_DIR/public" node scripts/lighthouse-fixture.mjs)
           npx playwright test tests/perf-exp-fallback.spec.js --project=chromium --workers=1
           node scripts/perf-exp/benchmark.mjs \
             --url-a=http://127.0.0.1:3211 \
