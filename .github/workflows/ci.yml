@@ -212,6 +212,93 @@ jobs:
           if-no-files-found: ignore
           retention-days: 7
 
+  splash-series:
+    name: Splash series / A F C1
+    if: github.event_name == 'pull_request' && github.event.pull_request.number == 300
+    needs: quality-gates
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout benchmark tooling and pinned history
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: 'npm'
+      - name: Install shared dependencies
+        run: npm ci
+      - name: Install Chromium and OS dependencies
+        run: npx playwright install --with-deps chromium
+      - name: Lint splash benchmark script
+        run: npx eslint scripts/splash-series.mjs --max-warnings 50
+      - name: Run independent pinned splash series
+        run: |
+          set -euo pipefail
+          BASE_SHA="$(node -p "JSON.parse(require('node:fs').readFileSync('scripts/lighthouse-variants.json','utf8')).baseSha")"
+          HEAD_SHA="$(node -p "JSON.parse(require('node:fs').readFileSync('scripts/lighthouse-variants.json','utf8')).headSha")"
+          REPORT_DIR="$RUNNER_TEMP/splash"
+          mkdir -p "$REPORT_DIR"
+          run_variant() {
+            local variant="$1"
+            local port="$2"
+            local project_dir="$RUNNER_TEMP/zerno-splash-$variant"
+            local db_path="$RUNNER_TEMP/splash-$variant.sqlite"
+            local server_log="$RUNNER_TEMP/splash-$variant-server.log"
+            if [ "$variant" = F ]; then
+              git worktree add --detach "$project_dir" "$BASE_SHA"
+            else
+              git worktree add --detach "$project_dir" "$HEAD_SHA"
+            fi
+            ln -s "$GITHUB_WORKSPACE/node_modules" "$project_dir/node_modules"
+            node scripts/prepare-lighthouse-variant.mjs "$variant" "$project_dir" "$REPORT_DIR"
+            (cd "$project_dir" && npm run build:client)
+            (cd "$project_dir" && NODE_ENV=test DB_PATH="$db_path" PUBLIC_DIR="$project_dir/public" PORT="$port" ADMIN_CODE='ci-lighthouse-admin-role-code' CASHIER_CODE='ci-lighthouse-cashier-role-code' DISPATCH_CODE='ci-lighthouse-dispatch-code' TELEGRAM_BOT_TOKEN='' TG_WEBHOOK_SECRET='' SMS_AUTH_ENABLED=false node server.js) >"$server_log" 2>&1 &
+            local server_pid=$!
+            cleanup_server() {
+              if kill -0 "$server_pid" 2>/dev/null; then
+                kill "$server_pid" || true
+                wait "$server_pid" || true
+              fi
+            }
+            trap cleanup_server RETURN
+            local ready=0
+            for attempt in $(seq 1 80); do
+              if curl -fsS "http://127.0.0.1:$port/api/health" >/dev/null; then
+                ready=1
+                break
+              fi
+              if ! kill -0 "$server_pid" 2>/dev/null; then
+                cat "$server_log"
+                return 1
+              fi
+              sleep 1
+            done
+            if [ "$ready" -ne 1 ]; then
+              cat "$server_log"
+              echo "Server did not become ready for $variant" >&2
+              return 1
+            fi
+            DB_PATH="$db_path" PUBLIC_DIR="$project_dir/public" node "$GITHUB_WORKSPACE/scripts/lighthouse-fixture.mjs"
+            node scripts/splash-series.mjs --url="http://127.0.0.1:$port" --label="$variant" --runs=5 --out="$REPORT_DIR"
+            cleanup_server
+            trap - RETURN
+          }
+          run_variant A 3211
+          run_variant F 3212
+          run_variant C1 3213
+      - name: Upload splash series results
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: splash-series-${{ github.run_id }}
+          path: ${{ runner.temp }}/splash/
+          if-no-files-found: error
+          retention-days: 30
+
   lighthouse-variant-config:
     name: Lighthouse / Load pinned variant matrix
     if: github.event_name == 'pull_request' && github.event.pull_request.number == 300
