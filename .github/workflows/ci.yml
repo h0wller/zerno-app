@@ -283,7 +283,9 @@ jobs:
               return 1
             fi
             DB_PATH="$db_path" PUBLIC_DIR="$project_dir/public" node "$GITHUB_WORKSPACE/scripts/lighthouse-fixture.mjs"
-            node scripts/splash-series.mjs --url="http://127.0.0.1:$port" --label="$variant" --runs=5 --delays=0,3000 --out="$REPORT_DIR"
+            local -a series_args=(--delays=0,3000)
+            if [ "$variant" = C1 ]; then series_args=(--delays=0 --brands=delivery); fi
+            node scripts/splash-series.mjs --url="http://127.0.0.1:$port" --label="$variant" --runs=5 "${series_args[@]}" --out="$REPORT_DIR"
             cleanup_server
             trap - RETURN
           }
@@ -291,7 +293,6 @@ jobs:
           run_variant F 3212
           run_variant C7 3213
           run_variant C1 3214
-          node scripts/splash-series.mjs --url='http://127.0.0.1:3214' --label=C1 --runs=5 --delays=0 --brands=delivery --out="$REPORT_DIR"
       - name: Upload splash series results
         if: always()
         uses: actions/upload-artifact@v7
