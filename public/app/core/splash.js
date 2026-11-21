@@ -98,6 +98,11 @@
     document.documentElement.setAttribute('data-brand', choice);
     if (document.body) document.body.setAttribute('data-brand', choice);
 
+    // Start the selected brand's matching hero preload before any view sync can fetch its catalog.
+    if (typeof window.__ztPrimeMenuLcp === 'function') {
+      window.__ztPrimeMenuLcp(choice);
+    }
+
     document.querySelectorAll('#brandSeg button').forEach(function (x) {
       x.classList.toggle('on', x.dataset.brand === choice);
     });
@@ -105,18 +110,6 @@
     if (typeof window.syncBrandViews === 'function') window.syncBrandViews();
     if (typeof window.applyAuthBrand === 'function') window.applyAuthBrand();
     if (choice === 'delivery' && typeof window.loadDelivery === 'function') {
-      // The brand is now known: start the delivery hero image without preloading it
-      // on visits where the splash may instead lead to the coffee catalog.
-      if (!document.getElementById('zt-delivery-lcp-preload')) {
-        var deliveryPreload = document.createElement('link');
-        deliveryPreload.id = 'zt-delivery-lcp-preload';
-        deliveryPreload.rel = 'preload';
-        deliveryPreload.as = 'image';
-        deliveryPreload.href = '/media/dishes/1-card.webp';
-        deliveryPreload.type = 'image/webp';
-        deliveryPreload.setAttribute('fetchpriority', 'high');
-        document.head.appendChild(deliveryPreload);
-      }
       // syncBrandViews may already have started this request; keep one fetch owner.
       if (!window.__dlPromise && !window.__dlReq) {
         window.__dlReq = 1;
