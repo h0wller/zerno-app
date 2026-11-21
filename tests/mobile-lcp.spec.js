@@ -144,7 +144,7 @@ test.describe('Initial catalog image priorities', () => {
     await page.goto('/?brand=delivery');
     await expect(page.locator('#deliveryGrid > .card').first()).toBeAttached();
     await heroRequest;
-    await expect(page.locator('#deliveryGrid > .card img').first()).toHaveAttribute('src', '/media/dishes/delivery-image-1.webp');
+    await expect(page.locator('#deliveryGrid > .card img').first()).toHaveAttribute('src', '/media/dishes/delivery-image-1.webp?v=1');
     await expect(page.locator('#deliveryGrid > .card img').first()).toHaveAttribute('srcset', '/media/dishes/resized/delivery-image-1-300.webp?v=1 300w, /media/dishes/resized/delivery-image-1-600.webp?v=1 600w');
     await expect(page.locator('#deliveryGrid > .card img').first()).toHaveAttribute('fetchpriority', 'high');
   });
