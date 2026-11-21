@@ -145,13 +145,15 @@ test.describe('Initial catalog image priorities', () => {
       img: '/media/dishes/3-card.webp',
       imgSrcset: '/media/dishes/resized/3-card-300.webp?v=456 300w, /media/dishes/resized/3-card-600.webp?v=456 600w'
     };
-    const pizzaRequests = [];
-    const sauceRequests = [];
-    page.on('request', request => {
-      const pathname = new URL(request.url()).pathname;
-      if (pathname.includes('/3-card')) pizzaRequests.push(request.url());
-      if (pathname.includes('/sauce-card')) sauceRequests.push(request.url());
-    });
+    const dishResourceCount = (fragment) => page.evaluate((needle) => (
+      performance.getEntriesByType('resource').filter(entry => {
+        try {
+          return new URL(entry.name).pathname.includes(needle);
+        } catch {
+          return false;
+        }
+      }).length
+    ), fragment);
     await page.route('**/api/dmenu', async route => {
       await new Promise(resolve => setTimeout(resolve, 180));
       await route.fulfill({
@@ -176,8 +178,8 @@ test.describe('Initial catalog image priorities', () => {
     await page.goto('/');
     const splash = page.locator('#brandSplashStatic, #brandSplash').first();
     await expect(splash).toBeVisible();
-    expect(pizzaRequests).toHaveLength(0);
-    expect(sauceRequests).toHaveLength(0);
+    expect(await dishResourceCount('/3-card')).toBe(0);
+    expect(await dishResourceCount('/sauce-card')).toBe(0);
 
     await page.locator('#brandSplashStatic [data-go="delivery"], #brandSplash [data-go="delivery"]').first().click();
 
@@ -193,9 +195,12 @@ test.describe('Initial catalog image priorities', () => {
     await expect(page.locator('link#zt-delivery-lcp-preload')).toHaveAttribute('href', firstPizza.img);
     await expect.poll(() => page.evaluate(() => window.__ztPendingDeliveryHero)).toBeNull();
     const currentSrc = await image.evaluate(node => node.currentSrc);
-    await expect.poll(() => pizzaRequests.filter(url => url === currentSrc).length).toBe(1);
-    expect(pizzaRequests.filter(url => url === currentSrc)).toHaveLength(1);
-    expect(sauceRequests).toHaveLength(0);
+    const currentPath = new URL(currentSrc).pathname;
+    expect(currentPath).toContain('/3-card');
+    await expect.poll(() => page.evaluate(src => (
+      performance.getEntriesByName(src, 'resource').length
+    ), currentSrc)).toBe(1);
+    expect(await dishResourceCount('/sauce-card')).toBe(0);
   });
 
   test('delivery startup retains its first-card hero request', async ({ page }) => {
