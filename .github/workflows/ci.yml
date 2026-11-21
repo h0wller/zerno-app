@@ -283,9 +283,12 @@ jobs:
               return 1
             fi
             DB_PATH="$db_path" PUBLIC_DIR="$project_dir/public" node "$GITHUB_WORKSPACE/scripts/lighthouse-fixture.mjs"
-            local -a series_args=(--delays=0,3000)
-            if [ "$variant" = C1 ]; then series_args=(--delays=0 --brands=delivery); fi
+            local -a series_args=(--delays=0,3000 --seed-brand=1)
+            if [ "$variant" = C1 ]; then series_args=(--delays=0 --brands=delivery --seed-brand=0); fi
             node scripts/splash-series.mjs --url="http://127.0.0.1:$port" --label="$variant" --runs=5 "${series_args[@]}" --out="$REPORT_DIR"
+            if [ "$variant" = C1 ]; then
+              node scripts/splash-series.mjs --url="http://127.0.0.1:$port" --label=C1-seeded --runs=5 --delays=0 --brands=delivery --seed-brand=1 --out="$REPORT_DIR"
+            fi
             cleanup_server
             trap - RETURN
           }

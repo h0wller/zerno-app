@@ -3,18 +3,18 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { chromium } from '@playwright/test';
 const args=Object.fromEntries(process.argv.slice(2).map(a=>{const [k,v]=a.replace(/^--/,'').split('=');return [k,v??'1'];}));
-const {url,label}=args, runs=Number(args.runs||5), delays=(args.delays||'0,3000').split(',').map(Number), brands=(args.brands||'coffee,delivery').split(','), out=path.resolve(args.out||'splash-results');
+const {url,label}=args, runs=Number(args.runs||5), seedBrand=args.seedBrand!=='0', delays=(args.delays||'0,3000').split(',').map(Number), brands=(args.brands||'coffee,delivery').split(','), out=path.resolve(args.out||'splash-results');
 if(!url||!label||delays.some(x=>![0,3000].includes(x))||brands.some(x=>!['coffee','delivery'].includes(x))) throw Error('invalid splash-series arguments');
 const apiPaths=new Set(['/api/menu','/api/dmenu']), throughput=1638.4*1024/8;
 async function runOnce(browser,brand,delayMs,run){
  const context=await browser.newContext({viewport:{width:360,height:800},deviceScaleFactor:1.75,isMobile:true,hasTouch:true,serviceWorkers:'block'});
- const row={label,brand,delayMs,run,requests:[],console:[]}, byId=new Map(); let targetUrls=[], clickAt=null;
+ const row={label,brand,delayMs,run,savedBrand:seedBrand?brand:null,requests:[],console:[]}, byId=new Map(); let targetUrls=[], clickAt=null;
  try{
-  await context.addInitScript(()=>{try{localStorage.setItem('zt_inst_hide','1');}catch{}});
+  await context.addInitScript((savedBrand)=>{try{localStorage.setItem('zt_inst_hide','1');if(savedBrand)localStorage.setItem('zt_brand',savedBrand);}catch{}},seedBrand?brand:null);
   const page=await context.newPage();
   page.on('console',m=>{if(['error','warning'].includes(m.type()))row.console.push({type:m.type(),text:m.text()});});
   page.on('pageerror',e=>row.console.push({type:'pageerror',text:e.message}));
-  page.on('response',async r=>{if(new URL(r.url()).pathname!==(brand==='delivery'?'/api/dmenu':'/api/menu')||!r.ok())return;try{const p=await r.json(),cat=brand==='delivery'?'pizza':'coffee',first=p.items?.find(x=>x?.on&&x.img&&x.cat===cat);if(first?.img){targetUrls=[first.img,...(first.imgSrcset||'').split(',').map(x=>x.trim().split(/\s+/)[0]).filter(Boolean)].map(x=>new URL(x,url).href);}row.apiItemsCount=p.items?.length??null;}catch(e){row.console.push({type:'api-json-error',text:e.message});}});
+  page.on('response',async r=>{if(new URL(r.url()).pathname!==(brand==='delivery'?'/api/dmenu':'/api/menu')||!r.ok())return;try{const p=await r.json(),first=p.items?.find(x=>x?.on&&x.img&&(brand!=='delivery'||x.cat==='pizza'));if(first?.img){targetUrls=[first.img,...(first.imgSrcset||'').split(',').map(x=>x.trim().split(/\s+/)[0]).filter(Boolean)].map(x=>new URL(x,url).href);}row.apiItemsCount=p.items?.length??null;}catch(e){row.console.push({type:'api-json-error',text:e.message});}});
   const cdp=await context.newCDPSession(page);await cdp.send('Network.enable');
   await cdp.send('Network.emulateNetworkConditions',{offline:false,latency:150,downloadThroughput:throughput,uploadThroughput:throughput});
   await cdp.send('Emulation.setCPUThrottlingRate',{rate:4});
