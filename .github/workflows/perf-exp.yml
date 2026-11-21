@@ -9,7 +9,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: perf-exp-${{ github.ref }}
+  group: perf-exp-${{ github.ref }}-${{ github.sha }}
   cancel-in-progress: false
 
 jobs:
