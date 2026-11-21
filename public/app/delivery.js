@@ -49,6 +49,49 @@ window.deliveryInfo = null;
 window.promoInfo = null;
 window.cartPromoCode = localStorage.getItem('zt_cartpromo') || '';
 
+/* Early LCP contract: delivery.js remains the sole DOM owner of the static hero image. */
+function applyPrimedDeliveryHero(item) {
+  if (!item || !item.img) return false;
+
+  const grid = document.getElementById('deliveryGrid');
+  const firstCard = grid && grid.querySelector('.card:not(.skeleton-card)');
+  const image = firstCard && firstCard.querySelector('.media img');
+  if (!image) return false;
+
+  const currentUrl = image.getAttribute('src') || image.getAttribute('data-deferred-src');
+  if (!currentUrl) return false;
+
+  try {
+    if (new URL(currentUrl, location.href).pathname !== new URL(item.img, location.href).pathname) {
+      return false;
+    }
+  } catch {
+    return false;
+  }
+
+  image.alt = item.name || '';
+  if (item.imgSrcset) {
+    image.setAttribute('srcset', item.imgSrcset);
+    image.setAttribute('sizes', '(max-width: 519px) calc(100vw - 110px), (max-width: 1180px) 42vw, (max-width: 1599px) 30vw, 23vw');
+  } else {
+    image.removeAttribute('srcset');
+    image.removeAttribute('sizes');
+  }
+  image.setAttribute('loading', 'eager');
+  image.setAttribute('fetchpriority', 'high');
+  image.setAttribute('decoding', 'async');
+  image.dataset.zoom = 'true';
+  image.dataset.zoomSrc = item.img.replace('-card.webp', '-zoom.webp');
+  if (image.getAttribute('src') !== item.img) image.src = item.img;
+  image.removeAttribute('data-deferred-src');
+  return true;
+}
+
+window.__ztApplyDeliveryHero = applyPrimedDeliveryHero;
+if (window.__ztPendingDeliveryHero && applyPrimedDeliveryHero(window.__ztPendingDeliveryHero)) {
+  window.__ztPendingDeliveryHero = null;
+}
+
 async function fetchDeliveryInfo() {
   var response = await fetch(API_BASE + '/api/delivery/info');
   if (!response.ok) throw new Error('Не удалось обновить график работы');
