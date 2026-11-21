@@ -67,16 +67,6 @@
             doc.classList.remove('need-splash');
           }
 
-          // LCP preload for delivery brand (актуальная 1-card.webp из БД)
-          if (b === 'delivery' && explicit) {
-            var lp = document.createElement('link');
-            lp.rel = 'preload';
-            lp.as = 'image';
-            lp.href = '/media/dishes/1-card.webp';
-            lp.type = 'image/webp';
-            lp.setAttribute('fetchpriority', 'high');
-            document.head.appendChild(lp);
-          }
         }
       } catch (e) { }
     })();
