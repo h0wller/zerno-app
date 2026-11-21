@@ -64,14 +64,12 @@ export function parseLighthouseRecord(filename, report) {
     metrics?.observedLargestContentfulPaint,
     `${filename} audits.metrics.observedLargestContentfulPaint`
   );
-  const observedFcpMs = requiredNumber(
-    metrics?.observedFirstContentfulPaint,
-    `${filename} audits.metrics.observedFirstContentfulPaint`
-  );
-  const observedCls = requiredNumber(
-    metrics?.observedCumulativeLayoutShift,
-    `${filename} audits.metrics.observedCumulativeLayoutShift`
-  );
+  const observedFcpMs = finiteNumber(metrics?.observedFirstContentfulPaint)
+    ? metrics.observedFirstContentfulPaint
+    : null;
+  const observedCls = finiteNumber(metrics?.observedCumulativeLayoutShift)
+    ? metrics.observedCumulativeLayoutShift
+    : null;
 
   const discoveryItems = auditItems(report, 'lcp-discovery-insight');
   const checklist = discoveryItems.find(item => item?.type === 'checklist')?.items || {};
