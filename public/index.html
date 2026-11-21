@@ -1619,48 +1619,54 @@ html[data-brand="delivery"] {
     })();</script>
   <script id="zt-lcp-head">
     (function () {
-      var endpoint = '';
-      try {
-        // The splash choice is not known yet; do not prefetch either brand's catalog.
-        if (window.__brandSplashPending === true) return;
-        if (localStorage.getItem('zt_user')) return;
-        var params = new URLSearchParams(location.search);
-        var auditCoffee = params.get('lighthouse') === '1' || params.get('clean') === '1';
-        var brand = params.get('brand') || (auditCoffee ? 'coffee' : localStorage.getItem('zt_brand') || 'coffee');
-        endpoint = brand === 'delivery' ? '/api/dmenu' : '/api/menu';
-      } catch (_) { return; }
-
       var nativeFetch = window.fetch;
-      var pending = nativeFetch.call(window, endpoint, {
-        headers: { Accept: 'application/json' }
-      }).then(function (response) {
-        if (endpoint !== '/api/menu' || !response || !response.ok) return response;
-        // Do not release the response to loadMenu() until the matching image preload is in the DOM.
-        return response.clone().json().then(function (payload) {
-          var items = payload && Array.isArray(payload.items) ? payload.items : [];
-          var first = items.find(function (item) {
-            return item && item.cat === 'coffee' && item.on && item.img;
-          });
-          if (first) {
-            var preload = document.createElement('link');
-            preload.id = 'zt-menu-lcp-preload';
-            preload.rel = 'preload';
-            preload.as = 'image';
-            preload.href = first.img;
-            preload.type = 'image/webp';
-            preload.setAttribute('fetchpriority', 'high');
-            if (first.imgSrcset) {
-              preload.setAttribute('imagesrcset', first.imgSrcset);
-              preload.setAttribute('imagesizes',
-                '(max-width: 519px) calc(100vw - 110px), (max-width: 1180px) 42vw, (max-width: 1599px) 30vw, 23vw');
+      var pending = null;
+      var imageSizes = '(max-width: 519px) calc(100vw - 110px), (max-width: 1180px) 42vw, (max-width: 1599px) 30vw, 23vw';
+
+      function primeSelectedMenu(brand) {
+        if (brand !== 'coffee' && brand !== 'delivery') return Promise.resolve(null);
+        if (pending && pending.brand === brand) return pending.promise;
+
+        var endpoint = brand === 'delivery' ? '/api/dmenu' : '/api/menu';
+        var id = brand === 'delivery' ? 'zt-delivery-lcp-preload' : 'zt-menu-lcp-preload';
+        var promise = nativeFetch.call(window, endpoint, {
+          headers: { Accept: 'application/json' }
+        }).then(function (response) {
+          if (!response || !response.ok) return response;
+          return response.clone().json().then(function (payload) {
+            var items = payload && Array.isArray(payload.items) ? payload.items : [];
+            var first = items.find(function (item) {
+              return item && item.on && item.img &&
+                (brand === 'delivery' || item.cat === 'coffee');
+            });
+            if (first) {
+              var existing = document.getElementById(id);
+              if (existing) existing.remove();
+              var preload = document.createElement('link');
+              preload.id = id;
+              preload.rel = 'preload';
+              preload.as = 'image';
+              preload.href = first.img;
+              preload.type = 'image/webp';
+              preload.setAttribute('fetchpriority', 'high');
+              if (first.imgSrcset) {
+                preload.setAttribute('imagesrcset', first.imgSrcset);
+                preload.setAttribute('imagesizes', imageSizes);
+              }
+              document.head.appendChild(preload);
             }
-            document.head.appendChild(preload);
-          }
-          return response;
-        }, function () {
-          return response;
+            return response;
+          }, function () {
+            return response;
+          });
         });
-      });
+
+        pending = { brand: brand, endpoint: endpoint, promise: promise };
+        return promise;
+      }
+
+      // Splash selection calls this before the selected catalog starts loading.
+      window.__ztPrimeMenuLcp = primeSelectedMenu;
 
       window.fetch = function (input, options) {
         try {
@@ -1673,17 +1679,27 @@ html[data-brand="delivery"] {
             });
           }
           if (pending && method.toUpperCase() === 'GET' && !headers.has('Authorization') &&
-              new URL(url, location.href).pathname === endpoint) {
-            var response = pending;
+              new URL(url, location.href).pathname === pending.endpoint) {
+            var response = pending.promise;
             pending = null;
             return response;
           }
         } catch (_) {}
         return nativeFetch.apply(this, arguments);
       };
+
+      try {
+        // Never fetch either brand while the splash is waiting for the user's choice.
+        if (window.__brandSplashPending !== true && !localStorage.getItem('zt_user')) {
+          var params = new URLSearchParams(location.search);
+          var auditCoffee = params.get('lighthouse') === '1' || params.get('clean') === '1';
+          var selectedBrand = params.get('brand') ||
+            (auditCoffee ? 'coffee' : (localStorage.getItem('zt_brand') || 'coffee'));
+          primeSelectedMenu(selectedBrand);
+        }
+      } catch (_) {}
     })();
-  </script>
-  <!-- LCP-PRELOAD-FONT v1: preload шрифта Unbounded 700 для LCP <h1> -->
+  </script>  <!-- LCP-PRELOAD-FONT v1: preload шрифта Unbounded 700 для LCP <h1> -->
 <title>Пятница «…и кофе» — доставка и кофейня</title>
   <meta name="description"
     content="Кофейня «…и кофе» в Янтарном: актуальное меню и бонусы — каждый 10-й кофе бесплатно." />
