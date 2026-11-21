@@ -147,6 +147,107 @@ test.describe('Initial catalog image priorities', () => {
     await expect(page.locator('#deliveryGrid > .card img').first()).toHaveAttribute('fetchpriority', 'high');
   });
 
+  const deliveryHeroFixture = {
+    id: '1',
+    section: 'delivery',
+    cat: 'pizza',
+    e: '🍕',
+    name: 'Маргарита',
+    desc: 'Красный соус, моцарелла',
+    comp: ['красный соус', 'моцарелла'],
+    vol: '25/35 см',
+    price: '0',
+    on: 1,
+    opts: [{ l: '25 см, пышное', w: '415 г', p: 535, sz: 25 }],
+    img: '/media/dishes/1-card.webp',
+    imgSrcset: '/media/dishes/resized/1-card-300.webp?v=123 300w, /media/dishes/resized/1-card-600.webp?v=123 600w'
+  };
+
+  async function routeDeliveryHero(page) {
+    await page.route('**/api/dmenu', async (route) => {
+      await new Promise(resolve => setTimeout(resolve, 180));
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ items: [deliveryHeroFixture], updatedAt: Date.now() })
+      });
+    });
+    await page.route('**/media/dishes/**', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'image/webp',
+        body: Buffer.from('UklGRiQAAABXRUJQVlA4IBgAAAAwAQCdASoBAAEAAUAmJaQAA3AA/vz0AAA=', 'base64')
+      });
+    });
+  }
+
+  test('delivery hero preload and retained static card use the API responsive image set', async ({ page }) => {
+    const heroRequests = [];
+    page.setViewportSize({ width: 390, height: 844 });
+    page.on('request', request => {
+      if (new URL(request.url()).pathname.includes('/media/dishes/1-card') ||
+          new URL(request.url()).pathname.includes('/media/dishes/resized/1-card')) {
+        heroRequests.push(request.url());
+      }
+    });
+    await routeDeliveryHero(page);
+    await page.addInitScript(() => {
+      localStorage.setItem('zt_brand', 'delivery');
+      localStorage.setItem('zt_onb', '1');
+      localStorage.setItem('zt_inst_hide', '1');
+      sessionStorage.setItem('splashDone', '1');
+    });
+
+    await page.goto('/?brand=delivery');
+    const firstCard = page.locator('#deliveryGrid > .card').first();
+    await expect(firstCard).toHaveAttribute('data-product-id', '1');
+    const image = firstCard.locator('.media img');
+    await expect(image).toHaveAttribute('src', deliveryHeroFixture.img);
+    await expect(image).toHaveAttribute('srcset', deliveryHeroFixture.imgSrcset);
+    await expect(image).toHaveAttribute('sizes', '(max-width: 519px) calc(100vw - 110px), (max-width: 1180px) 42vw, (max-width: 1599px) 30vw, 23vw');
+    await expect(image).toHaveAttribute('loading', 'eager');
+    await expect(image).toHaveAttribute('fetchpriority', 'high');
+
+    const preload = page.locator('link[rel="preload"][as="image"][href="/media/dishes/1-card.webp"]');
+    await expect(preload).toHaveCount(1);
+    await expect(preload).toHaveAttribute('imagesrcset', deliveryHeroFixture.imgSrcset);
+    await expect(preload).toHaveAttribute('imagesizes', '(max-width: 519px) calc(100vw - 110px), (max-width: 1180px) 42vw, (max-width: 1599px) 30vw, 23vw');
+    await expect.poll(() => image.evaluate(node => !!node.currentSrc)).toBe(true);
+    const currentSrc = await image.evaluate(node => node.currentSrc);
+    await expect.poll(() => heroRequests.filter(url => url === currentSrc).length).toBe(1);
+    expect(heroRequests.filter(url => url === currentSrc)).toHaveLength(1);
+  });
+
+  test('splash does not start delivery image work before the user selects delivery', async ({ page }) => {
+    const deliveryMenuRequests = [];
+    page.on('request', request => {
+      if (new URL(request.url()).pathname === '/api/dmenu') deliveryMenuRequests.push(request.url());
+    });
+    await routeDeliveryHero(page);
+    await page.addInitScript(() => {
+      localStorage.setItem('zt_brand', 'delivery');
+      localStorage.removeItem('zt_onb');
+      localStorage.setItem('zt_inst_hide', '1');
+      sessionStorage.removeItem('splashDone');
+    });
+
+    await page.goto('/');
+    await expect(page.locator('#brandSplashStatic, #brandSplash').first()).toBeVisible();
+    expect(deliveryMenuRequests).toHaveLength(0);
+    await expect(page.locator('link[rel="preload"][as="image"][href="/media/dishes/1-card.webp"]')).toHaveCount(0);
+
+    await page.locator('#brandSplashStatic [data-go="delivery"], #brandSplash [data-go="delivery"]').first().click();
+    const preload = page.locator('link[rel="preload"][as="image"][href="/media/dishes/1-card.webp"]');
+    await expect(preload).toHaveCount(1);
+    await expect(preload).toHaveAttribute('imagesrcset', deliveryHeroFixture.imgSrcset);
+    await expect.poll(() => deliveryMenuRequests.length).toBe(1);
+
+    const image = page.locator('#deliveryGrid > .card:first-child .media img');
+    await expect(image).toHaveAttribute('srcset', deliveryHeroFixture.imgSrcset);
+    await expect(image).toHaveAttribute('fetchpriority', 'high');
+    await expect(image).toHaveAttribute('loading', 'eager');
+  });
+
   test('coffee startup replaces the catalog grid only once after menu data arrives', async ({ page }) => {
     await routeImageCatalog(page, 'coffee');
     await page.addInitScript(() => {
