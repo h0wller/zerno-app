@@ -203,6 +203,30 @@ test.describe('Initial catalog image priorities', () => {
     expect(await dishResourceCount('/sauce-card')).toBe(0);
   });
 
+  test('first catalog hero skips entrance animation while later cards retain it', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.emulateMedia({ reducedMotion: 'no-preference' });
+
+    for (const brand of ['coffee', 'delivery']) {
+      await routeImageCatalog(page, brand);
+      await page.addInitScript((selectedBrand) => {
+        localStorage.setItem('zt_brand', selectedBrand);
+        localStorage.setItem('zt_onb', '1');
+        localStorage.setItem('zt_inst_hide', '1');
+        sessionStorage.setItem('splashDone', '1');
+      }, brand);
+
+      await page.goto('/?brand=' + brand);
+      const grid = page.locator(brand === 'delivery' ? '#deliveryGrid' : '#grid');
+      await expect.poll(() => grid.locator(':scope > .card:not(.skeleton-card)').count()).toBeGreaterThan(1);
+
+      const firstCard = grid.locator(':scope > .card:not(.skeleton-card)').first();
+      const secondCard = grid.locator(':scope > .card:not(.skeleton-card)').nth(1);
+      await expect.poll(() => firstCard.evaluate(card => getComputedStyle(card).animationName)).toBe('none');
+      await expect.poll(() => secondCard.evaluate(card => getComputedStyle(card).animationName)).toBe('card-enter');
+    }
+  });
+
   test('explicit delivery activates its static LCP image before the main bundle finishes loading', async ({ page }) => {
     let mainBundleResponded = false;
     await routeDeliveryHero(page);
