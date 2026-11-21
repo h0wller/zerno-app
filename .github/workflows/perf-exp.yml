@@ -1,0 +1,150 @@
+name: perf-exp isolated A/F/C8 benchmark
+
+on:
+  push:
+    branches: [perf-exp]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: perf-exp-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  benchmark:
+    name: Verify perf-exp and run A F C8
+    runs-on: ubuntu-22.04
+    timeout-minutes: 55
+    steps:
+      - name: Checkout perf-exp with full history
+        uses: actions/checkout@v7
+        with:
+          ref: perf-exp
+          fetch-depth: 0
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Verify perf-exp commit objects and application boundary
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin +refs/heads/pizza:refs/remotes/origin/pizza +refs/heads/perf/mobile-lcp-initial-load:refs/remotes/origin/perf/mobile-lcp-initial-load
+          BASE_SHA="$(git rev-parse origin/pizza)"
+          HEAD_SHA="$(git rev-parse HEAD)"
+          echo "base=$BASE_SHA"
+          echo "head=$HEAD_SHA"
+          git log --reverse --format='%H %s' "origin/pizza..HEAD"
+          mapfile -t COMMITS < <(git rev-list --reverse origin/pizza..HEAD)
+          if [ "${#COMMITS[@]}" -eq 0 ]; then
+            echo "perf-exp must contain at least one benchmark commit" >&2
+            exit 1
+          fi
+          for SHA in "${COMMITS[@]}"; do
+            if [ "${#SHA}" -ne 40 ]; then
+              echo "Invalid full SHA: $SHA" >&2
+              exit 1
+            fi
+            git cat-file -e "$SHA^{commit}"
+            RESOLVED="$(git rev-parse --verify "$SHA^{commit}")"
+            test "$RESOLVED" = "$SHA"
+            echo "verified=$RESOLVED"
+          done
+          echo "Changed paths since pizza:"
+          git diff --name-only origin/pizza...HEAD
+          if git diff --name-only origin/pizza...HEAD | grep -E '^(public/|server/|db/|package\.json$|package-lock\.json$)'; then
+            echo "Application/runtime source changes are forbidden on perf-exp" >&2
+            exit 1
+          fi
+          git cat-file -e "8f276411f337952183864684e0bed5558d5e18d9^{commit}"
+          git cat-file -e "aa3a958291948a7b2eda04bcbc9c3cf34385b4aa^{commit}"
+
+      - name: Validate benchmark scripts
+        run: |
+          node --check scripts/perf-exp/patch-html.mjs
+          node --check scripts/perf-exp/benchmark.mjs
+          node --check tests/perf-exp-fallback.spec.js
+
+      - name: Prepare pinned A and F worktrees
+        shell: bash
+        run: |
+          set -euo pipefail
+          A_SHA=8f276411f337952183864684e0bed5558d5e18d9
+          F_SHA=aa3a958291948a7b2eda04bcbc9c3cf34385b4aa
+          A_DIR="$RUNNER_TEMP/perf-exp-A"
+          F_DIR="$RUNNER_TEMP/perf-exp-F"
+          git worktree add --detach "$A_DIR" "$A_SHA"
+          git worktree add --detach "$F_DIR" "$F_SHA"
+          ln -s "$GITHUB_WORKSPACE/node_modules" "$A_DIR/node_modules"
+          ln -s "$GITHUB_WORKSPACE/node_modules" "$F_DIR/node_modules"
+          (cd "$A_DIR" && npm run build:client)
+          (cd "$F_DIR" && npm run build:client)
+          echo "A_DIR=$A_DIR" >> "$GITHUB_ENV"
+          echo "F_DIR=$F_DIR" >> "$GITHUB_ENV"
+
+      - name: Run isolated servers, fallback tests, CDP series and traces
+        shell: bash
+        env:
+          TEST_URL: http://127.0.0.1:3211
+          PORT: 3211
+        run: |
+          set -euo pipefail
+          A_DB="$RUNNER_TEMP/perf-exp-A.sqlite"
+          F_DB="$RUNNER_TEMP/perf-exp-F.sqlite"
+          A_LOG="$RUNNER_TEMP/perf-exp-A-server.log"
+          F_LOG="$RUNNER_TEMP/perf-exp-F-server.log"
+          (cd "$A_DIR" && NODE_ENV=test DB_PATH="$A_DB" PUBLIC_DIR="$A_DIR/public" PORT=3211 ADMIN_CODE='ci-perf-exp-admin-role-code' CASHIER_CODE='ci-perf-exp-cashier-code' DISPATCH_CODE='ci-perf-exp-dispatch-code' TELEGRAM_BOT_TOKEN='' TG_WEBHOOK_SECRET='' SMS_AUTH_ENABLED=false node server.js) >"$A_LOG" 2>&1 &
+          A_PID=$!
+          (cd "$F_DIR" && NODE_ENV=test DB_PATH="$F_DB" PUBLIC_DIR="$F_DIR/public" PORT=3212 ADMIN_CODE='ci-perf-exp-admin-role-code' CASHIER_CODE='ci-perf-exp-cashier-code' DISPATCH_CODE='ci-perf-exp-dispatch-code' TELEGRAM_BOT_TOKEN='' TG_WEBHOOK_SECRET='' SMS_AUTH_ENABLED=false node server.js) >"$F_LOG" 2>&1 &
+          F_PID=$!
+          cleanup() {
+            kill "$A_PID" "$F_PID" 2>/dev/null || true
+            wait "$A_PID" "$F_PID" 2>/dev/null || true
+          }
+          trap cleanup EXIT
+          ready() {
+            local url="$1" log="$2"
+            for _ in $(seq 1 90); do
+              if curl -fsS "$url/api/health" >/dev/null; then return 0; fi
+              sleep 1
+            done
+            cat "$log"
+            echo "Server not ready: $url" >&2
+            return 1
+          }
+          ready http://127.0.0.1:3211 "$A_LOG"
+          ready http://127.0.0.1:3212 "$F_LOG"
+          (cd "$A_DIR" && DB_PATH="$A_DB" PUBLIC_DIR="$A_DIR/public" node scripts/lighthouse-fixture.mjs)
+          (cd "$A_DIR" && DB_PATH="$F_DB" PUBLIC_DIR="$F_DIR/public" node scripts/lighthouse-fixture.mjs)
+          npx playwright test tests/perf-exp-fallback.spec.js --project=chromium --workers=1
+          node scripts/perf-exp/benchmark.mjs \
+            --url-a=http://127.0.0.1:3211 \
+            --url-f=http://127.0.0.1:3212 \
+            --runs=5 --delays=0,3000 --brands=coffee,delivery \
+            --trace-samples=1 --out=perf-exp-results
+
+      - name: Verify no deployment workflow was requested
+        run: |
+          echo "No merge/deploy actions are part of perf-exp."
+          git status --short
+          git log --reverse --format='%H %s' origin/pizza..HEAD
+
+      - name: Upload perf-exp results and traces
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: perf-exp-results-${{ github.run_id }}
+          path: perf-exp-results/
+          if-no-files-found: warn
+          retention-days: 30
