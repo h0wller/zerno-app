@@ -1613,6 +1613,43 @@ html[data-brand="delivery"] {
       var pending = null;
       var imageSizes = '(max-width: 519px) calc(100vw - 110px), (max-width: 1180px) 42vw, (max-width: 1599px) 30vw, 23vw';
 
+      // The document shell owns the static first-card image before the application bundle is ready.
+      // Keep the same window contract used by delivery.js after hydration.
+      function applyEarlyDeliveryHero(item) {
+        if (!item || !item.img) return false;
+        var grid = document.getElementById('deliveryGrid');
+        var firstCard = grid && grid.querySelector('.card:not(.skeleton-card)');
+        var image = firstCard && firstCard.querySelector('.media img');
+        if (!image) return false;
+
+        var currentUrl = image.getAttribute('src') || image.getAttribute('data-deferred-src');
+        if (!currentUrl) return false;
+        try {
+          if (new URL(currentUrl, location.href).pathname !== new URL(item.img, location.href).pathname) {
+            return false;
+          }
+        } catch (_) {
+          return false;
+        }
+
+        image.alt = item.name || '';
+        if (item.imgSrcset) {
+          image.setAttribute('srcset', item.imgSrcset);
+          image.setAttribute('sizes', imageSizes);
+        } else {
+          image.removeAttribute('srcset');
+          image.removeAttribute('sizes');
+        }
+        image.setAttribute('loading', 'eager');
+        image.setAttribute('fetchpriority', 'high');
+        image.setAttribute('decoding', 'async');
+        if (image.getAttribute('src') !== item.img) image.setAttribute('src', item.img);
+        image.removeAttribute('data-deferred-src');
+        return true;
+      }
+
+      window.__ztApplyDeliveryHero = applyEarlyDeliveryHero;
+
       function primeSelectedMenu(brand) {
         if (brand !== 'coffee' && brand !== 'delivery') return Promise.resolve(null);
         if (pending && pending.brand === brand) return pending.promise;
@@ -1645,8 +1682,8 @@ html[data-brand="delivery"] {
               }
               document.head.appendChild(preload);
               if (brand === 'delivery') {
-                // delivery.js owns this DOM mutation; retain the payload if its owner
-                // has not registered yet, then let it activate the static hero early.
+                // The head bridge activates only the matching static hero; delivery.js
+                // keeps the same contract for catalog reconciliation after hydration.
                 window.__ztPendingDeliveryHero = first;
                 if (
                   typeof window.__ztApplyDeliveryHero === 'function' &&
@@ -4346,6 +4383,14 @@ html body #tickerTrack .tickerGroup > span {
               </div>
             </div>
           </article>
+          <script>
+            // The preload response may win the race against parsing this static grid.
+            if (window.__ztPendingDeliveryHero &&
+                typeof window.__ztApplyDeliveryHero === 'function' &&
+                window.__ztApplyDeliveryHero(window.__ztPendingDeliveryHero)) {
+              window.__ztPendingDeliveryHero = null;
+            }
+          </script>
           <div class="card skeleton-card" aria-hidden="true">
             <div class="media skeleton-pulse"></div>
             <div class="cbody">
