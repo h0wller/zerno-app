@@ -4,7 +4,7 @@ const [variant,projectArg,reportArg]=process.argv.slice(2),root=process.cwd();
 const config=JSON.parse(fs.readFileSync(path.join(root,'scripts/lighthouse-variants.json'),'utf8'));
 const project=path.resolve(projectArg||''),report=path.resolve(reportArg||''),base=config.baseSha,head=config.headSha;
 if(!/^[a-f0-9]{40}$/.test(base)||!/^[a-f0-9]{40}$/.test(head))throw Error('Pinned baseSha/headSha must be 40-character SHAs');
-if(!config.variants.includes(variant))throw Error('Unknown variant '+variant);
+if(!config.variants.includes(variant)&&variant!=='C7')throw Error('Unknown variant '+variant);
 if(!fs.existsSync(project)||!fs.existsSync(report))throw Error('Worktree/report directory missing');
 const git=(args,opts={})=>execFileSync('git',args,{cwd:project,encoding:'utf8',stdio:['ignore','pipe','pipe'],...opts}).trim();
 const hash=v=>crypto.createHash('sha256').update(v).digest('hex');
@@ -91,8 +91,26 @@ else if(variant==='D')patchIndex('zt-early-brand-guard','<script id="zt-early-br
 else if(variant==='E'){
  execFileSync('git',['checkout',base,'--','public/app/core/state.js','public/app/core/splash.js'],{cwd:project,stdio:'pipe'});
  for(const f of ['public/app/core/state.js','public/app/core/splash.js'])hashes[f]=hash(fs.readFileSync(path.join(project,f)));
-}else if(variant==='F'){if(git(['status','--porcelain','--untracked-files=no']))throw Error('F: base control worktree is not clean');}
-else if(variant!=='A')throw Error('Unhandled variant '+variant);
+}else if(variant==='C7'){
+ const file='public/index.html',html=fs.readFileSync(path.join(project,file),'utf8');
+ const marker='<script id="zt-lcp-head">',current=block(html,marker,'C7 head').text;
+ let desired=current;
+ const markerPending='      var pending = null;';
+ const early=markerPending+`\n      // Benchmark-only C7: fetch JSON while splash is active; no DOM or image preload writes.\n      var earlyCatalog = null;\n      try {\n        if (window.__brandSplashPending === true && !localStorage.getItem('zt_user')) {\n          var predictedBrand = localStorage.getItem('zt_brand') || 'coffee';\n          if (predictedBrand === 'coffee' || predictedBrand === 'delivery') {\n            var predictedEndpoint = predictedBrand === 'delivery' ? '/api/dmenu' : '/api/menu';\n            earlyCatalog = { brand: predictedBrand, endpoint: predictedEndpoint, promise: nativeFetch.call(window, predictedEndpoint, { headers: { Accept: 'application/json' } }) };\n            window.__ztEarlyCatalog = earlyCatalog;\n          }\n        }\n      } catch (_) {}\n`;
+ if(!desired.includes(markerPending))throw Error('C7 pending marker missing');
+ desired=desired.replace(markerPending,early);
+ const from='        var promise = nativeFetch.call(window, endpoint, {';
+ const to='        var reusable = earlyCatalog && earlyCatalog.brand === brand ? earlyCatalog.promise : null;\n        if (reusable) { earlyCatalog = null; window.__ztEarlyCatalog = null; }\n        var promise = reusable || nativeFetch.call(window, endpoint, {';
+ if(!desired.includes(from))throw Error('C7 prime fetch marker missing');
+ desired=desired.replace(from,to);
+ if(desired===current)throw Error('C7 patch empty');
+ const html2=html.replace(current,desired),patchFile=path.join(report,'C7.patch'),tmp=fs.mkdtempSync(path.join(os.tmpdir(),'lcp-C7-'));
+ try{fs.mkdirSync(path.join(tmp,'a/public'),{recursive:true});fs.mkdirSync(path.join(tmp,'b/public'),{recursive:true});fs.writeFileSync(path.join(tmp,'a',file),html);fs.writeFileSync(path.join(tmp,'b',file),html2);let patch;try{patch=execFileSync('git',['diff','--no-index','--no-ext-diff','--','a/'+file,'b/'+file],{cwd:tmp,encoding:'utf8',stdio:['ignore','pipe','pipe']});}catch(e){if(e.status!==1)throw e;patch=e.stdout;}patch=patch.replaceAll('a/a/public/index.html','a/public/index.html').replaceAll('b/b/public/index.html','b/public/index.html');fs.writeFileSync(patchFile,patch);execFileSync('git',['apply','--check',patchFile],{cwd:project,stdio:'pipe'});execFileSync('git',['apply',patchFile],{cwd:project,stdio:'pipe'});}finally{fs.rmSync(tmp,{recursive:true,force:true});}
+ const applied=block(fs.readFileSync(path.join(project,file),'utf8'),marker,'C7 applied').text;if(applied!==desired)throw Error('C7 applied block mismatch');
+ hashes.C7={head:hash(current),applied:hash(applied),domOwner:'No DOM writes; core/splash.js selects; menu.js/delivery.js own catalog DOM.'};
+}
+else if(variant==='F'){if(git(['status','--porcelain','--untracked-files=no']))throw Error('F: base control worktree is not clean');}
+else if(variant!=='A'&&variant!=='C7')throw Error('Unhandled variant '+variant);
 const files=changed();if(variant==='A'&&files.length)throw Error('A: expected no changes from pinned head, found '+files.join(', '));
 const absentAtBaseFiles=[];
 if(variant==='F')for(const f of files){const target=path.join(project,f);if(fs.existsSync(target))hashes[f]=hash(fs.readFileSync(target));else{hashes[f]=hash('ABSENT_AT_BASE');absentAtBaseFiles.push(f);}}

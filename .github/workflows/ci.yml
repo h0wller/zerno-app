@@ -213,7 +213,7 @@ jobs:
           retention-days: 7
 
   splash-series:
-    name: Splash series / A F C1
+    name: Splash series / A F C7 + C1 diagnostics
     if: github.event_name == 'pull_request' && github.event.pull_request.number == 300
     needs: quality-gates
     runs-on: ubuntu-latest
@@ -283,13 +283,15 @@ jobs:
               return 1
             fi
             DB_PATH="$db_path" PUBLIC_DIR="$project_dir/public" node "$GITHUB_WORKSPACE/scripts/lighthouse-fixture.mjs"
-            node scripts/splash-series.mjs --url="http://127.0.0.1:$port" --label="$variant" --runs=5 --out="$REPORT_DIR"
+            node scripts/splash-series.mjs --url="http://127.0.0.1:$port" --label="$variant" --runs=5 --delays=0,3000 --out="$REPORT_DIR"
             cleanup_server
             trap - RETURN
           }
           run_variant A 3211
           run_variant F 3212
-          run_variant C1 3213
+          run_variant C7 3213
+          run_variant C1 3214
+          node scripts/splash-series.mjs --url='http://127.0.0.1:3214' --label=C1 --runs=5 --delays=0 --brands=delivery --out="$REPORT_DIR"
       - name: Upload splash series results
         if: always()
         uses: actions/upload-artifact@v7
