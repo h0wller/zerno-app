@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { chromium } from '@playwright/test';
 const args=Object.fromEntries(process.argv.slice(2).map(a=>{const [k,v]=a.replace(/^--/,'').split('=');return [k,v??'1'];}));
-const {url,label}=args, runs=Number(args.runs||5), seedBrand=args.seedBrand!=='0', delays=(args.delays||'0,3000').split(',').map(Number), brands=(args.brands||'coffee,delivery').split(','), out=path.resolve(args.out||'splash-results');
+const {url,label}=args, runs=Number(args.runs||5), seedBrand=args['seed-brand']!=='0', delays=(args.delays||'0,3000').split(',').map(Number), brands=(args.brands||'coffee,delivery').split(','), out=path.resolve(args.out||'splash-results');
 if(!url||!label||delays.some(x=>![0,3000].includes(x))||brands.some(x=>!['coffee','delivery'].includes(x))) throw Error('invalid splash-series arguments');
 const apiPaths=new Set(['/api/menu','/api/dmenu']), throughput=1638.4*1024/8;
 async function runOnce(browser,brand,delayMs,run){
