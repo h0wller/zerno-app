@@ -600,6 +600,20 @@ function updateFirstDeliveryCard(gridEl, firstCard, list) {
   if (restHtml) gridEl.insertAdjacentHTML('beforeend', restHtml);
 }
 
+function applyPendingDeliveryHeroForList(list) {
+  const pending = window.__ztPendingDeliveryHero;
+  if (!pending) return;
+
+  if (Array.isArray(list) && list.length > 0 &&
+      String(pending.id) === String(list[0].id)) {
+    applyPrimedDeliveryHero(list[0]);
+  }
+
+  // The initial-category render has now resolved the pending preload. Do not
+  // leave a hero from another category attached to the delivery view.
+  window.__ztPendingDeliveryHero = null;
+}
+
 function renderDeliveryGrid(list) {
   const gridEl = $('#deliveryGrid');
   const firstCard = gridEl && gridEl.querySelector('.card:not(.skeleton-card)');
@@ -615,6 +629,7 @@ function renderDeliveryGrid(list) {
 
   if (canKeepFirst) {
     updateFirstDeliveryCard(gridEl, firstCard, list);
+    applyPendingDeliveryHeroForList(list);
     return;
   }
 
@@ -632,6 +647,7 @@ function renderDeliveryGrid(list) {
     html += '<div class="gempty">В этой категории пока пусто</div>';
   }
   gridEl.innerHTML = html;
+  applyPendingDeliveryHeroForList(list);
 }
 
 function renderDeliveryMenu() {
