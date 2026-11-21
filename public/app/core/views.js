@@ -262,14 +262,6 @@ function syncViewsVisibility(showCoffee, showDeliv) {
   if (dv) {
     dv.hidden = false;
     dv.style.display = showDeliv ? 'block' : 'none';
-    // Activate the static delivery hero only after the delivery view is selected.
-    if (showDeliv && window.__brandSplashPending !== true) {
-      var hero = dv.querySelector('#deliveryGrid > .card[data-product-id="1"] img[data-deferred-src]');
-      if (hero) {
-        hero.src = hero.dataset.deferredSrc;
-        hero.removeAttribute('data-deferred-src');
-      }
-    }
   }
   if (rl) rl.style.display = showCoffee ? '' : 'none';
   if (dr) dr.style.display = showDeliv ? '' : 'none';
