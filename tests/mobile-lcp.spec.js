@@ -203,6 +203,37 @@ test.describe('Initial catalog image priorities', () => {
     expect(await dishResourceCount('/sauce-card')).toBe(0);
   });
 
+  test('explicit delivery activates its static LCP image before the main bundle finishes loading', async ({ page }) => {
+    let mainBundleResponded = false;
+    await routeDeliveryHero(page);
+    await page.route('**/dist/main.bundle.js*', async (route) => {
+      await new Promise(resolve => setTimeout(resolve, 1200));
+      await route.continue();
+    });
+    page.on('response', response => {
+      if (new URL(response.url()).pathname === '/dist/main.bundle.js') {
+        mainBundleResponded = true;
+      }
+    });
+    await page.addInitScript(() => {
+      localStorage.setItem('zt_brand', 'delivery');
+      localStorage.setItem('zt_onb', '1');
+      localStorage.setItem('zt_inst_hide', '1');
+      localStorage.removeItem('zt_user');
+      sessionStorage.setItem('splashDone', '1');
+    });
+
+    await page.goto('/?brand=delivery', { waitUntil: 'commit' });
+    const image = page.locator('#deliveryGrid > .card:first-child .media img');
+    await expect(image).toHaveAttribute('src', deliveryHeroFixture.img, { timeout: 900 });
+    expect(mainBundleResponded).toBe(false);
+    await expect(image).toHaveAttribute('srcset', deliveryHeroFixture.imgSrcset);
+    await expect(image).toHaveAttribute('loading', 'eager');
+    await expect(image).toHaveAttribute('fetchpriority', 'high');
+    await expect.poll(() => mainBundleResponded).toBe(true);
+    await expect(page.locator('#deliveryGrid')).toHaveAttribute('data-catalog-ready', '1');
+  });
+
   test('delivery startup retains its first-card hero request', async ({ page }) => {
     await routeImageCatalog(page, 'delivery');
     await page.addInitScript(() => {
