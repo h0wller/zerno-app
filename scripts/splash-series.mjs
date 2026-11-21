@@ -14,7 +14,7 @@ async function runOnce(browser,brand,delayMs,run){
   const page=await context.newPage();
   page.on('console',m=>{if(['error','warning'].includes(m.type()))row.console.push({type:m.type(),text:m.text()});});
   page.on('pageerror',e=>row.console.push({type:'pageerror',text:e.message}));
-  page.on('response',async r=>{if(new URL(r.url()).pathname!==(brand==='delivery'?'/api/dmenu':'/api/menu')||!r.ok())return;try{const p=await r.json(),cat=brand==='delivery'?'pizza':'coffee',first=p.items?.find(x=>x?.on&&x.img&&x.cat===cat);if(first?.img){targetUrls=[first.img,...(first.imgSrcset||'').split(',').map(x=>x.trim().split(/\\s+/)[0]).filter(Boolean)].map(x=>new URL(x,url).href);}row.apiItemsCount=p.items?.length??null;}catch(e){row.console.push({type:'api-json-error',text:e.message});}});
+  page.on('response',async r=>{if(new URL(r.url()).pathname!==(brand==='delivery'?'/api/dmenu':'/api/menu')||!r.ok())return;try{const p=await r.json(),cat=brand==='delivery'?'pizza':'coffee',first=p.items?.find(x=>x?.on&&x.img&&x.cat===cat);if(first?.img){targetUrls=[first.img,...(first.imgSrcset||'').split(',').map(x=>x.trim().split(/\s+/)[0]).filter(Boolean)].map(x=>new URL(x,url).href);}row.apiItemsCount=p.items?.length??null;}catch(e){row.console.push({type:'api-json-error',text:e.message});}});
   const cdp=await context.newCDPSession(page);await cdp.send('Network.enable');
   await cdp.send('Network.emulateNetworkConditions',{offline:false,latency:150,downloadThroughput:throughput,uploadThroughput:throughput});
   await cdp.send('Emulation.setCPUThrottlingRate',{rate:4});
