@@ -57,7 +57,7 @@ async function downloadMenuAssets(items, section) {
   for (const item of active) {
     if (item.img) assets.push({ url: item.img, required: item === hero });
     for (const candidate of String(item.imgSrcset || '').split(',')) {
-      const url = candidate.trim().split(/\\s+/, 1)[0];
+      const url = candidate.trim().split(/\s+/, 1)[0];
       if (url) assets.push({ url, required: false });
     }
   }
