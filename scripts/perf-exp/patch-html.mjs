@@ -12,7 +12,7 @@ export function patchHtmlDocument(html, variant) {
     '      var earlyCatalog = null;',
     '      try {',
     '        if (window.__brandSplashPending === true && !localStorage.getItem("zt_user")) {',
-    '          var predictedBrand = localStorage.getItem("zt_brand") || "coffee";',
+    '          var predictedBrand = localStorage.getItem("zt_brand");',
     '          if (predictedBrand === "coffee" || predictedBrand === "delivery") {',
     '            var predictedEndpoint = predictedBrand === "delivery" ? "/api/dmenu" : "/api/menu";',
     '            var earlyPromise = nativeFetch.call(window, predictedEndpoint, { headers: { Accept: "application/json" } }).then(function (response) {',
