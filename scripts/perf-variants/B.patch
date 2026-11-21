@@ -1,0 +1,9 @@
+diff --git a/public/app/core/boot.js b/public/app/core/boot.js
+--- a/public/app/core/boot.js
++++ b/public/app/core/boot.js
+@@ -132,3 +132,3 @@
+   if (window.brand !== 'delivery') {
+-    if (typeof loadMenu === 'function') await loadMenu({ render: false });
++    if (typeof loadMenu === 'function') await loadMenu();
+     return;
+   }

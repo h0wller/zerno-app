@@ -1,0 +1,49 @@
+{
+  "baseSha": "aa3a958291948a7b2eda04bcbc9c3cf34385b4aa",
+  "headSha": "8f276411f337952183864684e0bed5558d5e18d9",
+  "runs": 5,
+  "variants": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E",
+    "F"
+  ],
+  "devtoolsVariants": [
+    "A",
+    "F"
+  ],
+  "variantContracts": {
+    "A": {
+      "label": "head control",
+      "domOwner": "Unchanged PR head; ownership per docs/module-map.md.",
+      "moduleMapContract": "No contract changes."
+    },
+    "B": {
+      "label": "boot render option rollback",
+      "domOwner": "core/boot.js orchestrates; core/catalog.js owns loadMenu/renderMenu and coffee DOM.",
+      "moduleMapContract": "No ownership transfer; boot invokes documented catalog loader."
+    },
+    "C": {
+      "label": "zt-lcp-head base block",
+      "domOwner": "index.html early bootstrap; core/splash.js selects brand; menu.js/delivery.js own hydrated catalog DOM.",
+      "moduleMapContract": "Inline LCP bootstrap and window.__ztPrimeMenuLcp / delivery hero bridge."
+    },
+    "D": {
+      "label": "early brand guard base block",
+      "domOwner": "index.html early brand guard; core/splash.js owns splash lifecycle and choice.",
+      "moduleMapContract": "Inline guard and window.__brandSplashPending coordination with splash.js/boot.js."
+    },
+    "E": {
+      "label": "state and splash rollback",
+      "domOwner": "core/state.js owns shared initial state; core/splash.js owns splash lifecycle.",
+      "moduleMapContract": "Restore state.js and splash.js; ownership unchanged."
+    },
+    "F": {
+      "label": "base control",
+      "domOwner": "Pinned base revision owners per docs/module-map.md.",
+      "moduleMapContract": "Exact pinned base tree."
+    }
+  }
+}
