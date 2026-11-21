@@ -129,26 +129,35 @@ test.describe('Initial catalog image priorities', () => {
     await expect(page.locator('#deliveryGrid > .card img').first()).not.toHaveAttribute('src', '/media/dishes/1-card.webp');
   });
 
-  test('splash delivery choice promotes the API first hero when it differs from the static placeholder', async ({ page }) => {
-    const firstItem = {
+  test('splash delivery choice preloads the first visible pizza when another category sorts first', async ({ page }) => {
+    const sauceItem = {
+      ...deliveryHeroFixture,
+      id: 'sauce-1',
+      cat: 'sauces',
+      name: 'Соус',
+      img: '/media/dishes/sauce-card.webp',
+      imgSrcset: '/media/dishes/resized/sauce-card-300.webp?v=456 300w, /media/dishes/resized/sauce-card-600.webp?v=456 600w'
+    };
+    const firstPizza = {
       ...deliveryHeroFixture,
       id: '3',
       name: 'Ветчина и грибы',
       img: '/media/dishes/3-card.webp',
       imgSrcset: '/media/dishes/resized/3-card-300.webp?v=456 300w, /media/dishes/resized/3-card-600.webp?v=456 600w'
     };
-    const imageRequests = [];
+    const pizzaRequests = [];
+    const sauceRequests = [];
     page.on('request', request => {
-      if (new URL(request.url()).pathname === '/media/dishes/3-card.webp') {
-        imageRequests.push(request.url());
-      }
+      const pathname = new URL(request.url()).pathname;
+      if (pathname === '/media/dishes/3-card.webp') pizzaRequests.push(request.url());
+      if (pathname === '/media/dishes/sauce-card.webp') sauceRequests.push(request.url());
     });
     await page.route('**/api/dmenu', async route => {
       await new Promise(resolve => setTimeout(resolve, 180));
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify({ items: [firstItem, deliveryHeroFixture], updatedAt: Date.now() })
+        body: JSON.stringify({ items: [sauceItem, firstPizza, deliveryHeroFixture], updatedAt: Date.now() })
       });
     });
     await page.route('**/media/dishes/**', route => route.fulfill({
@@ -167,7 +176,8 @@ test.describe('Initial catalog image priorities', () => {
     await page.goto('/');
     const splash = page.locator('#brandSplashStatic, #brandSplash').first();
     await expect(splash).toBeVisible();
-    expect(imageRequests).toHaveLength(0);
+    expect(pizzaRequests).toHaveLength(0);
+    expect(sauceRequests).toHaveLength(0);
 
     await page.locator('#brandSplashStatic [data-go="delivery"], #brandSplash [data-go="delivery"]').first().click();
 
@@ -175,15 +185,17 @@ test.describe('Initial catalog image priorities', () => {
     await expect(firstCard).toHaveAttribute('data-product-id', '3');
     await expect(firstCard.locator('h3')).toHaveText('Ветчина и грибы');
     const image = firstCard.locator('.media img');
-    await expect(image).toHaveAttribute('src', firstItem.img);
-    await expect(image).toHaveAttribute('srcset', firstItem.imgSrcset);
+    await expect(image).toHaveAttribute('src', firstPizza.img);
+    await expect(image).toHaveAttribute('srcset', firstPizza.imgSrcset);
     await expect(image).toHaveAttribute('loading', 'eager');
     await expect(image).toHaveAttribute('fetchpriority', 'high');
     await expect.poll(() => image.evaluate(node => !!node.currentSrc)).toBe(true);
-    await expect(page.locator('link#zt-delivery-lcp-preload')).toHaveAttribute('href', firstItem.img);
+    await expect(page.locator('link#zt-delivery-lcp-preload')).toHaveAttribute('href', firstPizza.img);
     await expect.poll(() => page.evaluate(() => window.__ztPendingDeliveryHero)).toBeNull();
     const currentSrc = await image.evaluate(node => node.currentSrc);
-    expect(imageRequests.filter(url => url === currentSrc)).toHaveLength(1);
+    await expect.poll(() => pizzaRequests.filter(url => url === currentSrc).length).toBe(1);
+    expect(pizzaRequests.filter(url => url === currentSrc)).toHaveLength(1);
+    expect(sauceRequests).toHaveLength(0);
   });
 
   test('delivery startup retains its first-card hero request', async ({ page }) => {
