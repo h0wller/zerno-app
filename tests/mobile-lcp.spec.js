@@ -183,7 +183,7 @@ test.describe('Initial catalog image priorities', () => {
 
   test('delivery hero preload and retained static card use the API responsive image set', async ({ page }) => {
     const heroRequests = [];
-    page.setViewportSize({ width: 390, height: 844 });
+    await page.setViewportSize({ width: 390, height: 844 });
     page.on('request', request => {
       if (new URL(request.url()).pathname.includes('/media/dishes/1-card') ||
           new URL(request.url()).pathname.includes('/media/dishes/resized/1-card')) {
