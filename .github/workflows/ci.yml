@@ -321,6 +321,8 @@ jobs:
         env:
           VARIANT: ${{ matrix.variant }}
           RUNS: ${{ needs.lighthouse-variant-config.outputs.runs }}
+          DEVTOOLS_VARIANTS: ${{ needs.lighthouse-variant-config.outputs.devtools_variants }}
+          DEVTOOLS_RUNS: 5
         run: bash scripts/run-lighthouse-variant.sh "$LCP_VARIANT_DIR" "$VARIANT" "$RUNS" "$LCP_REPORT_DIR" 3210
       - name: Upload variant reports, traces and manifest
         if: always()
