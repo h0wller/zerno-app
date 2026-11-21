@@ -140,10 +140,16 @@ test('Lighthouse delivery audit preloads the first responsive delivery image', a
   assert.match(link, /imagesizes=/);
 });
 
-test('default splash and delivery documents do not preload a coffee image', async () => {
-  for (const route of ['/', '/?brand=delivery', '/?lighthouse=1&brand=delivery', '/?clean=1&brand=delivery']) {
+test('default splash has no catalog preload and delivery documents do not preload coffee', async () => {
+  const splashResponse = await fetch(base + '/');
+  assert.equal(splashResponse.status, 200);
+  assert.equal(splashResponse.headers.get('link'), null, 'splash must not preselect either brand image');
+
+  for (const route of ['/?brand=delivery', '/?lighthouse=1&brand=delivery', '/?clean=1&brand=delivery']) {
     const response = await fetch(base + route);
     assert.equal(response.status, 200);
-    assert.equal(response.headers.get('link'), null, route + ' must not advertise the coffee image');
+    const link = response.headers.get('link');
+    assert.ok(link, route + ' must preload the selected delivery hero');
+    assert.ok(link.includes('<' + deliveryImagePath + '>'), route + ' must not preload a coffee image');
   }
 });
