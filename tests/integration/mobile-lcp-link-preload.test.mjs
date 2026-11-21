@@ -29,6 +29,21 @@ const root = path.resolve(import.meta.dirname, '../..');
 const imagePath = '/media/dishes/preload-fixture-card.webp';
 const deliveryImagePath = '/media/dishes/preload-fixture-delivery-card.webp';
 const imageBytes = Buffer.from('UklGRiQAAABXRUJQVlA4IBgAAAAwAQCdASoBAAEAAUAmJaQAA3AA/vz0AAA=', 'base64');
+function webpHeader(width, height) {
+  const buffer = Buffer.alloc(30);
+  buffer.write('RIFF', 0);
+  buffer.writeUInt32LE(22, 4);
+  buffer.write('WEBP', 8);
+  buffer.write('VP8X', 12);
+  buffer.writeUInt32LE(10, 16);
+  buffer[24] = (width - 1) & 0xff;
+  buffer[25] = ((width - 1) >> 8) & 0xff;
+  buffer[26] = ((width - 1) >> 16) & 0xff;
+  buffer[27] = (height - 1) & 0xff;
+  buffer[28] = ((height - 1) >> 8) & 0xff;
+  buffer[29] = ((height - 1) >> 16) & 0xff;
+  return buffer;
+}
 let child;
 let db;
 let serverOutput = '';
@@ -52,14 +67,14 @@ before(async () => {
   fs.mkdirSync(dishesDir, { recursive: true });
   fs.writeFileSync(path.join(publicDir, 'index.html'), '<!doctype html><title>preload fixture</title>');
   fs.writeFileSync(path.join(dishesDir, 'preload-fixture-card.webp'), imageBytes);
-  fs.writeFileSync(path.join(dishesDir, 'preload-fixture-delivery-card.webp'), imageBytes);
+  fs.writeFileSync(path.join(dishesDir, 'preload-fixture-delivery-card.webp'), webpHeader(600, 375));
   const resizedDir = path.join(dishesDir, 'resized');
   fs.mkdirSync(resizedDir, { recursive: true });
-  fs.writeFileSync(path.join(resizedDir, 'preload-fixture-delivery-card-300.webp'), imageBytes);
-  // The 600px derivative can be larger than its 640px source after recompression.
+  fs.writeFileSync(path.join(resizedDir, 'preload-fixture-delivery-card-300.webp'), webpHeader(300, 188));
+  // The square 600px derivative is intentionally larger than the 600x375 original.
   fs.writeFileSync(
     path.join(resizedDir, 'preload-fixture-delivery-card-600.webp'),
-    Buffer.concat([imageBytes, Buffer.alloc(1024, 0)])
+    Buffer.concat([webpHeader(600, 600), Buffer.alloc(1024, 0)])
   );
 
   child = spawn(process.execPath, ['server.js'], {
@@ -130,7 +145,7 @@ test('explicit delivery document preloads its first responsive hero image', asyn
   assert.match(link, /fetchpriority=high/);
   assert.match(link, /imagesrcset=/);
   assert.match(link, /preload-fixture-delivery-card-300\.webp/);
-  assert.ok(link.includes(deliveryImagePath + ' 640w'), 'smaller original must replace the oversized 600px derivative');
+  assert.ok(link.includes(deliveryImagePath + ' 600w'), 'smaller original must replace the oversized 600px derivative');
   assert.doesNotMatch(link, /preload-fixture-delivery-card-600\.webp/);
   assert.match(link, /imagesizes=/);
 });
