@@ -47,14 +47,18 @@ async function downloadAsset(assetUrl, required) {
 
 async function downloadMenuAssets(items, section) {
   const active = items.filter(item => item.on);
-  if (!active[0]?.img) throw new Error(`The first active ${section} item has no image URL`);
+  const initialCategory = section === 'delivery' ? 'pizza' : 'coffee';
+  const hero = active.find(item => item.cat === initialCategory && item.img);
+  if (!hero?.img) {
+    throw new Error(`The first visible ${section} (${initialCategory}) item has no image URL`);
+  }
 
   const assets = [];
   for (const item of active) {
-    if (item.img) assets.push({ url: item.img, required: item === active[0] });
+    if (item.img) assets.push({ url: item.img, required: item === hero });
     for (const candidate of String(item.imgSrcset || '').split(',')) {
       const url = candidate.trim().split(/\\s+/, 1)[0];
-      if (url) assets.push({ url, required: item === active[0] });
+      if (url) assets.push({ url, required: false });
     }
   }
 
@@ -67,7 +71,7 @@ async function downloadMenuAssets(items, section) {
     }
   });
   await Promise.all(workers);
-  return active[0];
+  return hero;
 }
 
 const [coffeeItems, deliveryItems] = await Promise.all([
