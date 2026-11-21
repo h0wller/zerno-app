@@ -1625,9 +1625,9 @@ html[data-brand="delivery"] {
           if (!response || !response.ok) return response;
           return response.clone().json().then(function (payload) {
             var items = payload && Array.isArray(payload.items) ? payload.items : [];
+            var initialCategory = brand === 'delivery' ? 'pizza' : 'coffee';
             var first = items.find(function (item) {
-              return item && item.on && item.img &&
-                (brand === 'delivery' || item.cat === 'coffee');
+              return item && item.on && item.img && item.cat === initialCategory;
             });
             if (first) {
               var existing = document.getElementById(id);
