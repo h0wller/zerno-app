@@ -212,9 +212,12 @@ app.use((req, res, next) => {
     : (req.query.brand === 'coffee' || isAudit ? 'coffee' : null);
   if (req.method !== 'GET' || req.path !== '/' || !brand) return next();
 
+  // Preload the first card in the initial visible category, not the first
+  // item across every delivery category (sauces/add-ons may sort before pizza).
+  const initialCategory = brand === 'delivery' ? 'pizza' : 'coffee';
   const firstMenuImage = db.prepare(
-    "SELECT img FROM menu WHERE is_on=1 AND section=? AND img IS NOT NULL AND img != '' ORDER BY sort_order ASC, id ASC LIMIT 1"
-  ).get(brand);
+    "SELECT img FROM menu WHERE is_on=1 AND section=? AND cat=? AND img IS NOT NULL AND img != '' ORDER BY sort_order ASC, id ASC LIMIT 1"
+  ).get(brand, initialCategory);
   if (!firstMenuImage) return next();
 
   const image = menuImageForResponse(firstMenuImage.img, PUBLIC_DIR);
