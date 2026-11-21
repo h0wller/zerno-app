@@ -220,6 +220,7 @@ jobs:
     outputs:
       variants: ${{ steps.config.outputs.variants }}
       runs: ${{ steps.config.outputs.runs }}
+      devtools_variants: ${{ steps.config.outputs.devtools_variants }}
       base_sha: ${{ steps.config.outputs.base_sha }}
       head_sha: ${{ steps.config.outputs.head_sha }}
     steps:
@@ -241,6 +242,7 @@ jobs:
           if(JSON.stringify(c.devtoolsVariants)!==JSON.stringify(['A','F','C1','C2','C3','C4','C5'])) throw Error('Expected DevTools for A, F and C1-C5');
           fs.appendFileSync(process.env.GITHUB_OUTPUT,'variants='+JSON.stringify(c.variants)+'\n');
           fs.appendFileSync(process.env.GITHUB_OUTPUT,'runs='+c.runs+'\n');
+          fs.appendFileSync(process.env.GITHUB_OUTPUT,'devtools_variants='+c.devtoolsVariants.join(' ')+'\n');
           fs.appendFileSync(process.env.GITHUB_OUTPUT,'base_sha='+c.baseSha+'\n');
           fs.appendFileSync(process.env.GITHUB_OUTPUT,'head_sha='+c.headSha+'\n');
           NODE
