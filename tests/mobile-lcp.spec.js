@@ -149,8 +149,8 @@ test.describe('Initial catalog image priorities', () => {
     const sauceRequests = [];
     page.on('request', request => {
       const pathname = new URL(request.url()).pathname;
-      if (pathname.includes('/media/dishes/3-card')) pizzaRequests.push(request.url());
-      if (pathname.includes('/media/dishes/sauce-card')) sauceRequests.push(request.url());
+      if (pathname.includes('/3-card')) pizzaRequests.push(request.url());
+      if (pathname.includes('/sauce-card')) sauceRequests.push(request.url());
     });
     await page.route('**/api/dmenu', async route => {
       await new Promise(resolve => setTimeout(resolve, 180));
