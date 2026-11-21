@@ -129,6 +129,63 @@ test.describe('Initial catalog image priorities', () => {
     await expect(page.locator('#deliveryGrid > .card img').first()).not.toHaveAttribute('src', '/media/dishes/1-card.webp');
   });
 
+  test('splash delivery choice promotes the API first hero when it differs from the static placeholder', async ({ page }) => {
+    const firstItem = {
+      ...deliveryHeroFixture,
+      id: '3',
+      name: 'Ветчина и грибы',
+      img: '/media/dishes/3-card.webp',
+      imgSrcset: '/media/dishes/resized/3-card-300.webp?v=456 300w, /media/dishes/resized/3-card-600.webp?v=456 600w'
+    };
+    const imageRequests = [];
+    page.on('request', request => {
+      if (new URL(request.url()).pathname === '/media/dishes/3-card.webp') {
+        imageRequests.push(request.url());
+      }
+    });
+    await page.route('**/api/dmenu', async route => {
+      await new Promise(resolve => setTimeout(resolve, 180));
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ items: [firstItem, deliveryHeroFixture], updatedAt: Date.now() })
+      });
+    });
+    await page.route('**/media/dishes/**', route => route.fulfill({
+      status: 200,
+      contentType: 'image/webp',
+      body: Buffer.from('UklGRiQAAABXRUJQVlA4IBgAAAAwAQCdASoBAAEAAUAmJaQAA3AA/vz0AAA=', 'base64')
+    }));
+    await page.addInitScript(() => {
+      localStorage.setItem('zt_brand', 'delivery');
+      localStorage.removeItem('zt_onb');
+      localStorage.removeItem('zt_user');
+      localStorage.setItem('zt_inst_hide', '1');
+      sessionStorage.removeItem('splashDone');
+    });
+
+    await page.goto('/');
+    const splash = page.locator('#brandSplashStatic, #brandSplash').first();
+    await expect(splash).toBeVisible();
+    expect(imageRequests).toHaveLength(0);
+
+    await page.locator('#brandSplashStatic [data-go="delivery"], #brandSplash [data-go="delivery"]').first().click();
+
+    const firstCard = page.locator('#deliveryGrid > .card').first();
+    await expect(firstCard).toHaveAttribute('data-product-id', '3');
+    await expect(firstCard.locator('h3')).toHaveText('Ветчина и грибы');
+    const image = firstCard.locator('.media img');
+    await expect(image).toHaveAttribute('src', firstItem.img);
+    await expect(image).toHaveAttribute('srcset', firstItem.imgSrcset);
+    await expect(image).toHaveAttribute('loading', 'eager');
+    await expect(image).toHaveAttribute('fetchpriority', 'high');
+    await expect.poll(() => image.evaluate(node => !!node.currentSrc)).toBe(true);
+    await expect(page.locator('link#zt-delivery-lcp-preload')).toHaveAttribute('href', firstItem.img);
+    await expect.poll(() => page.evaluate(() => window.__ztPendingDeliveryHero)).toBeNull();
+    const currentSrc = await image.evaluate(node => node.currentSrc);
+    expect(imageRequests.filter(url => url === currentSrc)).toHaveLength(1);
+  });
+
   test('delivery startup retains its first-card hero request', async ({ page }) => {
     await routeImageCatalog(page, 'delivery');
     await page.addInitScript(() => {
