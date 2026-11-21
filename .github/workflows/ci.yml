@@ -56,7 +56,7 @@ jobs:
             workers: 2
           - group: Menu and search
             project: chromium
-            specs: tests/menu-cards.spec.js tests/delivery-card-stable-meta.spec.js tests/menu-card-desktop-overflow.spec.js tests/menu-composition.spec.js tests/menu-nutrition.spec.js tests/delivery-search.spec.js tests/delivery-update-timestamp.spec.js tests/pizza-variant-selection.spec.js
+            specs: tests/menu-cards.spec.js tests/mobile-lcp.spec.js tests/delivery-card-stable-meta.spec.js tests/menu-card-desktop-overflow.spec.js tests/menu-composition.spec.js tests/menu-nutrition.spec.js tests/delivery-search.spec.js tests/delivery-update-timestamp.spec.js tests/pizza-variant-selection.spec.js
             workers: 3
           - group: Profile
             project: chromium
@@ -104,6 +104,10 @@ jobs:
           NODE
       - name: Install Playwright Chromium
         run: npx playwright install chromium
+      - name: Set deterministic bonus test clock
+        if: matrix.group == 'Bonuses'
+        run: |
+          echo "ZERNO_TEST_NOW=$(TZ=Europe/Kaliningrad date +'%Y-%m-%dT16:00:00%:z')" >> "$GITHUB_ENV"
       - name: Run isolated regression group
         run: npx playwright test ${{ matrix.specs }} --project="${{ matrix.project }}" --workers=${{ matrix.workers }}
         env:
@@ -207,3 +211,150 @@ jobs:
             test-results/
           if-no-files-found: ignore
           retention-days: 7
+
+  lighthouse-mobile:
+    name: Lighthouse / Mobile LCP comparison
+    if: github.event_name == 'pull_request' && github.event.pull_request.number == 300
+    needs: quality-gates
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - name: Checkout exact PR head
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: 'npm'
+      - name: Install dependencies
+        run: npm ci
+      - name: Install Chromium and OS dependencies
+        run: npx playwright install --with-deps chromium
+      - name: Install pinned Lighthouse
+        run: npx --yes lighthouse@13.5.0 --version
+      - name: Build PR client bundle
+        run: npm run build:client
+      - name: Prepare merge-base build
+        env:
+          PR_BASE_REF: ${{ github.event.pull_request.base.ref }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          # PR event base.sha can lag a force-pushed base branch. Compare against
+          # the current remote base ref, then use the actual common ancestor.
+          git fetch --no-tags origin "$PR_BASE_REF"
+          BASE_REF_SHA="$(git rev-parse FETCH_HEAD)"
+          BASE_SHA="$(git merge-base "$BASE_REF_SHA" "$PR_HEAD_SHA")"
+          echo "LCP_BASE_REF=$PR_BASE_REF" >> "$GITHUB_ENV"
+          echo "LCP_BASE_REF_SHA=$BASE_REF_SHA" >> "$GITHUB_ENV"
+          echo "LCP_BASE_SHA=$BASE_SHA" >> "$GITHUB_ENV"
+          git worktree add --detach "$RUNNER_TEMP/zerno-lcp-base" "$BASE_SHA"
+          ln -s "$GITHUB_WORKSPACE/node_modules" "$RUNNER_TEMP/zerno-lcp-base/node_modules"
+          (cd "$RUNNER_TEMP/zerno-lcp-base" && npm run build:client)
+      - name: Run matched mobile Lighthouse audits
+        env:
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          REPORT_DIR="$RUNNER_TEMP/lighthouse-reports"
+          mkdir -p "$REPORT_DIR"
+          CHROME_PATH="$(find "$HOME/.cache/ms-playwright" -type f -name chrome | head -n 1)"
+          test -n "$CHROME_PATH" && test -x "$CHROME_PATH"
+          echo "Chrome: $CHROME_PATH"
+          echo "Current base branch: $LCP_BASE_REF@$LCP_BASE_REF_SHA"
+          echo "Common ancestor baseline: $LCP_BASE_SHA"
+          echo "PR head: $PR_HEAD_SHA"
+
+          run_variant() {
+            local project_dir="$1"
+            local label="$2"
+            local port="$3"
+            local db_path="$RUNNER_TEMP/lcp-$label.sqlite"
+            local server_log="$RUNNER_TEMP/lcp-$label-server.log"
+            local server_pid=""
+
+            (
+              cd "$project_dir"
+              NODE_ENV=test DB_PATH="$db_path" PUBLIC_DIR="$project_dir/public" PORT="$port" \
+                ADMIN_CODE='ci-lighthouse-admin-role-code' \
+                CASHIER_CODE='ci-lighthouse-cashier-code' \
+                DISPATCH_CODE='ci-lighthouse-dispatch-code' \
+                TELEGRAM_BOT_TOKEN='' TG_WEBHOOK_SECRET='' SMS_AUTH_ENABLED=false \
+                node server.js
+            ) >"$server_log" 2>&1 &
+            server_pid=$!
+
+            cleanup_server() {
+              if kill -0 "$server_pid" 2>/dev/null; then
+                kill "$server_pid" || true
+                wait "$server_pid" || true
+              fi
+            }
+            trap cleanup_server RETURN
+
+            ready=0
+            for attempt in $(seq 1 80); do
+              if curl -fsS "http://127.0.0.1:$port/api/health" >/dev/null; then
+                ready=1
+                break
+              fi
+              if ! kill -0 "$server_pid" 2>/dev/null; then
+                cat "$server_log"
+                return 1
+              fi
+              sleep 1
+            done
+            if [ "$ready" -ne 1 ]; then
+              cat "$server_log"
+              echo "Server did not become ready: $label" >&2
+              return 1
+            fi
+
+            DB_PATH="$db_path" PUBLIC_DIR="$project_dir/public" \
+              node "$GITHUB_WORKSPACE/scripts/lighthouse-fixture.mjs"
+            curl -fsS "http://127.0.0.1:$port/api/menu" > "$REPORT_DIR/$label-coffee-menu.json"
+            curl -fsS "http://127.0.0.1:$port/api/dmenu" > "$REPORT_DIR/$label-delivery-menu.json"
+
+            for brand in coffee delivery; do
+              for sample in 1 2; do
+                echo "Lighthouse $label / $brand / sample $sample"
+                npx --yes lighthouse@13.5.0 \
+                  "http://127.0.0.1:$port/?brand=$brand&lighthouse=1" \
+                  --chrome-path="$CHROME_PATH" \
+                  --chrome-flags="--headless --no-sandbox --disable-dev-shm-usage" \
+                  --form-factor=mobile \
+                  --throttling-method=simulate \
+                  --throttling.rttMs=150 \
+                  --throttling.throughputKbps=1638.4 \
+                  --throttling.cpuSlowdownMultiplier=4 \
+                  --screenEmulation.mobile=true \
+                  --screenEmulation.width=360 \
+                  --screenEmulation.height=800 \
+                  --screenEmulation.deviceScaleFactor=1.75 \
+                  --only-categories=performance \
+                  --max-wait-for-load=45000 \
+                  --output=json \
+                  --output-path="$REPORT_DIR/$label-$brand-$sample.json" \
+                  --quiet
+              done
+            done
+
+            cleanup_server
+            trap - RETURN
+          }
+
+          run_variant "$RUNNER_TEMP/zerno-lcp-base" "base" 3210
+          run_variant "$GITHUB_WORKSPACE" "head" 3211
+
+          LIGHTHOUSE_EXPECTED_RUNS=2 node scripts/lighthouse-summary.mjs "$REPORT_DIR"
+      - name: Upload Lighthouse reports
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: lighthouse-mobile-lcp-${{ github.run_id }}
+          path: ${{ runner.temp }}/lighthouse-reports/
+          if-no-files-found: error
+          retention-days: 30

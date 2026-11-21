@@ -15,6 +15,22 @@ function coffeePool() {
   });
 }
 
+function visibleCoffeeItems() {
+  const pool = coffeePool();
+  const list = query
+    ? pool.filter(p =>
+        (p.name + ' ' + p.desc + ' ' + (p.comp || []).join(' ')).toLowerCase().includes(query)
+      )
+    : pool.filter(p => p.cat === cat);
+  return editMode ? list : list.filter(p => p.on);
+}
+
+function reorderCoffeePool(visibleIds) {
+  const visible = new Set(visibleIds);
+  let next = 0;
+  return coffeePool().map(p => visible.has(p.id) ? visibleIds[next++] : p.id);
+}
+
 function ensureRailButtons() {
   const rail = $('#rail');
   const current = new Map(
@@ -111,12 +127,7 @@ function findDishForZoom(src, name, explicitItem) {
 }
 
 function renderMenu() {
-  let list = query
-    ? coffeePool().filter(p =>
-        (p.name + ' ' + p.desc + ' ' + (p.comp || []).join(' ')).toLowerCase().includes(query)
-      )
-    : coffeePool().filter(p => p.cat === cat);
-  if (!editMode) list = list.filter(p => p.on);
+  const list = visibleCoffeeItems();
 
   const getFallbackPrice = item => {
     if (!item) return null;
@@ -176,7 +187,7 @@ function renderMenu() {
        <div class="media" style="--tint:${TINT[p.cat] || '#E7ECF0'}">
                   ${
                     p.img
-                      ? `<img src="${p.img}"${imageSrcsetAttr} alt="${esc(p.name)}" data-fallback-emoji="${esc(p.e || '☕')}" data-zoom="${toZoomSrc(p.img)}" width="300" height="150" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center;display:block;cursor:zoom-in" loading="${i < 4 ? 'eager' : 'lazy'}" fetchpriority="${i < 4 ? 'high' : 'auto'}" decoding="async">`
+                      ? `<img src="${p.img}"${imageSrcsetAttr} alt="${esc(p.name)}" data-fallback-emoji="${esc(p.e || '☕')}" data-zoom="${toZoomSrc(p.img)}" width="300" height="150" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center;display:block;cursor:zoom-in" loading="${i === 0 ? 'eager' : 'lazy'}" fetchpriority="${i === 0 ? 'high' : 'auto'}" decoding="async">`
                       : `<span class="em">${p.e || '☕'}</span>`
                   }
          ${tg}${p.on ? '' : '<span class="stopbadge">СТОП</span>'}
@@ -769,9 +780,48 @@ await loadMenu();
 }
 });
 
-/* ── Ф6.2: LCP-картинка первого экрана — eager + fetchpriority ── */
+/* ── Ф6.2: приоритет изображений по фактическому первому ряду ── */
+function syncCoffeeImagePriorities() {
+  var grid = document.getElementById('grid');
+  if (!grid || !grid.getClientRects().length) return;
+  var cards = Array.from(grid.querySelectorAll(':scope > .card[data-item-id]'));
+  if (!cards.length) return;
+
+  var firstRowTop = cards[0].offsetTop;
+  var hasHighPriorityImage = false;
+  cards.forEach(function (card) {
+    var image = card.querySelector('.media img[src]');
+    if (!image) return;
+    var isFirstRow = Math.abs(card.offsetTop - firstRowTop) <= 1;
+    image.setAttribute('loading', isFirstRow ? 'eager' : 'lazy');
+    var isLcpImage = isFirstRow && !hasHighPriorityImage;
+    image.setAttribute('fetchpriority', isLcpImage ? 'high' : 'auto');
+    if (isLcpImage) hasHighPriorityImage = true;
+  });
+}
+
+var coffeeImagePriorityFrame = 0;
+function scheduleCoffeeImagePriorities() {
+  if (coffeeImagePriorityFrame) return;
+  coffeeImagePriorityFrame = requestAnimationFrame(function () {
+    coffeeImagePriorityFrame = 0;
+    syncCoffeeImagePriorities();
+  });
+}
+
+window.addEventListener('resize', scheduleCoffeeImagePriorities, { passive: true });
+window.addEventListener('load', scheduleCoffeeImagePriorities, { once: true });
+if (document.fonts && document.fonts.ready) {
+  document.fonts.ready.then(scheduleCoffeeImagePriorities);
+}
+
+/* Приоритет LCP принадлежит только активной витрине.
+   Не повышаем скрытый hero второго бренда до eager/high. */
 function fixLcp() {
-  var f = document.querySelector('#grid img, #deliveryGrid img');
+  var activeGrid = window.brand === 'delivery'
+    ? document.getElementById('deliveryGrid')
+    : document.getElementById('grid');
+  var f = activeGrid && activeGrid.querySelector('.card:not(.skeleton-card) .media img[src]');
   if (f && !f.dataset.lcp) {
     f.dataset.lcp = '1';
     f.loading = 'eager';
@@ -779,6 +829,7 @@ function fixLcp() {
       f.fetchPriority = 'high';
     } catch (e) {}
   }
+  if (window.brand !== 'delivery') syncCoffeeImagePriorities();
 }
 window.fixLcp = fixLcp;
 if (document.readyState === 'loading') {
@@ -798,8 +849,9 @@ window.openItemModifiersModal = openItemModifiersModal;
 /* ── F3.70: DnD порядка кофейни ── */
 attachGridDnD(document.getElementById('grid'), {
   canDrag: canDragMenu,
-  getIds: () => coffeePool().map(p => p.id),
-  onReorder: async (ids) => {
+  getIds: () => visibleCoffeeItems().map(p => p.id),
+  onReorder: async (visibleIds) => {
+    const ids = reorderCoffeePool(visibleIds);
     await api('/menu/reorder', { method: 'PUT', body: { brand: 'coffee', ids } });
     await loadMenu();
   },
