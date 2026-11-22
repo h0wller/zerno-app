@@ -121,11 +121,8 @@ function removeDevicePushRegistrations(cid, device = {}) {
   }
   if (token) db.prepare('DELETE FROM fcm WHERE cid=? AND token=?').run(cid, token);
 
-  // An empty tuple is the explicit account-wide operation (used by settings
-  // that revoke all registered devices). A partial tuple is device-scoped.
-  // Empty tuples are not account-wide revocation: they can occur on devices
-  // that have no push registration and must never disconnect other devices.
-
+  // Device-scoped only. Account-wide revocation is an explicit admin operation
+  // in /api/push/del, never an implicit consequence of a blank device tuple.
 }
 
 pushRouter.post('/api/push/unsubscribe', userGuard, (req, res) => {
