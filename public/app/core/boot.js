@@ -400,7 +400,7 @@ function registerSW() {
     }
 
     function offerUpdate() {
-      if (!isStandalonePWA() || !waitingWorker || updateApproved || updateDeferred || updateDialog || hasBlockingWork()) return;
+      if (!isStandalonePWA() || !navigator.serviceWorker.controller || !waitingWorker || updateApproved || updateDeferred || updateDialog || hasBlockingWork()) return;
       showUpdateDialog();
     }
 
