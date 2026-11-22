@@ -4,6 +4,15 @@ import { restoreOrderItems } from './order-reorder.js';
 'use strict';
 
 var QS = new URLSearchParams(location.search);
+// A one-time Telegram auth token must not remain in browser history/referrers.
+if (QS.has('auth_token')) {
+  var safeQuery = new URLSearchParams(location.search);
+  safeQuery.delete('auth_token');
+  var safeSearch = safeQuery.toString();
+  try {
+    history.replaceState(null, '', location.pathname + (safeSearch ? '?' + safeSearch : '') + location.hash);
+  } catch (_) {}
+}
 if (typeof window.__initialSearch === 'undefined') {
   window.__initialSearch = location.search;
 }

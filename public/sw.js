@@ -50,6 +50,7 @@ const STATIC_ASSETS = [
   '/app/core/address-book.js',
   '/app/core/preorder-timer.js',
   '/app/vendor/qrcode.min.js',
+  '/jsqr.js',
   '/app/ui/fonts/prata-400-cyrillic.woff2',
   '/app/ui/fonts/golos-text-400.woff2',
   '/app/ui/fonts/unbounded-700-cyrillic.woff2'
@@ -87,6 +88,69 @@ self.addEventListener('message', (e) => {
   if (e.data && e.data.type === 'SKIP_WAITING') {
     self.skipWaiting();
   }
+});
+
+function safeNotificationUrl(value) {
+  try {
+    const target = new URL(value || '/', self.location.origin);
+    return target.origin === self.location.origin
+      ? target.href
+      : self.location.origin + '/';
+  } catch (_) {
+    return self.location.origin + '/';
+  }
+}
+
+self.addEventListener('push', (event) => {
+  event.waitUntil((async () => {
+    let payload = {};
+    try {
+      if (event.data) {
+        try { payload = event.data.json() || {}; }
+        catch (_) {
+          const raw = event.data.text();
+          try { payload = JSON.parse(raw); }
+          catch (_) { payload = { body: raw }; }
+        }
+      }
+    } catch (_) {}
+
+    const title = String(payload.title || '…и кофе').slice(0, 120);
+    const body = String(payload.body || payload.text || 'Есть обновление').slice(0, 500);
+    const url = safeNotificationUrl(payload.url || payload.data?.url || '/');
+
+    await self.registration.showNotification(title, {
+      body,
+      icon: '/icon.svg',
+      badge: '/icon.svg',
+      tag: payload.tag ? String(payload.tag).slice(0, 120) : undefined,
+      data: { url }
+    });
+
+    const windows = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+    windows.forEach(client => {
+      try { client.postMessage({ type: 'zpush' }); } catch (_) {}
+    });
+  })());
+});
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  event.waitUntil((async () => {
+    const target = safeNotificationUrl(event.notification.data?.url || '/');
+    const windows = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+    for (const client of windows) {
+      if (new URL(client.url).origin !== self.location.origin) continue;
+      try {
+        if (typeof client.navigate === 'function' && client.url !== target) {
+          await client.navigate(target);
+        }
+        await client.focus();
+        return;
+      } catch (_) {}
+    }
+    await self.clients.openWindow(target);
+  })());
 });
 
 self.addEventListener('fetch', (e) => {

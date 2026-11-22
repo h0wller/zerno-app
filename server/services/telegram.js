@@ -19,40 +19,81 @@ export function escapeTelegramHtml(value) {
     .replace(/"/g, '&quot;');
 }
 
+export function telegramHtmlToPlainText(value) {
+  const newline = String.fromCharCode(10);
+  return String(value || '')
+    .replace(/<br[^>]*>/gi, newline)
+    .replaceAll('</p>', newline)
+    .replaceAll('</div>', newline)
+    .replaceAll('</li>', newline)
+    .replace(/<[^>]*>/g, '')
+    .replaceAll('&lt;', '<')
+    .replaceAll('&gt;', '>')
+    .replaceAll('&quot;', '"')
+    .replaceAll('&#39;', "'")
+    .replaceAll('&#x27;', "'")
+    .replaceAll('&amp;', '&');
+}
+
 export async function tgSend(chatId, text, kb) { // [tg-logging-v1]
   const token = TG_TOKEN;
   if (!token) return { ok: false, reason: 'no_token' };
   if (!chatId) return { ok: false, reason: 'no_chat' };
 
-  // Блокируем отправку в рабочий канал/группу на localhost и во время тестов
-  if (TG_CHANNEL && String(chatId) === String(TG_CHANNEL)) {
-    if (process.env.NODE_ENV !== 'production' && !process.env.TELEGRAM_FORCE_SEND) {
-      console.log('[tg-dev-skip channel]:', String(text).slice(0, 70));
-      return { ok: true, skipped: 'dev_channel' };
-    }
+  if (TG_CHANNEL && String(chatId) === String(TG_CHANNEL) &&
+      process.env.NODE_ENV !== 'production' && !process.env.TELEGRAM_FORCE_SEND) {
+    console.log('[tg-dev-skip channel]:', String(text).slice(0, 70));
+    return { ok: true, skipped: 'dev_channel' };
   }
 
-  // F3.71: лимит Telegram sendMessage — 4096 символов; длинное сообщение обрезаем с «…»
   const TG_MAX = 4096;
-  let safeText = String(text);
-  if (safeText.length > TG_MAX) safeText = safeText.slice(0, TG_MAX - 1) + '…';
-  const body = { chat_id: chatId, text: safeText, parse_mode: 'HTML' };
-  if (kb) body.reply_markup = kb;
-  try {
-    const r = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+  let html = String(text);
+  let parseMode = 'HTML';
+  if (html.length > TG_MAX) {
+    // Never cut through an HTML tag/entity. Long messages fall back to readable plain text.
+    html = telegramHtmlToPlainText(html);
+    parseMode = null;
+  }
+  if (html.length > TG_MAX) html = html.slice(0, TG_MAX - 1) + '…';
+
+  const send = async (message, mode) => {
+    const body = { chat_id: chatId, text: message };
+    if (mode) body.parse_mode = mode;
+    if (kb) body.reply_markup = kb;
+    const response = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body)
     });
-    const j = await r.json().catch(() => ({}));
-    if (!r.ok || !j.ok) {
-      console.error('[tg] tgSend FAIL: ' + (j.description || r.status));
-      return { ok: false, reason: 'telegram_api_error', code: r.status, error: j.description || 'Telegram API error' };
+    const result = await response.json().catch(() => ({}));
+    return { response, result, payload: body };
+  };
+
+  try {
+    let sent = await send(html, parseMode);
+    const description = String(sent.result?.description || '');
+    const parseError = /can't parse entities|can't find end of the entity|unsupported start tag|unsupported end tag/i.test(description);
+    if ((!sent.response.ok || !sent.result?.ok) && parseMode === 'HTML' && parseError) {
+      let plain = telegramHtmlToPlainText(html);
+      if (plain.length > TG_MAX) plain = plain.slice(0, TG_MAX - 1) + '…';
+      sent = await send(plain, null);
+      if (sent.response.ok && sent.result?.ok) {
+        return { ok: true, messageId: sent.result.result?.message_id ?? null, parseModeFallback: true };
+      }
     }
-    return { ok: true, messageId: j.result?.message_id ?? null };
-  } catch (e) {
-    console.error('[tg] tgSend NETWORK ERR: ' + e.message);
-    return { ok: false, reason: 'network_error', error: e.message };
+    if (!sent.response.ok || !sent.result?.ok) {
+      console.error('[tg] tgSend FAIL: ' + (sent.result?.description || sent.response.status));
+      return {
+        ok: false,
+        reason: 'telegram_api_error',
+        code: sent.response.status,
+        error: sent.result?.description || 'Telegram API error'
+      };
+    }
+    return { ok: true, messageId: sent.result.result?.message_id ?? null, plainFallback: !parseMode };
+  } catch (error) {
+    console.error('[tg] tgSend NETWORK ERR: ' + error.message);
+    return { ok: false, reason: 'network_error', error: error.message };
   }
 }
 

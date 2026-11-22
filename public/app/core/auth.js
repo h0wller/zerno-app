@@ -212,13 +212,33 @@
 
 
   async function unsubscribePushSubscription(notifyServer) {
+    var subscription = null;
+    var token = '';
+    try { token = localStorage.getItem('zt_fcm_token') || ''; } catch (_) {}
     try {
-      var registration = await navigator.serviceWorker.ready;
-      var subscription = await registration.pushManager.getSubscription();
-      if (!subscription) return;
-      if (notifyServer) await api('/push/unsubscribe', { method: 'POST' });
-      await subscription.unsubscribe();
+      if ('serviceWorker' in navigator && 'PushManager' in window) {
+        var registration = await navigator.serviceWorker.ready;
+        subscription = await registration.pushManager.getSubscription();
+      }
     } catch (_) {}
+
+    var device = {
+      endpoint: subscription ? subscription.endpoint : '',
+      token: token
+    };
+
+    if (notifyServer && window.USER_TOKEN && (device.endpoint || device.token)) {
+      try {
+        await api('/push/unsubscribe', { method: 'POST', body: device });
+      } catch (_) {
+        // /api/exit receives the same device tuple and retries revocation.
+      }
+    }
+
+    if (subscription) {
+      try { await subscription.unsubscribe(); } catch (_) {}
+    }
+    return device;
   }
 
   function resetAuthenticatedUser() {
@@ -441,9 +461,13 @@
     var logoutBtn = document.getElementById('logoutBtn');
     if (logoutBtn) {
       logoutBtn.onclick = async function () {
-        await unsubscribePushSubscription(true);
+        const device = await unsubscribePushSubscription(true);
         try {
-          await api('/exit', { method: 'POST' });
+          await api('/exit', { method: 'POST', body: device });
+          try {
+            localStorage.removeItem('zt_fcm');
+            localStorage.removeItem('zt_fcm_token');
+          } catch (_) {}
         } catch (_) {}
         resetAuthenticatedUser();
         openAuth();

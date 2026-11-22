@@ -7,11 +7,36 @@ import { restoreOrderItems } from './core/order-reorder.js';
   var trackPollTimer = null;
   var activeTrackOrder = null;
 
-  function statusStepIndex(st) {
-    if (st === "done") return 3;
-    if (st === "way") return 2;
-    if (st === "cook" || st === "accept") return 1;
-    return 0; // new
+  function statusStepIndex(status, isPickup) {
+    if (status === "cancel") return -1;
+    if (status === "done") return 3;
+    if (isPickup) {
+      if (status === "cook") return 2;
+      if (status === "accept") return 1;
+      return 0;
+    }
+    if (status === "way") return 2;
+    if (status === "cook" || status === "accept") return 1;
+    return 0;
+  }
+
+  function trackingSignature(order) {
+    return JSON.stringify({
+      status: order.status,
+      eta: order.eta,
+      slot: order.slot,
+      is_preorder: order.is_preorder,
+      method: order.method,
+      place: order.place,
+      addr: order.addr,
+      items: order.items,
+      gifts: order.gifts,
+      discount: order.discount,
+      discount_label: order.discount_label,
+      fee: order.fee,
+      total: order.total,
+      pay: order.pay
+    });
   }
 
 
@@ -78,62 +103,121 @@ import { restoreOrderItems } from './core/order-reorder.js';
     }
   }
 
+  var lastRenderedSignature = '';
+
   function renderTrackModalContent(order) {
-    if (!order) return;
+    if (!order) return false;
     activeTrackOrder = order;
+    var signature = trackingSignature(order);
     var modal = document.getElementById("orderTrackModal");
+    if (modal && signature === lastRenderedSignature) return false;
     if (!modal) {
       modal = document.createElement("div");
       modal.id = "orderTrackModal";
       modal.className = "modal";
       document.body.appendChild(modal);
-
       modal.addEventListener("click", handleTrackModalClick);
     }
 
-    var stepIdx = statusStepIndex(order.status || "new");
-    var steps = [
-      { l: "Новый", ic: "📝" },
-      { l: "Готовится", ic: "🔥" },
-      { l: "Курьер в пути", ic: "🛵" },
-      { l: "Выполнен", ic: "✅" }
-    ];
+    lastRenderedSignature = signature;
+    var isPickup = order.method === "pickup";
+    var status = order.status || "new";
+    var canceled = status === "cancel";
+    var stepIdx = statusStepIndex(status, isPickup);
+    var steps = isPickup
+      ? [
+          { l: "Новый", ic: "📝" },
+          { l: "Подтверждён", ic: "✅" },
+          { l: "Готовится", ic: "🔥" },
+          { l: "Выдан", ic: "🛍" }
+        ]
+      : [
+          { l: "Новый", ic: "📝" },
+          { l: "Готовится", ic: "🔥" },
+          { l: "Курьер в пути", ic: "🛵" },
+          { l: "Доставлен", ic: "✅" }
+        ];
 
-    var stepsHtml = steps.map(function (s, idx) {
-      var cls = idx < stepIdx ? "done" : (idx === stepIdx ? "active" : "");
+    var statusLabels = {
+      new: "📝 Заказ принят",
+      accept: "✅ Заказ подтверждён",
+      cook: isPickup ? "🔥 Заказ готовится к самовывозу" : "🔥 Заказ готовится",
+      way: "🛵 Курьер выехал",
+      done: isPickup ? "✅ Заказ выдан" : "🏁 Заказ выполнен",
+      cancel: "❌ Заказ отменён"
+    };
+
+    var stepsHtml = steps.map(function (step, index) {
+      var cls = canceled ? "" : (index < stepIdx ? "done" : (index === stepIdx ? "active" : ""));
       return '<div class="ot-step ' + cls + '">' +
-        '<div class="ot-dot">' + s.ic + "</div>" +
-        '<span class="ot-lbl">' + s.l + "</span>" +
+        '<div class="ot-dot">' + step.ic + "</div>" +
+        '<span class="ot-lbl">' + step.l + "</span>" +
       "</div>";
     }).join("");
 
     var itemsList = Array.isArray(order.items) ? order.items : [];
-    var itemsHtml = itemsList.map(function (it) {
-      return '<div class="ot-item-row">' +
-        '<span>' + window.esc(it.name || "Позиция") + (it.opt ? " (" + window.esc(it.opt) + ")" : "") + " × " + (it.qty || 1) + "</span>" +
-        '<b>' + window.fmt((Number(it.price) || 0) * (Number(it.qty) || 1)) + "</b>" +
-      "</div>";
+    var itemsHtml = itemsList.map(function (item) {
+      var qty = Math.max(1, Number(item.qty) || 1);
+      var modifiers = Array.isArray(item.modifiers) ? item.modifiers : [];
+      var modifiersSum = modifiers.reduce(function (sum, modifier) {
+        return sum + (Number(modifier.price) || 0);
+      }, 0);
+      var itemTotal = ((Number(item.price) || 0) + modifiersSum) * qty;
+      var details = (item.opt ? " (" + window.esc(item.opt) + ")" : "") + " × " + qty;
+      var modifierHtml = modifiers.map(function (modifier) {
+        return '<small class="ot-item-modifier">＋ ' + window.esc(modifier.name || "Добавка") +
+          ' · ' + window.fmt(Number(modifier.price) || 0) + "</small>";
+      }).join("");
+      return '<div class="ot-item-row"><span>' + window.esc(item.name || "Позиция") +
+        details + modifierHtml + '</span><b>' + window.fmt(itemTotal) + "</b></div>";
     }).join("");
 
-    var totalVal = Number(order.total || order.sum) || 0;
+    var gifts = Array.isArray(order.gifts) ? order.gifts : [];
+    var giftsHtml = gifts.map(function (gift) {
+      var qty = Math.max(1, Number(gift.qty) || 1);
+      return '<div class="ot-item-row ot-gift-row"><span>🎁 ' +
+        window.esc(gift.name || "Подарок") + " × " + qty + '</span><b>0 ₽</b></div>';
+    }).join("");
+
+    var fee = Number(order.fee) || 0;
+    var discount = Number(order.discount) || 0;
+    var totalVal = Number(order.total ?? order.sum) || 0;
+    var destination = isPickup
+      ? "🛍 Самовывоз · Советская, 38А"
+      : "🚗 Доставка" + (order.place ? " · " + window.esc(order.place) : "") +
+        (order.addr ? ", " + window.esc(order.addr) : "");
+    var schedule = order.is_preorder && order.slot && order.slot !== "asap"
+      ? "⏰ Предзаказ · " + window.esc(order.slot)
+      : (isPickup ? "⏰ Время самовывоза согласуется с заведением" : "⏰ Доставка · около 45 минут");
+    var etaHtml = order.eta
+      ? '<div class="ot-live-note">🕒 Обновлённое время: ' + window.esc(order.eta) + "</div>"
+      : "";
+    var cancelHtml = canceled
+      ? '<div class="ot-cancel-note" role="status">Заказ отменён. Оплата и возврат средств уточняются у заведения.</div>'
+      : "";
 
     modal.innerHTML =
       '<div class="modal-card ot-card">' +
         '<button type="button" class="mclose" data-ot-close aria-label="Закрыть">✕</button>' +
-        '<div class="ot-head-badge">🎉 Заказ принят</div>' +
+        '<div class="ot-head-badge">' + (statusLabels[status] || statusLabels.new) + "</div>" +
         '<h3 class="ot-title">Заказ #' + window.esc(order.no || order.id || "—") + "</h3>" +
-        '<div class="msub">' + (order.slot && order.slot !== "asap" ? "Ко времени: " + window.esc(order.slot) : "Приготовим и доставим как можно скорее") + "</div>" +
-        '<div class="ot-progress" data-step-idx="' + stepIdx + '">' + stepsHtml + "</div>" +
+        '<div class="msub">' + destination + "<br>" + schedule + "</div>" +
+        etaHtml + cancelHtml +
+        (canceled ? "" : '<div class="ot-progress" data-step-idx="' + stepIdx + '">' + stepsHtml + "</div>") +
         '<div class="ot-items-box">' +
           (itemsHtml || '<div class="ot-item-row"><span>Состав заказа сохранён</span></div>') +
-          (order.discount ? '<div class="ot-total-row"><span>' + window.esc(order.discount_label || 'Скидка') + ': −' + window.fmt(order.discount) + '</span></div>' : '') +
-          (totalVal ? '<div class="ot-total-row"><span>Итого:</span><b>' + window.fmt(totalVal) + "</b></div>" : "") +
+          giftsHtml +
+          (fee > 0 ? '<div class="ot-total-row"><span>Доставка:</span><b>' + window.fmt(fee) + "</b></div>" : "") +
+          (discount > 0 ? '<div class="ot-total-row"><span>' + window.esc(order.discount_label || "Скидка") + ': −' + window.fmt(discount) + "</span></div>" : "") +
+          '<div class="ot-total-row"><span>Оплата · ' + (order.pay === "cash" ? "наличные" : "картой при получении") + "</span></div>" +
+          '<div class="ot-total-row"><span>Итого:</span><b>' + window.fmt(totalVal) + "</b></div>" +
         "</div>" +
         '<div class="ot-actions">' +
-          '<button type="button" class="btn fire" data-ot-chat>💬 Связаться с пиццерией</button>' +
+          '<button type="button" class="btn fire" data-ot-chat>💬 Связаться с заведением</button>' +
           '<button type="button" class="btn ghost" data-ot-repeat>🔁 Повторить заказ</button>' +
         "</div>" +
       "</div>";
+    return true;
   }
 
   function pollOrderStatus(orderIdOrNo) {
@@ -152,6 +236,8 @@ import { restoreOrderItems } from './core/order-reorder.js';
           return String(o.id) === String(orderIdOrNo) || String(o.no) === String(orderIdOrNo);
         });
         if (found) {
+          // Update only when a meaningful order field changes; don't replace the
+          // whole dialog every five seconds while the customer is reading it.
           renderTrackModalContent(found);
           if (found.status === "done" || found.status === "cancel") {
             clearInterval(trackPollTimer);
@@ -179,6 +265,7 @@ import { restoreOrderItems } from './core/order-reorder.js';
     }
     var modal = document.getElementById("orderTrackModal");
     if (modal) modal.classList.remove("show");
+    lastRenderedSignature = '';
     if (typeof window.syncOverlay === "function") window.syncOverlay();
   }
 

@@ -1,17 +1,11 @@
 /* server/routes/push.js — module-09: push-подписки, VAPID, рассылки */
-import { createRequire } from 'node:module';
 import { Router } from 'express';
-
-const require = createRequire(import.meta.url);
-const { sendNotification } = require('web-push');
 import { db } from '../db/connection.js';
 import { userGuard, adminGuard } from '../middleware/auth.js';
 import { nowISO } from '../utils/id-time.js';
 import { logEv } from '../domain/helpers.js';
 import { getVapidPublicKey } from '../db/index.js';
 import { sendPush } from '../services/push.js';
-import { sendFcm } from '../services/fcm.js';
-import { tgSend } from '../services/telegram.js';
 
 const pushRouter = Router();
 
@@ -22,28 +16,39 @@ pushRouter.post('/api/push/subscribe', userGuard, (req, res) => {
   if (!sub || !sub.endpoint) return res.status(400).json({ error: 'bad sub' });
   const s = JSON.stringify(sub);
   const dev = String(req.body.dev || '').slice(0, 64);
-  // Приветствие — только когда у клиента ещё не было ни одной подписки.
-  const before = db.prepare('SELECT COUNT(*) AS n FROM subs WHERE cid=?').get(req.user.id).n;
   // Одно устройство — одна подписка: старые строки того же устройства удаляем.
   if (dev) db.prepare('DELETE FROM subs WHERE cid=? AND dev=? AND sub<>?').run(req.user.id, dev, s);
   db.prepare(`INSERT INTO subs(cid,sub,created,dev) VALUES(?,?,?,?)
     ON CONFLICT(sub) DO UPDATE SET cid=excluded.cid, dev=excluded.dev`).run(req.user.id, s, nowISO(), dev);
-  if (before === 0) sendPush(req.user.id, '🔔 Уведомления подключены', 'Теперь сообщим о штампах и бесплатном кофе!');
   res.json({ ok: true });
 });
 
 pushRouter.post('/api/push/test', userGuard, async (req, res) => {
   if (req.headers['x-smoke-test']) {
-  return res.json({ ok: true, skipped: 'smoke-test' });
-}
-  const s = await sendPush(req.user.id, '🔔 Тестовый пуш', 'Если ты это видишь — пуши на этом устройстве работают');
-  res.json(s);
+    return res.json({ ok: false, skipped: 'smoke-test' });
+  }
+  const result = await sendPush(req.user.id, {
+    title: '🔔 Тестовый пуш',
+    text: 'Если ты это видишь — пуши на этом устройстве работают'
+  });
+  const deliveredToDevice = !!(result.web?.ok || result.fcm?.ok);
+  res.status(deliveredToDevice ? 200 : 503).json({
+    ...result,
+    ok: deliveredToDevice,
+    reason: deliveredToDevice ? undefined : 'no_device_delivery',
+    message: deliveredToDevice
+      ? 'Тестовое уведомление передано службе доставки устройства'
+      : 'Подписка сохранена, но ни Web Push, ни FCM не подтвердили отправку на устройство',
+    error: deliveredToDevice ? undefined : 'Подписка сохранена, но доставка на устройство не подтверждена'
+  });
 });
 
 pushRouter.post('/api/push/fcm', userGuard, (req, res) => {
   const token = String(req.body.token || '');
   if (!token) return res.status(400).json({ error: 'bad token' });
-  db.prepare('INSERT OR IGNORE INTO fcm(cid,token,created) VALUES(?,?,?)').run(req.user.id, token, nowISO());
+  db.prepare(`INSERT INTO fcm(cid,token,created) VALUES(?,?,?)
+    ON CONFLICT(token) DO UPDATE SET cid=excluded.cid, created=excluded.created`)
+    .run(req.user.id, token, nowISO());
   res.json({ ok: true });
 });
 
@@ -54,77 +59,86 @@ pushRouter.get('/api/push/subs', adminGuard, (req, res) => {
 });
 
 pushRouter.post('/api/push/send', adminGuard, async (req, res) => {
-  const body = req.body.body || '';
-  const rows = db.prepare(`SELECT c.id AS cid, c.tg, c.notify_tg, c.notify_web FROM customers c
-    WHERE c.id IN (SELECT cid FROM subs) OR (c.tg IS NOT NULL AND c.tg != '')`).all();
-  let ok = 0, fail = 0; const errs = [];
-  for (const c of rows) {
-    if (c.notify_web !== 0) {
-      const subs = db.prepare('SELECT sub FROM subs WHERE cid=?').all(c.cid);
-      for (const s of subs) {
-        try { await sendNotification(JSON.parse(s.sub), JSON.stringify({ title: '…и кофе 🌊', body })); ok++; }
-        catch (e) { fail++; errs.push(e.statusCode || e.message);
-          if (e.statusCode === 404 || e.statusCode === 410) db.prepare('DELETE FROM subs WHERE sub=?').run(s.sub); }
-      }
-    }
-    if (c.notify_tg !== 0 && c.tg) {
-      try { await tgSend(c.tg, '…и кофе 🌊\n' + body); ok++; } catch (e) { fail++; }
+  const body = String(req.body.body || '').trim().slice(0, 2000);
+  if (!body) return res.status(400).json({ error: 'Введите текст уведомления' });
+  const rows = db.prepare(`SELECT id AS cid FROM customers c
+    WHERE c.id IN (SELECT cid FROM subs)
+       OR c.id IN (SELECT cid FROM fcm)
+       OR (c.tg IS NOT NULL AND c.tg != '')`).all();
+  let delivered = 0;
+  let failed = 0;
+  const errors = [];
+  for (const customer of rows) {
+    const result = await sendPush(customer.cid, { title: '…и кофе 🌊', text: body });
+    const count = Number(result.web?.sent || 0) + Number(result.fcm?.sent || 0) + (result.telegram?.ok ? 1 : 0);
+    delivered += count;
+    if (!result.ok) {
+      failed++;
+      errors.push(result.web?.reason || result.fcm?.reason || result.telegram?.reason || 'not_delivered');
     }
   }
   logEv(req.user.name, `пуш всем (${rows.length})`);
-  res.json({ ok: true, sent: rows.length, delivered: ok, failed: fail, errors: errs.slice(0, 5) });
+  res.json({ ok: failed === 0, sent: rows.length, recipients: rows.length, delivered, failed, errors: errors.slice(0, 5) });
 });
 
 pushRouter.post('/api/push/send-hours-update', adminGuard, async (req, res) => {
   const body = 'Обновили график доставки: октябрь–апрель — пн–чт 11:00–21:00, пт–вс 11:00–22:00. Предзаказ доступен по расписанию.';
   const title = 'Пятница — новый график';
-  const customers = db.prepare(`SELECT id AS cid, tg, notify_tg, notify_web
+  const customers = db.prepare(`SELECT id AS cid
     FROM customers
     WHERE role='guest'
     ORDER BY id`).all();
 
   let recipients = 0, telegramSent = 0, pushSent = 0, failed = 0;
   for (const customer of customers) {
-    const useTelegram = Boolean(customer.tg) && customer.notify_tg !== 0;
-    const usePush = !useTelegram && customer.notify_web !== 0;
-    if (!useTelegram && !usePush) continue;
+    const result = await sendPush(customer.cid, { title, text: body });
+    const telegramAccepted = !!result.telegram?.ok;
+    const pushAccepted = Number(result.web?.sent || 0) + Number(result.fcm?.sent || 0);
+    if (!telegramAccepted && !pushAccepted) continue;
     recipients++;
-
-    if (useTelegram) {
-      const result = await tgSend(customer.tg, title + '\n' + body);
-      if (result?.ok) telegramSent++;
-      else failed++;
-      continue;
-    }
-
-    const fcm = await sendFcm(customer.cid, title, body);
-    pushSent += fcm.sent;
-    failed += fcm.failed;
-    const subscriptions = db.prepare('SELECT sub FROM subs WHERE cid=?').all(customer.cid);
-    for (const row of subscriptions) {
-      try {
-        await sendNotification(JSON.parse(row.sub), JSON.stringify({ title, body }));
-        pushSent++;
-      } catch (error) {
-        failed++;
-        if (error.statusCode === 404 || error.statusCode === 410) {
-          db.prepare('DELETE FROM subs WHERE sub=?').run(row.sub);
-        }
-      }
-    }
+    if (telegramAccepted) telegramSent++;
+    pushSent += pushAccepted;
+    if (!result.ok) failed++;
   }
 
   logEv(req.user.name, `обновление графика: ${recipients} получателей, Telegram ${telegramSent}, push ${pushSent}`);
-  res.json({ ok: true, recipients, telegramSent, pushSent, failed });
+  res.json({ ok: failed === 0, recipients, telegramSent, pushSent, failed });
 });
 
+function removeDevicePushRegistrations(cid, device = {}) {
+  const endpoint = String(device.endpoint || '');
+  const token = String(device.token || '');
+
+  if (endpoint) {
+    const rows = db.prepare('SELECT sub FROM subs WHERE cid=?').all(cid);
+    for (const row of rows) {
+      try {
+        if (JSON.parse(row.sub).endpoint === endpoint) {
+          db.prepare('DELETE FROM subs WHERE cid=? AND sub=?').run(cid, row.sub);
+        }
+      } catch (_) {}
+    }
+  }
+  if (token) db.prepare('DELETE FROM fcm WHERE cid=? AND token=?').run(cid, token);
+
+  // Device-scoped only. Account-wide revocation is an explicit admin operation
+  // in /api/push/del, never an implicit consequence of a blank device tuple.
+}
+
 pushRouter.post('/api/push/unsubscribe', userGuard, (req, res) => {
-  db.prepare('DELETE FROM subs WHERE cid=?').run(req.user.id);
+  const endpoint = String(req.body?.endpoint || '').trim();
+  const token = String(req.body?.token || '').trim();
+  if (!endpoint && !token) {
+    return res.status(400).json({ error: 'Укажите endpoint или FCM token этого устройства' });
+  }
+  removeDevicePushRegistrations(req.user.id, { endpoint, token });
   res.json({ ok: true });
 });
 
 pushRouter.post('/api/push/del', adminGuard, (req, res) => {
-  db.prepare('DELETE FROM subs WHERE cid=?').run(String(req.body.cid || ''));
+  const cid = String(req.body.cid || '');
+  db.prepare('DELETE FROM subs WHERE cid=?').run(cid);
+  db.prepare('DELETE FROM fcm WHERE cid=?').run(cid);
   res.json({ ok: true });
 });
 

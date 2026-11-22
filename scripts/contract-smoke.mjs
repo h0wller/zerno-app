@@ -135,7 +135,8 @@ function expect(name, r, status, fields = []) {
     expect('POST /api/redeem (нет подарков) → 400', await call('POST', '/api/redeem', { token }), 400, ['error']);
     expect('POST /api/push/subscribe (bad sub) → 400', await call('POST', '/api/push/subscribe', { token, body: { sub: {} } }), 400, ['error']);
     expect('POST /api/push/test', await call('POST', '/api/push/test', { token }), 200, ['ok']);
-    expect('POST /api/push/unsubscribe', await call('POST', '/api/push/unsubscribe', { token }), 200, ['ok']);
+    expect('POST /api/push/unsubscribe (empty tuple) → 400', await call('POST', '/api/push/unsubscribe', { token }), 400, ['error']);
+    expect('POST /api/push/unsubscribe (current device)', await call('POST', '/api/push/unsubscribe', { token, body: { endpoint: 'https://push.example.test/smoke-device' } }), 200, ['ok']);
     expect('POST /api/auth/login (неверный PIN) → 403', await call('POST', '/api/auth/login', { body: { phone: '+7' + digits, pin: '0000' } }), 403, ['error']);
     expect('POST /api/auth/request-otp (некорректный телефон) → 400', await call('POST', '/api/auth/request-otp', { body: { phone: 'bad' } }), 400, ['error']);
     expect('POST /api/auth/activate-guest (неверный код) → 403', await call('POST', '/api/auth/activate-guest', { token, body: { code: '0000' } }), 403, ['error']);

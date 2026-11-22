@@ -4,11 +4,12 @@ function urlBase64ToUint8Array(s) {
         const b64 = (s + padding).replace(/-/g, "+").replace(/_/g, "/");
         const raw = atob(b64);
         const out = new Uint8Array(raw.length);
-        for (window.i = 0; i < raw.length; ++i) out[i] = raw.charCodeAt(i);
+        for (let i = 0; i < raw.length; ++i) out[i] = raw.charCodeAt(i);
         return out;
       }
 
       let pushBusy = false;
+      let nativeFcmWaiter = null;
       // Стабильный id браузера: одно устройство — одна подписка на сервере.
       function getDevId() {
         try {
@@ -28,12 +29,46 @@ function urlBase64ToUint8Array(s) {
         try {
           if (isCap) {
             const PN = Capacitor.Plugins.PushNotifications;
-/* Ф5.6.2g: разделяемое состояние с fx.js через window */
             const perm = await PN.requestPermissions();
-            if (perm.receive !== "granted")
+            if (perm.receive !== "granted") {
               return toast("Уведомления не включены", "😔");
-            PN.register();
-            return toast("Уведомления включены!", "🔔");
+            }
+
+            let nativeToken = '';
+            try { nativeToken = localStorage.getItem("zt_fcm_token") || ''; } catch (_) {}
+            if (!nativeToken) {
+              const waitForRegistration = new Promise((resolve, reject) => {
+                const timer = setTimeout(() => {
+                  nativeFcmWaiter = null;
+                  reject(new Error("Служба уведомлений не вернула токен устройства"));
+                }, 12000);
+                nativeFcmWaiter = {
+                  resolve(value) {
+                    clearTimeout(timer);
+                    nativeFcmWaiter = null;
+                    resolve(value);
+                  },
+                  cancel() {
+                    clearTimeout(timer);
+                    nativeFcmWaiter = null;
+                  }
+                };
+              });
+              try {
+                await PN.register();
+                nativeToken = await waitForRegistration;
+              } catch (error) {
+                if (nativeFcmWaiter) nativeFcmWaiter.cancel();
+                throw error;
+              }
+            }
+
+            await api("/push/fcm", { method: "POST", body: { token: nativeToken } });
+            const testResult = await api("/push/test", { method: "POST", body: {} });
+            if (testResult && testResult.ok && testResult.fcm?.ok) {
+              return toast("FCM зарегистрирован. Проверочное уведомление передано устройству", "🔔");
+            }
+            return toast(testResult?.message || "FCM зарегистрирован, но отправка на устройство не подтверждена", "⚠️");
           }
           const isIOS =
             /iP(hone|ad|od)/.test(navigator.userAgent) ||
@@ -83,7 +118,12 @@ function urlBase64ToUint8Array(s) {
             body: { sub: sub.toJSON(), dev: getDevId() },
           });
           window.refreshPushBtn();
-          toast("Готово! Проверочный пуш уже летит", "🔔");
+          const testResult = await api("/push/test", { method: "POST", body: {} });
+          if (testResult && testResult.ok && (testResult.web?.ok || testResult.fcm?.ok)) {
+            toast("Подписка готова. Проверочное уведомление отправлено", "🔔");
+          } else {
+            toast(testResult?.message || "Подписка сохранена, но доставка на устройство не подтверждена", "⚠️");
+          }
         } catch (e) {
           toast(
             (e && e.message) ||
@@ -229,14 +269,19 @@ function urlBase64ToUint8Array(s) {
       );
       if (isCap) {
         const PN = Capacitor.Plugins.PushNotifications;
-        PN.addListener("registration", (t) => {
-          localStorage.setItem("zt_fcm", "1");
-          localStorage.setItem("zt_fcm_token", t.value);
-          if (me)
+        PN.addListener("registration", async (registration) => {
+          try {
+            localStorage.setItem("zt_fcm", "1");
+            localStorage.setItem("zt_fcm_token", registration.value);
+          } catch (_) {}
+          if (nativeFcmWaiter) {
+            nativeFcmWaiter.resolve(registration.value);
+          } else if (me) {
             api("/push/fcm", {
               method: "POST",
-              body: { token: t.value },
+              body: { token: registration.value },
             }).catch(() => {});
+          }
           window.refreshPushBtn();
         });
         try {
@@ -245,7 +290,7 @@ function urlBase64ToUint8Array(s) {
       }
 
       $("#pushHoursSend").onclick = async () => {
-        if (!confirm("Разослать гостям зимний график доставки?\n\nОктябрь–апрель: пн–чт 11:00–21:00, пт–вс 11:00–22:00.\n\nПолучат гости с включёнными уведомлениями. Telegram имеет приоритет, иначе отправим push.")) return;
+        if (!confirm("Разослать гостям зимний график доставки?\n\nОктябрь–апрель: пн–чт 11:00–21:00, пт–вс 11:00–22:00.\n\nПолучат гости с включёнными каналами. Telegram, Web Push и FCM отправляются по настройкам профиля.")) return;
         try {
           const r = await api("/push/send-hours-update", { method: "POST", body: {} });
           toast(`Получателей: ${r.recipients}, Telegram: ${r.telegramSent}, push: ${r.pushSent}, ошибок: ${r.failed}`, "🔔");
@@ -260,7 +305,7 @@ function urlBase64ToUint8Array(s) {
         if (!confirm("Отправить пуш всем подписчикам?")) return;
         try {
           const r = await api("/push/send", { method: "POST", body: { body } });
-          toast(`Отправлено гостям: ${r.sent}`, "🔔");
+          toast(`Получателей: ${r.recipients ?? r.sent}, доставок: ${r.delivered}, ошибок: ${r.failed}`, r.ok ? "🔔" : "⚠️");
           $("#pushText").value = "";
         } catch (e) {
           toast(e.message, "⚠️");

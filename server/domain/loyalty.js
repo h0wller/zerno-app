@@ -30,8 +30,7 @@ export function grant(cid, by) {
   if (ten) {
     sendPush(
       cid,
-      '🎁 Бесплатный кофе ваш!',
-      `${stampBar(10)} 10/10\n\nВы собрали 10 штампов! Заходите в «…и кофе» — напиток за наш счёт ☕🎉`,
+      { title: '🎁 Бесплатный кофе ваш!', text: `${stampBar(10)} 10/10\n\nВы собрали 10 штампов! Заходите в «…и кофе» — напиток за наш счёт ☕🎉` },
       {
         inline_keyboard: [[
           { text: '📱 Показать QR кассиру', web_app: { url: baseAppUrl + '/?src=tg&brand=coffee&tab=bonus' } }
@@ -41,16 +40,14 @@ export function grant(cid, by) {
   } else if (f.stamps === 9) {
     sendPush(
       cid,
-      '🔥 Осталась всего одна чашка!',
-      `${stampBar(9)} 9/10\n\nУ вас 9 из 10 штампов. Следующий кофе — бесплатно! Ждём вас у моря 🌊`,
+      { title: '🔥 Осталась всего одна чашка!', text: `${stampBar(9)} 9/10\n\nУ вас 9 из 10 штампов. Следующий кофе — бесплатно! Ждём вас у моря 🌊` },
       bonusKb
     );
   } else {
     const left = 10 - f.stamps;
     sendPush(
       cid,
-      '☕ Вам начислен штамп!',
-      `${stampBar(f.stamps)} ${f.stamps}/10\n\nШтампов: ${f.stamps} из 10. До подарка осталось: ${left} ${cupWord(left)} 🌊`,
+      { title: '☕ Вам начислен штамп!', text: `${stampBar(f.stamps)} ${f.stamps}/10\n\nШтампов: ${f.stamps} из 10. До подарка осталось: ${left} ${cupWord(left)} 🌊` },
       bonusKb
     );
   }
@@ -105,11 +102,10 @@ export function redeem(cid, by, item) {
   logEv(c.name, 'списан бесплатный кофе: ' + (item || 'классика'));
   const baseAppUrl = APP_URL || 'https://friday.andcoffee.online';
   const leftFree = c.free - 1;
-  const freeText = leftFree > 0 ? `\nДоступных подарков: <b>${leftFree}</b>` : '';
+  const freeText = leftFree > 0 ? `\nДоступных подарков: ${leftFree}` : '';
   sendPush(
     cid,
-    '🎁 Бесплатный кофе получен!',
-    `Списан подарок: <b>${item || 'кофе'}</b>.${freeText}\nСпасибо, что вы с нами 🌊`,
+    { title: '🎁 Бесплатный кофе получен!', text: `Списан подарок: ${item || 'кофе'}.${freeText}\nСпасибо, что вы с нами 🌊` },
     {
       inline_keyboard: [[
         { text: '☕ Открыть меню', web_app: { url: baseAppUrl + '/?src=tg&brand=coffee' } }

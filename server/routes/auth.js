@@ -271,7 +271,7 @@ authRouter.post('/api/auth/register', validate(RegisterSchema), (req, res) => {
     db.prepare('UPDATE customers SET actcode=? WHERE id=?').run(ac, r.customer.id);
     const staff = db.prepare("SELECT id FROM customers WHERE role IN ('cashier','admin')").all();
     for (const s of staff) {
-      sendPush(s.id, '🆕 Новый гость ждёт активации', `${r.customer.name}, ${r.customer.phone} — код ${ac}`).catch(() => {});
+      sendPush(s.id, { title: '🆕 Новый гость ждёт активации', text: `${r.customer.name}, ${r.customer.phone} — код ${ac}` }).catch(() => {});
     }
     logEv(r.customer.name, 'регистрация без TG, ждёт код кассира');
   }
@@ -473,6 +473,21 @@ authRouter.post('/api/auth/deactivate', userGuard, (req, res) => {
 authRouter.post('/api/exit', userGuard, (req, res) => {
   const t = getBearerToken(req);
   db.prepare('DELETE FROM tokens WHERE token=?').run(t);
+  // Retry device-scoped cleanup in case /push/unsubscribe failed during logout.
+  // Never revoke other phones/browsers belonging to the same customer.
+  const endpoint = String(req.body?.endpoint || '');
+  const fcmToken = String(req.body?.token || '');
+  if (endpoint) {
+    const rows = db.prepare('SELECT sub FROM subs WHERE cid=?').all(req.user.id);
+    for (const row of rows) {
+      try {
+        if (JSON.parse(row.sub).endpoint === endpoint) {
+          db.prepare('DELETE FROM subs WHERE cid=? AND sub=?').run(req.user.id, row.sub);
+        }
+      } catch (_) {}
+    }
+  }
+  if (fcmToken) db.prepare('DELETE FROM fcm WHERE cid=? AND token=?').run(req.user.id, fcmToken);
   res.json({ ok: true });
 });
 
@@ -480,6 +495,9 @@ authRouter.get('/api/me', userGuard, (req, res) => res.json({ customer: cust(req
 
 authRouter.put('/api/me', userGuard, (req, res) => {
   const name = String(req.body.name || '').trim() || 'Гость';
+  if (name.length < 2 || name.length > 24) {
+    return res.status(400).json({ error: 'Имя должно содержать от 2 до 24 символов' });
+  }
   db.prepare('UPDATE customers SET name=? WHERE id=?').run(name, req.user.id);
   respondWithCustomer(res, req.user.id);
 });

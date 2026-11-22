@@ -26,7 +26,7 @@ function showCust(u, last = null) {
   $('#giveStampBtn').textContent = u.stamps === 9
     ? '☕ Пробить 10-й штамп → кофе в подарок'
     : `🫘 Пробить штамп · будет ${u.stamps + 1} из 10`;
-  $('#redeemBtn').hidden = u.free === 0;
+  $('#redeemBtn').hidden = !(Number(u.free) > 0);
   renderBonus();
 }
 
@@ -164,21 +164,43 @@ showCust=(function(_sc){return function(u,last){window.__foundId=u&&u.id;return 
   }
 
   var redeemButton = document.getElementById('redeemBtn');
+  var redeemTarget = null;
+  var redeemOnSuccess = null;
+  var redeemReturnFocus = null;
+
   function closePicker() {
     modal.classList.remove('show');
     if (typeof window.syncOverlay === 'function') window.syncOverlay();
-    if (redeemButton && !redeemButton.hidden) redeemButton.focus();
+    var focusTarget = redeemReturnFocus || redeemButton;
+    redeemTarget = null;
+    redeemOnSuccess = null;
+    redeemReturnFocus = null;
+    if (focusTarget && focusTarget.isConnected && !focusTarget.hidden && !focusTarget.disabled) {
+      focusTarget.focus();
+    }
+  }
+
+  function openRedeemPicker(customer, onSuccess, returnFocus) {
+    if (!customer || !(Number(customer.free) > 0)) return false;
+    redeemTarget = customer;
+    redeemOnSuccess = typeof onSuccess === 'function' ? onSuccess : null;
+    redeemReturnFocus = returnFocus || redeemButton;
+    modal.classList.add('show');
+    if (typeof window.syncOverlay === 'function') window.syncOverlay();
+    var firstDrink = modal.querySelector('[data-rp]');
+    if (firstDrink) firstDrink.focus();
+    return true;
   }
 
   if (redeemButton) {
-    redeemButton.onclick = function(event) {
+    // Capture the click before any legacy/direct-redeem handler can consume the gift.
+    redeemButton.addEventListener('click', function(event) {
       event.preventDefault();
-      if (!found || Number(found.free) < 1) return;
-      modal.classList.add('show');
-      if (typeof window.syncOverlay === 'function') window.syncOverlay();
-      var firstDrink = modal.querySelector('[data-rp]');
-      if (firstDrink) firstDrink.focus();
-    };
+      event.stopImmediatePropagation();
+      openRedeemPicker(found, function(updatedCustomer) {
+        showCust(updatedCustomer);
+      }, redeemButton);
+    }, true);
   }
 
   modal.addEventListener('click', async function(event) {
@@ -186,32 +208,44 @@ showCust=(function(_sc){return function(u,last){window.__foundId=u&&u.id;return 
       closePicker();
       return;
     }
+
     var drinkButton = event.target.closest('[data-rp]');
     if (!drinkButton) return;
-    if (!found || Number(found.free) < 1) {
+
+    var customer = redeemTarget;
+    if (!customer || !(Number(customer.free) > 0)) {
       closePicker();
       return toast('У гостя нет доступных подарков', '⚠️');
     }
 
+    var selectedDrink = drinkButton.dataset.rp;
+    var onSuccess = redeemOnSuccess;
     var buttons = Array.from(modal.querySelectorAll('[data-rp]'));
     buttons.forEach(function(button) { button.disabled = true; });
+
     try {
       var result = await api('/staff/redeem', {
         method: 'POST',
-        body: { id: found.id, item: drinkButton.dataset.rp }
+        body: { id: customer.id, item: selectedDrink }
       });
       closePicker();
-      showCust(result.customer);
+      if (onSuccess) {
+        try { onSuccess(result.customer); } catch (callbackError) {
+          console.error('[cashier] gift picker success callback failed', callbackError);
+        }
+      }
       renderLog();
       if (typeof renderProfile === 'function') renderProfile();
-      toast('Списано: ' + drinkButton.dataset.rp, '🎁');
+      toast('Списано: ' + selectedDrink, '🎁');
     } catch (error) {
       toast(error.message || 'Не удалось списать подарок', '⚠️');
     } finally {
       buttons.forEach(function(button) { button.disabled = false; });
     }
   });
-})();
+
+  // Shared entry point for cashier search and QR scanner guest cards.
+  window.openRedeemPicker = openRedeemPicker;})();
 (function(){
 window.renderLog = renderLog; /* Ф5.6-финал шаг 2-fix: голый вызов из catalog setMode */
 })();
