@@ -32,5 +32,5 @@ export async function sendFcm(cid, title, body) {
       }
     }
     return { sent, failed };
-  } catch (e) { console.log('FCM send error', e.message); return { sent: 0, failed: 0 }; }
+  } catch (e) { console.error('[fcm] send error', e.message); return { sent: 0, failed: 1 }; }
 }
