@@ -6,6 +6,7 @@ import net from 'node:net';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import vm from 'node:vm';
 import Database from 'better-sqlite3';
 
 async function reservePort() {
@@ -176,16 +177,157 @@ test('Lighthouse delivery audit preloads the first responsive delivery image', a
   assert.match(link, /imagesizes=/);
 });
 
-test('C7 benchmark patch predicts catalog JSON without DOM or image preload ownership', () => {
-  const source = fs.readFileSync(path.join(root, 'scripts/prepare-lighthouse-variant.mjs'), 'utf8');
-  const start = source.indexOf("else if(variant==='C7'){");
-  const end = source.indexOf("\nelse if(variant==='F')", start);
-  assert.ok(start >= 0 && end > start, 'C7 benchmark patch generator must exist');
-  const c7 = source.slice(start, end);
-  assert.match(c7, /earlyCatalog/);
-  assert.match(c7, /nativeFetch\.call\(window, predictedEndpoint/);
-  assert.doesNotMatch(c7, /document\.createElement|document\.getElementById|appendChild|rel\s*=\s*['"]preload['"]/,
-    'C7 must fetch catalog JSON only and must not mutate catalog DOM or create image preloads');
+function loadLcpHeadRuntime({ savedBrand = 'coffee', authenticated = false, fetcher }) {
+  const html = fs.readFileSync(path.join(root, 'public/index.html'), 'utf8');
+  const match = html.match(/<script id="zt-lcp-head">([\s\S]*?)<\/script>/);
+  assert.ok(match, 'real zt-lcp-head script must exist in public/index.html');
+
+  const links = [];
+  const document = {
+    head: {
+      appendChild(link) { links.push(link); link.parentNode = this; return link; },
+      removeChild(link) {
+        const index = links.indexOf(link);
+        if (index >= 0) links.splice(index, 1);
+      }
+    },
+    createElement(tag) {
+      return {
+        tagName: tag.toUpperCase(),
+        attributes: {},
+        setAttribute(name, value) { this.attributes[name] = String(value); },
+        getAttribute(name) { return this.attributes[name] ?? null; },
+        removeAttribute(name) { delete this.attributes[name]; },
+        remove() { if (this.parentNode) this.parentNode.removeChild(this); }
+      };
+    },
+    getElementById(id) { return links.find(link => link.id === id) || null; }
+  };
+  const localStorage = {
+    getItem(key) {
+      if (key === 'zt_brand') return savedBrand;
+      if (key === 'zt_user') return authenticated ? 'authenticated-user' : null;
+      return null;
+    }
+  };
+  const window = {
+    __brandSplashPending: true,
+    fetch: fetcher,
+    __ztApplyDeliveryHero() { throw new Error('prediction must not call delivery hero bridge'); }
+  };
+  const context = {
+    window, document, localStorage,
+    location: { href: 'http://127.0.0.1/' },
+    Headers, URL, URLSearchParams, Response, console
+  };
+  vm.runInNewContext(match[1], context, { filename: 'public/index.html#zt-lcp-head' });
+  return { window, links, context };
+}
+
+function catalogResponse(brand) {
+  return new Response(JSON.stringify({
+    items: [{
+      id: brand + '-first', cat: brand === 'delivery' ? 'pizza' : 'coffee',
+      on: 1, img: '/media/dishes/' + brand + '-first.webp',
+      imgSrcset: '/media/dishes/' + brand + '-first-300.webp 300w'
+    }]
+  }), { status: 200, headers: { 'content-type': 'application/json' } });
+}
+
+test('C8 matching saved-brand prediction is reused by the selected-brand fetch contract', async () => {
+  const calls = [];
+  const { window, links } = loadLcpHeadRuntime({
+    savedBrand: 'coffee',
+    fetcher: async endpoint => { calls.push(endpoint); return catalogResponse('coffee'); }
+  });
+  await new Promise(resolve => setImmediate(resolve));
+  assert.deepEqual(calls, ['/api/menu'], 'splash should start exactly one saved-brand JSON request');
+  assert.equal(links.length, 1, 'successful prediction should preload exactly the first saved-brand image');
+  assert.equal(links[0].href, '/media/dishes/coffee-first.webp');
+  const selected = await window.__ztPrimeMenuLcp('coffee');
+  assert.equal(selected.status, 200);
+  const apiResponse = await window.fetch('/api/menu');
+  assert.equal(apiResponse.status, 200);
+  assert.deepEqual(calls, ['/api/menu'], 'selected catalog fetch must receive the same predicted promise');
+});
+
+test('C8 mismatched late prediction does not preload or activate the hidden brand hero', async () => {
+  const calls = [];
+  let releaseDelivery;
+  const deliveryGate = new Promise(resolve => { releaseDelivery = resolve; });
+  let heroCalls = 0;
+  const { window, links } = loadLcpHeadRuntime({
+    savedBrand: 'delivery',
+    fetcher: async endpoint => {
+      calls.push(endpoint);
+      if (endpoint === '/api/dmenu') {
+        await deliveryGate;
+        return catalogResponse('delivery');
+      }
+      return catalogResponse('coffee');
+    }
+  });
+  window.__ztApplyDeliveryHero = () => { heroCalls += 1; return true; };
+  await new Promise(resolve => setImmediate(resolve));
+  assert.deepEqual(calls, ['/api/dmenu']);
+  const selected = await window.__ztPrimeMenuLcp('coffee');
+  assert.equal(selected.status, 200);
+  assert.equal(links.length, 1);
+  assert.equal(links[0].href, '/media/dishes/coffee-first.webp');
+  releaseDelivery();
+  await new Promise(resolve => setImmediate(resolve));
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(heroCalls, 0, 'late hidden-brand prediction must never call __ztApplyDeliveryHero');
+  assert.equal(links.length, 1, 'late hidden-brand response must not create a second image preload');
+  assert.equal(links[0].href, '/media/dishes/coffee-first.webp');
+  assert.deepEqual(calls, ['/api/dmenu', '/api/menu']);
+});
+
+for (const failure of ['http-503', 'network-abort']) {
+  test('C8 ' + failure + ' falls back to the ordinary selected-brand request', async () => {
+    const calls = [];
+    const { window, links } = loadLcpHeadRuntime({
+      savedBrand: 'coffee',
+      fetcher: async endpoint => {
+        calls.push(endpoint);
+        if (calls.length === 1) {
+          if (failure === 'http-503') return new Response('unavailable', { status: 503 });
+          throw new TypeError('net::ERR_ABORTED');
+        }
+        return catalogResponse('coffee');
+      }
+    });
+    await new Promise(resolve => setImmediate(resolve));
+    assert.deepEqual(calls, ['/api/menu'], 'the prediction attempt should run once');
+    const selected = await window.__ztPrimeMenuLcp('coffee');
+    assert.equal(selected.status, 200, 'selected brand should retry after prediction failure');
+    assert.deepEqual(calls, ['/api/menu', '/api/menu']);
+    assert.equal(links.length, 1, 'only the successful fallback may create the image preload');
+    assert.equal(links[0].href, '/media/dishes/coffee-first.webp');
+  });
+}
+
+test('C8 does not start a speculative request for an authenticated user', async () => {
+  const calls = [];
+  const { links } = loadLcpHeadRuntime({
+    savedBrand: 'delivery',
+    authenticated: true,
+    fetcher: async endpoint => { calls.push(endpoint); return catalogResponse('delivery'); }
+  });
+  await new Promise(resolve => setImmediate(resolve));
+  assert.deepEqual(calls, []);
+  assert.equal(links.length, 0);
+});
+
+test('C8 does not fall back to coffee when no valid saved brand exists', async () => {
+  const calls = [];
+  const { links } = loadLcpHeadRuntime({
+    savedBrand: null,
+    fetcher: async endpoint => { calls.push(endpoint); return catalogResponse('coffee'); }
+  });
+  await new Promise(resolve => setImmediate(resolve));
+  assert.deepEqual(calls, []);
+  assert.equal(links.length, 0);
 });
 
 test('forced splash does not emit a server image preload', async () => {
