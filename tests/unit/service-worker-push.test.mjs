@@ -73,7 +73,7 @@ test('Service Worker displays incoming Web Push and wakes live refresh subscribe
   assert.equal(worker.shown.length, 1);
   assert.equal(worker.shown[0].title, 'Заказ принят');
   assert.equal(worker.shown[0].options.body, 'Заказ #42 обновлён');
-  assert.equal(worker.shown[0].options.data.url, 'https://zerno.test/?tab=orders');
+  assert.equal(worker.shown[0].options.data.url, new URL('/?tab=orders', 'https://zerno.test').href);
   assert.ok(worker.messages.some(message => message.type === 'zpush'));
 });
 
