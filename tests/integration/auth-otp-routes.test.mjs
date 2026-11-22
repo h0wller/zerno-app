@@ -7,6 +7,10 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { randomUUID } from 'node:crypto';
+import { createRequire } from 'node:module';
+
+const require = createRequire(import.meta.url);
+const Database = require('better-sqlite3');
 
 async function reservePort() {
   const listener = net.createServer();
@@ -24,6 +28,7 @@ const base = `http://127.0.0.1:${port}`;
 const root = path.resolve(import.meta.dirname, '../..');
 const dbPath = path.join(os.tmpdir(), `zerno-auth-test-${randomUUID()}.db`);
 let server;
+let inspectDb;
 let output = '';
 
 async function waitForServer() {
@@ -94,9 +99,11 @@ before(async () => {
   server.stderr.on('data', chunk => { output += chunk.toString(); });
   server.on('error', error => { output += `\nSpawn error: ${error.stack || error.message}`; });
   await waitForServer();
+  inspectDb = new Database(dbPath);
 });
 
 after(async () => {
+  if (inspectDb) { try { inspectDb.close(); } catch {} }
   if (server && server.exitCode === null) {
     server.kill('SIGTERM');
     await Promise.race([once(server, 'exit'), new Promise(resolve => setTimeout(resolve, 4000))]);
@@ -285,4 +292,126 @@ test('OTP login rejects wrong and expired codes, then consumes a valid code once
   const expired = await api('/api/auth/login', { phone, otp: '6842' });
   assert.equal(expired.status, 403);
   assert.match(expired.json.error || '', /просрочен/i);
+});
+
+
+test('profile name API enforces the published 2–24 character boundary', async () => {
+  const phone = '+7 900 000-02-11';
+  const registered = await api('/api/auth/register', {
+    name: 'Profile Name Test', phone, pin: '1234', consent: true
+  });
+  assert.equal(registered.status, 200, JSON.stringify(registered.json));
+  const token = registered.json.token;
+
+  const tooShort = await fetch(base + '/api/me', {
+    method: 'PUT',
+    headers: { 'content-type': 'application/json', authorization: 'Bearer ' + token },
+    body: JSON.stringify({ name: 'A' })
+  });
+  assert.equal(tooShort.status, 400);
+
+  const tooLong = await fetch(base + '/api/me', {
+    method: 'PUT',
+    headers: { 'content-type': 'application/json', authorization: 'Bearer ' + token },
+    body: JSON.stringify({ name: 'A'.repeat(25) })
+  });
+  assert.equal(tooLong.status, 400);
+
+  const minimum = await fetch(base + '/api/me', {
+    method: 'PUT',
+    headers: { 'content-type': 'application/json', authorization: 'Bearer ' + token },
+    body: JSON.stringify({ name: 'Al' })
+  });
+  assert.equal(minimum.status, 200);
+
+  const maximum = await fetch(base + '/api/me', {
+    method: 'PUT',
+    headers: { 'content-type': 'application/json', authorization: 'Bearer ' + token },
+    body: JSON.stringify({ name: 'A'.repeat(24) })
+  });
+  assert.equal(maximum.status, 200);
+  assert.equal(maximum.json.customer?.name, 'A'.repeat(24));
+});
+
+test('Web Push and FCM unregister by device and logout revokes remaining registrations', async () => {
+  const phone = '+7 900 000-02-12';
+  const registered = await api('/api/auth/register', {
+    name: 'Push Cleanup Test', phone, pin: '1234', consent: true
+  });
+  assert.equal(registered.status, 200, JSON.stringify(registered.json));
+  const token = registered.json.token;
+  const cid = registered.json.customer.id;
+
+  const endpointA = 'https://push.example.invalid/subscription-a';
+  const endpointB = 'https://push.example.invalid/subscription-b';
+  const sub = endpoint => ({ endpoint, keys: { p256dh: 'test-key', auth: 'test-auth' } });
+
+  assert.equal((await api('/api/push/subscribe', { sub: sub(endpointA), dev: 'device-a' }, token)).status, 200);
+  assert.equal((await api('/api/push/subscribe', { sub: sub(endpointB), dev: 'device-b' }, token)).status, 200);
+  assert.equal((await api('/api/push/fcm', { token: 'fcm-token-a' }, token)).status, 200);
+  assert.equal((await api('/api/push/fcm', { token: 'fcm-token-b' }, token)).status, 200);
+
+  const partial = await api('/api/push/unsubscribe', {
+    endpoint: endpointA,
+    token: 'fcm-token-a'
+  }, token);
+  assert.equal(partial.status, 200);
+  assert.deepEqual(
+    inspectDb.prepare('SELECT sub FROM subs WHERE cid=?').all(cid).map(row => JSON.parse(row.sub).endpoint),
+    [endpointB]
+  );
+  assert.deepEqual(
+    inspectDb.prepare('SELECT token FROM fcm WHERE cid=? ORDER BY token').all(cid).map(row => row.token),
+    ['fcm-token-b']
+  );
+
+  const exited = await api('/api/exit', {}, token);
+  assert.equal(exited.status, 200);
+  assert.equal(inspectDb.prepare('SELECT COUNT(*) AS n FROM subs WHERE cid=?').get(cid).n, 0);
+  assert.equal(inspectDb.prepare('SELECT COUNT(*) AS n FROM fcm WHERE cid=?').get(cid).n, 0);
+  assert.equal(inspectDb.prepare('SELECT COUNT(*) AS n FROM tokens WHERE token=?').get(token).n, 0);
+});
+
+test('stamp promo applies one batch grant and creates one history entry', async () => {
+  const adminPhone = '+7 900 000-02-13';
+  const adminRegistration = await api('/api/auth/register', {
+    name: 'Promo Test Admin', phone: adminPhone, pin: '1357', consent: true
+  });
+  assert.equal(adminRegistration.status, 200, JSON.stringify(adminRegistration.json));
+  const adminToken = adminRegistration.json.token;
+  const activated = await api('/api/auth/activate', { code: 'integration-test-admin' }, adminToken);
+  assert.equal(activated.status, 200, JSON.stringify(activated.json));
+
+  const guestPhone = '+7 900 000-02-14';
+  const created = await api('/api/staff/customers', {
+    name: 'Promo Batch Guest', phone: guestPhone, pin: '4321'
+  }, adminToken);
+  assert.equal(created.status, 200, JSON.stringify(created.json));
+  const guestLogin = await api('/api/auth/login', { phone: guestPhone, pin: '4321' });
+  assert.equal(guestLogin.status, 200, JSON.stringify(guestLogin.json));
+  const guestToken = guestLogin.json.token;
+  const guestId = guestLogin.json.customer.id;
+
+  const promo = await api('/api/promos', {
+    code: 'BATCH-STAMP-5',
+    kind: 'stamp',
+    value: 5,
+    maxuses: 1
+  }, adminToken);
+  assert.equal(promo.status, 200, JSON.stringify(promo.json));
+
+  const redeemed = await api('/api/promo/redeem', { code: 'BATCH-STAMP-5' }, guestToken);
+  assert.equal(redeemed.status, 200, JSON.stringify(redeemed.json));
+  assert.equal(redeemed.json.customer.stamps, 5);
+  assert.equal(redeemed.json.customer.cups, 0);
+  assert.equal(
+    inspectDb.prepare("SELECT COUNT(*) AS n FROM history WHERE cid=? AND a LIKE 'Начислено 5 шт.%'").get(guestId).n,
+    1
+  );
+
+  const replay = await api('/api/promo/redeem', { code: 'BATCH-STAMP-5' }, guestToken);
+  assert.equal(replay.status, 409);
+  const current = inspectDb.prepare('SELECT stamps,cups FROM customers WHERE id=?').get(guestId);
+  assert.equal(current.stamps, 5);
+  assert.equal(current.cups, 0);
 });
