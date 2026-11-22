@@ -205,7 +205,7 @@ chatRouter.post('/api/chat/send', (req, res) => {
     const last = db.prepare(
       "SELECT text FROM chat WHERE key=? AND who='guest' AND human=0 ORDER BY id DESC LIMIT 1"
     ).get(key);
-    if (last?.text) messageText = (last.text + '\\n💬 ' + text).slice(0, MAX_MESSAGE_LENGTH);
+    if (last?.text) messageText = (last.text + String.fromCharCode(10) + '💬 ' + text).slice(0, MAX_MESSAGE_LENGTH);
   }
 
   db.prepare('INSERT INTO chat(key,who,text,ts,human,read_s) VALUES(?,?,?,?,?,0)')
@@ -229,8 +229,7 @@ chatRouter.post('/api/chat/send', (req, res) => {
     for (const person of staff) {
       Promise.resolve(sendPush(
         person.id,
-        authorized.ctx === 'delivery' ? '💬 Вопрос по доставке' : '💬 Вопрос по кофейне',
-        messageText.slice(0, 200),
+        { title: authorized.ctx === 'delivery' ? '💬 Вопрос по доставке' : '💬 Вопрос по кофейне', text: messageText.slice(0, 200) },
         kb
       )).catch(() => {});
     }
@@ -363,8 +362,7 @@ chatRouter.post('/api/chat/reply', chatGuard, (req, res) => {
   if (customerKey) {
     Promise.resolve(sendPush(
       customerKey[1],
-      thread.ctx === 'delivery' ? '💬 Ответ поддержки «Пятница»' : '💬 Вам ответили из «…и кофе»',
-      text.slice(0, 80)
+      { title: thread.ctx === 'delivery' ? '💬 Ответ поддержки «Пятница»' : '💬 Вам ответили из «…и кофе»', text: text.slice(0, 80) }
     )).catch(() => {});
   }
   res.json({ ok: true });
