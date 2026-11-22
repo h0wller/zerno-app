@@ -265,7 +265,7 @@ function urlBase64ToUint8Array(s) {
         if (!confirm("Отправить пуш всем подписчикам?")) return;
         try {
           const r = await api("/push/send", { method: "POST", body: { body } });
-          toast(`Отправлено гостям: ${r.sent}`, "🔔");
+          toast(`Получателей: ${r.recipients ?? r.sent}, доставок: ${r.delivered}, ошибок: ${r.failed}`, r.ok ? "🔔" : "⚠️");
           $("#pushText").value = "";
         } catch (e) {
           toast(e.message, "⚠️");
