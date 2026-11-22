@@ -262,3 +262,54 @@ test('повтор заказа из карточки сохраняет выб�
   });
   await expect(page.locator('#cartPanel')).toHaveClass(/open/);
 });
+
+
+test('карточка трекинга различает отмену и самовывоз, показывает модификаторы и eta', async ({ page }) => {
+  await openDeliveryApp(page);
+  await page.waitForFunction(() => typeof window.openOrderTrackModal === 'function');
+
+  await page.evaluate(() => window.openOrderTrackModal({
+    id: 'cancelled-order',
+    no: 81,
+    status: 'cancel',
+    method: 'delivery',
+    total: 1200,
+    fee: 200,
+    items: [{ id: 'cancelled-pizza', name: 'Пицца', price: 1000, qty: 1 }]
+  }));
+  const modal = page.locator('#orderTrackModal');
+  await expect(modal).toContainText('Заказ отменён');
+  await expect(modal).not.toContainText('Заказ принят');
+  await expect(modal.locator('.ot-progress')).toHaveCount(0);
+  await page.locator('#orderTrackModal [data-ot-close]').click();
+
+  await page.evaluate(() => window.openOrderTrackModal({
+    id: 'pickup-order',
+    no: 82,
+    status: 'cook',
+    method: 'pickup',
+    eta: '+15 мин',
+    slot: 'asap',
+    total: 1450,
+    fee: 0,
+    discount: 100,
+    discount_label: 'Скидка',
+    gifts: [{ name: 'Соус', qty: 1 }],
+    items: [{
+      id: 'pickup-pizza',
+      name: 'Пицца',
+      price: 1350,
+      qty: 1,
+      modifiers: [{ id: 'extra-cheese', name: 'Дополнительный сыр', price: 100 }]
+    }]
+  }));
+  await expect(modal).toContainText('готовится к самовывозу');
+  await expect(modal).toContainText('Советская, 38А');
+  await expect(modal).not.toContainText('Курьер в пути');
+  await expect(modal).toContainText('Дополнительный сыр');
+  await expect(modal).toContainText('+15 мин');
+  await expect(modal).toContainText('Соус');
+  await expect(modal).toContainText('Доставка:');
+  await expect(modal).toContainText('−100 ₽');
+  await expect(modal).toContainText('Итого:');
+});
