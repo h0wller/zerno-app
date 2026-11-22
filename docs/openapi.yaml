@@ -374,9 +374,10 @@ paths:
           application/json:
             schema:
               type: object
-              properties: { name: { type: string, maxLength: 24 } }
+              properties: { name: { type: string, minLength: 2, maxLength: 24 } }
       responses:
         '200': { description: OK }
+        '400': { description: Name must contain 2–24 characters }
         '401': { $ref: '#/components/responses/Unauthorized' }
     delete:
       tags: [Auth]
@@ -1188,7 +1189,7 @@ paths:
       tags: [Push]
       summary: Отправить тестовое push текущему пользователю
       security: [{ BearerAuth: [] }]
-      responses: { '200': { description: Результат отправки } }
+      responses: { '200': { description: Передача на устройство подтверждена }, '503': { description: Нет подтверждённой доставки Web Push/FCM } }
 
   /api/push/fcm:
     post:
@@ -1245,15 +1246,27 @@ paths:
   /api/push/unsubscribe:
     post:
       tags: [Push]
-      summary: Удалить push-подписки текущего пользователя
+      summary: Отвязать Web Push endpoint и/или FCM token текущего пользователя
+      description: Без тела запроса удаляет все Web Push и FCM device registrations профиля. При передаче endpoint/token удаляет только совпадающие регистрации.
       security: [{ BearerAuth: [] }]
-      responses: { '200': { description: 'Операция выполнена успешно (ok: true)' } }
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                endpoint: { type: string }
+                token: { type: string }
+      responses:
+        '200': { description: Операция выполнена успешно (ok: true) }
+        '401': { $ref: '#/components/responses/Unauthorized' }
 
   /api/push/del:
     post:
       tags: [Push]
       summary: Удалить Web Push-подписки указанного профиля
-      description: 'Удаляет записи из таблицы subs по cid; не удаляет FCM token. Только администратор (adminGuard, role=admin), иначе 403.'
+      description: 'Удаляет Web Push subscriptions и FCM tokens по cid. Только администратор (adminGuard, role=admin), иначе 403.'
       security: [{ BearerAuth: [] }]
       requestBody:
         required: true
