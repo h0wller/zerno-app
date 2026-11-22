@@ -26,7 +26,7 @@ function showCust(u, last = null) {
   $('#giveStampBtn').textContent = u.stamps === 9
     ? '☕ Пробить 10-й штамп → кофе в подарок'
     : `🫘 Пробить штамп · будет ${u.stamps + 1} из 10`;
-  $('#redeemBtn').hidden = u.free === 0;
+  $('#redeemBtn').hidden = !(Number(u.free) > 0);
   renderBonus();
 }
 
@@ -171,14 +171,16 @@ showCust=(function(_sc){return function(u,last){window.__foundId=u&&u.id;return 
   }
 
   if (redeemButton) {
-    redeemButton.onclick = function(event) {
+    // Capture the click before any legacy/direct-redeem handler can consume the gift.
+    redeemButton.addEventListener('click', function(event) {
       event.preventDefault();
-      if (!found || Number(found.free) < 1) return;
+      event.stopImmediatePropagation();
+      if (!found || !(Number(found.free) > 0)) return;
       modal.classList.add('show');
       if (typeof window.syncOverlay === 'function') window.syncOverlay();
       var firstDrink = modal.querySelector('[data-rp]');
       if (firstDrink) firstDrink.focus();
-    };
+    }, true);
   }
 
   modal.addEventListener('click', async function(event) {
