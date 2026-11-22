@@ -52,7 +52,8 @@
       if (qmain) drawQR(qmain, customer.qr);
     }
 
-    var fcmT = '';\n    try { fcmT = localStorage.getItem('zt_fcm_token') || ''; } catch (_) {}
+    var fcmT = '';
+    try { fcmT = localStorage.getItem('zt_fcm_token') || ''; } catch (_) {}
     if (fcmT && customer && typeof api === 'function') {
       api('/push/fcm', { method: 'POST', body: { token: fcmT } }).catch(function () {});
     }
