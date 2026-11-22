@@ -6,6 +6,7 @@ on:
       - perf/mobile-lcp-initial-load
     paths:
       - '.github/workflows/c8-one-shot.yml'
+      - '.github/c8-one-shot/c8-apply.patch.gz'
 
 permissions:
   contents: write
