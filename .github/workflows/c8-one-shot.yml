@@ -3,7 +3,7 @@ name: one-time C8 apply and cleanup
 on:
   push:
     branches:
-      - perf/mobile-lcp-initial-load
+      - c8-stage-20261122
     paths:
       - '.github/workflows/c8-one-shot.yml'
       - '.github/c8-one-shot/c8-apply.patch.gz'
@@ -32,7 +32,10 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
+          npm ci --no-audit --no-fund
           gzip -dc .github/c8-one-shot/c8-apply.patch.gz | git apply --index
+          npm run build:client
+          git add public/dist/main.bundle.js public/dist/main.bundle.js.map public/sw.js
           git diff --cached --check
           git commit -m "feat(perf): implement saved-brand C8 catalog prediction"
 
@@ -46,7 +49,6 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          npm ci --no-audit --no-fund
           npm run lint:code
           node --input-type=module - <<'NODE'
           import fs from 'node:fs';
