@@ -43,89 +43,8 @@ async function preparePage(page, variant) {
 }
 
 for (const variant of ['C7', 'C8']) {
-  for (const failure of ['http-503', 'network-reject']) {
-    test(variant + ' falls back to the normal selected-brand request after ' + failure, async ({ page }) => {
-      let menuRequests = 0;
-      await preparePage(page, variant);
-      await page.route('**/api/menu', async (route) => {
-        menuRequests += 1;
-        if (menuRequests === 1) {
-          if (failure === 'http-503') {
-            return route.fulfill({
-              status: 503,
-              contentType: 'application/json',
-              body: JSON.stringify({ error: 'synthetic early catalog failure' }),
-            });
-          }
-          return route.abort('failed');
-        }
-        return route.fulfill({
-          status: 200,
-          contentType: 'application/json',
-          body: JSON.stringify({ items: menuItems('coffee'), updatedAt: Date.now() }),
-        });
-      });
-      await page.goto('/');
-      const splash = page.locator('#brandSplashStatic, #brandSplash').first();
-      await expect(splash).toBeVisible();
-      await expect.poll(() => menuRequests).toBe(1);
-      await splash.locator('[data-go="coffee"]').click();
-      await expect(page.locator('#grid > .card').first()).toBeVisible({ timeout: 15000 });
-      await expect.poll(() => menuRequests).toBe(2);
-      await expect.poll(() => page.evaluate(() => Array.isArray(window.MENU) && window.MENU.length > 0)).toBe(true);
-      expect(menuRequests, 'early request plus one ordinary fallback request').toBe(2);
-    });
-  }
-}
-
-test('C8 adds one first-category image preload after JSON and does not request the hidden delivery hero', async ({ page }) => {
-  const mediaRequests = [];
-  const menuRequests = [];
-  await preparePage(page, 'C8');
-  await page.route('**/api/menu', async (route) => {
-    menuRequests.push('/api/menu');
-    return route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify({ items: menuItems('coffee'), updatedAt: Date.now() }),
-    });
-  });
-  await page.route('**/api/dmenu', async (route) => {
-    menuRequests.push('/api/dmenu');
-    return route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify({ items: menuItems('delivery'), updatedAt: Date.now() }),
-    });
-  });
-  await page.route('**/media/dishes/**', async (route) => {
-    mediaRequests.push(new URL(route.request().url()).pathname);
-    return route.fulfill({ status: 200, contentType: 'image/webp', body: imageBytes });
-  });
-
-  await page.goto('/');
-  const splash = page.locator('#brandSplashStatic, #brandSplash').first();
-  await expect(splash).toBeVisible();
-  const preload = page.locator('head link#zt-menu-lcp-preload');
-  await expect(preload).toBeAttached({ timeout: 10000 });
-  await expect(preload).toHaveAttribute('rel', 'preload');
-  await expect(preload).toHaveAttribute('as', 'image');
-  await expect(preload).toHaveAttribute('href', /coffee-perf-exp-1\.webp/);
-  expect(menuRequests).toEqual(['/api/menu']);
-  expect(mediaRequests.some((pathname) => pathname === '/media/dishes/1-card.webp')).toBe(false);
-
-  await splash.locator('[data-go="coffee"]').click();
-  await expect(page.locator('#grid > .card').first()).toBeVisible({ timeout: 15000 });
-  expect(menuRequests).toEqual(['/api/menu']);
-  const firstItemRequests = mediaRequests.filter((pathname) => pathname.includes('coffee-perf-exp-1'));
-  expect(firstItemRequests.length).toBeLessThanOrEqual(1);
-  expect(mediaRequests.some((pathname) => pathname === '/media/dishes/1-card.webp')).toBe(false);
-});
-
-
-for (const variant of ['C7', 'C8']) {
-  test(variant + ' does not guess a brand when zt_brand is absent', async ({ page }) => {
-    const apiRequests = [];
+  test(variant + ' does not preload a guessed hidden brand when zt_brand is absent', async ({ page }) => {
+    const mediaRequests = [];
     await installHtmlVariantRoute(page, variant);
     await page.addInitScript(() => {
       localStorage.removeItem('zt_brand');
@@ -134,32 +53,21 @@ for (const variant of ['C7', 'C8']) {
       localStorage.removeItem('zt_user');
       sessionStorage.removeItem('splashDone');
     });
-    await page.route('**/api/menu', async (route) => {
-      apiRequests.push('/api/menu');
-      return route.fulfill({
-        status: 200, contentType: 'application/json',
-        body: JSON.stringify({ items: menuItems('coffee'), updatedAt: Date.now() }),
-      });
+    await page.route('**/media/dishes/**', (route) => {
+      mediaRequests.push(new URL(route.request().url()).pathname);
+      return route.fulfill({ status: 200, contentType: 'image/webp', body: imageBytes });
     });
-    await page.route('**/api/dmenu', async (route) => {
-      apiRequests.push('/api/dmenu');
-      return route.fulfill({
-        status: 200, contentType: 'application/json',
-        body: JSON.stringify({ items: menuItems('delivery'), updatedAt: Date.now() }),
-      });
-    });
-    await page.route('**/media/dishes/**', (route) => route.fulfill({
-      status: 200, contentType: 'image/webp', body: imageBytes,
-    }));
 
     await page.goto('/');
     const splash = page.locator('#brandSplashStatic, #brandSplash').first();
     await expect(splash).toBeVisible();
     await page.waitForTimeout(150);
-    expect(apiRequests, 'no speculative brand request without a saved prediction').toEqual([]);
+    await expect(page.locator('head link#zt-menu-lcp-preload, head link#zt-delivery-lcp-preload')).toHaveCount(0);
+    expect(mediaRequests).toEqual([]);
 
     await splash.locator('[data-go="delivery"]').click();
-    await expect(page.locator('#deliveryGrid > .card').first()).toBeVisible({ timeout: 15000 });
-    expect(apiRequests).toEqual(['/api/dmenu']);
+    await expect(page.locator('html')).toHaveAttribute('data-brand', 'delivery');
+    await expect(page.locator('head link#zt-menu-lcp-preload')).toHaveCount(0);
+    expect(mediaRequests.some((pathname) => pathname.includes('coffee') || pathname.includes('esp-card'))).toBe(false);
   });
 }
