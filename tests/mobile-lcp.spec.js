@@ -62,16 +62,11 @@ test.describe('Initial catalog image priorities', () => {
   });
 
   test('coffee staff sees the public catalog while /api/me is still pending', async ({ page }) => {
-    const apiRequests = [];
+    const requests = [];
+    const publicItems = imageCatalogItems('coffee');
+    const stoppedItem = { ...publicItems[0], id: 'coffee-stopped', on: 0 };
     let releaseMe;
     const meGate = new Promise(resolve => { releaseMe = resolve; });
-    const publicItems = imageCatalogItems('coffee');
-    const stoppedItem = {
-      ...publicItems[0],
-      id: 'coffee-stopped',
-      name: 'Позиция в стоп-листе',
-      on: 0
-    };
 
     await page.addInitScript(() => {
       localStorage.setItem('zt_brand', 'coffee');
@@ -81,70 +76,38 @@ test.describe('Initial catalog image priorities', () => {
       localStorage.setItem('zt_inst_hide', '1');
       sessionStorage.setItem('splashDone', '1');
     });
-
+    await routeImageCatalog(page, 'coffee');
     await page.route('**/api/me', async route => {
-      apiRequests.push('/api/me');
       await meGate;
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify({
-          customer: {
-            id: 900001,
-            name: 'LCP Test Admin',
-            phone: '+70000000000',
-            role: 'admin',
-            stamps: 0,
-            free: 0,
-            cups: 0,
-            qr: 'lcp-test',
-            verified: 1,
-            welcome: 1,
-            tg: 0,
-            notify_tg: 1,
-            notify_web: 1,
-            history: []
-          }
-        })
+        body: JSON.stringify({ customer: { role: 'admin' } })
       });
     });
-    await page.route('**/api/menu', async route => {
-      apiRequests.push('/api/menu');
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify({ items: publicItems, updatedAt: Date.now() })
-      });
-    });
-    await page.route('**/api/menu/all', async route => {
-      apiRequests.push('/api/menu/all');
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify({ items: [...publicItems, stoppedItem], updatedAt: Date.now() })
-      });
-    });
-    await page.route('**/media/dishes/**', route => route.fulfill({
+    await page.route('**/api/menu/all', route => route.fulfill({
       status: 200,
-      contentType: 'image/webp',
-      body: Buffer.from('UklGRiQAAABXRUJQVlA4IBgAAAAwAQCdASoBAAEAAUAmJaQAA3AA/vz0AAA=', 'base64')
+      contentType: 'application/json',
+      body: JSON.stringify({ items: [...publicItems, stoppedItem], updatedAt: Date.now() })
     }));
+    page.on('request', request => {
+      const path = new URL(request.url()).pathname;
+      if (['/api/me', '/api/menu', '/api/menu/all'].includes(path)) requests.push(path);
+    });
 
     await page.goto('/?brand=coffee', { waitUntil: 'commit' });
-    await expect.poll(() => apiRequests.includes('/api/me')).toBe(true);
-
-    // The public catalog must paint before authentication releases the staff-only menu request.
+    await expect.poll(() => requests.includes('/api/me')).toBe(true);
     await expect(page.locator('#grid > .card[data-item-id="coffee-image-1"]')).toBeVisible({ timeout: 5000 });
-    expect(apiRequests).toContain('/api/menu');
-    expect(apiRequests).not.toContain('/api/menu/all');
+    expect(requests).toContain('/api/menu');
+    expect(requests).not.toContain('/api/menu/all');
 
     releaseMe();
-    await expect.poll(() => apiRequests.includes('/api/menu/all')).toBe(true);
+    await expect.poll(() => requests.includes('/api/menu/all')).toBe(true);
     await expect.poll(() => page.evaluate(() =>
       Array.isArray(window.MENU) && window.MENU.some(item => item.id === 'coffee-stopped')
     )).toBe(true);
-    expect(apiRequests.filter(path => path === '/api/menu')).toHaveLength(1);
-    expect(apiRequests.filter(path => path === '/api/menu/all')).toHaveLength(1);
+    expect(requests.filter(path => path === '/api/menu')).toHaveLength(1);
+    expect(requests.filter(path => path === '/api/menu/all')).toHaveLength(1);
   });
 
   test('coffee startup does not request the hidden delivery hero image', async ({ page }) => {
