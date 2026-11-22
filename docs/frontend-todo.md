@@ -69,8 +69,9 @@ This is an audit queue, not a declaration that each item is defective.
 
 ### E1.1 Authenticated coffee first paint — PR #308
 
-- [x] Add a regression test that holds `/api/me` and proves an actual coffee catalog card can render before the staff response is released; after a verified staff role, confirm the full `/api/menu/all` response replaces the interim public list.
-- [ ] Confirm the RED test against the current `pizza` source, then verify GREEN after the boot change and run the complete CI matrix.
+- [x] Add a regression test that holds `/api/me` and proves an actual coffee catalog card can render before the staff response is released; after staff verification, confirm `/api/menu/all` updates `MENU` without replacing the first-card DOM, and that a later edit-mode render exposes the stopped item.
+- [x] Confirm the RED test against the current `pizza` source: CI run 4764 failed at the missing real coffee catalog card while `/api/me` was held.
+- [ ] Verify GREEN after the boot change and run the complete CI matrix.
 - [ ] Compare authenticated coffee LCP against the recorded production capture under matching device/network/cache conditions. The source capture is bundle `v=4177`; current production's later delivery trace is `v=4198`, so do not combine the numbers.
 - [ ] Capture and inspect the first catalog frame for coffee and delivery, guest and staff, at mobile portrait/landscape and desktop viewports. Keep PR #308 Draft until the PROJECT_RULES.md §10 review record is complete.
 
