@@ -473,8 +473,9 @@ authRouter.post('/api/auth/deactivate', userGuard, (req, res) => {
 authRouter.post('/api/exit', userGuard, (req, res) => {
   const t = getBearerToken(req);
   db.prepare('DELETE FROM tokens WHERE token=?').run(t);
-  // Defense in depth: even if the client cannot complete /push/unsubscribe,
-  // the logged-out account must not retain a device token.
+  // Defense in depth: logging out revokes device delivery even when the
+  // browser could not complete the explicit unsubscribe request.
+  db.prepare('DELETE FROM subs WHERE cid=?').run(req.user.id);
   db.prepare('DELETE FROM fcm WHERE cid=?').run(req.user.id);
   res.json({ ok: true });
 });
