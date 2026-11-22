@@ -1190,7 +1190,9 @@ paths:
       tags: [Push]
       summary: Отправить тестовое push текущему пользователю
       security: [{ BearerAuth: [] }]
-      responses: { '200': { description: Передача на устройство подтверждена }, '503': { description: Нет подтверждённой доставки Web Push/FCM } }
+      responses:
+        '200': { description: Передача на устройство подтверждена; внутренний smoke-запрос возвращает ok=false и skipped=smoke-test без отправки }
+        '503': { description: Нет подтверждённой доставки Web Push/FCM }
 
   /api/push/fcm:
     post:

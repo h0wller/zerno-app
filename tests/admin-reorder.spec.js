@@ -25,12 +25,23 @@ test.describe('Admin Reorder Suite (F3.70)', () => {
     const second = page.locator('#grid .card').nth(1);
     const secondId = await second.getAttribute('data-item-id');
     await expect(first).toHaveAttribute('draggable', 'true');
+    const firstId = await first.getAttribute('data-item-id');
     const reorderResponse = page.waitForResponse((response) =>
       response.request().method() === 'PUT' &&
       new URL(response.url()).pathname.endsWith('/api/menu/reorder')
     );
-    await second.dragTo(first);
-    expect((await reorderResponse).ok()).toBeTruthy();
+    const dataTransfer = await page.evaluateHandle(() => new DataTransfer());
+    await second.dispatchEvent('dragstart', { dataTransfer });
+    await first.dispatchEvent('dragover', { dataTransfer });
+    await first.dispatchEvent('drop', { dataTransfer });
+    await second.dispatchEvent('dragend', { dataTransfer });
+
+    const response = await reorderResponse;
+    expect(response.ok()).toBeTruthy();
+    const reorderPayload = response.request().postDataJSON();
+    expect(reorderPayload.brand).toBe('coffee');
+    expect(reorderPayload.ids[0]).toBe(secondId);
+    expect(reorderPayload.ids[1]).toBe(firstId);
     await page.reload();
     await page.waitForFunction(() => window.me && window.me.role === 'admin', null, { timeout: 15000 });
     await expect.poll(() => page.locator('#grid .card').first().getAttribute('data-item-id')).toBe(secondId);

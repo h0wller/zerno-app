@@ -133,7 +133,7 @@ SMS.ru сохранён как будущий платный канал авто
 |---|---|---|
 | `GET /api/vapid` | Публичный VAPID-ключ | Публичный |
 | `POST /api/push/subscribe` | Создать или обновить Web Push подписку текущего устройства | userGuard |
-| `POST /api/push/test` | Тестовая отправка; `ok: true` только при подтверждённой доставке Web Push или FCM на устройство, иначе HTTP 503 | userGuard |
+| `POST /api/push/test` | Тестовая отправка; `ok: true` только при подтверждённой передаче Web Push или FCM, иначе HTTP 503. Внутренний заголовок `x-smoke-test: 1` не отправляет push и возвращает `{ ok: false, skipped: 'smoke-test' }` | userGuard |
 | `POST /api/push/fcm` | Upsert FCM-токена; повторная регистрация переносит token к текущему профилю | userGuard |
 | `GET /api/push/subs` | Данные push-подписок | adminGuard |
 | `POST /api/push/send` | Административная отправка push | adminGuard |

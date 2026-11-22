@@ -391,6 +391,32 @@ test('Web Push and FCM unregister by device and logout revokes remaining registr
 });
 
 
+test('push test reports missing device delivery and marks smoke bypass as skipped', async () => {
+  const registered = await api('/api/auth/register', {
+    name: 'Push Delivery Test', phone: '+7 900 000-02-17', pin: '1234', consent: true
+  });
+  assert.equal(registered.status, 200, JSON.stringify(registered.json));
+
+  const noDevice = await api('/api/push/test', {}, registered.json.token);
+  assert.equal(noDevice.status, 503, JSON.stringify(noDevice.json));
+  assert.equal(noDevice.json.ok, false);
+  assert.equal(noDevice.json.reason, 'no_device_delivery');
+  assert.equal(noDevice.json.web?.reason, 'no_subscription');
+  assert.equal(noDevice.json.fcm?.reason, 'not_delivered');
+
+  const smoke = await fetch(base + '/api/push/test', {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      authorization: 'Bearer ' + registered.json.token,
+      'x-smoke-test': '1'
+    },
+    body: '{}'
+  });
+  assert.equal(smoke.status, 200);
+  assert.deepEqual(await smoke.json(), { ok: false, skipped: 'smoke-test' });
+});
+
 test('FCM token registration transfers ownership when the same device signs into another account', async () => {
   const first = await api('/api/auth/register', {
     name: 'FCM First Owner', phone: '+7 900 000-02-15', pin: '1234', consent: true
