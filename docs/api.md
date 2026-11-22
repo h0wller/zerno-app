@@ -127,17 +127,19 @@ SMS.ru сохранён как будущий платный канал авто
 
 ## Push
 
+Все каналы используют один `sendPush` contract: `text` — plain text для Web Push/FCM, `html` — Telegram HTML. Успешная передача в Telegram не маскирует отсутствие доставки на устройство в `/api/push/test`. Logout удаляет Web Push subscriptions и FCM tokens.
+
 | Метод и путь | Назначение | Доступ |
 |---|---|---|
 | `GET /api/vapid` | Публичный VAPID-ключ | Публичный |
-| `POST /api/push/subscribe` | Создать или обновить Web Push подписку | userGuard |
-| `POST /api/push/test` | Тестовая отправка push текущему профилю | userGuard |
-| `POST /api/push/fcm` | Регистрация FCM-токена | userGuard |
+| `POST /api/push/subscribe` | Создать или обновить Web Push подписку текущего устройства | userGuard |
+| `POST /api/push/test` | Тестовая отправка; `ok: true` только при подтверждённой доставке Web Push или FCM на устройство, иначе HTTP 503 | userGuard |
+| `POST /api/push/fcm` | Upsert FCM-токена; повторная регистрация переносит token к текущему профилю | userGuard |
 | `GET /api/push/subs` | Данные push-подписок | adminGuard |
 | `POST /api/push/send` | Административная отправка push | adminGuard |
 | `POST /api/push/send-hours-update` | Уведомление об изменении расписания доставки | adminGuard |
-| `POST /api/push/unsubscribe` | Отписать Web Push endpoint текущего профиля | userGuard |
-| `POST /api/push/del` | Удалить Web Push-подписки из `subs` для `cid` | adminGuard; FCM-токены из таблицы `fcm` этим маршрутом не удаляются |
+| `POST /api/push/unsubscribe` | Удалить указанный Web Push endpoint и/или FCM token; без параметров удалить все device registrations профиля | userGuard |
+| `POST /api/push/del` | Удалить Web Push и FCM device registrations профиля `cid` | adminGuard |
 
 ## Статистика
 
