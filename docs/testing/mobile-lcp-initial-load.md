@@ -1,10 +1,10 @@
 # Mobile first-load LCP — C8 contract and verification
 
 **Updated:** 2026-11-22  
-**Implementation PR:** [#300 — perf: improve mobile first-load LCP](https://github.com/h0wller/zerno-app/pull/300)  
+**Implementation PRs:** [#300 — guest C8 and image preload](https://github.com/h0wller/zerno-app/pull/300); [#308 — authenticated coffee first paint](https://github.com/h0wller/zerno-app/pull/308)  
 **Base:** `pizza` at `aa3a958291948a7b2eda04bcbc9c3cf34385b4aa`  
 **Verified PR HEAD:** `8db36bf3bf9d82adf5ae3cb89f0628afda168201`  
-**Status:** C8 implementation, temporary-file cleanup and automated verification complete; production visual acceptance remains open. PR #300 stays Draft.
+**Status:** C8 implementation and cleanup complete. The authenticated coffee first-paint change is under verification in PR #308; production visual acceptance remains open. PR #300 stays Draft.
 
 This document supersedes earlier performance snapshots for the final C8 implementation. It does not turn lab measurements into production field data.
 
@@ -24,6 +24,17 @@ When the user chooses the same brand, `window.__ztPrimeMenuLcp` reuses the specu
 
 A mismatch that finishes before the user makes a choice may already have preloaded the saved brand's first image. This is the explicit C8 trade-off: the measured candidate's mistaken prediction cost was about **22.5 KiB for coffee** or **49.6 KiB for delivery**. These are measured fixture bytes, not a universal upper bound for every production menu.
 
+### Authenticated coffee startup
+
+When the selected brand is coffee and the splash is not pending, `boot.js` starts the public `/api/menu` request before awaiting `verifyStaffSession()`. The existing `core/catalog.js` loader renders this active public list into the coffee grid as soon as the response is ready; it remains the only owner of coffee menu data. This does not trust `zt_role` or any other client-side role hint.
+
+After `/api/me` resolves:
+- guests and non-staff users keep the public menu and do not make a duplicate request;
+- a confirmed cashier, dispatcher or admin waits for the public request to settle, then uses the same loader to fetch guarded `/api/menu/all`, so the full staff menu replaces the interim active-only list;
+- if the early public request fails, boot retries through the role-aware loader after session verification.
+
+A pending brand splash does not start a speculative runtime catalog request. Its selected-brand flow remains owned by `splash.js`. The staff endpoint is never requested before the server confirms the role.
+
 ### Explicit-brand document preload
 
 The middleware in `server.js` adds an HTTP `Link: rel=preload; as=image; fetchpriority=high` header for `GET /` only when the request explicitly selects a brand (`?brand=coffee` or `?brand=delivery`) or uses the deterministic Lighthouse/clean audit input. It selects the first active image in the initial visible category; for delivery this is the first active `pizza`, not the first database row if sauces/add-ons sort earlier.
@@ -39,6 +50,8 @@ Only local `/media/dishes/` images are eligible. Responsive `imagesrcset` / `ima
 - `public/index.html`: early bootstrap, speculative request, image preload and the bridges `window.__ztPrimeMenuLcp` / `window.__ztApplyDeliveryHero`. The document shell may prime the first delivery hero before the bundle is ready.
 - `server.js`: document-level `Link` preload for explicitly selected brands and audit requests; local media filtering and responsive image parameters.
 - `public/app/core/state.js`: deterministic audit brand initialization.
+- `public/app/core/boot.js`: sequences selected-brand catalog preload with `/api/me`; coffee's public catalog can paint while staff auth is pending, then staff roles upgrade to the guarded full list.
+- `public/app/core/catalog.js`: remains the sole owner of coffee menu data and loads `/api/menu` or `/api/menu/all` according to the server-verified `me` role; `menu.js` remains the sole owner of `#grid` DOM.
 - `public/app/menu.js` and `public/app/delivery.js`: catalog DOM/render ownership and first-row image priority after hydration. These modules remain the owners of their respective catalogs; the early document bootstrap is not a second catalog renderer.
 - `docs/module-map.md`: canonical module-to-DOM ownership map.
 
