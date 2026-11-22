@@ -24,10 +24,12 @@ promosRouter.post('/api/promo/redeem', userGuard, (req, res) => {
       if (!promo || !promo.active) return { status: 404, error: 'Такого промокода нет' };
       if ((promo.scope || 'coffee') === 'delivery') return { status: 400, error: 'Этот промокод работает только в корзине доставки' };
       if (promo.expires && new Date(promo.expires) < new Date()) return { status: 410, error: 'Промокод истёк' };
-      if (promo.maxuses > 0 && promo.uses >= promo.maxuses) return { status: 410, error: 'Промокод закончился' };
+      // Report a repeat use consistently, even when this use consumed the last
+      // campaign slot and the global maxuses limit is now exhausted.
       if (db.prepare('SELECT 1 FROM promo_use WHERE promo=? AND cid=?').get(promo.id, req.user.id)) {
         return { status: 409, error: 'Вы уже использовали этот промокод' };
       }
+      if (promo.maxuses > 0 && promo.uses >= promo.maxuses) return { status: 410, error: 'Промокод закончился' };
 
       db.prepare('INSERT INTO promo_use(promo,cid,ts) VALUES(?,?,?)').run(promo.id, req.user.id, nowISO());
       db.prepare('UPDATE promos SET uses=uses+1 WHERE id=?').run(promo.id);
