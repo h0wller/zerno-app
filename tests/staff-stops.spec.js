@@ -171,6 +171,7 @@ test.describe('Cashier guest PIN and reward picker', () => {
 
       if (path === '/api/me') body = { customer: cashierStaff };
       if (path === '/api/staff/customers' && method === 'GET') body = { customers: [cashierGuest] };
+      if (path === '/api/staff/scan' && method === 'POST') body = { customer: cashierGuest };
       if (path === '/api/staff/customers' && method === 'POST') {
         onRequest('create', request.postDataJSON());
         body = {
@@ -338,6 +339,43 @@ test.describe('Cashier guest PIN and reward picker', () => {
     await expect(modal).toHaveClass(/show/);
     expect(await page.evaluate(() => Boolean(window.__legacyDirectRedeemCalled))).toBe(false);
     expect(redemptions).toHaveLength(0);
+  });
+
+  test('QR guest redemption opens the shared drink picker before spending the reward', async ({ page }) => {
+    const redemptions = [];
+    await mockCashierSession(page, (type, payload) => {
+      if (type === 'redeem') redemptions.push(payload);
+    });
+    await enterCashierMode(page);
+    await page.waitForFunction(() => typeof window.openRedeemPicker === 'function');
+
+    // Exercise the same onScanned path without requesting camera permissions.
+    await page.locator('#scanModal').evaluate(element => { element.hidden = false; });
+    await page.locator('#scanManual').fill('Z-1A2B3C');
+    await page.locator('#scanManualBtn').click();
+    await expect(page.locator('#guestCard')).toBeVisible();
+    await expect(page.locator('#gcRedeem')).toBeEnabled();
+
+    const modal = page.locator('#redeemPick');
+    await page.locator('#gcRedeem').click();
+    await expect(modal).toHaveClass(/show/);
+    expect(redemptions).toHaveLength(0);
+
+    await modal.locator('.omClose').click();
+    await expect(modal).not.toHaveClass(/show/);
+    expect(redemptions).toHaveLength(0);
+
+    await page.locator('#gcRedeem').click();
+    await expect(modal).toHaveClass(/show/);
+    await modal.locator('[data-rp="Капучино"]').click();
+
+    await expect.poll(() => redemptions).toHaveLength(1);
+    expect(redemptions[0]).toEqual({
+      id: cashierGuest.id,
+      item: 'Капучино'
+    });
+    await expect(page.locator('#gcStamps')).toContainText('Бесплатных: 0');
+    await expect(page.locator('#gcRedeem')).toBeDisabled();
   });
 
 });
