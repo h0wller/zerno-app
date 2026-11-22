@@ -90,8 +90,16 @@ jobs:
           ln -s "$GITHUB_WORKSPACE/node_modules" "$F_DIR/node_modules"
           (cd "$A_DIR" && npm run build:client)
           (cd "$F_DIR" && npm run build:client)
+          C7_PUBLIC="$RUNNER_TEMP/perf-exp-C7-public"
+          C8_PUBLIC="$RUNNER_TEMP/perf-exp-C8-public"
+          cp -a "$A_DIR/public" "$C7_PUBLIC"
+          cp -a "$A_DIR/public" "$C8_PUBLIC"
+          node "$GITHUB_WORKSPACE/scripts/perf-exp/prepare-html-variant.mjs" "$A_DIR/public/index.html" "$C7_PUBLIC/index.html" C7
+          node "$GITHUB_WORKSPACE/scripts/perf-exp/prepare-html-variant.mjs" "$A_DIR/public/index.html" "$C8_PUBLIC/index.html" C8
           echo "A_DIR=$A_DIR" >> "$GITHUB_ENV"
           echo "F_DIR=$F_DIR" >> "$GITHUB_ENV"
+          echo "C7_PUBLIC=$C7_PUBLIC" >> "$GITHUB_ENV"
+          echo "C8_PUBLIC=$C8_PUBLIC" >> "$GITHUB_ENV"
 
       - name: Run isolated servers, fallback tests, CDP series and traces
         shell: bash
@@ -102,15 +110,23 @@ jobs:
           set -euo pipefail
           A_DB="$RUNNER_TEMP/perf-exp-A.sqlite"
           F_DB="$RUNNER_TEMP/perf-exp-F.sqlite"
+          C7_DB="$RUNNER_TEMP/perf-exp-C7.sqlite"
+          C8_DB="$RUNNER_TEMP/perf-exp-C8.sqlite"
           A_LOG="$RUNNER_TEMP/perf-exp-A-server.log"
           F_LOG="$RUNNER_TEMP/perf-exp-F-server.log"
+          C7_LOG="$RUNNER_TEMP/perf-exp-C7-server.log"
+          C8_LOG="$RUNNER_TEMP/perf-exp-C8-server.log"
           (cd "$A_DIR" && NODE_ENV=test DB_PATH="$A_DB" PUBLIC_DIR="$A_DIR/public" PORT=3211 ADMIN_CODE='ci-perf-exp-admin-role-code' CASHIER_CODE='ci-perf-exp-cashier-code' DISPATCH_CODE='ci-perf-exp-dispatch-code' TELEGRAM_BOT_TOKEN='' TG_WEBHOOK_SECRET='' SMS_AUTH_ENABLED=false node server.js) >"$A_LOG" 2>&1 &
           A_PID=$!
           (cd "$F_DIR" && NODE_ENV=test DB_PATH="$F_DB" PUBLIC_DIR="$F_DIR/public" PORT=3212 ADMIN_CODE='ci-perf-exp-admin-role-code' CASHIER_CODE='ci-perf-exp-cashier-code' DISPATCH_CODE='ci-perf-exp-dispatch-code' TELEGRAM_BOT_TOKEN='' TG_WEBHOOK_SECRET='' SMS_AUTH_ENABLED=false node server.js) >"$F_LOG" 2>&1 &
           F_PID=$!
+          (cd "$A_DIR" && NODE_ENV=test DB_PATH="$C7_DB" PUBLIC_DIR="$C7_PUBLIC" PORT=3213 ADMIN_CODE='ci-perf-exp-admin-role-code' CASHIER_CODE='ci-perf-exp-cashier-code' DISPATCH_CODE='ci-perf-exp-dispatch-code' TELEGRAM_BOT_TOKEN='' TG_WEBHOOK_SECRET='' SMS_AUTH_ENABLED=false node server.js) >"$C7_LOG" 2>&1 &
+          C7_PID=$!
+          (cd "$A_DIR" && NODE_ENV=test DB_PATH="$C8_DB" PUBLIC_DIR="$C8_PUBLIC" PORT=3214 ADMIN_CODE='ci-perf-exp-admin-role-code' CASHIER_CODE='ci-perf-exp-cashier-code' DISPATCH_CODE='ci-perf-exp-dispatch-code' TELEGRAM_BOT_TOKEN='' TG_WEBHOOK_SECRET='' SMS_AUTH_ENABLED=false node server.js) >"$C8_LOG" 2>&1 &
+          C8_PID=$!
           cleanup() {
-            kill "$A_PID" "$F_PID" 2>/dev/null || true
-            wait "$A_PID" "$F_PID" 2>/dev/null || true
+            kill "$A_PID" "$F_PID" "$C7_PID" "$C8_PID" 2>/dev/null || true
+            wait "$A_PID" "$F_PID" "$C7_PID" "$C8_PID" 2>/dev/null || true
           }
           trap cleanup EXIT
           ready() {
@@ -125,12 +141,18 @@ jobs:
           }
           ready http://127.0.0.1:3211 "$A_LOG"
           ready http://127.0.0.1:3212 "$F_LOG"
+          ready http://127.0.0.1:3213 "$C7_LOG"
+          ready http://127.0.0.1:3214 "$C8_LOG"
           (cd "$A_DIR" && DB_PATH="$A_DB" PUBLIC_DIR="$A_DIR/public" node scripts/lighthouse-fixture.mjs)
           (cd "$A_DIR" && DB_PATH="$F_DB" PUBLIC_DIR="$F_DIR/public" node scripts/lighthouse-fixture.mjs)
+          (cd "$A_DIR" && DB_PATH="$C7_DB" PUBLIC_DIR="$C7_PUBLIC" node scripts/lighthouse-fixture.mjs)
+          (cd "$A_DIR" && DB_PATH="$C8_DB" PUBLIC_DIR="$C8_PUBLIC" node scripts/lighthouse-fixture.mjs)
           npx playwright test tests/perf-exp-fallback.spec.js --project=chromium --workers=1
           node scripts/perf-exp/benchmark.mjs \
             --url-a=http://127.0.0.1:3211 \
             --url-f=http://127.0.0.1:3212 \
+            --url-c7=http://127.0.0.1:3213 \
+            --url-c8=http://127.0.0.1:3214 \
             --runs=5 --delays=0,3000 --brands=coffee,delivery \
             --trace-samples=1 --out=perf-exp-results
 
