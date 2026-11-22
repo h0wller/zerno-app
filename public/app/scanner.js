@@ -1,12 +1,12 @@
 /* public/app/scanner.js — F2.4: сканер QR кассира (полностью изолирован в IIFE) */
 (function () {
   'use strict';
-  let scanStream = null, scanTimer = null, curGuest = null, busy = false, frames = 0;
+  let scanStream = null, scanTimer = null, curGuest = null, busy = false, frames = 0, scanSessionId = 0;
 
   $('#scanFab').onclick = () => { $('#scanModal').hidden = false; startCam(); };
   $('#scanClose').onclick = closeScan;
 
-  function closeScan() { $('#scanModal').hidden = true; stopCam(); }
+  function closeScan() { scanSessionId++; $('#scanModal').hidden = true; stopCam(); }
 
   function stopCam() {
     if (scanTimer) { clearInterval(scanTimer); scanTimer = null; }
@@ -25,12 +25,20 @@
   }
 
   async function startCam() {
+    const sessionId = ++scanSessionId;
     const v = $('#scanVideo');
     frames = 0;
     $('#scanStatus').textContent = 'Включаю камеру…';
     await loadJsqr();
+    if (sessionId !== scanSessionId || $('#scanModal').hidden) return;
     try {
-      scanStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+      // The permission prompt may resolve after the user has already closed the scanner.
+      if (sessionId !== scanSessionId || $('#scanModal').hidden) {
+        stream.getTracks().forEach(track => track.stop());
+        return;
+      }
+      scanStream = stream;
       v.srcObject = scanStream;
       await v.play();
 
