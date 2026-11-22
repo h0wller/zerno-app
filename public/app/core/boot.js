@@ -116,9 +116,21 @@ async function verifyStaffSession() {
     window.me = (await api('/me', { signal: authController.signal })).customer;
     applyStaffRoleState(window.me);
   } catch (e) {
-    window.me = null;
-    window.USER_TOKEN = null;
-    localStorage.removeItem(typeof T_USER !== 'undefined' ? T_USER : 'zt_user');
+    if (e && e.status === 401) {
+      // api() already invalidates the user on an authoritative 401. Do not turn
+      // timeouts, offline mode or 5xx responses into permanent sign-outs.
+      window.me = null;
+      window.USER_TOKEN = null;
+      try { localStorage.removeItem(typeof T_USER !== 'undefined' ? T_USER : 'zt_user'); } catch (_) {}
+      window.__ztSessionOffline = false;
+    } else {
+      window.__ztSessionOffline = true;
+      window.me = null;
+      if (!window.__ztSessionOfflineToastShown && typeof window.toast === 'function') {
+        window.__ztSessionOfflineToastShown = true;
+        window.toast('Нет связи с сервером. Сессия сохранена — приложение повторит проверку при восстановлении сети.', '📡');
+      }
+    }
     applyStaffRoleState(null);
   } finally {
     clearTimeout(authTimeout);
@@ -178,26 +190,59 @@ function registerSW() {
   if (!('serviceWorker' in navigator) || isAudit) return;
   addEventListener('load', () => {
     let refreshing = false;
-    const hadController = !!navigator.serviceWorker.controller;
+    let updateApproved = false;
+    let waitingWorker = null;
+
+    function hasBlockingWork() {
+      return !!document.querySelector(
+        '#cartPanel.open, .modal.show, #ordersModal.show, #redeemPick.show, #orderTrackModal.show, #authModal.show'
+      );
+    }
+
+    function offerUpdate() {
+      if (!waitingWorker || updateApproved || typeof window.toast !== 'function') return;
+      const message = hasBlockingWork()
+        ? 'Доступно обновление. Завершите оформление или закройте открытое окно, затем нажмите здесь.'
+        : 'Доступно обновление приложения. Нажмите, чтобы обновить.';
+      window.toast(message, '🔄', function () {
+        if (hasBlockingWork()) {
+          offerUpdate();
+          return;
+        }
+        updateApproved = true;
+        waitingWorker.postMessage({ type: 'SKIP_WAITING' });
+      });
+    }
+
     navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' })
       .then((reg) => {
         reg.update();
+        if (reg.waiting && navigator.serviceWorker.controller) {
+          waitingWorker = reg.waiting;
+          offerUpdate();
+        }
         reg.addEventListener('updatefound', () => {
           const inst = reg.installing;
           if (!inst) return;
           inst.addEventListener('statechange', () => {
             if (inst.state === 'installed' && navigator.serviceWorker.controller) {
-              inst.postMessage({ type: 'SKIP_WAITING' });
+              waitingWorker = inst;
+              offerUpdate();
             }
           });
         });
       })
       .catch(() => {});
+
     navigator.serviceWorker.addEventListener('controllerchange', () => {
-      if (hadController && !refreshing) {
-        refreshing = true;
-        window.location.reload();
+      if (!updateApproved || refreshing) return;
+      if (hasBlockingWork()) {
+        updateApproved = false;
+        offerUpdate();
+        return;
       }
+      refreshing = true;
+      window.location.reload();
     });
   });
 }
@@ -307,6 +352,30 @@ function initInstallBonus() {
   const standalone = window.navigator.standalone === true || matchMedia('(display-mode: standalone)').matches;
   if (standalone) report();
 }
+
+// A transient boot failure keeps the bearer token. Revalidate it when the
+// connection returns, then restore role-dependent catalog and staff surfaces.
+let sessionRetryBusy = false;
+window.addEventListener('online', async function () {
+  if (sessionRetryBusy || !window.__ztSessionOffline) return;
+  let token = '';
+  try { token = localStorage.getItem('zt_user') || ''; } catch (_) {}
+  if (!token) return;
+  sessionRetryBusy = true;
+  try {
+    await verifyStaffSession();
+    if (window.me) {
+      window.__ztSessionOffline = false;
+      window.__ztSessionOfflineToastShown = false;
+      try { await loadInitialCatalog(null); } catch (_) {}
+      renderAll();
+      if (typeof window.syncBrandViews === 'function') window.syncBrandViews();
+      if (typeof showBadge === 'function') showBadge();
+    }
+  } finally {
+    sessionRetryBusy = false;
+  }
+});
 
 /* ── 6. Старт ── */
 function onReady(fn) {
