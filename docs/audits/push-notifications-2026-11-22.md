@@ -23,7 +23,7 @@
 - Service Worker now parses JSON/text push payloads, displays system notifications, sends `zpush` to open windows, and focuses/navigates the app when a notification is clicked. Notification URLs are restricted to the app origin.
 - `/api/push/test` reports success only when Web Push or FCM accepts a delivery attempt. The UI sends this test after saving the subscription and does not announce success before that result.
 - Push payload contract: `{ title, text, html }`. Plain text is used for Web Push/FCM; Telegram HTML is kept separate. Telegram parse-entity failures retry as plain text; long messages are converted before truncation.
-- FCM token registration is an upsert that reassigns ownership. Explicit unsubscribe can remove a selected endpoint/token; logout also revokes all device registrations for the profile.
+- FCM token registration is an upsert that reassigns ownership. Explicit unsubscribe and logout remove only the endpoint/token for the current device; other devices signed into the same account remain registered. Empty unregister requests are rejected.
 - Admin broadcasts and staff-order notifications use the shared fan-out across enabled Telegram, Web Push and FCM channels.
 - Auth verification preserves the token after transient network/server errors and retries on the online event; successful `setUser` resets the dead-auth flag.
 - Order polling is reduced to 15 seconds for orders and 45 seconds for profile state; `zpush` still triggers immediate refresh.
