@@ -186,9 +186,16 @@ async function boot() {
 }
 
 /* ── 3. Service Worker: ЕДИНАЯ регистрация ── */
+function isStandalonePWA() {
+  try {
+    return navigator.standalone === true || window.matchMedia('(display-mode: standalone)').matches;
+  } catch (_) {
+    return navigator.standalone === true;
+  }
+}
 function showSWUpdateAppliedToast() {
   const marker = 'zt_sw_update_applied';
-  if (!('serviceWorker' in navigator) || !navigator.serviceWorker.controller) return;
+  if (!isStandalonePWA() || !('serviceWorker' in navigator) || !navigator.serviceWorker.controller) return;
 
   let applied = false;
   try {
@@ -393,7 +400,7 @@ function registerSW() {
     }
 
     function offerUpdate() {
-      if (!waitingWorker || updateApproved || updateDeferred || updateDialog || hasBlockingWork()) return;
+      if (!isStandalonePWA() || !waitingWorker || updateApproved || updateDeferred || updateDialog || hasBlockingWork()) return;
       showUpdateDialog();
     }
 

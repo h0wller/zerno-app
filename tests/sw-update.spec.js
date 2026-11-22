@@ -2,7 +2,14 @@ import { test, expect } from '@playwright/test';
 
 test.use({ serviceWorkers: 'block' });
 
-async function installWaitingServiceWorker(page) {
+async function installWaitingServiceWorker(page, { standalone = true } = {}) {
+  await page.addInitScript((isStandalone) => {
+    Object.defineProperty(navigator, 'standalone', {
+      configurable: true,
+      value: isStandalone,
+    });
+  }, standalone);
+
   await page.addInitScript(() => {
     localStorage.setItem('zt_onb', '1');
     sessionStorage.setItem('splashDone', '1');
@@ -122,6 +129,17 @@ test('shows the success toast only after activation and reload', async ({ page }
 
   await page.getByRole('button', { name: 'Обновить приложение' }).click();
   await expect(page.locator('#toasts .toast', { hasText: 'Приложение обновлено' })).toBeVisible();
+});
+
+test('does not show update dialog in a regular browser tab, including desktop', async ({ page }) => {
+  await installWaitingServiceWorker(page, { standalone: false });
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto('/?brand=coffee');
+
+  await expect(page.getByRole('dialog', { name: 'Доступно обновление' })).toHaveCount(0);
+  await page.waitForTimeout(3600);
+  await expect(page.getByRole('dialog', { name: 'Доступно обновление' })).toHaveCount(0);
+  await expect(page.locator('#toasts .toast', { hasText: 'Приложение обновлено' })).toHaveCount(0);
 });
 
 test('new service workers wait until the page sends SKIP_WAITING', async ({ request }) => {
