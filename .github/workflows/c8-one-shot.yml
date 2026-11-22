@@ -5,7 +5,6 @@ on:
     branches:
       - perf/mobile-lcp-initial-load
     paths:
-      - '.github/workflows/c8-one-shot.yml'
       - '.github/c8-one-shot/c8-apply.patch.gz'
 
 permissions:
@@ -44,7 +43,6 @@ jobs:
 
           gzip -dc .github/c8-one-shot/c8-cleanup.patch.gz | git apply --index
           git checkout 8f276411f337952183864684e0bed5558d5e18d9 -- .github/workflows/ci.yml
-          git rm -f .github/c8-one-shot/c8-apply.patch.gz .github/c8-one-shot/c8-cleanup.patch.gz .github/workflows/c8-one-shot.yml
           git add -A
           git diff --cached --check
           git commit -m "chore: remove perf-exp benchmark scaffolding"
