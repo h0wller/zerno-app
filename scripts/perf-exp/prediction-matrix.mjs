@@ -44,7 +44,7 @@ function stats(values) {
   } : null;
 }
 function pathsFromSrcset(value, origin) {
-  return String(value || '').split(',').map((part) => part.trim().split(/\\s+/)[0])
+  return String(value || '').split(',').map((part) => part.trim().split(' ')[0])
     .filter(Boolean).map((url) => new URL(url, origin).pathname);
 }
 function bytesAt(request, at) {
@@ -56,8 +56,9 @@ function bytesAt(request, at) {
 }
 function isHiddenImagePath(pathname, hiddenBrand, firstImagePaths) {
   if (firstImagePaths.has(pathname)) return true;
-  if (hiddenBrand === 'coffee') return /(?:^|\\/)esp-card(?:-[^/]+)?\\.webp$/i.test(pathname);
-  return /(?:^|\\/)1-card(?:-[^/]+)?\\.webp$/i.test(pathname);
+  const leaf = pathname.slice(pathname.lastIndexOf('/') + 1).toLowerCase();
+  if (hiddenBrand === 'coffee') return leaf.startsWith('esp-card') && leaf.endsWith('.webp');
+  return leaf.startsWith('1-card') && leaf.endsWith('.webp');
 }
 function preloadPaths(preloads, origin) {
   const result = new Set();
