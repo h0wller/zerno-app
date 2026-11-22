@@ -20,15 +20,19 @@ export function escapeTelegramHtml(value) {
 }
 
 function telegramHtmlToPlainText(value) {
+  const newline = String.fromCharCode(10);
   return String(value || '')
-    .replace(/<br\\s*\\/?\\s*>/gi, '\\n')
-    .replace(/<\\/(?:p|div|li)>/gi, '\\n')
+    .replace(/<br[^>]*>/gi, newline)
+    .replaceAll('</p>', newline)
+    .replaceAll('</div>', newline)
+    .replaceAll('</li>', newline)
     .replace(/<[^>]*>/g, '')
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;|&#x27;/gi, "'")
-    .replace(/&amp;/g, '&');
+    .replaceAll('&lt;', '<')
+    .replaceAll('&gt;', '>')
+    .replaceAll('&quot;', '"')
+    .replaceAll('&#39;', "'")
+    .replaceAll('&#x27;', "'")
+    .replaceAll('&amp;', '&');
 }
 
 export async function tgSend(chatId, text, kb) { // [tg-logging-v1]
