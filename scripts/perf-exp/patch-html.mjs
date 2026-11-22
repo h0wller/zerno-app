@@ -132,7 +132,7 @@ export async function installHtmlVariantRoute(page, variant) {
     // C7/C8 do not silently turn a compressed production HTML response into a much
     // larger identity response in the byte-before-click measurements.
     const body = gzipSync(Buffer.from(patched, 'utf8'));
-    const headers = await response.allHeaders();
+    const headers = response.headers();
     delete headers['content-encoding'];
     delete headers['content-length'];
     delete headers['transfer-encoding'];
