@@ -22,13 +22,10 @@ pushRouter.post('/api/push/subscribe', userGuard, (req, res) => {
   if (!sub || !sub.endpoint) return res.status(400).json({ error: 'bad sub' });
   const s = JSON.stringify(sub);
   const dev = String(req.body.dev || '').slice(0, 64);
-  // Приветствие — только когда у клиента ещё не было ни одной подписки.
-  const before = db.prepare('SELECT COUNT(*) AS n FROM subs WHERE cid=?').get(req.user.id).n;
   // Одно устройство — одна подписка: старые строки того же устройства удаляем.
   if (dev) db.prepare('DELETE FROM subs WHERE cid=? AND dev=? AND sub<>?').run(req.user.id, dev, s);
   db.prepare(`INSERT INTO subs(cid,sub,created,dev) VALUES(?,?,?,?)
     ON CONFLICT(sub) DO UPDATE SET cid=excluded.cid, dev=excluded.dev`).run(req.user.id, s, nowISO(), dev);
-  if (before === 0) sendPush(req.user.id, '🔔 Уведомления подключены', 'Теперь сообщим о штампах и бесплатном кофе!');
   res.json({ ok: true });
 });
 
@@ -36,14 +33,27 @@ pushRouter.post('/api/push/test', userGuard, async (req, res) => {
   if (req.headers['x-smoke-test']) {
   return res.json({ ok: true, skipped: 'smoke-test' });
 }
-  const s = await sendPush(req.user.id, '🔔 Тестовый пуш', 'Если ты это видишь — пуши на этом устройстве работают');
-  res.json(s);
+  const result = await sendPush(req.user.id, {
+    title: '🔔 Тестовый пуш',
+    text: 'Если ты это видишь — пуши на этом устройстве работают'
+  });
+  const deliveredToDevice = !!(result.web?.ok || result.fcm?.ok);
+  res.status(deliveredToDevice ? 200 : 503).json({
+    ...result,
+    ok: deliveredToDevice,
+    reason: deliveredToDevice ? undefined : 'no_device_delivery',
+    message: deliveredToDevice
+      ? 'Тестовое уведомление передано службе доставки устройства'
+      : 'Подписка сохранена, но ни Web Push, ни FCM не подтвердили отправку на устройство'
+  });
 });
 
 pushRouter.post('/api/push/fcm', userGuard, (req, res) => {
   const token = String(req.body.token || '');
   if (!token) return res.status(400).json({ error: 'bad token' });
-  db.prepare('INSERT OR IGNORE INTO fcm(cid,token,created) VALUES(?,?,?)').run(req.user.id, token, nowISO());
+  db.prepare(`INSERT INTO fcm(cid,token,created) VALUES(?,?,?)
+    ON CONFLICT(token) DO UPDATE SET cid=excluded.cid, created=excluded.created`)
+    .run(req.user.id, token, nowISO());
   res.json({ ok: true });
 });
 
@@ -119,7 +129,22 @@ pushRouter.post('/api/push/send-hours-update', adminGuard, async (req, res) => {
 });
 
 pushRouter.post('/api/push/unsubscribe', userGuard, (req, res) => {
-  db.prepare('DELETE FROM subs WHERE cid=?').run(req.user.id);
+  const endpoint = String(req.body?.endpoint || '');
+  const token = String(req.body?.token || '');
+  if (endpoint) {
+    const rows = db.prepare('SELECT sub FROM subs WHERE cid=?').all(req.user.id);
+    for (const row of rows) {
+      try {
+        if (JSON.parse(row.sub).endpoint === endpoint) {
+          db.prepare('DELETE FROM subs WHERE cid=? AND sub=?').run(req.user.id, row.sub);
+        }
+      } catch (_) {}
+    }
+  } else {
+    db.prepare('DELETE FROM subs WHERE cid=?').run(req.user.id);
+  }
+  if (token) db.prepare('DELETE FROM fcm WHERE cid=? AND token=?').run(req.user.id, token);
+  else if (!endpoint) db.prepare('DELETE FROM fcm WHERE cid=?').run(req.user.id);
   res.json({ ok: true });
 });
 
