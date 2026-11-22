@@ -134,7 +134,7 @@ test.describe('Initial catalog image priorities', () => {
     await expect.poll(() => apiRequests.includes('/api/me')).toBe(true);
 
     // The public catalog must paint before authentication releases the staff-only menu request.
-    await expect(page.locator('#grid > .card').first()).toBeVisible({ timeout: 5000 });
+    await expect(page.locator('#grid > .card[data-item-id="coffee-image-1"]')).toBeVisible({ timeout: 5000 });
     expect(apiRequests).toContain('/api/menu');
     expect(apiRequests).not.toContain('/api/menu/all');
 
