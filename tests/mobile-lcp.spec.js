@@ -264,6 +264,68 @@ test.describe('Initial catalog image priorities', () => {
     expect(await dishResourceCount('/sauce-card')).toBe(0);
   });
 
+  test('coffee first-row image priorities follow responsive grid geometry', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await routeImageCatalog(page, 'coffee');
+    await page.addInitScript(() => {
+      localStorage.setItem('zt_brand', 'coffee');
+      localStorage.setItem('zt_onb', '1');
+      localStorage.setItem('zt_inst_hide', '1');
+      sessionStorage.setItem('splashDone', '1');
+    });
+
+    await page.goto('/?brand=coffee');
+    const cards = page.locator('#grid > .card[data-item-id]');
+    await expect.poll(() => cards.count()).toBeGreaterThan(1);
+    await page.evaluate(() => document.fonts.ready);
+
+    const assertActualFirstRowPriorities = async (width) => {
+      const priorities = await page.evaluate(async () => {
+        await new Promise((resolve) => requestAnimationFrame(() =>
+          requestAnimationFrame(resolve)
+        ));
+        const grid = document.getElementById('grid');
+        const cards = Array.from(grid.querySelectorAll(':scope > .card[data-item-id]'));
+        const firstTop = cards[0]?.getBoundingClientRect().top;
+        const row = cards.filter((card) =>
+          Math.abs(card.getBoundingClientRect().top - firstTop) <= 1
+        );
+        const images = cards.map((card) => {
+          const image = card.querySelector('.media img[src]');
+          return {
+            top: card.getBoundingClientRect().top,
+            loading: image?.getAttribute('loading') ?? null,
+            priority: image?.getAttribute('fetchpriority') ?? null
+          };
+        });
+        return {
+          rowCount: row.length,
+          eagerCount: images.filter((image) => image.loading === 'eager').length,
+          highCount: images.filter((image) => image.priority === 'high').length,
+          firstRow: images.filter((image) => Math.abs(image.top - firstTop) <= 1),
+          laterRows: images.filter((image) => Math.abs(image.top - firstTop) > 1)
+        };
+      });
+      expect(priorities.rowCount, `first row exists at ${width}px`).toBeGreaterThan(0);
+      expect(priorities.eagerCount, `only actual first-row images are eager at ${width}px`)
+        .toBe(priorities.rowCount);
+      expect(priorities.highCount, `exactly one LCP image at ${width}px`).toBe(1);
+      expect(priorities.firstRow.every((image) =>
+        image.loading === 'eager' && image.priority === 'auto' ||
+        image.loading === 'eager' && image.priority === 'high'
+      )).toBe(true);
+      expect(priorities.firstRow.filter((image) => image.priority === 'high')).toHaveLength(1);
+      expect(priorities.laterRows.every((image) =>
+        image.loading === 'lazy' && image.priority === 'auto'
+      ), `later rows remain lazy at ${width}px`).toBe(true);
+    };
+
+    for (const width of [390, 520, 690, 821, 1024, 1440]) {
+      await page.setViewportSize({ width, height: width < 700 ? 844 : 900 });
+      await assertActualFirstRowPriorities(width);
+    }
+  });
+
   test('first catalog hero keeps card motion while only its image receives high priority', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.emulateMedia({ reducedMotion: 'no-preference' });
