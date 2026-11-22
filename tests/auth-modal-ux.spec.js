@@ -1052,6 +1052,7 @@ test('confetti cancels its active frame and clears the canvas while the document
     const pendingFrames = new Map();
     let nextFrameId = 0;
     window.__pendingConfettiFrames = pendingFrames;
+    window.__cancelledAnimationFrames = [];
     window.__confettiClearCalls = 0;
     Object.defineProperty(document, 'visibilityState', {
       configurable: true,
@@ -1062,7 +1063,10 @@ test('confetti cancels its active frame and clears the canvas while the document
       pendingFrames.set(id, callback);
       return id;
     };
-    window.cancelAnimationFrame = (id) => pendingFrames.delete(id);
+    window.cancelAnimationFrame = (id) => {
+      window.__cancelledAnimationFrames.push(id);
+      pendingFrames.delete(id);
+    };
 
     const context = {
       clearRect: () => { window.__confettiClearCalls += 1; },
@@ -1079,21 +1083,32 @@ test('confetti cancels its active frame and clears the canvas while the document
       document.dispatchEvent(new Event('visibilitychange'));
     };
     window.confetti();
+    window.__confettiFrameId = Array.from(pendingFrames.keys())[0];
   });
 
+  const confettiFrameId = await page.evaluate(() => window.__confettiFrameId);
+  expect(confettiFrameId).toBeTruthy();
   expect(await page.evaluate(() => window.__pendingConfettiFrames.size)).toBe(1);
 
   await page.evaluate(() => window.__setConfettiVisibility('hidden'));
-  expect(await page.evaluate(() => window.__pendingConfettiFrames.size)).toBe(0);
+  const cancellation = await page.evaluate(() => ({
+    cancelled: window.__cancelledAnimationFrames,
+    pending: Array.from(window.__pendingConfettiFrames.keys()),
+    frameId: window.__confettiFrameId
+  }));
+  expect(cancellation.cancelled).toContain(confettiFrameId);
+  expect(cancellation.pending).not.toContain(confettiFrameId);
   expect(await page.evaluate(() => window.__confettiClearCalls)).toBeGreaterThanOrEqual(2);
 
+  const pendingBeforeHiddenConfetti = await page.evaluate(() => Array.from(window.__pendingConfettiFrames.keys()));
   await page.evaluate(() => window.confetti());
-  expect(await page.evaluate(() => window.__pendingConfettiFrames.size)).toBe(0);
+  expect(await page.evaluate(() => Array.from(window.__pendingConfettiFrames.keys()))).toEqual(pendingBeforeHiddenConfetti);
 
   await page.evaluate(() => window.__setConfettiVisibility('visible'));
-  expect(await page.evaluate(() => window.__pendingConfettiFrames.size)).toBe(0);
+  const framesBeforeExplicitRestart = await page.evaluate(() => Array.from(window.__pendingConfettiFrames.keys()));
   await page.evaluate(() => window.confetti());
-  expect(await page.evaluate(() => window.__pendingConfettiFrames.size)).toBe(1);
+  const framesAfterExplicitRestart = await page.evaluate(() => Array.from(window.__pendingConfettiFrames.keys()));
+  expect(framesAfterExplicitRestart.filter((id) => !framesBeforeExplicitRestart.includes(id))).toHaveLength(1);
 });
 
 
