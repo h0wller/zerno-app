@@ -60,9 +60,11 @@ function isHiddenImagePath(pathname, hiddenBrand, firstImagePaths) {
   if (hiddenBrand === 'coffee') return leaf.startsWith('esp-card') && leaf.endsWith('.webp');
   return leaf.startsWith('1-card') && leaf.endsWith('.webp');
 }
-function preloadPaths(preloads, origin) {
+function preloadPaths(preloads, origin, brand) {
   const result = new Set();
+  const expectedId = brand === 'coffee' ? 'zt-menu-lcp-preload' : 'zt-delivery-lcp-preload';
   for (const preload of preloads) {
+    if (preload.id !== expectedId) continue;
     try { result.add(new URL(preload.href, origin).pathname); } catch (_) {}
     for (const pathname of pathsFromSrcset(preload.imagesrcset, origin)) result.add(pathname);
   }
@@ -212,8 +214,8 @@ async function runOnce(browser, variant, scenario, runNumber) {
     tapAt = click.at;
     tappedBrand = click.brand;
     const preloadsAtTap = await page.evaluate(() => [...document.querySelectorAll('link[rel="preload"][as="image"]')]
-      .map((node) => ({ href: node.href, imagesrcset: node.getAttribute('imagesrcset') || '' })));
-    for (const pathname of preloadPaths(preloadsAtTap, baseUrl)) predictedImagePathsAtTap.add(pathname);
+      .map((node) => ({ id: node.id, href: node.href, imagesrcset: node.getAttribute('imagesrcset') || '' })));
+    for (const pathname of preloadPaths(preloadsAtTap, baseUrl, hiddenBrand)) predictedImagePathsAtTap.add(pathname);
 
     const cardHandle = await page.waitForFunction((selectedBrand) => {
       const grid = document.querySelector(selectedBrand === 'delivery' ? '#deliveryGrid' : '#grid');
@@ -234,8 +236,8 @@ async function runOnce(browser, variant, scenario, runNumber) {
     await Promise.all(responseTasks);
 
     const preloadsAtCard = await page.evaluate(() => [...document.querySelectorAll('link[rel="preload"][as="image"]')]
-      .map((node) => ({ href: node.href, imagesrcset: node.getAttribute('imagesrcset') || '' })));
-    const cardPreloadPaths = preloadPaths(preloadsAtCard, baseUrl);
+      .map((node) => ({ id: node.id, href: node.href, imagesrcset: node.getAttribute('imagesrcset') || '' })));
+    const cardPreloadPaths = preloadPaths(preloadsAtCard, baseUrl, hiddenBrand);
     const hiddenImageRequests = (request) => {
       if (request.type !== 'Image' && !request.pathname.startsWith('/media/dishes/')) return false;
       return isHiddenImagePath(request.pathname, hiddenBrand, new Set([
