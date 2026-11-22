@@ -74,6 +74,7 @@ jobs:
         run: |
           node --check scripts/perf-exp/patch-html.mjs
           node --check scripts/perf-exp/benchmark.mjs
+          node --check scripts/perf-exp/prepare-html-variant.mjs
           node --check tests/perf-exp-fallback.spec.js
 
       - name: Prepare pinned A and F worktrees
