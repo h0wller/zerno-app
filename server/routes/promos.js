@@ -34,19 +34,19 @@ promosRouter.post('/api/promo/redeem', userGuard, (req, res) => {
       db.prepare('INSERT INTO promo_use(promo,cid,ts) VALUES(?,?,?)').run(promo.id, req.user.id, nowISO());
       db.prepare('UPDATE promos SET uses=uses+1 WHERE id=?').run(promo.id);
 
-      let granted = null;
       const value = Math.max(1, Math.min(100, Math.floor(Number(promo.value) || 1)));
+      let currentStamps = null;
       if (promo.kind === 'stamp') {
-        granted = grantStamps(req.user.id, value, 'Промокод ' + promo.code);
-        if (!granted) throw new Error('Не удалось начислить штампы');
+        const grantResult = grantStamps(req.user.id, value, 'Промокод ' + promo.code);
+        if (!grantResult) throw new Error('Не удалось начислить штампы');
+        currentStamps = grantResult.customer?.stamps ?? grantResult.stamps;
       } else {
         db.prepare('UPDATE customers SET free=free+? WHERE id=?').run(value, req.user.id);
         addHist(req.user.id, `🎁 Промокод ${promo.code}: +${value} бесплатный кофе`, 'Система');
-        granted = { addedFree: value, stamps: 0 };
       }
 
       logEv(req.user.name, `промокод ${promo.code}`);
-      return { promo, granted, value };
+      return { promo, currentStamps, value };
     }).immediate();
   } catch (error) {
     if (error?.code === 'SQLITE_CONSTRAINT_UNIQUE') {
@@ -58,7 +58,7 @@ promosRouter.post('/api/promo/redeem', userGuard, (req, res) => {
   if (result.status) return res.status(result.status).json({ error: result.error });
 
   const message = result.promo.kind === 'stamp'
-    ? `Промокод ${result.promo.code}: +${result.value} штамп(а). Сейчас ${result.granted.customer?.stamps ?? result.granted.stamps}/10.`
+    ? `Промокод ${result.promo.code}: +${result.value} штамп(а). Сейчас ${result.currentStamps}/10.`
     : `Промокод ${result.promo.code}: +${result.value} бесплатный кофе.`;
   sendPush(req.user.id, { title: '🎁 Промокод активирован', text: message }).catch(() => {});
 
