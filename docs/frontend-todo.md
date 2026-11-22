@@ -1,7 +1,7 @@
 # Frontend roadmap & UX audit — Zerno
 
 **Base branch:** `pizza`
-**Last documentation reconciliation:** 2026-11-19
+**Last documentation reconciliation:** 2026-11-22
 
 ## Current source-of-truth and status
 
@@ -66,6 +66,23 @@ This is an audit queue, not a declaration that each item is defective.
 - [ ] Staff-only controls do not leak into guest view.
 - [ ] brand switch and bfcache restore do not cause stale header geometry or jump.
 - [ ] Use the contract in `docs/testing/slow-network-layout.md`; do not loosen assertions to hide shifts.
+
+### E1. Mobile initial catalog / LCP — PR #300
+
+**Current state on 2026-11-22:** C8 implementation, cleanup and automated verification are complete on PR branch `perf/mobile-lcp-initial-load` at `8db36bf3bf9d82adf5ae3cb89f0628afda168201`. The PR is still Draft and is not merged into `pizza`.
+
+- [x] Guest-only speculative catalog request while splash is pending, gated by a valid saved `zt_brand`; no prediction for authenticated users or when no valid saved brand exists.
+- [x] Reuse a matching prediction after brand selection; ordinary selected-brand fallback on HTTP 503/network abort; block late mismatched preload/hidden delivery-hero activation.
+- [x] Explicit-brand document `Link` preload for the first active image in the initial visible category, with local-media and responsive-image guards.
+- [x] Deterministic `?lighthouse=1` / `?clean=1` audit brand selection and integration/Playwright regression coverage.
+- [x] Remove one-shot/perf experiment scaffolding from the PR tree; retain the CI Lighthouse fixture/summary scripts. The `perf-exp` branch itself was not deleted.
+- [x] Full CI [run 45030665869](https://github.com/h0wller/zerno-app/actions/runs/45030665869): 14/14 jobs successful on the final HEAD.
+- [ ] Complete same-context before/after visual acceptance on production assets for both brands, splash/first catalog frame, mobile portrait/landscape/short landscape, desktop, relevant staff states, cart/checkout and keyboard/focus/safe-area geometry. Record reviewed frames and disposition per `PROJECT_RULES.md §10`.
+- [ ] Treat post-deployment production/field verification as a separate step after the PR is accepted and merged; CI fixtures and lab Lighthouse do not provide field data.
+
+Lighthouse comparison in run 45030665869 used two repeats per baseline/PR × brand. Observed trace LCP moved from 589.5→559 ms for coffee and 490→332.5 ms for delivery, while simulated LCP moved 4745→4639 ms for coffee and 5067→5156 ms for delivery. This is preliminary lab evidence; do not present it as an across-the-board or field improvement. The accepted A/F/C8 click-to-card series measured a preceding candidate, not the final HEAD; no additional benchmark series was started.
+
+Full contract, ownership, evidence, cleanup and residual acceptance gate: [docs/testing/mobile-lcp-initial-load.md](testing/mobile-lcp-initial-load.md).
 
 ### F. Staff UX after client audit
 - [ ] Cashier lookup/stamp/redeem/scan.
