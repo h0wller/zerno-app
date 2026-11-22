@@ -9,6 +9,7 @@ function urlBase64ToUint8Array(s) {
       }
 
       let pushBusy = false;
+      let nativeFcmWaiter = null;
       // Стабильный id браузера: одно устройство — одна подписка на сервере.
       function getDevId() {
         try {
@@ -28,12 +29,46 @@ function urlBase64ToUint8Array(s) {
         try {
           if (isCap) {
             const PN = Capacitor.Plugins.PushNotifications;
-/* Ф5.6.2g: разделяемое состояние с fx.js через window */
             const perm = await PN.requestPermissions();
-            if (perm.receive !== "granted")
+            if (perm.receive !== "granted") {
               return toast("Уведомления не включены", "😔");
-            PN.register();
-            return toast("Уведомления включены!", "🔔");
+            }
+
+            let nativeToken = '';
+            try { nativeToken = localStorage.getItem("zt_fcm_token") || ''; } catch (_) {}
+            if (!nativeToken) {
+              const waitForRegistration = new Promise((resolve, reject) => {
+                const timer = setTimeout(() => {
+                  nativeFcmWaiter = null;
+                  reject(new Error("Служба уведомлений не вернула токен устройства"));
+                }, 12000);
+                nativeFcmWaiter = {
+                  resolve(value) {
+                    clearTimeout(timer);
+                    nativeFcmWaiter = null;
+                    resolve(value);
+                  },
+                  cancel() {
+                    clearTimeout(timer);
+                    nativeFcmWaiter = null;
+                  }
+                };
+              });
+              try {
+                await PN.register();
+                nativeToken = await waitForRegistration;
+              } catch (error) {
+                if (nativeFcmWaiter) nativeFcmWaiter.cancel();
+                throw error;
+              }
+            }
+
+            await api("/push/fcm", { method: "POST", body: { token: nativeToken } });
+            const testResult = await api("/push/test", { method: "POST", body: {} });
+            if (testResult && testResult.ok && testResult.fcm?.ok) {
+              return toast("FCM зарегистрирован. Проверочное уведомление передано устройству", "🔔");
+            }
+            return toast(testResult?.message || "FCM зарегистрирован, но отправка на устройство не подтверждена", "⚠️");
           }
           const isIOS =
             /iP(hone|ad|od)/.test(navigator.userAgent) ||
@@ -234,14 +269,18 @@ function urlBase64ToUint8Array(s) {
       );
       if (isCap) {
         const PN = Capacitor.Plugins.PushNotifications;
-        PN.addListener("registration", (t) => {
-          localStorage.setItem("zt_fcm", "1");
-          localStorage.setItem("zt_fcm_token", t.value);
-          if (me)
-            api("/push/fcm", {
+        PN.addListener("registration", async (registration) => {
+          try {
+            localStorage.setItem("zt_fcm", "1");
+            localStorage.setItem("zt_fcm_token", registration.value);
+          } catch (_) {}
+          if (me) {
+            await api("/push/fcm", {
               method: "POST",
-              body: { token: t.value },
+              body: { token: registration.value },
             }).catch(() => {});
+          }
+          if (nativeFcmWaiter) nativeFcmWaiter.resolve(registration.value);
           window.refreshPushBtn();
         });
         try {
