@@ -13,7 +13,8 @@ const urls = {
   C7: args['url-c7'],
   C8: args['url-c8'],
 };
-const variants = ['A', 'F', 'C7', 'C8'];
+const variants = (args.variants || 'A,F,C7,C8').split(',');
+const traceDelays = (args['trace-delays'] || '0').split(',').map(Number);
 const runs = Number(args.runs || 5);
 const delays = (args.delays || '0,3000').split(',').map(Number);
 const brands = (args.brands || 'coffee,delivery').split(',');
@@ -23,8 +24,10 @@ const network = { latency: 150, throughputBytesPerSecond: 1638.4 * 1024 / 8 };
 const apiPaths = new Set(['/api/menu', '/api/dmenu']);
 
 if (!urls.A || !urls.F || !urls.C7 || !urls.C8 || delays.some((delay) => ![0, 3000].includes(delay)) ||
+    traceDelays.some((delay) => ![0, 3000].includes(delay)) ||
+    variants.some((variant) => !['A', 'F', 'C7', 'C8'].includes(variant)) ||
     brands.some((brand) => !['coffee', 'delivery'].includes(brand))) {
-  throw new Error('Expected --url-a, --url-f, --url-c7, --url-c8, --runs, --delays=0,3000, --brands=coffee,delivery');
+  throw new Error('Expected pinned URLs, --variants=A,F,C7,C8, --runs, --delays=0,3000, --trace-delays=0,3000, --brands=coffee,delivery');
 }
 fs.mkdirSync(outputDir, { recursive: true });
 
@@ -381,7 +384,7 @@ async function runOnce(browser, variant, brand, delayMs, runNumber, captureTrace
       fs.writeFileSync(path.join(outputDir, prefix + '.json'), JSON.stringify(row, null, 2));
     }
     if (captureTrace && cardMark && tracing) {
-      const tracePath = path.join(outputDir, 'trace-' + variant + '-' + brand + '.json');
+      const tracePath = path.join(outputDir, 'trace-' + variant + '-' + brand + '-delay' + delayMs + '.json');
       row.trace = await finishTrace(cdp, tapAt, cardMark.at, clockOffsetMs, tracePath);
       tracing = false;
     }
@@ -413,8 +416,10 @@ try {
   }
   if (traceSamples) {
     for (const variant of variants) {
-      for (const brand of brands) {
-        traceRecords.push(await runOnce(browser, variant, brand, 0, 90, true));
+      for (const delay of traceDelays) {
+        for (const brand of brands) {
+          traceRecords.push(await runOnce(browser, variant, brand, delay, 90 + delay, true));
+        }
       }
     }
   }
