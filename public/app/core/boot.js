@@ -186,47 +186,253 @@ async function boot() {
 }
 
 /* ── 3. Service Worker: ЕДИНАЯ регистрация ── */
+function showSWUpdateAppliedToast() {
+  const marker = 'zt_sw_update_applied';
+  if (!('serviceWorker' in navigator) || !navigator.serviceWorker.controller) return;
+
+  let applied = false;
+  try {
+    applied = sessionStorage.getItem(marker) === '1';
+    if (applied) sessionStorage.removeItem(marker);
+  } catch (_) {}
+
+  if (applied && typeof window.toast === 'function') {
+    window.toast('Приложение обновлено', '✅');
+  }
+}
+
 function registerSW() {
   if (!('serviceWorker' in navigator) || isAudit) return;
   addEventListener('load', () => {
-    let refreshing = false;
     let updateApproved = false;
+    let updateDeferred = false;
+    let reloadPending = false;
+    let reloadStarted = false;
     let waitingWorker = null;
+    let updateDialog = null;
+    let updateCheckFrame = 0;
 
     function hasBlockingWork() {
       return !!document.querySelector(
-        '#cartPanel.open, .modal.show, #ordersModal.show, #redeemPick.show, #orderTrackModal.show, #authModal.show'
+        '#cartPanel.open, .modal.show, #ordersModal.show, #redeemPick.show, #orderTrackModal.show, #authModal.show, #panel.open, #chatPanel.open, #addrBookSheet.open'
       );
     }
 
-    function offerUpdate() {
-      if (!waitingWorker || updateApproved || typeof window.toast !== 'function') return;
-      const message = hasBlockingWork()
-        ? 'Доступно обновление. Завершите оформление или закройте открытое окно, затем нажмите здесь.'
-        : 'Доступно обновление приложения. Нажмите, чтобы обновить.';
-      window.toast(message, '🔄', function () {
+    function closeUpdateDialog() {
+      if (!updateDialog) return;
+      const current = updateDialog;
+      updateDialog = null;
+      try {
+        if (current.open && typeof current.close === 'function') current.close();
+      } catch (_) {}
+      current.remove();
+    }
+
+    function reloadAfterActivation() {
+      if (!updateApproved || reloadStarted) return;
+      if (hasBlockingWork()) {
+        reloadPending = true;
+        return;
+      }
+
+      reloadPending = false;
+      reloadStarted = true;
+      try { sessionStorage.setItem('zt_sw_update_applied', '1'); } catch (_) {}
+      window.location.reload();
+    }
+
+    function deferUpdate() {
+      updateDeferred = true;
+      closeUpdateDialog();
+    }
+
+    function showUpdateDialog() {
+      if (updateDialog || !waitingWorker || updateApproved || updateDeferred || hasBlockingWork()) return;
+
+      if (!document.getElementById('swUpdateDialogStyles')) {
+        const style = document.createElement('style');
+        style.id = 'swUpdateDialogStyles';
+        style.textContent = \`
+          .sw-update-dialog {
+            position: fixed;
+            inset: 0;
+            margin: auto;
+            width: min(440px, calc(100vw - 24px));
+            max-width: none;
+            max-height: calc(100dvh - 28px);
+            padding: 0;
+            border: 0;
+            overflow: visible;
+            color: var(--ink, #101418);
+            background: transparent;
+          }
+          .sw-update-dialog::backdrop {
+            background: rgba(16, 20, 24, .54);
+            backdrop-filter: blur(4px);
+          }
+          .sw-update-dialog-card {
+            box-sizing: border-box;
+            display: grid;
+            gap: 13px;
+            width: 100%;
+            padding: clamp(20px, 5vw, 28px);
+            border: var(--modal-border, 1px solid rgba(62, 143, 208, .25));
+            border-radius: var(--modal-radius, 22px);
+            background: var(--modal-bg, #fff);
+            box-shadow: var(--modal-shadow, 0 25px 60px rgba(18, 58, 107, .2));
+          }
+          .sw-update-dialog-icon {
+            display: grid;
+            place-items: center;
+            width: 48px;
+            height: 48px;
+            border-radius: 15px;
+            background: color-mix(in srgb, var(--flame, #C8402A) 12%, transparent);
+            color: var(--flame, #C8402A);
+            font-size: 27px;
+            line-height: 1;
+          }
+          .sw-update-dialog h2 {
+            margin: 0;
+            color: var(--modal-title-color, var(--ink, #101418));
+            font: var(--modal-title-font, 400 24px Prata, "Golos Text", serif);
+            line-height: 1.2;
+          }
+          .sw-update-dialog p {
+            margin: 0;
+            color: var(--soft, #687783);
+            font-size: 14px;
+            line-height: 1.55;
+          }
+          .sw-update-dialog-actions {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+            gap: 9px;
+            margin-top: 4px;
+          }
+          .sw-update-dialog-actions button {
+            min-width: 0;
+            min-height: 44px;
+            flex: 1 1 auto;
+            white-space: normal;
+          }
+          @media (max-width: 420px) {
+            .sw-update-dialog-actions {
+              flex-direction: column-reverse;
+            }
+            .sw-update-dialog-actions button {
+              width: 100%;
+            }
+          }
+        \`;
+        document.head.appendChild(style);
+      }
+
+      const dialog = document.createElement('dialog');
+      dialog.className = 'sw-update-dialog';
+      dialog.setAttribute('aria-labelledby', 'swUpdateDialogTitle');
+      dialog.setAttribute('aria-describedby', 'swUpdateDialogDescription');
+      dialog.innerHTML = \`
+        <div class="sw-update-dialog-card">
+          <div class="sw-update-dialog-icon" aria-hidden="true">↻</div>
+          <h2 id="swUpdateDialogTitle">Доступно обновление</h2>
+          <p id="swUpdateDialogDescription">Мы подготовили новую версию приложения. Обновите приложение, чтобы применить изменения.</p>
+          <div class="sw-update-dialog-actions">
+            <button type="button" class="btn ghost" data-sw-update-later>Позже</button>
+            <button type="button" class="btn fire" data-sw-update-accept>Обновить приложение</button>
+          </div>
+        </div>
+      \`;
+
+      dialog.addEventListener('cancel', (event) => {
+        event.preventDefault();
+        deferUpdate();
+      });
+
+      dialog.querySelector('[data-sw-update-later]').addEventListener('click', deferUpdate);
+      dialog.querySelector('[data-sw-update-accept]').addEventListener('click', () => {
+        if (!waitingWorker || updateApproved) return;
         if (hasBlockingWork()) {
-          offerUpdate();
+          scheduleUpdateCheck();
           return;
         }
-        // If the controller already changed while a modal was open, wait for
-        // explicit consent and reload now instead of messaging an active worker.
-        if (waitingWorker === navigator.serviceWorker.controller || waitingWorker.state === 'activated') {
-          refreshing = true;
-          window.location.reload();
-          return;
-        }
+
+        const workerToActivate = waitingWorker;
         updateApproved = true;
-        waitingWorker.postMessage({ type: 'SKIP_WAITING' });
+        updateDeferred = false;
+        closeUpdateDialog();
+
+        if (
+          workerToActivate === navigator.serviceWorker.controller ||
+          workerToActivate.state === 'activated'
+        ) {
+          reloadPending = true;
+          reloadAfterActivation();
+          return;
+        }
+
+        try {
+          workerToActivate.postMessage({ type: 'SKIP_WAITING' });
+        } catch (_) {
+          updateApproved = false;
+          scheduleUpdateCheck();
+        }
+      });
+
+      document.body.appendChild(dialog);
+      updateDialog = dialog;
+      try {
+        if (typeof dialog.showModal === 'function') dialog.showModal();
+        else dialog.setAttribute('open', '');
+      } catch (_) {
+        dialog.setAttribute('open', '');
+      }
+      const acceptButton = dialog.querySelector('[data-sw-update-accept]');
+      if (acceptButton) requestAnimationFrame(() => acceptButton.focus());
+    }
+
+    function offerUpdate() {
+      if (!waitingWorker || updateApproved || updateDeferred || updateDialog || hasBlockingWork()) return;
+      showUpdateDialog();
+    }
+
+    function scheduleUpdateCheck() {
+      if (updateCheckFrame) return;
+      updateCheckFrame = requestAnimationFrame(() => {
+        updateCheckFrame = 0;
+        if (reloadPending) {
+          reloadAfterActivation();
+          return;
+        }
+        offerUpdate();
       });
     }
+
+    function onAppActivity() {
+      scheduleUpdateCheck();
+    }
+
+    function resumeDeferredUpdate() {
+      if (document.hidden) return;
+      updateDeferred = false;
+      scheduleUpdateCheck();
+    }
+
+    // If an order, cart or another modal was active when the update arrived,
+    // re-check after its close interaction instead of interrupting the flow.
+    document.addEventListener('click', onAppActivity);
+    document.addEventListener('keydown', onAppActivity);
+    document.addEventListener('visibilitychange', resumeDeferredUpdate);
+    window.addEventListener('focus', resumeDeferredUpdate);
+    window.addEventListener('pageshow', resumeDeferredUpdate);
 
     navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' })
       .then((reg) => {
         reg.update();
         if (reg.waiting && navigator.serviceWorker.controller) {
           waitingWorker = reg.waiting;
-          offerUpdate();
+          scheduleUpdateCheck();
         }
         reg.addEventListener('updatefound', () => {
           const inst = reg.installing;
@@ -234,7 +440,7 @@ function registerSW() {
           inst.addEventListener('statechange', () => {
             if (inst.state === 'installed' && navigator.serviceWorker.controller) {
               waitingWorker = inst;
-              offerUpdate();
+              scheduleUpdateCheck();
             }
           });
         });
@@ -242,15 +448,10 @@ function registerSW() {
       .catch(() => {});
 
     navigator.serviceWorker.addEventListener('controllerchange', () => {
-      if (!updateApproved || refreshing) return;
-      if (hasBlockingWork()) {
-        updateApproved = false;
-        waitingWorker = navigator.serviceWorker.controller;
-        offerUpdate();
-        return;
-      }
-      refreshing = true;
-      window.location.reload();
+      if (!updateApproved || reloadStarted) return;
+      waitingWorker = navigator.serviceWorker.controller || waitingWorker;
+      reloadPending = true;
+      scheduleUpdateCheck();
     });
   });
 }
@@ -396,6 +597,7 @@ onReady(function () {
   initIosHint();
   initInstallBonus();
   boot();
+  showSWUpdateAppliedToast();
 });
 
 registerSW();

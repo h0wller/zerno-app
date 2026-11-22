@@ -76,7 +76,7 @@ jobs:
             workers: 1
           - group: PWA
             project: chromium
-            specs: tests/pwa-notifications.spec.js
+            specs: tests/pwa-notifications.spec.js tests/sw-update.spec.js
             workers: 1
 
     steps:
