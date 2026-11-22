@@ -274,13 +274,14 @@ function urlBase64ToUint8Array(s) {
             localStorage.setItem("zt_fcm", "1");
             localStorage.setItem("zt_fcm_token", registration.value);
           } catch (_) {}
-          if (me) {
-            await api("/push/fcm", {
+          if (nativeFcmWaiter) {
+            nativeFcmWaiter.resolve(registration.value);
+          } else if (me) {
+            api("/push/fcm", {
               method: "POST",
               body: { token: registration.value },
             }).catch(() => {});
           }
-          if (nativeFcmWaiter) nativeFcmWaiter.resolve(registration.value);
           window.refreshPushBtn();
         });
         try {
