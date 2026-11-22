@@ -10,6 +10,7 @@ function createWorker(initialClients = []) {
   const shown = [];
   const messages = [];
   const opened = [];
+  const skipWaitingCalls = [];
   let clients = initialClients;
   const scope = {
     URL,
@@ -20,7 +21,7 @@ function createWorker(initialClients = []) {
       bucket.push(handler);
       handlers.set(type, bucket);
     },
-    skipWaiting: async () => {},
+    skipWaiting: async () => { skipWaitingCalls.push(true); },
     caches: {
       open: async () => ({ add: async () => {} }),
       keys: async () => [],
@@ -45,7 +46,7 @@ function createWorker(initialClients = []) {
   vm.runInNewContext(source, scope, { filename: 'public/sw.js' });
 
   return {
-    handlers, shown, messages, opened,
+    handlers, shown, messages, opened, skipWaitingCalls,
     setClients(value) { clients = value; },
     async dispatch(type, event) {
       const list = handlers.get(type) || [];
@@ -121,4 +122,20 @@ test('notification click rejects an external URL and opens the app root instead'
   await worker.dispatch('notificationclick', event);
 
   assert.deepEqual(worker.opened, ['https://zerno.test/']);
+});
+
+test('new Service Worker waits for explicit user consent before activation', async () => {
+  const worker = createWorker();
+  const installEvent = {
+    waitUntil(promise) { this.__waitUntil = promise; }
+  };
+
+  await worker.dispatch('install', installEvent);
+  assert.equal(worker.skipWaitingCalls.length, 0, 'install must not skip the waiting phase');
+
+  await worker.dispatch('message', { data: { type: 'UNRELATED_MESSAGE' } });
+  assert.equal(worker.skipWaitingCalls.length, 0, 'unrelated messages must not activate the worker');
+
+  await worker.dispatch('message', { data: { type: 'SKIP_WAITING' } });
+  assert.equal(worker.skipWaitingCalls.length, 1, 'explicit SKIP_WAITING consent activates the worker');
 });
