@@ -107,6 +107,44 @@ test('an update waits for explicit choice and stays visible until dismissed', as
         { body: Buffer.from(JSON.stringify(focusStyles, null, 2)), contentType: 'application/json' }
       );
 
+      const outlineProbe = await page.evaluate(() => {
+        const dialog = document.querySelector('.sw-update-dialog');
+        const button = dialog?.querySelector('[data-sw-update-accept]');
+        const pseudo = (element, name) => {
+          const s = getComputedStyle(element, name);
+          return {
+            content: s.content,
+            outline: s.outline,
+            border: s.border,
+            boxShadow: s.boxShadow,
+            filter: s.filter,
+            background: s.background
+          };
+        };
+        const before = button && pseudo(button, '::before');
+        const after = button && pseudo(button, '::after');
+        if (button) button.style.setProperty('outline', 'none', 'important');
+        return {
+          outlineAfterOverride: button ? getComputedStyle(button).outline : null,
+          before,
+          after,
+          dialogBefore: dialog && pseudo(dialog, '::before'),
+          dialogAfter: dialog && pseudo(dialog, '::after')
+        };
+      });
+      await testInfo.attach(
+        'sw-update-outline-probe-' + brand + '-' + viewport.width + 'x' + viewport.height + '.json',
+        { body: Buffer.from(JSON.stringify(outlineProbe, null, 2)), contentType: 'application/json' }
+      );
+      await testInfo.attach(
+        'sw-update-no-outline-' + brand + '-' + viewport.width + 'x' + viewport.height + '.png',
+        { body: await page.screenshot({ fullPage: false }), contentType: 'image/png' }
+      );
+      await page.evaluate(() => {
+        const button = document.querySelector('.sw-update-dialog [data-sw-update-accept]');
+        if (button) button.style.removeProperty('outline');
+      });
+
       await testInfo.attach(
         'sw-update-' + brand + '-' + viewport.width + 'x' + viewport.height + '.png',
         { body: await page.screenshot({ fullPage: false }), contentType: 'image/png' }
