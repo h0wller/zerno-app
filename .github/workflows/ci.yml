@@ -212,14 +212,14 @@ jobs:
           if-no-files-found: ignore
           retention-days: 7
 
-  splash-series:
-    name: Splash series / A F C7 + C1 diagnostics
-    if: false && github.event_name == 'pull_request' && github.event.pull_request.number == 300
+  lighthouse-mobile:
+    name: Lighthouse / Mobile LCP comparison
+    if: github.event_name == 'pull_request' && github.event.pull_request.number == 300
     needs: quality-gates
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 40
     steps:
-      - name: Checkout benchmark tooling and pinned history
+      - name: Checkout exact PR head
         uses: actions/checkout@v7
         with:
           ref: ${{ github.event.pull_request.head.sha }}
@@ -229,35 +229,64 @@ jobs:
         with:
           node-version: 22
           cache: 'npm'
-      - name: Install shared dependencies
+      - name: Install dependencies
         run: npm ci
       - name: Install Chromium and OS dependencies
         run: npx playwright install --with-deps chromium
-      - name: Lint splash benchmark script
-        run: npx eslint scripts/splash-series.mjs --max-warnings 50
-      - name: Run independent pinned splash series
+      - name: Install pinned Lighthouse
+        run: npx --yes lighthouse@13.5.0 --version
+      - name: Build PR client bundle
+        run: npm run build:client
+      - name: Prepare merge-base build
+        env:
+          PR_BASE_REF: ${{ github.event.pull_request.base.ref }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
           set -euo pipefail
-          BASE_SHA="$(node -p "JSON.parse(require('node:fs').readFileSync('scripts/lighthouse-variants.json','utf8')).baseSha")"
-          HEAD_SHA="$(node -p "JSON.parse(require('node:fs').readFileSync('scripts/lighthouse-variants.json','utf8')).headSha")"
-          REPORT_DIR="$RUNNER_TEMP/splash"
+          # PR event base.sha can lag a force-pushed base branch. Compare against
+          # the current remote base ref, then use the actual common ancestor.
+          git fetch --no-tags origin "$PR_BASE_REF"
+          BASE_REF_SHA="$(git rev-parse FETCH_HEAD)"
+          BASE_SHA="$(git merge-base "$BASE_REF_SHA" "$PR_HEAD_SHA")"
+          echo "LCP_BASE_REF=$PR_BASE_REF" >> "$GITHUB_ENV"
+          echo "LCP_BASE_REF_SHA=$BASE_REF_SHA" >> "$GITHUB_ENV"
+          echo "LCP_BASE_SHA=$BASE_SHA" >> "$GITHUB_ENV"
+          git worktree add --detach "$RUNNER_TEMP/zerno-lcp-base" "$BASE_SHA"
+          ln -s "$GITHUB_WORKSPACE/node_modules" "$RUNNER_TEMP/zerno-lcp-base/node_modules"
+          (cd "$RUNNER_TEMP/zerno-lcp-base" && npm run build:client)
+      - name: Run matched mobile Lighthouse audits
+        env:
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          REPORT_DIR="$RUNNER_TEMP/lighthouse-reports"
           mkdir -p "$REPORT_DIR"
+          CHROME_PATH="$(find "$HOME/.cache/ms-playwright" -type f -name chrome | head -n 1)"
+          test -n "$CHROME_PATH" && test -x "$CHROME_PATH"
+          echo "Chrome: $CHROME_PATH"
+          echo "Current base branch: $LCP_BASE_REF@$LCP_BASE_REF_SHA"
+          echo "Common ancestor baseline: $LCP_BASE_SHA"
+          echo "PR head: $PR_HEAD_SHA"
+
           run_variant() {
-            local variant="$1"
-            local port="$2"
-            local project_dir="$RUNNER_TEMP/zerno-splash-$variant"
-            local db_path="$RUNNER_TEMP/splash-$variant.sqlite"
-            local server_log="$RUNNER_TEMP/splash-$variant-server.log"
-            if [ "$variant" = F ]; then
-              git worktree add --detach "$project_dir" "$BASE_SHA"
-            else
-              git worktree add --detach "$project_dir" "$HEAD_SHA"
-            fi
-            ln -s "$GITHUB_WORKSPACE/node_modules" "$project_dir/node_modules"
-            node scripts/prepare-lighthouse-variant.mjs "$variant" "$project_dir" "$REPORT_DIR"
-            (cd "$project_dir" && npm run build:client)
-            (cd "$project_dir" && NODE_ENV=test DB_PATH="$db_path" PUBLIC_DIR="$project_dir/public" PORT="$port" ADMIN_CODE='ci-lighthouse-admin-role-code' CASHIER_CODE='ci-lighthouse-cashier-role-code' DISPATCH_CODE='ci-lighthouse-dispatch-code' TELEGRAM_BOT_TOKEN='' TG_WEBHOOK_SECRET='' SMS_AUTH_ENABLED=false node server.js) >"$server_log" 2>&1 &
-            local server_pid=$!
+            local project_dir="$1"
+            local label="$2"
+            local port="$3"
+            local db_path="$RUNNER_TEMP/lcp-$label.sqlite"
+            local server_log="$RUNNER_TEMP/lcp-$label-server.log"
+            local server_pid=""
+
+            (
+              cd "$project_dir"
+              NODE_ENV=test DB_PATH="$db_path" PUBLIC_DIR="$project_dir/public" PORT="$port" \
+                ADMIN_CODE='ci-lighthouse-admin-role-code' \
+                CASHIER_CODE='ci-lighthouse-cashier-code' \
+                DISPATCH_CODE='ci-lighthouse-dispatch-code' \
+                TELEGRAM_BOT_TOKEN='' TG_WEBHOOK_SECRET='' SMS_AUTH_ENABLED=false \
+                node server.js
+            ) >"$server_log" 2>&1 &
+            server_pid=$!
+
             cleanup_server() {
               if kill -0 "$server_pid" 2>/dev/null; then
                 kill "$server_pid" || true
@@ -265,7 +294,8 @@ jobs:
               fi
             }
             trap cleanup_server RETURN
-            local ready=0
+
+            ready=0
             for attempt in $(seq 1 80); do
               if curl -fsS "http://127.0.0.1:$port/api/health" >/dev/null; then
                 ready=1
@@ -279,181 +309,52 @@ jobs:
             done
             if [ "$ready" -ne 1 ]; then
               cat "$server_log"
-              echo "Server did not become ready for $variant" >&2
+              echo "Server did not become ready: $label" >&2
               return 1
             fi
-            DB_PATH="$db_path" PUBLIC_DIR="$project_dir/public" node "$GITHUB_WORKSPACE/scripts/lighthouse-fixture.mjs"
-            local -a series_args=(--delays=0,3000 --seed-brand=1)
-            if [ "$variant" = C1 ]; then series_args=(--delays=0 --brands=delivery --seed-brand=0); fi
-            node scripts/splash-series.mjs --url="http://127.0.0.1:$port" --label="$variant" --runs=5 "${series_args[@]}" --out="$REPORT_DIR"
-            if [ "$variant" = C1 ]; then
-              node scripts/splash-series.mjs --url="http://127.0.0.1:$port" --label=C1-seeded --runs=5 --delays=0 --brands=delivery --seed-brand=1 --out="$REPORT_DIR"
-            fi
+
+            DB_PATH="$db_path" PUBLIC_DIR="$project_dir/public" \
+              node "$GITHUB_WORKSPACE/scripts/lighthouse-fixture.mjs"
+            curl -fsS "http://127.0.0.1:$port/api/menu" > "$REPORT_DIR/$label-coffee-menu.json"
+            curl -fsS "http://127.0.0.1:$port/api/dmenu" > "$REPORT_DIR/$label-delivery-menu.json"
+
+            for brand in coffee delivery; do
+              for sample in 1 2; do
+                echo "Lighthouse $label / $brand / sample $sample"
+                npx --yes lighthouse@13.5.0 \
+                  "http://127.0.0.1:$port/?brand=$brand&lighthouse=1" \
+                  --chrome-path="$CHROME_PATH" \
+                  --chrome-flags="--headless --no-sandbox --disable-dev-shm-usage" \
+                  --form-factor=mobile \
+                  --throttling-method=simulate \
+                  --throttling.rttMs=150 \
+                  --throttling.throughputKbps=1638.4 \
+                  --throttling.cpuSlowdownMultiplier=4 \
+                  --screenEmulation.mobile=true \
+                  --screenEmulation.width=360 \
+                  --screenEmulation.height=800 \
+                  --screenEmulation.deviceScaleFactor=1.75 \
+                  --only-categories=performance \
+                  --max-wait-for-load=45000 \
+                  --output=json \
+                  --output-path="$REPORT_DIR/$label-$brand-$sample.json" \
+                  --quiet
+              done
+            done
+
             cleanup_server
             trap - RETURN
           }
-          run_variant A 3211
-          run_variant F 3212
-          run_variant C7 3213
-          run_variant C1 3214
-      - name: Verify C7 splash and saved-brand regressions
-        run: |
-          npx playwright test tests/mobile-lcp.spec.js --project=chromium --workers=1 --grep "C7|saved zt_brand"
-          node --test tests/integration/mobile-lcp-link-preload.test.mjs
-      - name: Upload splash series results
+
+          run_variant "$RUNNER_TEMP/zerno-lcp-base" "base" 3210
+          run_variant "$GITHUB_WORKSPACE" "head" 3211
+
+          LIGHTHOUSE_EXPECTED_RUNS=2 node scripts/lighthouse-summary.mjs "$REPORT_DIR"
+      - name: Upload Lighthouse reports
         if: always()
         uses: actions/upload-artifact@v7
         with:
-          name: splash-series-${{ github.run_id }}
-          path: ${{ runner.temp }}/splash/
-          if-no-files-found: error
-          retention-days: 30
-
-  lighthouse-variant-config:
-    name: Lighthouse / Load pinned variant matrix
-    if: false && github.event_name == 'pull_request' && github.event.pull_request.number == 300
-    needs: quality-gates
-    runs-on: ubuntu-latest
-    outputs:
-      variants: ${{ steps.config.outputs.variants }}
-      runs: ${{ steps.config.outputs.runs }}
-      devtools_variants: ${{ steps.config.outputs.devtools_variants }}
-      base_sha: ${{ steps.config.outputs.base_sha }}
-      head_sha: ${{ steps.config.outputs.head_sha }}
-    steps:
-      - name: Checkout benchmark definitions
-        uses: actions/checkout@v7
-        with:
-          ref: ${{ github.event.pull_request.head.sha }}
-          fetch-depth: 0
-      - id: config
-        name: Read pinned benchmark configuration
-        run: |
-          set -euo pipefail
-          node --input-type=module <<'NODE'
-          import fs from 'node:fs';
-          const c=JSON.parse(fs.readFileSync('scripts/lighthouse-variants.json','utf8'));
-          if(c.runs!==5) throw Error('scripts/lighthouse-variants.json: runs must equal 5');
-          if(!/^[a-f0-9]{40}$/.test(c.baseSha)||!/^[a-f0-9]{40}$/.test(c.headSha)) throw Error('baseSha/headSha must be pinned 40-character SHAs');
-          if(JSON.stringify(c.variants)!==JSON.stringify(['A','B','C1','C2','C3','C4','C5','D','E','F'])) throw Error('Expected variants A-F plus C1-C5 in declared order');
-          if(JSON.stringify(c.devtoolsVariants)!==JSON.stringify(['A','F','C1','C2','C3','C4','C5'])) throw Error('Expected DevTools for A, F and C1-C5');
-          fs.appendFileSync(process.env.GITHUB_OUTPUT,'variants='+JSON.stringify(c.variants)+'\n');
-          fs.appendFileSync(process.env.GITHUB_OUTPUT,'runs='+c.runs+'\n');
-          fs.appendFileSync(process.env.GITHUB_OUTPUT,'devtools_variants='+c.devtoolsVariants.join(' ')+'\n');
-          fs.appendFileSync(process.env.GITHUB_OUTPUT,'base_sha='+c.baseSha+'\n');
-          fs.appendFileSync(process.env.GITHUB_OUTPUT,'head_sha='+c.headSha+'\n');
-          NODE
-          git cat-file -e "$(node -p 'JSON.parse(require("fs").readFileSync("scripts/lighthouse-variants.json")).baseSha')^{commit}"
-          git cat-file -e "$(node -p 'JSON.parse(require("fs").readFileSync("scripts/lighthouse-variants.json")).headSha')^{commit}"
-          node --check scripts/prepare-lighthouse-variant.mjs
-          node --check scripts/lighthouse-variant-summary.mjs
-          bash -n scripts/run-lighthouse-variant.sh
-
-  lighthouse-mobile:
-    name: Lighthouse / Variant ${{ matrix.variant }}
-    needs: lighthouse-variant-config
-    runs-on: ubuntu-latest
-    timeout-minutes: 45
-    strategy:
-      fail-fast: false
-      matrix:
-        variant: ${{ fromJSON(needs.lighthouse-variant-config.outputs.variants) }}
-    steps:
-      - name: Checkout benchmark tooling and pinned history
-        uses: actions/checkout@v7
-        with:
-          ref: ${{ github.event.pull_request.head.sha }}
-          fetch-depth: 0
-      - name: Setup Node.js 22
-        uses: actions/setup-node@v7
-        with:
-          node-version: 22
-          cache: 'npm'
-      - name: Install shared dependencies
-        run: npm ci
-      - name: Install Chromium and OS dependencies
-        run: npx playwright install --with-deps chromium
-      - name: Install pinned Lighthouse
-        run: npx --yes lighthouse@13.5.0 --version
-      - name: Create isolated pinned variant worktree
-        env:
-          VARIANT: ${{ matrix.variant }}
-          BASE_SHA: ${{ needs.lighthouse-variant-config.outputs.base_sha }}
-          HEAD_SHA: ${{ needs.lighthouse-variant-config.outputs.head_sha }}
-          RUNS: ${{ needs.lighthouse-variant-config.outputs.runs }}
-          DEVTOOLS_VARIANTS: ${{ needs.lighthouse-variant-config.outputs.devtools_variants }}
-          DEVTOOLS_RUNS: 5
-        run: |
-          set -euo pipefail
-          REPORT_DIR="$RUNNER_TEMP/lighthouse-reports"
-          PROJECT_DIR="$RUNNER_TEMP/zerno-lcp-$VARIANT"
-          mkdir -p "$REPORT_DIR"
-          if [ "$VARIANT" = F ]; then
-            git worktree add --detach "$PROJECT_DIR" "$BASE_SHA"
-          else
-            git worktree add --detach "$PROJECT_DIR" "$HEAD_SHA"
-          fi
-          ln -s "$GITHUB_WORKSPACE/node_modules" "$PROJECT_DIR/node_modules"
-          node scripts/prepare-lighthouse-variant.mjs "$VARIANT" "$PROJECT_DIR" "$REPORT_DIR"
-          (cd "$PROJECT_DIR" && npm run build:client)
-          if [ "$VARIANT" = B ]; then
-            set +e
-            (cd "$PROJECT_DIR" && PORT=3000 ADMIN_CODE='3364' CASHIER_CODE='2468' DISPATCH_CODE='5719' npx playwright test tests/mobile-lcp.spec.js --project=chromium --workers=1) > "$REPORT_DIR/B-mobile-lcp-playwright.log" 2>&1
-            TEST_STATUS=$?
-            set -e
-            cat "$REPORT_DIR/B-mobile-lcp-playwright.log"
-            if [ "$TEST_STATUS" -eq 0 ]; then
-              TEST_RESULT=passed
-            elif grep -Eq 'Expected: 1|Received: 2' "$REPORT_DIR/B-mobile-lcp-playwright.log"; then
-              TEST_RESULT=duplicate-render
-              echo "Variant B has a duplicate initial coffee render; keeping the benchmark result with this explicit caveat."
-            else
-              exit "$TEST_STATUS"
-            fi
-            node -e 'const fs=require("node:fs"); const file=process.argv[1], status=process.argv[2]; const manifest=JSON.parse(fs.readFileSync(file,"utf8")); manifest.coffeeInitialRenderTest={status,assertion:"window.__coffeeGridWrites === 1"}; fs.writeFileSync(file,JSON.stringify(manifest,null,2));' "$REPORT_DIR/manifest-B.json" "$TEST_RESULT"
-          fi
-          echo "LCP_VARIANT_DIR=$PROJECT_DIR" >> "$GITHUB_ENV"
-          echo "LCP_REPORT_DIR=$REPORT_DIR" >> "$GITHUB_ENV"
-      - name: Run matched Lighthouse audits
-        env:
-          VARIANT: ${{ matrix.variant }}
-          RUNS: ${{ needs.lighthouse-variant-config.outputs.runs }}
-          DEVTOOLS_VARIANTS: ${{ needs.lighthouse-variant-config.outputs.devtools_variants }}
-          DEVTOOLS_RUNS: 5
-        run: bash scripts/run-lighthouse-variant.sh "$LCP_VARIANT_DIR" "$VARIANT" "$RUNS" "$LCP_REPORT_DIR" 3210
-      - name: Upload variant reports, traces and manifest
-        if: always()
-        uses: actions/upload-artifact@v7
-        with:
-          name: lighthouse-variant-${{ matrix.variant }}-${{ github.run_id }}
+          name: lighthouse-mobile-lcp-${{ github.run_id }}
           path: ${{ runner.temp }}/lighthouse-reports/
-          if-no-files-found: error
-          retention-days: 30
-
-  lighthouse-aggregate:
-    name: Lighthouse / Aggregate variant matrix
-    if: always() && needs.lighthouse-variant-config.result == 'success'
-    needs: [lighthouse-variant-config, lighthouse-mobile]
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    steps:
-      - name: Checkout benchmark scripts
-        uses: actions/checkout@v7
-        with:
-          ref: ${{ github.event.pull_request.head.sha }}
-      - name: Download all variant reports and DevTools traces
-        uses: actions/download-artifact@v7
-        with:
-          pattern: lighthouse-variant-*-${{ github.run_id }}
-          path: lighthouse-reports
-          merge-multiple: true
-      - name: Build combined JSON and Markdown summary
-        run: node scripts/lighthouse-variant-summary.mjs lighthouse-reports
-      - name: Upload combined benchmark report
-        if: always()
-        uses: actions/upload-artifact@v7
-        with:
-          name: lighthouse-mobile-variant-matrix-${{ github.run_id }}
-          path: lighthouse-reports/
           if-no-files-found: error
           retention-days: 30
