@@ -1,10 +1,11 @@
 import { Router } from 'express';
 import { db } from '../db/connection.js';
 import { userGuard, adminGuard } from '../middleware/auth.js';
-import { grant } from '../domain/loyalty.js';
+import { grantStamps } from '../domain/loyalty.js';
 import { findFreeDeliveryCode } from '../domain/bonuses.js';
 import { cust, addHist, logEv } from '../domain/helpers.js';
 import { nowISO, uid } from '../utils/id-time.js';
+import { sendPush } from '../services/push.js';
 
 export const promosRouter = Router();
 
@@ -13,32 +14,55 @@ export const promosRouter = Router();
 // ══════════════════════════════════════════════
 promosRouter.post('/api/promo/redeem', userGuard, (req, res) => {
   const code = String(req.body.code || '').trim().toUpperCase();
-  if (!code) return res.status(400).json({ error: 'Введите промокод' });
+  if (!code) return res.status(400).json({ error: 'Введите код' });
   if (!req.user.verified) return res.status(403).json({ error: 'Промокоды открываются после активации профиля на кассе или в Telegram' });
-  
-  const p = db.prepare('SELECT * FROM promos WHERE code=?').get(code);
-  if (!p || !p.active) return res.status(404).json({ error: 'Такого промокода нет' });
-  if ((p.scope || 'coffee') === 'delivery') return res.status(400).json({ error: 'Этот промокод работает только в корзине доставки' });
-  if (p.expires && new Date(p.expires) < new Date()) return res.status(410).json({ error: 'Промокод истёк' });
-  if (p.maxuses > 0 && p.uses >= p.maxuses) return res.status(410).json({ error: 'Промокод закончился' });
-  
-  if (db.prepare('SELECT 1 FROM promo_use WHERE promo=? AND cid=?').get(p.id, req.user.id))
-    return res.status(409).json({ error: 'Вы уже использовали этот промокод' });
-    
-  db.prepare('INSERT INTO promo_use(promo,cid,ts) VALUES(?,?,?)').run(p.id, req.user.id, nowISO());
-  db.prepare('UPDATE promos SET uses=uses+1 WHERE id=?').run(p.id);
-  
-  if (p.kind === 'stamp') { 
-    for (let i = 0; i < (p.value || 1); i++) grant(req.user.id, 'Промокод ' + p.code); 
-  } else { 
-    db.prepare('UPDATE customers SET free=free+? WHERE id=?').run(p.value || 1, req.user.id);
-    addHist(req.user.id, `🎁 Промокод ${p.code}: +${p.value || 1} бесплатный кофе`, 'Система'); 
+
+  let result;
+  try {
+    result = db.transaction(() => {
+      const promo = db.prepare('SELECT * FROM promos WHERE code=?').get(code);
+      if (!promo || !promo.active) return { status: 404, error: 'Такого промокода нет' };
+      if ((promo.scope || 'coffee') === 'delivery') return { status: 400, error: 'Этот промокод работает только в корзине доставки' };
+      if (promo.expires && new Date(promo.expires) < new Date()) return { status: 410, error: 'Промокод истёк' };
+      if (promo.maxuses > 0 && promo.uses >= promo.maxuses) return { status: 410, error: 'Промокод закончился' };
+      if (db.prepare('SELECT 1 FROM promo_use WHERE promo=? AND cid=?').get(promo.id, req.user.id)) {
+        return { status: 409, error: 'Вы уже использовали этот промокод' };
+      }
+
+      db.prepare('INSERT INTO promo_use(promo,cid,ts) VALUES(?,?,?)').run(promo.id, req.user.id, nowISO());
+      db.prepare('UPDATE promos SET uses=uses+1 WHERE id=?').run(promo.id);
+
+      let granted = null;
+      const value = Math.max(1, Math.min(100, Math.floor(Number(promo.value) || 1)));
+      if (promo.kind === 'stamp') {
+        granted = grantStamps(req.user.id, value, 'Промокод ' + promo.code);
+        if (!granted) throw new Error('Не удалось начислить штампы');
+      } else {
+        db.prepare('UPDATE customers SET free=free+? WHERE id=?').run(value, req.user.id);
+        addHist(req.user.id, `🎁 Промокод ${promo.code}: +${value} бесплатный кофе`, 'Система');
+        granted = { addedFree: value, stamps: 0 };
+      }
+
+      logEv(req.user.name, `промокод ${promo.code}`);
+      return { promo, granted, value };
+    }).immediate();
+  } catch (error) {
+    if (error?.code === 'SQLITE_CONSTRAINT_UNIQUE') {
+      return res.status(409).json({ error: 'Вы уже использовали этот промокод' });
+    }
+    throw error;
   }
-  
-  logEv(req.user.name, `промокод ${p.code}`);
-  res.json({ 
+
+  if (result.status) return res.status(result.status).json({ error: result.error });
+
+  const message = result.promo.kind === 'stamp'
+    ? `Промокод ${result.promo.code}: +${result.value} штамп(а). Сейчас ${result.granted.customer?.stamps ?? result.granted.stamps}/10.`
+    : `Промокод ${result.promo.code}: +${result.value} бесплатный кофе.`;
+  sendPush(req.user.id, { title: '🎁 Промокод активирован', text: message }).catch(() => {});
+
+  res.json({
     customer: cust(db.prepare('SELECT * FROM customers WHERE id=?').get(req.user.id)),
-    msg: p.kind === 'stamp' ? `Промокод дал +${p.value || 1} штамп(а)` : 'Промокод дал бесплатный кофе' 
+    msg: result.promo.kind === 'stamp' ? `Промокод дал +${result.value} штамп(а)` : 'Промокод дал бесплатный кофе'
   });
 });
 
