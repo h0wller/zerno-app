@@ -259,7 +259,10 @@ function syncViewsVisibility(showCoffee, showDeliv) {
   var rl = document.getElementById('rail');
   var dr = document.getElementById('deliveryRail');
   if (mv) { mv.hidden = !showCoffee; mv.style.display = showCoffee ? '' : 'none'; }
-  if (dv) { dv.hidden = false; dv.style.display = showDeliv ? 'block' : 'none'; }
+  if (dv) {
+    dv.hidden = false;
+    dv.style.display = showDeliv ? 'block' : 'none';
+  }
   if (rl) rl.style.display = showCoffee ? '' : 'none';
   if (dr) dr.style.display = showDeliv ? '' : 'none';
 }
@@ -430,7 +433,8 @@ function sv() {
   });
 
   if (typeof cartFabShow === 'function') cartFabShow();
-  if (showDeliv && typeof window.DMENU !== 'undefined' && !window.DMENU.length &&
+  if (window.__brandSplashPending !== true && showDeliv &&
+      typeof window.DMENU !== 'undefined' && !window.DMENU.length &&
       typeof window.loadDelivery === 'function' && !window.__dlReq) {
     window.__dlReq = 1;
     window.__dlPromise = window.loadDelivery();

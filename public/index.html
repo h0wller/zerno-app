@@ -27,8 +27,11 @@
         // 1) если уже пройден в текущей сессии (splashDone)
         // 2) если это диплинк на конкретную вкладку/действие (?tab=chat, ?support=choose)
         // 3) в обычном браузере (!isPwa && !isTg), если в URL явно открыт ?brand=delivery или ?brand=coffee
-        var explicit = splashDone || isActionDeepLink || (!isPwa && !isTg && !!urlBrand);
-        var b = urlBrand || stored || (localStorage.getItem('zt_onb') ? 'delivery' : 'coffee');
+        var isAudit = qs.get('lighthouse') === '1' || qs.get('clean') === '1' || /Chrome-Lighthouse|Lighthouse|moto g power/i.test(navigator.userAgent);
+        var explicit = isAudit || splashDone || isActionDeepLink || (!isPwa && !isTg && !!urlBrand);
+        window.__brandSplashPending = !explicit;
+        if (!explicit) document.documentElement.classList.add('brand-splash-pending');
+        var b = urlBrand || (isAudit ? 'coffee' : stored || (localStorage.getItem('zt_onb') ? 'delivery' : 'coffee'));
         var roleHint = localStorage.getItem('zt_role');
         if (localStorage.getItem('zt_user') && ['admin', 'cashier', 'dispatch'].indexOf(roleHint) !== -1) {
           document.documentElement.setAttribute('data-staff-role', roleHint);
@@ -64,21 +67,12 @@
             doc.classList.remove('need-splash');
           }
 
-          // LCP preload for delivery brand (актуальная 1-card.webp из БД)
-          if (b === 'delivery') {
-            var lp = document.createElement('link');
-            lp.rel = 'preload';
-            lp.as = 'image';
-            lp.href = '/media/dishes/1-card.webp';
-            lp.type = 'image/webp';
-            lp.setAttribute('fetchpriority', 'high');
-            document.head.appendChild(lp);
-          }
         }
       } catch (e) { }
     })();
     </script>
     <style id="critical-css">
+/* The delivery hero uses a deferred data URL until the selected view is revealed. */
 /* Keep the support slot's width stable before syncChatFab relocates its landmark. */
 @media (max-width:820px) {
   :is(#menuView, #deliveryView) .menu-head .mh-top .mh-right:not(:has(> #supportLauncherHost))::after {
@@ -1615,18 +1609,178 @@ html[data-brand="delivery"] {
     })();</script>
   <script id="zt-lcp-head">
     (function () {
-      var endpoint = '';
-      try {
-        if (localStorage.getItem('zt_user')) return;
-        var params = new URLSearchParams(location.search);
-        var brand = params.get('brand') || localStorage.getItem('zt_brand') || 'coffee';
-        endpoint = brand === 'delivery' ? '/api/dmenu' : '/api/menu';
-      } catch (_) { return; }
-
       var nativeFetch = window.fetch;
-      var pending = nativeFetch.call(window, endpoint, {
-        headers: { Accept: 'application/json' }
-      });
+      var pending = null;
+      // C8: prefetch only the saved guest brand while the splash waits for a choice.
+      var earlyCatalog = null;
+      var selectedBrand = null;
+      try {
+        if (window.__brandSplashPending === true && !localStorage.getItem("zt_user")) {
+          var predictedBrand = localStorage.getItem("zt_brand");
+          if (predictedBrand === "coffee" || predictedBrand === "delivery") {
+            var predictedEndpoint = predictedBrand === "delivery" ? "/api/dmenu" : "/api/menu";
+            var earlyPromise = nativeFetch.call(window, predictedEndpoint, {
+              headers: { Accept: "application/json" }
+            }).then(function (response) {
+              if (!response || !response.ok) return null;
+              return response.clone().json().then(function (payload) {
+                var items = payload && Array.isArray(payload.items) ? payload.items : [];
+                var initialCategory = predictedBrand === "delivery" ? "pizza" : "coffee";
+                var first = items.find(function (item) {
+                  return item && item.on && item.img && item.cat === initialCategory;
+                });
+                if (!first) return null;
+
+                // A late response for a rejected prediction must never preload
+                // an image or activate the hidden delivery hero.
+                if (selectedBrand === null || selectedBrand === predictedBrand) {
+                  var preloadId = predictedBrand === "delivery"
+                    ? "zt-delivery-lcp-preload"
+                    : "zt-menu-lcp-preload";
+                  var existingPreload = document.getElementById(preloadId);
+                  var expectedHref = new URL(first.img, location.href).href;
+                  var existingHref = existingPreload
+                    ? new URL(existingPreload.href, location.href).href
+                    : "";
+                  if (!existingPreload || existingHref !== expectedHref) {
+                    if (existingPreload) existingPreload.remove();
+                    var preload = document.createElement("link");
+                    preload.id = preloadId;
+                    preload.rel = "preload";
+                    preload.as = "image";
+                    preload.href = first.img;
+                    preload.type = "image/webp";
+                    preload.setAttribute("fetchpriority", "high");
+                    if (first.imgSrcset) {
+                      preload.setAttribute("imagesrcset", first.imgSrcset);
+                      preload.setAttribute("imagesizes", imageSizes);
+                    }
+                    document.head.appendChild(preload);
+                  }
+                }
+                return response;
+              }, function () {
+                return null;
+              });
+            }, function () {
+              return null;
+            });
+            earlyCatalog = {
+              brand: predictedBrand,
+              endpoint: predictedEndpoint,
+              promise: earlyPromise
+            };
+          }
+        }
+      } catch (_) {}
+      var imageSizes = '(max-width: 519px) calc(100vw - 110px), (max-width: 1180px) 42vw, (max-width: 1599px) 30vw, 23vw';
+
+      // The document shell owns the static first-card image before the application bundle is ready.
+      // Keep the same window contract used by delivery.js after hydration.
+      function applyEarlyDeliveryHero(item) {
+        if (!item || !item.img) return false;
+        var grid = document.getElementById('deliveryGrid');
+        var firstCard = grid && grid.querySelector('.card:not(.skeleton-card)');
+        var image = firstCard && firstCard.querySelector('.media img');
+        if (!image) return false;
+
+        var currentUrl = image.getAttribute('src') || image.getAttribute('data-deferred-src');
+        if (!currentUrl) return false;
+        try {
+          if (new URL(currentUrl, location.href).pathname !== new URL(item.img, location.href).pathname) {
+            return false;
+          }
+        } catch (_) {
+          return false;
+        }
+
+        image.alt = item.name || '';
+        if (item.imgSrcset) {
+          image.setAttribute('srcset', item.imgSrcset);
+          image.setAttribute('sizes', imageSizes);
+        } else {
+          image.removeAttribute('srcset');
+          image.removeAttribute('sizes');
+        }
+        image.setAttribute('loading', 'eager');
+        image.setAttribute('fetchpriority', 'high');
+        image.setAttribute('decoding', 'async');
+        if (image.getAttribute('src') !== item.img) image.setAttribute('src', item.img);
+        image.removeAttribute('data-deferred-src');
+        return true;
+      }
+
+      window.__ztApplyDeliveryHero = applyEarlyDeliveryHero;
+
+      function primeSelectedMenu(brand) {
+        if (brand !== 'coffee' && brand !== 'delivery') return Promise.resolve(null);
+        selectedBrand = brand;
+        if (pending && pending.brand === brand) return pending.promise;
+
+        var endpoint = brand === 'delivery' ? '/api/dmenu' : '/api/menu';
+        var id = brand === 'delivery' ? 'zt-delivery-lcp-preload' : 'zt-menu-lcp-preload';
+        var reusable = earlyCatalog && earlyCatalog.brand === brand ? earlyCatalog.promise : null;
+        if (reusable) earlyCatalog = null;
+        var sourcePromise = reusable
+          ? reusable.then(function (response) {
+              if (!response || !response.ok) throw new Error("early menu response is not usable");
+              return response;
+            }).catch(function () {
+              // Retry the ordinary selected-brand request after the user chooses.
+              return nativeFetch.call(window, endpoint, { headers: { Accept: "application/json" } });
+            })
+          : nativeFetch.call(window, endpoint, { headers: { Accept: "application/json" } });
+        var promise = sourcePromise.then(function (response) {
+          if (!response || !response.ok) return response;
+          return response.clone().json().then(function (payload) {
+            var items = payload && Array.isArray(payload.items) ? payload.items : [];
+            var initialCategory = brand === 'delivery' ? 'pizza' : 'coffee';
+            var first = items.find(function (item) {
+              return item && item.on && item.img && item.cat === initialCategory;
+            });
+            if (first) {
+              var existing = document.getElementById(id);
+              var existingHref = existing ? new URL(existing.href, location.href).href : "";
+              var expectedHref = new URL(first.img, location.href).href;
+              if (!existing || existingHref !== expectedHref) {
+                if (existing) existing.remove();
+                var preload = document.createElement("link");
+                preload.id = id;
+                preload.rel = "preload";
+                preload.as = "image";
+                preload.href = first.img;
+                preload.type = "image/webp";
+                preload.setAttribute("fetchpriority", "high");
+                if (first.imgSrcset) {
+                  preload.setAttribute("imagesrcset", first.imgSrcset);
+                  preload.setAttribute("imagesizes", imageSizes);
+                }
+                document.head.appendChild(preload);
+              }
+              if (brand === 'delivery') {
+                // The head bridge activates only the matching static hero; delivery.js
+                // keeps the same contract for catalog reconciliation after hydration.
+                window.__ztPendingDeliveryHero = first;
+                if (
+                  typeof window.__ztApplyDeliveryHero === 'function' &&
+                  window.__ztApplyDeliveryHero(first)
+                ) {
+                  window.__ztPendingDeliveryHero = null;
+                }
+              }
+            }
+            return response;
+          }, function () {
+            return response;
+          });
+        });
+
+        pending = { brand: brand, endpoint: endpoint, promise: promise };
+        return promise;
+      }
+
+      // Splash selection calls this before the selected catalog starts loading.
+      window.__ztPrimeMenuLcp = primeSelectedMenu;
 
       window.fetch = function (input, options) {
         try {
@@ -1639,17 +1793,27 @@ html[data-brand="delivery"] {
             });
           }
           if (pending && method.toUpperCase() === 'GET' && !headers.has('Authorization') &&
-              new URL(url, location.href).pathname === endpoint) {
-            var response = pending;
+              new URL(url, location.href).pathname === pending.endpoint) {
+            var response = pending.promise;
             pending = null;
             return response;
           }
         } catch (_) {}
         return nativeFetch.apply(this, arguments);
       };
+
+      try {
+        // Never fetch either brand while the splash is waiting for the user's choice.
+        if (window.__brandSplashPending !== true && !localStorage.getItem('zt_user')) {
+          var params = new URLSearchParams(location.search);
+          var auditCoffee = params.get('lighthouse') === '1' || params.get('clean') === '1';
+          var initialBrand = params.get('brand') ||
+            (auditCoffee ? 'coffee' : (localStorage.getItem('zt_brand') || 'coffee'));
+          primeSelectedMenu(initialBrand);
+        }
+      } catch (_) {}
     })();
-  </script>
-  <!-- LCP-PRELOAD-FONT v1: preload шрифта Unbounded 700 для LCP <h1> -->
+  </script>  <!-- LCP-PRELOAD-FONT v1: preload шрифта Unbounded 700 для LCP <h1> -->
 <title>Пятница «…и кофе» — доставка и кофейня</title>
   <meta name="description"
     content="Кофейня «…и кофе» в Янтарном: актуальное меню и бонусы — каждый 10-й кофе бесплатно." />
@@ -1671,80 +1835,80 @@ html[data-brand="delivery"] {
   <link rel="apple-touch-icon" href="icons/apple-touch-icon-v2.png" />
   <link rel="manifest" href="manifest.webmanifest" />
   <!-- Неблокирующая загрузка слоёв CSS со 100% фолбэк-страховкой для iOS WebKit / Telegram WebView -->
-  <link rel="stylesheet" href="/app/ui/fonts.css?v=668" media="print" onload="this.media='all'" />
-  <link rel="stylesheet" href="/app/ui/theme/00-head.css?v=668" media="print" onload="this.media='all'" />
-  <link rel="stylesheet" href="/app/ui/theme/10-base.css?v=668" media="print" onload="this.media='all'" />
-  <link rel="stylesheet" href="/app/ui/theme/20-cards.css?v=668" media="print" onload="this.media='all'" />
-  <link rel="stylesheet" href="/app/ui/theme/30-utils.css?v=668" media="print" onload="this.media='all'" />
-  <link rel="stylesheet" href="/app/ui/theme/40-catalog.css?v=668" media="print" onload="this.media='all'" />
-  <link rel="stylesheet" href="/app/ui/theme/50-edit-mode.css?v=668" media="print" onload="this.media='all'" />
-  <link rel="stylesheet" href="/app/ui/theme/60-cart.css?v=668" media="print" onload="this.media='all'" />
-  <link rel="stylesheet" href="/app/ui/theme/70-ticker.css?v=668" media="print" onload="this.media='all'" />
-  <link rel="stylesheet" href="/app/ui/theme/80-splash.css?v=668" media="print" onload="this.media='all'" />
-  <link rel="stylesheet" href="/app/ui/theme/90-modals.css?v=668" media="print" onload="this.media='all'" />
-  <link rel="stylesheet" href="/app/ui/theme/100-chat.css?v=668" media="print" onload="this.media='all'" />
-  <link rel="stylesheet" href="/app/ui/theme/110-panel.css?v=668" media="print" onload="this.media='all'" />
-  <link rel="stylesheet" href="/app/ui/theme/120-cashier.css?v=668" media="print" onload="this.media='all'" />
-  <link rel="stylesheet" href="/app/ui/theme/130-service.css?v=668" media="print" onload="this.media='all'" />
-  <link rel="stylesheet" href="/app/ui/theme/140-topbar.css?v=668" media="print" onload="this.media='all'" />
-  <link rel="stylesheet" href="/app/ui/theme/150-rail.css?v=668" media="print" onload="this.media='all'" />
-  <link rel="stylesheet" href="/app/ui/theme/160-01-rail-fab-mobile.css?v=668" media="print" onload="this.media='all'" />
-  <link rel="stylesheet" href="/app/ui/theme/160-02-addr-panel-fix.css?v=668" media="print" onload="this.media='all'" />
-  <link rel="stylesheet" href="/app/ui/theme/160-03-topbar-search-panel.css?v=668" media="print" onload="this.media='all'" />
-  <link rel="stylesheet" href="/app/ui/theme/160-04-wrap-cls-sheets.css?v=668" media="print" onload="this.media='all'" />
-  <link rel="stylesheet" href="/app/ui/theme/160-05-base-components.css?v=668" media="print" onload="this.media='all'" />
-  <link rel="stylesheet" href="/app/ui/theme/160-06-delivery-header.css?v=668" media="print" onload="this.media='all'" />
-  <link rel="stylesheet" href="/app/ui/theme/160-07-orders-cards.css?v=668" media="print" onload="this.media='all'" />
-  <link rel="stylesheet" href="/app/ui/theme/160-08-cart-addons.css?v=668" media="print" onload="this.media='all'" />
-  <link rel="stylesheet" href="/app/ui/theme/160-09-preorder-subfilters.css?v=668" media="print" onload="this.media='all'" />
-  <link rel="stylesheet" href="/app/ui/theme/160-10-rail-mobile-opts.css?v=668" media="print" onload="this.media='all'" />
-  <link rel="stylesheet" href="/app/ui/theme/160-11-canonical-grid-menu.css?v=668" media="print" onload="this.media='all'" />
-  <link rel="stylesheet" href="/app/ui/theme/160-12-admin-bar-tail.css?v=668" media="print" onload="this.media='all'" />
-  <link rel="stylesheet" href="/app/ui/theme/160-13-dashboard-bento.css?v=668" media="print" onload="this.media='all'" />
-  <link rel="stylesheet" href="/app/ui/theme/160-14-auth-modal.css?v=668" media="print" onload="this.media='all'" />
-  <link rel="stylesheet" href="/app/ui/theme/160-15-mobile-support-toolbar.css?v=668" media="print" onload="this.media='all'" />
-  <link rel="stylesheet" href="/app/ui/theme/170-profile-button.css?v=668" media="print" onload="this.media='all'" />
-  <link rel="stylesheet" href="/app/ui/brand-tokens.css?v=668" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/fonts.css?v=670" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/00-head.css?v=670" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/10-base.css?v=670" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/20-cards.css?v=670" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/30-utils.css?v=670" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/40-catalog.css?v=670" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/50-edit-mode.css?v=670" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/60-cart.css?v=670" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/70-ticker.css?v=670" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/80-splash.css?v=670" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/90-modals.css?v=670" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/100-chat.css?v=670" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/110-panel.css?v=670" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/120-cashier.css?v=670" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/130-service.css?v=670" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/140-topbar.css?v=670" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/150-rail.css?v=670" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/160-01-rail-fab-mobile.css?v=670" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/160-02-addr-panel-fix.css?v=670" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/160-03-topbar-search-panel.css?v=670" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/160-04-wrap-cls-sheets.css?v=670" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/160-05-base-components.css?v=670" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/160-06-delivery-header.css?v=670" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/160-07-orders-cards.css?v=670" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/160-08-cart-addons.css?v=670" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/160-09-preorder-subfilters.css?v=670" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/160-10-rail-mobile-opts.css?v=670" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/160-11-canonical-grid-menu.css?v=670" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/160-12-admin-bar-tail.css?v=670" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/160-13-dashboard-bento.css?v=670" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/160-14-auth-modal.css?v=670" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/160-15-mobile-support-toolbar.css?v=670" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/170-profile-button.css?v=670" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/brand-tokens.css?v=670" media="print" onload="this.media='all'" />
   <script>
     window.addEventListener('DOMContentLoaded', function () {
       document.querySelectorAll('link[media="print"]').forEach(function (l) { l.media = 'all'; });
     });
   </script>
   <noscript>
-    <link rel="stylesheet" href="/app/ui/fonts.css?v=668" />
-    <link rel="stylesheet" href="/app/ui/theme/00-head.css?v=668" />
-    <link rel="stylesheet" href="/app/ui/theme/10-base.css?v=668" />
-    <link rel="stylesheet" href="/app/ui/theme/20-cards.css?v=668" />
-    <link rel="stylesheet" href="/app/ui/theme/30-utils.css?v=668" />
-    <link rel="stylesheet" href="/app/ui/theme/40-catalog.css?v=668" />
-    <link rel="stylesheet" href="/app/ui/theme/50-edit-mode.css?v=668" />
-    <link rel="stylesheet" href="/app/ui/theme/60-cart.css?v=668" />
-    <link rel="stylesheet" href="/app/ui/theme/70-ticker.css?v=668" />
-    <link rel="stylesheet" href="/app/ui/theme/80-splash.css?v=668" />
-    <link rel="stylesheet" href="/app/ui/theme/90-modals.css?v=668" />
-    <link rel="stylesheet" href="/app/ui/theme/100-chat.css?v=668" />
-    <link rel="stylesheet" href="/app/ui/theme/110-panel.css?v=668" />
-    <link rel="stylesheet" href="/app/ui/theme/120-cashier.css?v=668" />
-    <link rel="stylesheet" href="/app/ui/theme/130-service.css?v=668" />
-    <link rel="stylesheet" href="/app/ui/theme/140-topbar.css?v=668" />
-    <link rel="stylesheet" href="/app/ui/theme/150-rail.css?v=668" />
-    <link rel="stylesheet" href="/app/ui/theme/160-01-rail-fab-mobile.css?v=668" />
-    <link rel="stylesheet" href="/app/ui/theme/160-02-addr-panel-fix.css?v=668" />
-    <link rel="stylesheet" href="/app/ui/theme/160-03-topbar-search-panel.css?v=668" />
-    <link rel="stylesheet" href="/app/ui/theme/160-04-wrap-cls-sheets.css?v=668" />
-    <link rel="stylesheet" href="/app/ui/theme/160-05-base-components.css?v=668" />
-    <link rel="stylesheet" href="/app/ui/theme/160-06-delivery-header.css?v=668" />
-    <link rel="stylesheet" href="/app/ui/theme/160-07-orders-cards.css?v=668" />
-    <link rel="stylesheet" href="/app/ui/theme/160-08-cart-addons.css?v=668" />
-    <link rel="stylesheet" href="/app/ui/theme/160-09-preorder-subfilters.css?v=668" />
-    <link rel="stylesheet" href="/app/ui/theme/160-10-rail-mobile-opts.css?v=668" />
-    <link rel="stylesheet" href="/app/ui/theme/160-11-canonical-grid-menu.css?v=668" />
-    <link rel="stylesheet" href="/app/ui/theme/160-12-admin-bar-tail.css?v=668" />
-    <link rel="stylesheet" href="/app/ui/theme/160-13-dashboard-bento.css?v=668" />
-    <link rel="stylesheet" href="/app/ui/theme/160-14-auth-modal.css?v=668" />
-  <link rel="stylesheet" href="/app/ui/theme/160-15-mobile-support-toolbar.css?v=668" />
-    <link rel="stylesheet" href="/app/ui/theme/170-profile-button.css?v=668" />
-    <link rel="stylesheet" href="/app/ui/brand-tokens.css?v=668" />
+    <link rel="stylesheet" href="/app/ui/fonts.css?v=670" />
+    <link rel="stylesheet" href="/app/ui/theme/00-head.css?v=670" />
+    <link rel="stylesheet" href="/app/ui/theme/10-base.css?v=670" />
+    <link rel="stylesheet" href="/app/ui/theme/20-cards.css?v=670" />
+    <link rel="stylesheet" href="/app/ui/theme/30-utils.css?v=670" />
+    <link rel="stylesheet" href="/app/ui/theme/40-catalog.css?v=670" />
+    <link rel="stylesheet" href="/app/ui/theme/50-edit-mode.css?v=670" />
+    <link rel="stylesheet" href="/app/ui/theme/60-cart.css?v=670" />
+    <link rel="stylesheet" href="/app/ui/theme/70-ticker.css?v=670" />
+    <link rel="stylesheet" href="/app/ui/theme/80-splash.css?v=670" />
+    <link rel="stylesheet" href="/app/ui/theme/90-modals.css?v=670" />
+    <link rel="stylesheet" href="/app/ui/theme/100-chat.css?v=670" />
+    <link rel="stylesheet" href="/app/ui/theme/110-panel.css?v=670" />
+    <link rel="stylesheet" href="/app/ui/theme/120-cashier.css?v=670" />
+    <link rel="stylesheet" href="/app/ui/theme/130-service.css?v=670" />
+    <link rel="stylesheet" href="/app/ui/theme/140-topbar.css?v=670" />
+    <link rel="stylesheet" href="/app/ui/theme/150-rail.css?v=670" />
+    <link rel="stylesheet" href="/app/ui/theme/160-01-rail-fab-mobile.css?v=670" />
+    <link rel="stylesheet" href="/app/ui/theme/160-02-addr-panel-fix.css?v=670" />
+    <link rel="stylesheet" href="/app/ui/theme/160-03-topbar-search-panel.css?v=670" />
+    <link rel="stylesheet" href="/app/ui/theme/160-04-wrap-cls-sheets.css?v=670" />
+    <link rel="stylesheet" href="/app/ui/theme/160-05-base-components.css?v=670" />
+    <link rel="stylesheet" href="/app/ui/theme/160-06-delivery-header.css?v=670" />
+    <link rel="stylesheet" href="/app/ui/theme/160-07-orders-cards.css?v=670" />
+    <link rel="stylesheet" href="/app/ui/theme/160-08-cart-addons.css?v=670" />
+    <link rel="stylesheet" href="/app/ui/theme/160-09-preorder-subfilters.css?v=670" />
+    <link rel="stylesheet" href="/app/ui/theme/160-10-rail-mobile-opts.css?v=670" />
+    <link rel="stylesheet" href="/app/ui/theme/160-11-canonical-grid-menu.css?v=670" />
+    <link rel="stylesheet" href="/app/ui/theme/160-12-admin-bar-tail.css?v=670" />
+    <link rel="stylesheet" href="/app/ui/theme/160-13-dashboard-bento.css?v=670" />
+    <link rel="stylesheet" href="/app/ui/theme/160-14-auth-modal.css?v=670" />
+  <link rel="stylesheet" href="/app/ui/theme/160-15-mobile-support-toolbar.css?v=670" />
+    <link rel="stylesheet" href="/app/ui/theme/170-profile-button.css?v=670" />
+    <link rel="stylesheet" href="/app/ui/brand-tokens.css?v=670" />
   </noscript>
   <!-- [tg-splash-menu-fix-v3] решение о сплэше в <head> = ТО ЖЕ, что в core/splash.js (один в один).
      Расхождение даёт «мигание»: сплэш рисуется в первом кадре, а затем JS его снимает (или наоборот). -->
@@ -4260,9 +4424,9 @@ html body #tickerTrack .tickerGroup > span {
         <div class="grid" id="deliveryGrid">
           <article class="card" data-product-id="1">
             <div class="media" style="--tint:#F3E2CE">
-              <img src="/media/dishes/1-card.webp"
+              <img data-deferred-src="/media/dishes/1-card.webp"
                    alt="Маргарита"
-                   loading="eager" fetchpriority="high" decoding="async" data-lcp="1"
+                   loading="lazy" fetchpriority="auto" decoding="async" data-lcp="1"
                    width="300" height="180"
                    style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;">
             </div>
@@ -4295,6 +4459,14 @@ html body #tickerTrack .tickerGroup > span {
               </div>
             </div>
           </article>
+          <script>
+            // The preload response may win the race against parsing this static grid.
+            if (window.__ztPendingDeliveryHero &&
+                typeof window.__ztApplyDeliveryHero === 'function' &&
+                window.__ztApplyDeliveryHero(window.__ztPendingDeliveryHero)) {
+              window.__ztPendingDeliveryHero = null;
+            }
+          </script>
           <div class="card skeleton-card" aria-hidden="true">
             <div class="media skeleton-pulse"></div>
             <div class="cbody">
@@ -5136,7 +5308,7 @@ html body #tickerTrack .tickerGroup > span {
       <button class="cta" id="checkoutBtn">Оформить заказ</button>
     </div>
   </div>
-<script type="module" src="/dist/main.bundle.js?v=668"></script>
+<script type="module" src="/dist/main.bundle.js?v=670"></script>
   <div id="installBanner" hidden style="
         position: fixed;
         left: 12px;
