@@ -374,9 +374,10 @@ paths:
           application/json:
             schema:
               type: object
-              properties: { name: { type: string, maxLength: 24 } }
+              properties: { name: { type: string, minLength: 2, maxLength: 24 } }
       responses:
         '200': { description: OK }
+        '400': { description: Name must contain 2–24 characters }
         '401': { $ref: '#/components/responses/Unauthorized' }
     delete:
       tags: [Auth]
@@ -646,10 +647,11 @@ paths:
               type: object
               required: [min]
               properties:
-                min: { type: integer, minimum: 0 }
+                min: { type: integer, minimum: 1, maximum: 180 }
                 comment: { type: string, maxLength: 140 }
       responses:
-        '200': { description: OK }
+        '200': { description: Массовая задержка активных обычных заказов и предзаказов на сегодня; будущие предзаказы не меняются }
+        '400': { description: min must be an integer from 1 to 180 }
         '403': { $ref: '#/components/responses/Forbidden' }
 
   /api/staff/stamp:
@@ -1188,7 +1190,9 @@ paths:
       tags: [Push]
       summary: Отправить тестовое push текущему пользователю
       security: [{ BearerAuth: [] }]
-      responses: { '200': { description: Результат отправки } }
+      responses:
+        '200': { description: Передача на устройство подтверждена; внутренний smoke-запрос возвращает ok=false и skipped=smoke-test без отправки }
+        '503': { description: Нет подтверждённой доставки Web Push/FCM }
 
   /api/push/fcm:
     post:
@@ -1245,15 +1249,31 @@ paths:
   /api/push/unsubscribe:
     post:
       tags: [Push]
-      summary: Удалить push-подписки текущего пользователя
+      summary: Отвязать Web Push endpoint и/или FCM token текущего устройства
+      description: Требуется endpoint или token. Удаляются только переданные регистрации этого пользователя; пустой запрос возвращает 400 и не затрагивает другие устройства.
       security: [{ BearerAuth: [] }]
-      responses: { '200': { description: 'Операция выполнена успешно (ok: true)' } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                endpoint: { type: string, minLength: 1 }
+                token: { type: string, minLength: 1 }
+              anyOf:
+                - required: [endpoint]
+                - required: [token]
+      responses:
+        '200': { description: Устройство отвязано (ok: true) }
+        '400': { description: Нужно передать endpoint или token }
+        '401': { $ref: '#/components/responses/Unauthorized' }
 
   /api/push/del:
     post:
       tags: [Push]
       summary: Удалить Web Push-подписки указанного профиля
-      description: 'Удаляет записи из таблицы subs по cid; не удаляет FCM token. Только администратор (adminGuard, role=admin), иначе 403.'
+      description: 'Удаляет Web Push subscriptions и FCM tokens по cid. Только администратор (adminGuard, role=admin), иначе 403.'
       security: [{ BearerAuth: [] }]
       requestBody:
         required: true

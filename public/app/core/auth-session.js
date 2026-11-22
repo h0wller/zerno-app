@@ -7,8 +7,11 @@
 
   function setUser(token, customer) {
     window.USER_TOKEN = token;
-    if (token) localStorage.setItem('zt_user', token);
-    else localStorage.removeItem('zt_user');
+    window.__ztAuthDead = !token;
+    try {
+      if (token) localStorage.setItem('zt_user', token);
+      else localStorage.removeItem('zt_user');
+    } catch (_) {}
 
     window.me = customer;
     if (window.ztBus && typeof window.ztBus.emit === 'function') {
@@ -32,7 +35,7 @@
     if (typeof showBadge === 'function') showBadge();
 
     window.onboarded = true;
-    localStorage.setItem('zt_onb', '1');
+    try { localStorage.setItem('zt_onb', '1'); } catch (_) {}
 
     var initChar = (customer && customer.name && customer.name.trim())
       ? customer.name.trim().charAt(0).toUpperCase()
@@ -49,7 +52,8 @@
       if (qmain) drawQR(qmain, customer.qr);
     }
 
-    var fcmT = localStorage.getItem('zt_fcm_token');
+    var fcmT = '';
+    try { fcmT = localStorage.getItem('zt_fcm_token') || ''; } catch (_) {}
     if (fcmT && customer && typeof api === 'function') {
       api('/push/fcm', { method: 'POST', body: { token: fcmT } }).catch(function () {});
     }

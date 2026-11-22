@@ -22,12 +22,43 @@
       ...(opts.headers || {})
     };
 
-    const res = await fetch(url, {
-      method: opts.method || 'GET',
-      headers: headers,
-      body: opts.body ? (typeof opts.body === 'string' ? opts.body : JSON.stringify(opts.body)) : undefined,
-      signal: opts.signal
-    });
+    const controller = new AbortController();
+    const externalSignal = opts.signal;
+    const timeoutMs = Number.isFinite(Number(opts.timeoutMs))
+      ? Math.max(1000, Math.min(60000, Number(opts.timeoutMs)))
+      : 20000;
+    let timedOut = false;
+    const timeoutId = setTimeout(function () {
+      timedOut = true;
+      controller.abort();
+    }, timeoutMs);
+    const abortFromCaller = function () {
+      controller.abort(externalSignal.reason);
+    };
+    if (externalSignal) {
+      if (externalSignal.aborted) abortFromCaller();
+      else externalSignal.addEventListener('abort', abortFromCaller, { once: true });
+    }
+
+    let res;
+    try {
+      res = await fetch(url, {
+        method: opts.method || 'GET',
+        headers: headers,
+        body: opts.body ? (typeof opts.body === 'string' ? opts.body : JSON.stringify(opts.body)) : undefined,
+        signal: controller.signal
+      });
+    } catch (error) {
+      if (timedOut) {
+        const timeoutError = new Error('Сервер не ответил за ' + Math.round(timeoutMs / 1000) + ' с. Проверьте соединение и повторите попытку.');
+        timeoutError.code = 'REQUEST_TIMEOUT';
+        throw timeoutError;
+      }
+      throw error;
+    } finally {
+      clearTimeout(timeoutId);
+      if (externalSignal) externalSignal.removeEventListener('abort', abortFromCaller);
+    }
 
     if (res.status === 401) {
       window.__ztAuthDead = true;
@@ -67,9 +98,15 @@
       host = document.createElement('div');
       host.id = 'toasts';
       host.className = 'toasts';
+      host.setAttribute('role', 'status');
+      host.setAttribute('aria-live', 'polite');
+      host.setAttribute('aria-atomic', 'true');
       document.body.appendChild(host);
     }
 
+    host.setAttribute('role', 'status');
+    host.setAttribute('aria-live', 'polite');
+    host.setAttribute('aria-atomic', 'true');
     const t = document.createElement('div');
     t.className = 'toast';
     t.style.pointerEvents = (typeof action === 'function') ? 'auto' : 'none';
@@ -93,7 +130,7 @@
       setTimeout(function () {
         t.remove();
       }, 300);
-    }, 2200);
+    }, Math.max(2200, Math.min(7000, 1800 + String(msg).length * 24)));
 
     return t;
   }
@@ -126,7 +163,8 @@
   var inflight = {};
   var wrapped = function (path, opts) {
     var m = (opts && opts.method) || 'GET';
-    if (m !== 'GET' || (opts && opts.headers)) return orig.apply(this, arguments);
+    // A caller-owned AbortSignal must never cancel another consumer's shared GET.
+    if (m !== 'GET' || (opts && (opts.headers || opts.signal))) return orig.apply(this, arguments);
     var token = (typeof USER_TOKEN !== 'undefined' && USER_TOKEN) || localStorage.getItem('zt_user') || '';
     var k = String(token) + '|' + String(path);
     if (inflight[k]) return inflight[k];

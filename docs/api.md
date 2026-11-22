@@ -77,7 +77,7 @@ SMS.ru сохранён как будущий платный канал авто
 | `GET /api/orders/mine` | История заказов текущего пользователя | userGuard |
 | `POST /api/orders/:id/status` | Изменить статус заказа | dispatchGuard |
 | `POST /api/orders/:id/delay` | Задержать один заказ | dispatchGuard |
-| `POST /api/orders/delay-all` | Массово задержать активные заказы | dispatchGuard |
+| `POST /api/orders/delay-all` | Задержать активные обычные заказы и предзаказы на сегодня (будущие предзаказы не затрагиваются); `min` — целое 1–180 | dispatchGuard |
 
 Заказ использует серверную идемпотентность через optional `client_order_id` и fingerprint запроса. Клиентская блокировка кнопки не заменяет серверную защиту. Идемпотентность создания заказа не означает exactly-once доставку внешних уведомлений. Записи позиций в `GET /api/orders/mine` дополнительно содержат `oi` — индекс выбранного варианта меню; у заказов, созданных до этого поля, клиент восстанавливает индекс по сохранённым названию/размеру/цене варианта.
 
@@ -127,17 +127,19 @@ SMS.ru сохранён как будущий платный канал авто
 
 ## Push
 
+Все каналы используют один `sendPush` contract: `text` — plain text для Web Push/FCM, `html` — Telegram HTML. Успешная передача в Telegram не маскирует отсутствие доставки на устройство в `/api/push/test`. Logout удаляет Web Push subscriptions и FCM tokens.
+
 | Метод и путь | Назначение | Доступ |
 |---|---|---|
 | `GET /api/vapid` | Публичный VAPID-ключ | Публичный |
-| `POST /api/push/subscribe` | Создать или обновить Web Push подписку | userGuard |
-| `POST /api/push/test` | Тестовая отправка push текущему профилю | userGuard |
-| `POST /api/push/fcm` | Регистрация FCM-токена | userGuard |
+| `POST /api/push/subscribe` | Создать или обновить Web Push подписку текущего устройства | userGuard |
+| `POST /api/push/test` | Тестовая отправка; `ok: true` только при подтверждённой передаче Web Push или FCM, иначе HTTP 503. Внутренний заголовок `x-smoke-test: 1` не отправляет push и возвращает `{ ok: false, skipped: 'smoke-test' }` | userGuard |
+| `POST /api/push/fcm` | Upsert FCM-токена; повторная регистрация переносит token к текущему профилю | userGuard |
 | `GET /api/push/subs` | Данные push-подписок | adminGuard |
 | `POST /api/push/send` | Административная отправка push | adminGuard |
 | `POST /api/push/send-hours-update` | Уведомление об изменении расписания доставки | adminGuard |
-| `POST /api/push/unsubscribe` | Отписать Web Push endpoint текущего профиля | userGuard |
-| `POST /api/push/del` | Удалить Web Push-подписки из `subs` для `cid` | adminGuard; FCM-токены из таблицы `fcm` этим маршрутом не удаляются |
+| `POST /api/push/unsubscribe` | Удалить только переданный Web Push endpoint и/или FCM token текущего устройства; пустое тело — 400. Logout повторяет точечную очистку через `/api/exit` | userGuard |
+| `POST /api/push/del` | Удалить Web Push и FCM device registrations профиля `cid` | adminGuard |
 
 ## Статистика
 

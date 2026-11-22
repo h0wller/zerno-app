@@ -7,7 +7,7 @@ import { verifiedCustomerGuard, userGuard, adminGuard, dispatchGuard, STAFF_ROLE
 import { logEv } from '../domain/helpers.js';
 import { nowISO, uid } from '../utils/id-time.js';
 import { sendPush } from '../services/push.js';
-import { escapeTelegramHtml, tgSend, TG_CHANNEL, APP_URL } from '../services/telegram.js';
+import { escapeTelegramHtml, telegramHtmlToPlainText, tgSend, TG_CHANNEL, APP_URL } from '../services/telegram.js';
 import { getStreetSuggestions, validateDeliveryAddress } from '../domain/address.js';
 import { canTransitionOrderStatus } from '../domain/order-status.js';
 import {
@@ -159,8 +159,8 @@ export function buildOrderCustomerText(o, encode = value => String(value ?? ''))
 }
 
 function orderNotifyStaff(o) {
-  const txt = buildOrderStaffText(o);
-  const telegramText = buildOrderStaffText(o, escapeTelegramHtml);
+  const telegramHtml = buildOrderStaffText(o, escapeTelegramHtml);
+  const pushText = telegramHtmlToPlainText(telegramHtml);
   const staff = db.prepare("SELECT id, tg FROM customers WHERE role IN ('cashier','admin','dispatch')").all();
   const sentTg = new Set();
 
@@ -174,20 +174,23 @@ function orderNotifyStaff(o) {
     ]]
   };
 
-  for (const s of staff) {
-    if (!s.tg || sentTg.has(String(s.tg))) continue;
-    sentTg.add(String(s.tg));
-    sendPush(s.id, '', txt, staffKb, telegramText);
+  for (const staffMember of staff) {
+    // Avoid sending kitchen details twice to the buyer's Telegram chat, but
+    // do not exclude staff who have only Web Push/FCM registered.
+    const telegramId = staffMember.tg ? String(staffMember.tg) : '';
+    if (telegramId && sentTg.has(telegramId)) continue;
+    if (telegramId) sentTg.add(telegramId);
+    sendPush(staffMember.id, { title: '', text: pushText, html: telegramHtml }, staffKb);
   }
   logEv(o.name, `${o.is_preorder ? 'предзаказ' : 'заказ'} #${o.no} на ${o.total} ₽`);
 }
 
 function orderNotifyCustomer(o) {
   try {
-    const text = buildOrderCustomerText(o);
-    const telegramText = buildOrderCustomerText(o, escapeTelegramHtml);
+    const telegramHtml = buildOrderCustomerText(o, escapeTelegramHtml);
+    const pushText = telegramHtmlToPlainText(telegramHtml);
     const kb = typeof orderActionKb === 'function' ? orderActionKb(o.no) : undefined;
-    sendPush(o.cid, '', text, kb, telegramText);
+    sendPush(o.cid, { title: '', text: pushText, html: telegramHtml }, kb);
   } catch (err) {
     console.error('[orders] orderNotifyCustomer error:', err.message);
   }
@@ -232,8 +235,12 @@ ordersRouter.put('/api/admin/weekpromo', adminGuard, (req, res) => {
     db.prepare("INSERT INTO meta(key,value) VALUES('week_promo',?) ON CONFLICT(key) DO UPDATE SET value=excluded.value")
       .run(JSON.stringify({ text: b.text || '', threshold: +b.threshold || 0, gift: b.gift || '', until: b.until || null }));
     if (b.push && b.text) {
-      const cids = db.prepare("SELECT cid FROM subs UNION SELECT id FROM customers WHERE tg IS NOT NULL AND tg != ''").all();
-      for (const c of cids) sendPush(c.cid, '🍕 Пятничный подарок', b.text);
+      const cids = db.prepare("SELECT cid FROM subs UNION SELECT cid FROM fcm UNION SELECT id AS cid FROM customers WHERE tg IS NOT NULL AND tg != ''").all();
+      for (const customer of cids) {
+        sendPush(customer.cid, { title: '🍕 Пятничный подарок', text: String(b.text).slice(0, 2000) }).catch(error => {
+          console.error('[orders] Friday gift notification failed:', error.message);
+        });
+      }
       logEv(req.user.name, 'пуш: пятничный подарок');
     }
   }
@@ -326,7 +333,7 @@ ordersRouter.post('/api/orders', verifiedCustomerGuard, (req, res) => {
     if (oi >= 0 && !opts[oi]) return res.status(400).json({ error: 'Вариант недоступен' });
 
     const price = oi >= 0 ? Number(opts[oi].p) : (parseInt(m.price, 10) || 0);
-    const qty = Math.max(1, Math.min(99, +li.qty || 1));
+    const qty = Math.max(1, Math.min(99, Math.floor(Number(li.qty) || 1)));
 
     // Серверная валидация цен прикреплённых модификаторов по БД
     const validatedMods = [];
@@ -570,37 +577,51 @@ ordersRouter.post('/api/orders/:id/status', dispatchGuard, (req, res) => {
   };
   const kb = isDone ? doneKb : orderActionKb(o.no);
   const msgTitle = isDone ? '' : ('🍕 Заказ #' + o.no);
-  const msgBody = isDone
+  const statusLine = ORDER_STATUS[s] + (s === 'way' && o.method !== 'pickup' && o.addr ? ': ' + o.addr : '');
+  const msgHtml = isDone
     ? ('🏁 <b>Заказ #' + o.no + ' выполнен!</b>\n\nПриятного аппетита! Спасибо, что выбираете нас 🍕\nБудем рады вашему отзыву или новому заказу 👇')
-    : (ORDER_STATUS[s] + (s === 'way' && o.addr ? ': ' + o.addr : ''));
-  sendPush(o.cid, msgTitle, msgBody, kb);
+    : (ORDER_STATUS[s] + (s === 'way' && o.method !== 'pickup' && o.addr ? ': ' + escapeTelegramHtml(o.addr) : ''));
+  sendPush(o.cid, { title: msgTitle, text: telegramHtmlToPlainText(msgHtml || statusLine), html: msgHtml || statusLine }, kb);
   logEv(req.user.name, `заказ #${o.no} → ${s}`);
   res.json({ ok: true });
 });
 
+function parseDelayMinutes(value) {
+  const minutes = Number(value);
+  return Number.isInteger(minutes) && minutes >= 1 && minutes <= 180 ? minutes : null;
+}
+
+function buildDelayNotification(order, min, comment) {
+  const suffix = comment ? ' Причина: ' + comment : '';
+  const plain = `Заказ #${order.no}: задерживаем на +${min} мин.${suffix} Спасибо, что ждёте!`;
+  const html = `Заказ #${order.no}: задерживаем на +${min} мин.${comment ? ' Причина: ' + escapeTelegramHtml(comment) : ''} Спасибо, что ждёте!`;
+  return { title: '🛵 Время доставки обновлено', text: plain, html };
+}
+
 ordersRouter.post('/api/orders/:id/delay', dispatchGuard, (req, res) => {
-  const min = +req.body.min || 0;
-  const comment = String(req.body.comment || '').slice(0, 140);
+  const min = parseDelayMinutes(req.body.min);
+  if (min === null) return res.status(400).json({ error: 'Задержка должна быть от 1 до 180 минут' });
+  const comment = String(req.body.comment || '').trim().slice(0, 140);
   const o = db.prepare('SELECT * FROM orders WHERE id=?').get(req.params.id)
     || db.prepare('SELECT * FROM orders WHERE no=?').get(+req.params.id || 0);
   if (!o) return res.status(404).json({ error: 'Заказ не найден' });
-  db.prepare('UPDATE orders SET eta=?, updated=? WHERE id=?').run(min ? `+${min} мин` : '', nowISO(), o.id);
-  sendPush(o.cid, '🛵 Время доставки обновлено',
-    `Заказ #${o.no}: задерживаем на +${min} мин.${comment ? ' Причина: ' + comment : ''} Спасибо, что ждёте!`,
-    orderActionKb(o.no));
+  db.prepare('UPDATE orders SET eta=?, updated=? WHERE id=?').run(`+${min} мин`, nowISO(), o.id);
+  sendPush(o.cid, buildDelayNotification(o, min, comment), orderActionKb(o.no));
   logEv(req.user.name, `заказ #${o.no} задержка +${min} мин`);
   res.json({ ok: true });
 });
 
 ordersRouter.post('/api/orders/delay-all', dispatchGuard, (req, res) => {
-  const min = +req.body.min || 0;
-  const comment = String(req.body.comment || '').slice(0, 140);
-  const rows = db.prepare("SELECT * FROM orders WHERE status IN ('new','accept','cook','way')").all();
+  const min = parseDelayMinutes(req.body.min);
+  if (min === null) return res.status(400).json({ error: 'Задержка должна быть от 1 до 180 минут' });
+  const comment = String(req.body.comment || '').trim().slice(0, 140);
+  const today = getDeliveryDays(new Date(), 1)[0]?.date;
+  const rows = today
+    ? db.prepare("SELECT * FROM orders WHERE status IN ('new','accept','cook','way') AND (is_preorder=0 OR preorder_date=?)").all(today)
+    : db.prepare("SELECT * FROM orders WHERE status IN ('new','accept','cook','way') AND is_preorder=0").all();
   for (const o of rows) {
-    db.prepare('UPDATE orders SET eta=?, updated=? WHERE id=?').run(min ? `+${min} мин` : '', nowISO(), o.id);
-    sendPush(o.cid, '🛵 Время доставки обновлено',
-      `Заказ #${o.no}: задерживаем на +${min} мин.${comment ? ' Причина: ' + comment : ''} Спасибо, что ждёте!`,
-      orderActionKb(o.no));
+    db.prepare('UPDATE orders SET eta=?, updated=? WHERE id=?').run(`+${min} мин`, nowISO(), o.id);
+    sendPush(o.cid, buildDelayNotification(o, min, comment), orderActionKb(o.no));
   }
   logEv(req.user.name, `задержка всем +${min} мин (${rows.length})`);
   res.json({ ok: true, count: rows.length });
