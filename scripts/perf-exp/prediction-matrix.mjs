@@ -89,6 +89,9 @@ async function runOnce(browser, variant, scenario, runNumber) {
   const hiddenBrand = scenario.selectedBrand === 'coffee' ? 'delivery' : 'coffee';
   const hiddenApiPath = hiddenBrand === 'coffee' ? '/api/menu' : '/api/dmenu';
   const hiddenCategory = hiddenBrand === 'coffee' ? 'coffee' : 'pizza';
+  const selectedApiPath = scenario.selectedBrand === 'coffee' ? '/api/menu' : '/api/dmenu';
+  const selectedCategory = scenario.selectedBrand === 'coffee' ? 'coffee' : 'pizza';
+  const selectedImagePaths = new Set();
   let clockOffsetMs = null;
   let tapAt = null;
   let cardAt = null;
@@ -184,15 +187,25 @@ async function runOnce(browser, variant, scenario, runNumber) {
 
     page.on('response', (response) => {
       const pathname = new URL(response.url()).pathname;
-      if (pathname !== hiddenApiPath || !response.ok()) return;
+      if ((pathname !== hiddenApiPath && pathname !== selectedApiPath) || !response.ok()) return;
       responseTasks.push((async () => {
         try {
           const payload = await response.json();
           const items = Array.isArray(payload.items) ? payload.items : [];
-          const first = items.find((item) => item && item.on && item.img && item.cat === hiddenCategory);
-          if (!first) return;
-          firstImagePaths.add(new URL(first.img, baseUrl).pathname);
-          for (const itemPath of pathsFromSrcset(first.imgSrcset, baseUrl)) firstImagePaths.add(itemPath);
+          if (pathname === hiddenApiPath) {
+            const firstHidden = items.find((item) => item && item.on && item.img && item.cat === hiddenCategory);
+            if (firstHidden) {
+              firstImagePaths.add(new URL(firstHidden.img, baseUrl).pathname);
+              for (const itemPath of pathsFromSrcset(firstHidden.imgSrcset, baseUrl)) firstImagePaths.add(itemPath);
+            }
+          }
+          if (pathname === selectedApiPath) {
+            const firstSelected = items.find((item) => item && item.on && item.img && item.cat === selectedCategory);
+            if (firstSelected) {
+              selectedImagePaths.add(new URL(firstSelected.img, baseUrl).pathname);
+              for (const itemPath of pathsFromSrcset(firstSelected.imgSrcset, baseUrl)) selectedImagePaths.add(itemPath);
+            }
+          }
         } catch (_) {}
       })());
     });
@@ -217,13 +230,19 @@ async function runOnce(browser, variant, scenario, runNumber) {
       .map((node) => ({ id: node.id, href: node.href, imagesrcset: node.getAttribute('imagesrcset') || '' })));
     for (const pathname of preloadPaths(preloadsAtTap, baseUrl, hiddenBrand)) predictedImagePathsAtTap.add(pathname);
 
-    const cardHandle = await page.waitForFunction((selectedBrand) => {
+    const selectedDeadline = Date.now() + 8000;
+    while (!selectedImagePaths.size && Date.now() < selectedDeadline) await page.waitForTimeout(20);
+    if (!selectedImagePaths.size) throw new Error('Selected-brand API did not expose its first-category image');
+    const cardHandle = await page.waitForFunction(({ selectedBrand, imagePaths }) => {
       const grid = document.querySelector(selectedBrand === 'delivery' ? '#deliveryGrid' : '#grid');
       if (!grid) return null;
       const cards = [...grid.querySelectorAll('.card:not(.skeleton-card)')];
       for (const card of cards) {
         const image = card.querySelector('.media img');
         if (!image || !image.complete || image.naturalWidth <= 0) continue;
+        let pathname = '';
+        try { pathname = new URL(image.currentSrc || image.src, location.href).pathname; } catch (_) {}
+        if (!imagePaths.includes(pathname)) continue;
         const rect = card.getBoundingClientRect();
         const style = getComputedStyle(card);
         const visible = rect.width > 0 && rect.height > 0 && rect.bottom > 0 && rect.top < innerHeight &&
@@ -231,7 +250,7 @@ async function runOnce(browser, variant, scenario, runNumber) {
         if (visible) return performance.timeOrigin + performance.now();
       }
       return null;
-    }, scenario.selectedBrand, { timeout: 60000 });
+    }, { selectedBrand: scenario.selectedBrand, imagePaths: [...selectedImagePaths] }, { timeout: 60000 });
     cardAt = await cardHandle.jsonValue();
     await Promise.all(responseTasks);
 
