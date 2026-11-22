@@ -156,7 +156,7 @@ export function grantBonus(cid, kind, { notify = true } = {}) {
   // Один пуш на всё начисление — уже после коммита транзакции. notify:false — для обслуживающих скриптов,
   // которые шлют уведомление сами после своего коммита (иначе при откате внешней транзакции гость получил бы пуш зря).
   const message = parts.join(', ');
-  if (notify) sendPush(cid, '🎁 Бонус начислен', message).catch(() => {});
+  if (notify) sendPush(cid, { title: '🎁 Бонус начислен', text: message }).catch(() => {});
   return { kind, coffee: k.coffee, delivery: k.delivery, code, freeCode, message };
 }
 
