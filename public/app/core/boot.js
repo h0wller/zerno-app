@@ -252,7 +252,7 @@ function registerSW() {
       if (!document.getElementById('swUpdateDialogStyles')) {
         const style = document.createElement('style');
         style.id = 'swUpdateDialogStyles';
-        style.textContent = \`
+        style.textContent = `
           .sw-update-dialog {
             position: fixed;
             inset: 0;
@@ -325,7 +325,7 @@ function registerSW() {
               width: 100%;
             }
           }
-        \`;
+        `;
         document.head.appendChild(style);
       }
 
@@ -333,7 +333,7 @@ function registerSW() {
       dialog.className = 'sw-update-dialog';
       dialog.setAttribute('aria-labelledby', 'swUpdateDialogTitle');
       dialog.setAttribute('aria-describedby', 'swUpdateDialogDescription');
-      dialog.innerHTML = \`
+      dialog.innerHTML = `
         <div class="sw-update-dialog-card">
           <div class="sw-update-dialog-icon" aria-hidden="true">↻</div>
           <h2 id="swUpdateDialogTitle">Доступно обновление</h2>
@@ -343,7 +343,7 @@ function registerSW() {
             <button type="button" class="btn fire" data-sw-update-accept>Обновить приложение</button>
           </div>
         </div>
-      \`;
+      `;
 
       dialog.addEventListener('cancel', (event) => {
         event.preventDefault();
