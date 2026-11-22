@@ -209,6 +209,13 @@ function registerSW() {
           offerUpdate();
           return;
         }
+        // If the controller already changed while a modal was open, wait for
+        // explicit consent and reload now instead of messaging an active worker.
+        if (waitingWorker === navigator.serviceWorker.controller || waitingWorker.state === 'activated') {
+          refreshing = true;
+          window.location.reload();
+          return;
+        }
         updateApproved = true;
         waitingWorker.postMessage({ type: 'SKIP_WAITING' });
       });
@@ -238,6 +245,7 @@ function registerSW() {
       if (!updateApproved || refreshing) return;
       if (hasBlockingWork()) {
         updateApproved = false;
+        waitingWorker = navigator.serviceWorker.controller;
         offerUpdate();
         return;
       }
