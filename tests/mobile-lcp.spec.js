@@ -320,7 +320,7 @@ test.describe('Initial catalog image priorities', () => {
       ), `later rows remain lazy at ${width}px`).toBe(true);
     };
 
-    for (const width of [390, 520, 690, 821, 1024, 1440]) {
+    for (const width of [390, 520, 690, 821, 1024, 1181, 1440, 1600]) {
       await page.setViewportSize({ width, height: width < 700 ? 844 : 900 });
       await assertActualFirstRowPriorities(width);
     }
