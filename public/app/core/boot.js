@@ -332,7 +332,7 @@ function registerSW() {
           }
           .sw-update-dialog-actions button:focus-visible {
             outline: 2px solid var(--staff-focus-ring, var(--ink, #101418));
-            outline-offset: 3px;
+            outline-offset: 0;
           }
           @media (max-width: 420px) {
             .sw-update-dialog-actions {

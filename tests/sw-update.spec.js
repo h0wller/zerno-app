@@ -79,71 +79,8 @@ test('an update waits for explicit choice and stays visible until dismissed', as
       expect(buttonSizes.every((size) => size.width > 0 && size.height >= 44)).toBe(true);
 
 
-      const focusStyles = await page.evaluate(() => {
-        const dialog = document.querySelector('.sw-update-dialog');
-        const button = dialog?.querySelector('[data-sw-update-accept]');
-        const style = button ? getComputedStyle(button) : null;
-        const dialogStyle = dialog ? getComputedStyle(dialog) : null;
-        const rootStyle = getComputedStyle(document.documentElement);
-        return {
-          activeElement: document.activeElement?.tagName + (document.activeElement?.className ? '.' + String(document.activeElement.className).replace(/\s+/g, '.') : ''),
-          buttonIsActive: document.activeElement === button,
-          buttonFocused: button?.matches(':focus'),
-          buttonFocusVisible: button?.matches(':focus-visible'),
-          dialogFocused: dialog?.matches(':focus'),
-          dialogFocusVisible: dialog?.matches(':focus-visible'),
-          outline: style?.outline,
-          outlineWidth: style?.outlineWidth,
-          outlineOffset: style?.outlineOffset,
-          border: style?.border,
-          boxShadow: style?.boxShadow,
-          focusToken: rootStyle.getPropertyValue('--staff-focus-ring').trim(),
-          fireBorderToken: rootStyle.getPropertyValue('--btn-fire-border').trim(),
-          fireShadowToken: rootStyle.getPropertyValue('--btn-fire-shadow').trim()
-        };
-      });
-      await testInfo.attach(
-        'sw-update-focus-' + brand + '-' + viewport.width + 'x' + viewport.height + '.json',
-        { body: Buffer.from(JSON.stringify(focusStyles, null, 2)), contentType: 'application/json' }
-      );
-
-      const outlineProbe = await page.evaluate(() => {
-        const dialog = document.querySelector('.sw-update-dialog');
-        const button = dialog?.querySelector('[data-sw-update-accept]');
-        const pseudo = (element, name) => {
-          const s = getComputedStyle(element, name);
-          return {
-            content: s.content,
-            outline: s.outline,
-            border: s.border,
-            boxShadow: s.boxShadow,
-            filter: s.filter,
-            background: s.background
-          };
-        };
-        const before = button && pseudo(button, '::before');
-        const after = button && pseudo(button, '::after');
-        if (button) button.style.setProperty('outline', 'none', 'important');
-        return {
-          outlineAfterOverride: button ? getComputedStyle(button).outline : null,
-          before,
-          after,
-          dialogBefore: dialog && pseudo(dialog, '::before'),
-          dialogAfter: dialog && pseudo(dialog, '::after')
-        };
-      });
-      await testInfo.attach(
-        'sw-update-outline-probe-' + brand + '-' + viewport.width + 'x' + viewport.height + '.json',
-        { body: Buffer.from(JSON.stringify(outlineProbe, null, 2)), contentType: 'application/json' }
-      );
-      await testInfo.attach(
-        'sw-update-no-outline-' + brand + '-' + viewport.width + 'x' + viewport.height + '.png',
-        { body: await page.screenshot({ fullPage: false }), contentType: 'image/png' }
-      );
-      await page.evaluate(() => {
-        const button = document.querySelector('.sw-update-dialog [data-sw-update-accept]');
-        if (button) button.style.removeProperty('outline');
-      });
+      const focusOffset = await update.evaluate((button) => getComputedStyle(button).outlineOffset);
+      expect(focusOffset).toBe('0px');
 
       await testInfo.attach(
         'sw-update-' + brand + '-' + viewport.width + 'x' + viewport.height + '.png',
