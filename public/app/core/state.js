@@ -12,13 +12,7 @@ window.meta={updatedAt:Date.now()};
 window.me=null;
 window.mode='guest';
 window.editMode=false;
-const initialParams = new URLSearchParams(location.search);
-const isAudit = document.documentElement.classList.contains('is-audit') ||
-  /Chrome-Lighthouse|Lighthouse|moto g power/i.test(navigator.userAgent) ||
-  initialParams.get('lighthouse') === '1' || initialParams.get('clean') === '1';
-window.brand = isAudit
-  ? (initialParams.get('brand') === 'delivery' ? 'delivery' : 'coffee')
-  : (localStorage.getItem('zt_brand') || 'coffee');
+window.brand=localStorage.getItem('zt_brand')||'coffee';
 
 /* Константы категорий → window-свойства (используются в menu.js, delivery.js, views.js) */
 window.CATS=[{id:'coffee',e:'☕',l:'Кофе',t:'#F3E2CE'},{id:'drinks',e:'🧋',l:'Напитки',t:'#E4EFE2'},

@@ -138,11 +138,8 @@ async function verifyStaffSession() {
 }
 
 async function loadInitialCatalog(earlyDeliveryLoad) {
-  // A visible splash owns the next brand choice; don't load the stored brand.
-  if (window.__brandSplashPending === true) return;
-
   if (window.brand !== 'delivery') {
-    if (typeof loadMenu === 'function') await loadMenu({ render: false });
+    if (typeof loadMenu === 'function') await loadMenu();
     return;
   }
 
@@ -169,10 +166,7 @@ async function boot() {
 
   // Load the public delivery catalog while staff authentication is being verified.
   // This keeps the first viewport populated on slow networks without trusting the role hint.
-  // Wait for the explicit choice when the splash is shown.
-  var earlyDeliveryLoad = window.__brandSplashPending === true
-    ? null
-    : preloadDeliveryCatalog();
+  var earlyDeliveryLoad = preloadDeliveryCatalog();
 
   await verifyStaffSession();
   if (typeof window.syncBrandViews === 'function') window.syncBrandViews();

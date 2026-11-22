@@ -10,10 +10,7 @@ function uniquePhone() {
 }
 
 function nextDayAt16Slot() {
-  const testNow = process.env.ZERNO_TEST_NOW
-    ? new Date(process.env.ZERNO_TEST_NOW)
-    : new Date();
-  const current = getKaliningradDateParts(testNow);
+  const current = getKaliningradDateParts(new Date());
   const nextDay = new Date(Date.UTC(current.year, current.month - 1, current.day + 1));
   const day = String(nextDay.getUTCDate()).padStart(2, '0');
   const month = String(nextDay.getUTCMonth() + 1).padStart(2, '0');
@@ -84,8 +81,7 @@ async function assertFreeDeliveryIsSingleUse(request, token) {
   expect((await afterUse.json()).code).toBeNull();
 
   const second = await request.post('/api/orders', { headers, data: order });
-  const secondText = await second.text();
-  expect(second.status(), secondText).toBe(410);
+  expect(second.status()).toBe(410);
 }
 
 test.describe('Bonus Lifecycle Suite', () => {

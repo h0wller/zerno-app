@@ -123,11 +123,12 @@
   }
   if (typeof loadMenu === 'function') {
     loadMenu = (function (_lm) {
-      return async function (options) {
+      return async function () {
         var r = await _lm.apply(this, arguments);
         try {
-          if (brand === 'coffee' && (!options || options.render !== false)) {
+          if (brand === 'coffee') {
             renderRail();
+            renderMenu();
           }
         } catch (e) {}
         return r;
