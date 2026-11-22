@@ -212,13 +212,36 @@
 
 
   async function unsubscribePushSubscription(notifyServer) {
+    var subscription = null;
+    var token = '';
+    try { token = localStorage.getItem('zt_fcm_token') || ''; } catch (_) {}
     try {
-      var registration = await navigator.serviceWorker.ready;
-      var subscription = await registration.pushManager.getSubscription();
-      if (!subscription) return;
-      if (notifyServer) await api('/push/unsubscribe', { method: 'POST' });
-      await subscription.unsubscribe();
+      if ('serviceWorker' in navigator && 'PushManager' in window) {
+        var registration = await navigator.serviceWorker.ready;
+        subscription = await registration.pushManager.getSubscription();
+      }
     } catch (_) {}
+
+    if (notifyServer && window.USER_TOKEN) {
+      try {
+        await api('/push/unsubscribe', {
+          method: 'POST',
+          body: { endpoint: subscription ? subscription.endpoint : '', token: token }
+        });
+      } catch (_) {
+        return; // Keep local credentials so a retry can still revoke server-side ownership.
+      }
+    }
+
+    if (subscription) {
+      try { await subscription.unsubscribe(); } catch (_) {}
+    }
+    if (notifyServer) {
+      try {
+        localStorage.removeItem('zt_fcm');
+        localStorage.removeItem('zt_fcm_token');
+      } catch (_) {}
+    }
   }
 
   function resetAuthenticatedUser() {
