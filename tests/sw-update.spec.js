@@ -156,7 +156,7 @@ test('new service workers wait until the page sends SKIP_WAITING', async ({ requ
   const response = await request.get('/sw.js');
   expect(response.ok()).toBe(true);
   const source = await response.text();
-  const installHandler = source.match(/self\\.addEventListener\\('install',[\\s\\S]*?\\n\\}\\);/);
+  const installHandler = source.match(/self\.addEventListener\('install',[\s\S]*?\n\}\);/);
 
   expect(installHandler).not.toBeNull();
   expect(installHandler[0]).not.toContain('skipWaiting');
