@@ -16,7 +16,7 @@
 | `public/app/main.js` | Единственная ESM-точка входа; порядок импортов = порядок инициализации; `boot.js` строго последним | — |
 | `public/app/core/boot.js` | `renderAll()`, `boot()`; подтверждение сессии и синхронизация проверенной staff-роли (`applyStaffRoleState`); ЕДИНСТВЕННАЯ регистрация SW (SKIP_WAITING + reload только при hadController); install-баннер; iOS-хинт; IMG-FB v1 (фолбэк webp→svg при ошибке загрузки) | `window.renderAll`, `window.boot`, `window.applyStaffRoleState` |
 | `public/sw.js` | `STATIC_CACHE` — App Shell (cache-first + фоновая ревалидация); `MEDIA_CACHE` — svg network-first (no-cache), png/webp SWR; `API_CACHE` — /api/menu SWR 5 мин | — |
-| `public/index.html` (инлайн, СЛОЙ 4) | early-brand-guard; critical-fouc-guard; perf-bridge (Lighthouse); TgUx-стаб; C8: при видимом splash для гостя допускает один спекулятивный запрос JSON бренда из `localStorage.zt_brand` и preload первой картинки; promise переиспользуется только при совпадении с выбором, поздний ответ отвергнутого бренда не создаёт preload и не активирует delivery hero; `window.__ztPrimeMenuLcp` согласует ранний promise с `window.fetch`; ранняя активация только выбранного delivery hero (`src/srcset/sizes`, eager/high) через `window.__ztApplyDeliveryHero`; повторная попытка после разбора `#deliveryGrid` закрывает гонку парсинга; FOUC-guard Ф3.51 (первый кадр шапки/марки/тикера); владелец клика сплэша; early-chrome-guard. Каталог и его DOM по-прежнему принадлежат `core/catalog.js`/`menu.js` и `delivery.js`. Легаси-дубль регистрации SW — кандидат на удаление (владелец boot.js) | `window.__ztPrimeMenuLcp`, `window.__ztApplyDeliveryHero` (ранние bootstrap-контракты) |
+| `public/index.html` (инлайн, СЛОЙ 4) | early-brand-guard; critical-fouc-guard; perf-bridge (Lighthouse); TgUx-стаб; C8 guest-only prediction while splash is pending: only when `zt_user` is empty and `zt_brand` is exactly `coffee` or `delivery`; requests the saved-brand catalog and preloads the first active image in its initial visible category; matching selection reuses the promise, failed prediction falls back to the selected-brand request, and a late mismatched response cannot preload the hidden brand or activate its delivery hero; `window.__ztPrimeMenuLcp` bridges the selected catalog fetch; `window.__ztApplyDeliveryHero` applies only the matching delivery hero before/after hydration; owns splash selection and early-chrome/FOUC guards. Catalog and catalog DOM remain owned by `core/catalog.js`, `menu.js` and `delivery.js` | `window.__ztPrimeMenuLcp`, `window.__ztApplyDeliveryHero` (early bootstrap contracts) |
 
 ## 1. Глобальное состояние, сеть, утилиты
 
@@ -156,7 +156,7 @@
 
 | Модуль | Зона ответственности |
 | --- | --- |
-| `server.js` | Сборка Express, статика с Cache-Control (sw.js — no-store), роуты меню |
+| `server.js` | Express application, static assets and menu routes; for `GET /` with an explicit `brand=coffee` / `brand=delivery` or deterministic `lighthouse=1` / `clean=1` audit input, emits a document-level `Link` preload for the first active image in the initial visible category (coffee / pizza); only local `/media/dishes/` assets, with responsive image parameters when available |
 | `server/routes/*` | auth, staff, promos, orders, chat, tg (webhook-бот), push, stats |
 | `server/domain/*` | customers, loyalty (штампы/подарки), helpers, валидация адреса |
 | `server/utils/session-policy.js` | Единая политика абсолютного TTL пользовательских bearer-сессий; используется выпуском токенов и миграцией SQLite | `USER_SESSION_TTL_MS` |
