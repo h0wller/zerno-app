@@ -222,26 +222,23 @@
       }
     } catch (_) {}
 
+    var device = {
+      endpoint: subscription ? subscription.endpoint : '',
+      token: token
+    };
+
     if (notifyServer && window.USER_TOKEN) {
       try {
-        await api('/push/unsubscribe', {
-          method: 'POST',
-          body: { endpoint: subscription ? subscription.endpoint : '', token: token }
-        });
+        await api('/push/unsubscribe', { method: 'POST', body: device });
       } catch (_) {
-        return; // Keep local credentials so a retry can still revoke server-side ownership.
+        // /api/exit receives the same device tuple and retries revocation.
       }
     }
 
     if (subscription) {
       try { await subscription.unsubscribe(); } catch (_) {}
     }
-    if (notifyServer) {
-      try {
-        localStorage.removeItem('zt_fcm');
-        localStorage.removeItem('zt_fcm_token');
-      } catch (_) {}
-    }
+    return device;
   }
 
   function resetAuthenticatedUser() {
@@ -464,9 +461,13 @@
     var logoutBtn = document.getElementById('logoutBtn');
     if (logoutBtn) {
       logoutBtn.onclick = async function () {
-        await unsubscribePushSubscription(true);
+        const device = await unsubscribePushSubscription(true);
         try {
-          await api('/exit', { method: 'POST' });
+          await api('/exit', { method: 'POST', body: device });
+          try {
+            localStorage.removeItem('zt_fcm');
+            localStorage.removeItem('zt_fcm_token');
+          } catch (_) {}
         } catch (_) {}
         resetAuthenticatedUser();
         openAuth();
