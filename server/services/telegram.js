@@ -19,7 +19,7 @@ export function escapeTelegramHtml(value) {
     .replace(/"/g, '&quot;');
 }
 
-function telegramHtmlToPlainText(value) {
+export function telegramHtmlToPlainText(value) {
   const newline = String.fromCharCode(10);
   return String(value || '')
     .replace(/<br[^>]*>/gi, newline)
