@@ -271,7 +271,7 @@ authRouter.post('/api/auth/register', validate(RegisterSchema), (req, res) => {
     db.prepare('UPDATE customers SET actcode=? WHERE id=?').run(ac, r.customer.id);
     const staff = db.prepare("SELECT id FROM customers WHERE role IN ('cashier','admin')").all();
     for (const s of staff) {
-      sendPush(s.id, '🆕 Новый гость ждёт активации', `${r.customer.name}, ${r.customer.phone} — код ${ac}`).catch(() => {});
+      sendPush(s.id, { title: '🆕 Новый гость ждёт активации', text: `${r.customer.name}, ${r.customer.phone} — код ${ac}` }).catch(() => {});
     }
     logEv(r.customer.name, 'регистрация без TG, ждёт код кассира');
   }
