@@ -13,7 +13,7 @@ export async function sendTg(cid, title, htmlBody, markup) {
     const customer = db.prepare('SELECT id, tg FROM customers WHERE id=?').get(cid);
     if (!customer || !customer.tg) return { ok: false, reason: 'no_tg' };
     const html = title
-      ? escapeTelegramHtml(title) + (htmlBody ? '\\n' + htmlBody : '')
+      ? escapeTelegramHtml(title) + (htmlBody ? String.fromCharCode(10) + htmlBody : '')
       : String(htmlBody || '');
     const result = await tgSend(customer.tg, html, markup);
     if (!result?.ok) {
