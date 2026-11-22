@@ -420,6 +420,14 @@ function registerSW() {
       scheduleUpdateCheck();
     }
 
+    function onBlockingSurfaceTransition(event) {
+      if (
+        event.target.id !== 'addrBookSheet' ||
+        (event.propertyName !== 'opacity' && event.propertyName !== 'transform')
+      ) return;
+      scheduleUpdateCheck();
+    }
+
     function resumeDeferredUpdate() {
       if (document.hidden) return;
       updateDeferred = false;
@@ -430,6 +438,7 @@ function registerSW() {
     // re-check after its close interaction instead of interrupting the flow.
     document.addEventListener('click', onAppActivity);
     document.addEventListener('keydown', onAppActivity);
+    document.addEventListener('transitionend', onBlockingSurfaceTransition, true);
     document.addEventListener('visibilitychange', resumeDeferredUpdate);
     window.addEventListener('focus', resumeDeferredUpdate);
     window.addEventListener('pageshow', resumeDeferredUpdate);
