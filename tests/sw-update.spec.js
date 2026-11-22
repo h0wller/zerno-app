@@ -163,6 +163,7 @@ test('new service workers wait until the page sends SKIP_WAITING', async ({ requ
   expect(source).toContain("e.data.type === 'SKIP_WAITING'");
 });
 
+
 test('does not prompt before the page is controlled by an existing service worker', async ({ page }) => {
   await page.addInitScript(() => {
     Object.defineProperty(navigator, 'standalone', { configurable: true, value: true });
@@ -188,24 +189,30 @@ test('does not prompt before the page is controlled by an existing service worke
 });
 
 test('keeps the update available when SKIP_WAITING cannot be posted', async ({ page }) => {
-  await installWaitingServiceWorker(page);
   await page.addInitScript(() => {
-    const nativeAddEventListener = EventTarget.prototype.addEventListener;
-    // Replace only the mocked waiting worker's message method after boot has registered it.
-    document.addEventListener('DOMContentLoaded', () => {
-      const button = document.querySelector('[data-sw-update-accept]');
-      if (!button) return;
-      const container = navigator.serviceWorker;
-      const registrationPromise = container.register();
-      registrationPromise.then((registration) => {
-        if (registration.waiting) {
-          registration.waiting.postMessage = () => { throw new Error('synthetic postMessage failure'); };
-        }
-      });
-    }, { once: true });
-  });
-  await page.goto('/?brand=coffee');
+    Object.defineProperty(navigator, 'standalone', { configurable: true, value: true });
+    localStorage.setItem('zt_onb', '1');
+    sessionStorage.setItem('splashDone', '1');
 
+    const container = new EventTarget();
+    const activeController = { state: 'activated', scriptURL: location.origin + '/sw.js' };
+    container.controller = activeController;
+
+    const candidate = new EventTarget();
+    candidate.state = 'installed';
+    candidate.postMessage = () => { throw new Error('synthetic postMessage failure'); };
+
+    const registration = new EventTarget();
+    registration.installing = null;
+    registration.waiting = candidate;
+    registration.update = () => Promise.resolve();
+    const ready = Promise.resolve(registration);
+    container.register = () => ready;
+
+    Object.defineProperty(navigator, 'serviceWorker', { configurable: true, value: container });
+  });
+
+  await page.goto('/?brand=coffee');
   const dialog = page.getByRole('dialog', { name: 'Доступно обновление' });
   await expect(dialog).toBeVisible();
   await page.getByRole('button', { name: 'Обновить приложение' }).click();
