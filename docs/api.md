@@ -138,7 +138,7 @@ SMS.ru сохранён как будущий платный канал авто
 | `GET /api/push/subs` | Данные push-подписок | adminGuard |
 | `POST /api/push/send` | Административная отправка push | adminGuard |
 | `POST /api/push/send-hours-update` | Уведомление об изменении расписания доставки | adminGuard |
-| `POST /api/push/unsubscribe` | Удалить указанный Web Push endpoint и/или FCM token; без параметров удалить все device registrations профиля | userGuard |
+| `POST /api/push/unsubscribe` | Удалить только переданный Web Push endpoint и/или FCM token текущего устройства; пустое тело — 400. Logout повторяет точечную очистку через `/api/exit` | userGuard |
 | `POST /api/push/del` | Удалить Web Push и FCM device registrations профиля `cid` | adminGuard |
 
 ## Статистика
