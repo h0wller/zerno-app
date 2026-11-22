@@ -345,12 +345,15 @@ test('Web Push and FCM unregister by device and logout revokes remaining registr
 
   const endpointA = 'https://push.example.invalid/subscription-a';
   const endpointB = 'https://push.example.invalid/subscription-b';
+  const endpointC = 'https://push.example.invalid/subscription-c';
   const sub = endpoint => ({ endpoint, keys: { p256dh: 'test-key', auth: 'test-auth' } });
 
-  assert.equal((await api('/api/push/subscribe', { sub: sub(endpointA), dev: 'device-a' }, token)).status, 200);
-  assert.equal((await api('/api/push/subscribe', { sub: sub(endpointB), dev: 'device-b' }, token)).status, 200);
-  assert.equal((await api('/api/push/fcm', { token: 'fcm-token-a' }, token)).status, 200);
-  assert.equal((await api('/api/push/fcm', { token: 'fcm-token-b' }, token)).status, 200);
+  for (const [endpoint, device] of [[endpointA, 'device-a'], [endpointB, 'device-b'], [endpointC, 'device-c']]) {
+    assert.equal((await api('/api/push/subscribe', { sub: sub(endpoint), dev: device }, token)).status, 200);
+  }
+  for (const fcmToken of ['fcm-token-a', 'fcm-token-b', 'fcm-token-c']) {
+    assert.equal((await api('/api/push/fcm', { token: fcmToken }, token)).status, 200);
+  }
 
   const partial = await api('/api/push/unsubscribe', {
     endpoint: endpointA,
@@ -358,18 +361,25 @@ test('Web Push and FCM unregister by device and logout revokes remaining registr
   }, token);
   assert.equal(partial.status, 200);
   assert.deepEqual(
-    inspectDb.prepare('SELECT sub FROM subs WHERE cid=?').all(cid).map(row => JSON.parse(row.sub).endpoint),
-    [endpointB]
+    inspectDb.prepare('SELECT sub FROM subs WHERE cid=? ORDER BY sub').all(cid).map(row => JSON.parse(row.sub).endpoint),
+    [endpointB, endpointC]
   );
   assert.deepEqual(
     inspectDb.prepare('SELECT token FROM fcm WHERE cid=? ORDER BY token').all(cid).map(row => row.token),
-    ['fcm-token-b']
+    ['fcm-token-b', 'fcm-token-c']
   );
 
-  const exited = await api('/api/exit', {}, token);
+  // Logging out of device B must not disconnect the still-active device C.
+  const exited = await api('/api/exit', { endpoint: endpointB, token: 'fcm-token-b' }, token);
   assert.equal(exited.status, 200);
-  assert.equal(inspectDb.prepare('SELECT COUNT(*) AS n FROM subs WHERE cid=?').get(cid).n, 0);
-  assert.equal(inspectDb.prepare('SELECT COUNT(*) AS n FROM fcm WHERE cid=?').get(cid).n, 0);
+  assert.deepEqual(
+    inspectDb.prepare('SELECT sub FROM subs WHERE cid=?').all(cid).map(row => JSON.parse(row.sub).endpoint),
+    [endpointC]
+  );
+  assert.deepEqual(
+    inspectDb.prepare('SELECT token FROM fcm WHERE cid=?').all(cid).map(row => row.token),
+    ['fcm-token-c']
+  );
   assert.equal(inspectDb.prepare('SELECT COUNT(*) AS n FROM tokens WHERE token=?').get(token).n, 0);
 });
 
