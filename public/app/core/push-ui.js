@@ -250,7 +250,7 @@ function urlBase64ToUint8Array(s) {
       }
 
       $("#pushHoursSend").onclick = async () => {
-        if (!confirm("Разослать гостям зимний график доставки?\n\nОктябрь–апрель: пн–чт 11:00–21:00, пт–вс 11:00–22:00.\n\nПолучат гости с включёнными уведомлениями. Telegram имеет приоритет, иначе отправим push.")) return;
+        if (!confirm("Разослать гостям зимний график доставки?\n\nОктябрь–апрель: пн–чт 11:00–21:00, пт–вс 11:00–22:00.\n\nПолучат гости с включёнными каналами. Telegram, Web Push и FCM отправляются по настройкам профиля.")) return;
         try {
           const r = await api("/push/send-hours-update", { method: "POST", body: {} });
           toast(`Получателей: ${r.recipients}, Telegram: ${r.telegramSent}, push: ${r.pushSent}, ошибок: ${r.failed}`, "🔔");
