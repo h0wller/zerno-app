@@ -25,6 +25,9 @@ jobs:
           node-version: 22
           cache: npm
 
+      - name: Install build dependencies
+        run: npm ci --no-audit --no-fund
+
       - name: Apply C8 feature and separate cleanup commits
         shell: bash
         run: |
@@ -33,10 +36,13 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
           gzip -dc .github/c8-one-shot/c8-apply.patch.gz | git apply --index
+          npm run build:client
+          git add public/index.html public/sw.js public/dist/main.bundle.js public/dist/main.bundle.js.map
           git diff --cached --check
           git commit -m "feat(perf): implement saved-brand C8 catalog prediction"
 
           gzip -dc .github/c8-one-shot/c8-cleanup.patch.gz | git apply --index
+          git checkout 8f276411f337952183864684e0bed5558d5e18d9 -- .github/workflows/ci.yml
           git rm -f .github/c8-one-shot/c8-apply.patch.gz .github/c8-one-shot/c8-cleanup.patch.gz .github/workflows/c8-one-shot.yml
           git add -A
           git diff --cached --check
@@ -46,7 +52,6 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          npm ci --no-audit --no-fund
           npm run lint:code
           node --input-type=module - <<'NODE'
           import fs from 'node:fs';

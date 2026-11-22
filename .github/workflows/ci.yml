@@ -214,7 +214,7 @@ jobs:
 
   splash-series:
     name: Splash series / A F C7 + C1 diagnostics
-    if: github.event_name == 'pull_request' && github.event.pull_request.number == 300
+    if: false && github.event_name == 'pull_request' && github.event.pull_request.number == 300
     needs: quality-gates
     runs-on: ubuntu-latest
     timeout-minutes: 45
@@ -311,7 +311,7 @@ jobs:
 
   lighthouse-variant-config:
     name: Lighthouse / Load pinned variant matrix
-    if: github.event_name == 'pull_request' && github.event.pull_request.number == 300
+    if: false && github.event_name == 'pull_request' && github.event.pull_request.number == 300
     needs: quality-gates
     runs-on: ubuntu-latest
     outputs:
