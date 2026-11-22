@@ -42,7 +42,7 @@ async function preparePage(page, variant) {
   }));
 }
 
-for (const variant of ['C7', 'C8']) {
+for (const variant of ['C7', 'C8', 'C9']) {
   for (const failure of ['http-503', 'network-reject']) {
     test(variant + ' retries the ordinary selected-brand request after early ' + failure, async ({ page }) => {
       let menuRequests = 0;
@@ -156,3 +156,45 @@ for (const variant of ['C7', 'C8']) {
     expect(mediaRequests.some((pathname) => pathname.includes('coffee') || pathname.includes('esp-card'))).toBe(false);
   });
 }
+
+test('C9 defaults to coffee prediction when zt_brand is absent and preloads its first image', async ({ page }) => {
+  const apiRequests = [];
+  const mediaRequests = [];
+  await installHtmlVariantRoute(page, 'C9');
+  await page.addInitScript(() => {
+    localStorage.removeItem('zt_brand');
+    localStorage.setItem('zt_onb', '1');
+    localStorage.setItem('zt_inst_hide', '1');
+    localStorage.removeItem('zt_user');
+    sessionStorage.removeItem('splashDone');
+  });
+  await page.route('**/api/menu', async (route) => {
+    apiRequests.push('/api/menu');
+    return route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ items: menuItems('coffee'), updatedAt: Date.now() }),
+    });
+  });
+  await page.route('**/api/dmenu', async (route) => {
+    apiRequests.push('/api/dmenu');
+    return route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ items: menuItems('delivery'), updatedAt: Date.now() }),
+    });
+  });
+  await page.route('**/media/dishes/**', async (route) => {
+    mediaRequests.push(new URL(route.request().url()).pathname);
+    return route.fulfill({ status: 200, contentType: 'image/webp', body: imageBytes });
+  });
+
+  await page.goto('/');
+  await expect(page.locator('#brandSplashStatic, #brandSplash').first()).toBeVisible();
+  const preload = page.locator('head link#zt-menu-lcp-preload');
+  await expect(preload).toBeAttached({ timeout: 10000 });
+  await expect(preload).toHaveAttribute('href', /coffee-perf-exp-1\\.webp/);
+  expect(apiRequests).toEqual(['/api/menu']);
+  expect(mediaRequests.some((pathname) => pathname.includes('coffee-perf-exp-1'))).toBe(true);
+  expect(apiRequests).not.toContain('/api/dmenu');
+});
