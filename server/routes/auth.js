@@ -473,10 +473,21 @@ authRouter.post('/api/auth/deactivate', userGuard, (req, res) => {
 authRouter.post('/api/exit', userGuard, (req, res) => {
   const t = getBearerToken(req);
   db.prepare('DELETE FROM tokens WHERE token=?').run(t);
-  // Defense in depth: logging out revokes device delivery even when the
-  // browser could not complete the explicit unsubscribe request.
-  db.prepare('DELETE FROM subs WHERE cid=?').run(req.user.id);
-  db.prepare('DELETE FROM fcm WHERE cid=?').run(req.user.id);
+  // Retry device-scoped cleanup in case /push/unsubscribe failed during logout.
+  // Never revoke other phones/browsers belonging to the same customer.
+  const endpoint = String(req.body?.endpoint || '');
+  const fcmToken = String(req.body?.token || '');
+  if (endpoint) {
+    const rows = db.prepare('SELECT sub FROM subs WHERE cid=?').all(req.user.id);
+    for (const row of rows) {
+      try {
+        if (JSON.parse(row.sub).endpoint === endpoint) {
+          db.prepare('DELETE FROM subs WHERE cid=? AND sub=?').run(req.user.id, row.sub);
+        }
+      } catch (_) {}
+    }
+  }
+  if (fcmToken) db.prepare('DELETE FROM fcm WHERE cid=? AND token=?').run(req.user.id, fcmToken);
   res.json({ ok: true });
 });
 
