@@ -97,7 +97,11 @@ test.describe('Initial catalog image priorities', () => {
 
     await page.goto('/?brand=coffee', { waitUntil: 'commit' });
     await expect.poll(() => requests.includes('/api/me')).toBe(true);
-    await expect(page.locator('#grid > .card[data-item-id="coffee-image-1"]')).toBeVisible({ timeout: 5000 });
+    const firstCard = page.locator('#grid > .card[data-item-id="coffee-image-1"]');
+    await expect(firstCard).toBeVisible({ timeout: 5000 });
+    await page.evaluate(() => {
+      window.__coffeeFirstCardBeforeStaffUpgrade = document.querySelector('#grid > .card[data-item-id="coffee-image-1"]');
+    });
     expect(requests).toContain('/api/menu');
     expect(requests).not.toContain('/api/menu/all');
 
@@ -106,6 +110,14 @@ test.describe('Initial catalog image priorities', () => {
     await expect.poll(() => page.evaluate(() =>
       Array.isArray(window.MENU) && window.MENU.some(item => item.id === 'coffee-stopped')
     )).toBe(true);
+    expect(await page.evaluate(() =>
+      window.__coffeeFirstCardBeforeStaffUpgrade === document.querySelector('#grid > .card[data-item-id="coffee-image-1"]')
+    )).toBe(true);
+    await page.evaluate(() => {
+      window.editMode = true;
+      window.renderMenu();
+    });
+    await expect(page.locator('#grid > .card[data-item-id="coffee-stopped"]')).toBeVisible();
     expect(requests.filter(path => path === '/api/menu')).toHaveLength(1);
     expect(requests.filter(path => path === '/api/menu/all')).toHaveLength(1);
   });
