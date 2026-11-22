@@ -313,4 +313,31 @@ test.describe('Cashier guest PIN and reward picker', () => {
       }
     }
   });
+  
+  test('gift picker preempts a competing legacy redeem onclick handler', async ({ page }) => {
+    const redemptions = [];
+    await mockCashierSession(page, (type, payload) => {
+      if (type === 'redeem') redemptions.push(payload);
+    });
+    await enterCashierMode(page);
+
+    await page.locator('#findInput').fill('Guest E2E');
+    await page.locator('#findBtn').click();
+    await expect(page.locator('#redeemBtn')).toBeVisible();
+
+    // Reproduce the legacy direct-redeem handler being assigned after cashier.js.
+    await page.evaluate(() => {
+      document.getElementById('redeemBtn').onclick = () => {
+        window.__legacyDirectRedeemCalled = true;
+      };
+    });
+
+    const modal = page.locator('#redeemPick');
+    await page.locator('#redeemBtn').click();
+
+    await expect(modal).toHaveClass(/show/);
+    expect(await page.evaluate(() => Boolean(window.__legacyDirectRedeemCalled))).toBe(false);
+    expect(redemptions).toHaveLength(0);
+  });
+
 });
