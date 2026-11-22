@@ -1,4 +1,4 @@
-name: perf-exp isolated A/F/C8 benchmark
+name: perf-exp isolated A/F/C8/C9 benchmark
 
 on:
   push:
@@ -14,9 +14,9 @@ concurrency:
 
 jobs:
   benchmark:
-    name: Verify perf-exp and run A F C8
+    name: Verify perf-exp and run A F C7 C8 C9
     runs-on: ubuntu-22.04
-    timeout-minutes: 55
+    timeout-minutes: 100
     steps:
       - name: Checkout perf-exp with full history
         uses: actions/checkout@v7
@@ -45,8 +45,12 @@ jobs:
           HEAD_SHA="$(git rev-parse HEAD)"
           echo "base=$BASE_SHA"
           echo "head=$HEAD_SHA"
-          git log --reverse --format='%H %s' "origin/pizza..HEAD"
-          mapfile -t COMMITS < <(git rev-list --reverse origin/pizza..HEAD)
+          echo "git rev-list --count $BASE_SHA..$HEAD_SHA:"
+          git rev-list --count "$BASE_SHA..$HEAD_SHA"
+          echo "git log --format='%H %an %ad %s' $BASE_SHA..$HEAD_SHA:"
+          git log --format='%H %an %ad %s' "$BASE_SHA..$HEAD_SHA"
+          git log --reverse --format='%H %s' "$BASE_SHA..$HEAD_SHA"
+          mapfile -t COMMITS < <(git rev-list --reverse "$BASE_SHA..$HEAD_SHA")
           if [ "${#COMMITS[@]}" -eq 0 ]; then
             echo "perf-exp must contain at least one benchmark commit" >&2
             exit 1
@@ -75,6 +79,7 @@ jobs:
           node --check scripts/perf-exp/patch-html.mjs
           node --check scripts/perf-exp/benchmark.mjs
           node --check scripts/perf-exp/prepare-html-variant.mjs
+          node --check scripts/perf-exp/prediction-matrix.mjs
           node --check tests/perf-exp-fallback.spec.js
 
       - name: Prepare pinned A and F worktrees
@@ -155,7 +160,17 @@ jobs:
             --url-c7=http://127.0.0.1:3213 \
             --url-c8=http://127.0.0.1:3214 \
             --runs=5 --delays=0,3000 --brands=coffee,delivery \
-            --trace-samples=1 --out=perf-exp-results
+            --trace-samples=1 --trace-delays=0 --out=perf-exp-results
+          node scripts/perf-exp/benchmark.mjs \
+            --url-a=http://127.0.0.1:3211 \
+            --url-f=http://127.0.0.1:3212 \
+            --url-c7=http://127.0.0.1:3213 \
+            --url-c8=http://127.0.0.1:3214 \
+            --variants=C7 --runs=10 --delays=0,3000 --brands=coffee \
+            --trace-samples=1 --trace-delays=0,3000 --out=perf-exp-results/c7-anomaly-repeat
+          node scripts/perf-exp/prediction-matrix.mjs \
+            --url=http://127.0.0.1:3211 --variants=A,C8,C9 --runs=5 \
+            --out=perf-exp-results/prediction-matrix
 
       - name: Verify no deployment workflow was requested
         run: |
