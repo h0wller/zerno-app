@@ -59,7 +59,7 @@ function runWhenIdle(callback, timeout) {
 }
 
 /* ── 1. Агрегатная перерисовка всех видов ── */
-function renderAll() {
+function renderAll(options) {
   const initChar = (window.me && window.me.name && window.me.name.trim())
     ? window.me.name.trim().charAt(0).toUpperCase()
     : '?';
@@ -70,7 +70,7 @@ function renderAll() {
 
   if (window.brand !== 'delivery') {
     if (typeof renderRail === 'function') renderRail();
-    if (typeof renderMenu === 'function') renderMenu();
+    if (!(options && options.skipCoffeeMenu) && typeof renderMenu === 'function') renderMenu();
   }
   if (typeof renderModes === 'function') renderModes();
 
@@ -144,7 +144,7 @@ async function verifyStaffSession() {
 
 async function loadInitialCatalog(earlyDeliveryLoad, earlyCoffeeLoad) {
   // A visible splash owns the next brand choice; don't load the stored brand.
-  if (window.__brandSplashPending === true) return;
+  if (window.__brandSplashPending === true) return false;
 
   if (window.brand !== 'delivery') {
     var coffeePreloadSucceeded = earlyCoffeeLoad ? await earlyCoffeeLoad : false;
@@ -153,7 +153,7 @@ async function loadInitialCatalog(earlyDeliveryLoad, earlyCoffeeLoad) {
     if (isCoffeeStaffRole || !coffeePreloadSucceeded) {
       if (typeof loadMenu === 'function') await loadMenu({ render: false });
     }
-    return;
+    return coffeePreloadSucceeded;
   }
 
   var isStaffRole = window.me && ['admin', 'cashier', 'dispatch'].indexOf(window.me.role) !== -1;
@@ -186,11 +186,11 @@ async function boot() {
   await verifyStaffSession();
   if (typeof window.syncBrandViews === 'function') window.syncBrandViews();
   try {
-    await loadInitialCatalog(earlyDeliveryLoad, earlyCoffeeLoad);
+    var coffeeCatalogAlreadyRendered = await loadInitialCatalog(earlyDeliveryLoad, earlyCoffeeLoad);
   } catch (err) {
     console.warn('[BOOT] Ошибка загрузки меню:', err);
   } finally {
-    renderAll();
+    renderAll({ skipCoffeeMenu: window.brand === 'coffee' && coffeeCatalogAlreadyRendered });
     if (typeof window.syncBrandViews === 'function') window.syncBrandViews();
     if (typeof showBadge === 'function') showBadge();
     if (typeof maybeAskReview === 'function') maybeAskReview();
