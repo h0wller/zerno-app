@@ -105,23 +105,32 @@ pushRouter.post('/api/push/send-hours-update', adminGuard, async (req, res) => {
   res.json({ ok: failed === 0, recipients, telegramSent, pushSent, failed });
 });
 
-pushRouter.post('/api/push/unsubscribe', userGuard, (req, res) => {
-  const endpoint = String(req.body?.endpoint || '');
-  const token = String(req.body?.token || '');
+function removeDevicePushRegistrations(cid, device = {}) {
+  const endpoint = String(device.endpoint || '');
+  const token = String(device.token || '');
+
   if (endpoint) {
-    const rows = db.prepare('SELECT sub FROM subs WHERE cid=?').all(req.user.id);
+    const rows = db.prepare('SELECT sub FROM subs WHERE cid=?').all(cid);
     for (const row of rows) {
       try {
         if (JSON.parse(row.sub).endpoint === endpoint) {
-          db.prepare('DELETE FROM subs WHERE cid=? AND sub=?').run(req.user.id, row.sub);
+          db.prepare('DELETE FROM subs WHERE cid=? AND sub=?').run(cid, row.sub);
         }
       } catch (_) {}
     }
-  } else {
-    db.prepare('DELETE FROM subs WHERE cid=?').run(req.user.id);
   }
-  if (token) db.prepare('DELETE FROM fcm WHERE cid=? AND token=?').run(req.user.id, token);
-  else if (!endpoint) db.prepare('DELETE FROM fcm WHERE cid=?').run(req.user.id);
+  if (token) db.prepare('DELETE FROM fcm WHERE cid=? AND token=?').run(cid, token);
+
+  // An empty tuple is the explicit account-wide operation (used by settings
+  // that revoke all registered devices). A partial tuple is device-scoped.
+  if (!endpoint && !token) {
+    db.prepare('DELETE FROM subs WHERE cid=?').run(cid);
+    db.prepare('DELETE FROM fcm WHERE cid=?').run(cid);
+  }
+}
+
+pushRouter.post('/api/push/unsubscribe', userGuard, (req, res) => {
+  removeDevicePushRegistrations(req.user.id, req.body || {});
   res.json({ ok: true });
 });
 
