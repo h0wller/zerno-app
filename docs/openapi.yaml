@@ -647,10 +647,11 @@ paths:
               type: object
               required: [min]
               properties:
-                min: { type: integer, minimum: 0 }
+                min: { type: integer, minimum: 1, maximum: 180 }
                 comment: { type: string, maxLength: 140 }
       responses:
-        '200': { description: OK }
+        '200': { description: Массовая задержка активных обычных заказов и предзаказов на сегодня; будущие предзаказы не меняются }
+        '400': { description: min must be an integer from 1 to 180 }
         '403': { $ref: '#/components/responses/Forbidden' }
 
   /api/staff/stamp:
