@@ -110,7 +110,9 @@
 
   function renderGuest() {
     $('#gcStamps').textContent = '☕ Штамп(а): ' + curGuest.stamps + ' из 10 · 🎁 Бесплатных: ' + curGuest.free;
-    $('#gcRedeem').style.opacity = curGuest.free > 0 ? '1' : '.4';
+    const canRedeem = Number(curGuest.free) > 0;
+    $('#gcRedeem').disabled = !canRedeem;
+    $('#gcRedeem').style.opacity = canRedeem ? '1' : '.4';
   }
 
   $('#gcStamp').onclick = async () => {
@@ -124,15 +126,16 @@
     }
   };
 
-  $('#gcRedeem').onclick = async () => {
-    try {
-      const r = await api('/staff/redeem', { method: 'POST', body: { id: curGuest.id } });
-      curGuest = r.customer;
-      renderGuest();
-      toast('Бесплатный кофе списан 🎁');
-    } catch (e) {
-      toast('Нет доступных подарков', '❌');
+  $('#gcRedeem').onclick = () => {
+    if (!curGuest || !(Number(curGuest.free) > 0)) return;
+    if (typeof window.openRedeemPicker !== 'function') {
+      return toast('Не удалось открыть выбор напитка', '⚠️');
     }
+    const opened = window.openRedeemPicker(curGuest, updatedCustomer => {
+      curGuest = updatedCustomer;
+      renderGuest();
+    }, $('#gcRedeem'));
+    if (!opened) toast('Нет доступных подарков', '⚠️');
   };
 
   $('#gcClose').onclick = () => {
