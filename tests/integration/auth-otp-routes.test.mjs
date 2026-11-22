@@ -369,6 +369,13 @@ test('Web Push and FCM unregister by device and logout revokes remaining registr
     ['fcm-token-b', 'fcm-token-c']
   );
 
+  const emptyUnsubscribe = await api('/api/push/unsubscribe', {}, token);
+  assert.equal(emptyUnsubscribe.status, 400);
+  assert.deepEqual(
+    inspectDb.prepare('SELECT token FROM fcm WHERE cid=? ORDER BY token').all(cid).map(row => row.token),
+    ['fcm-token-b', 'fcm-token-c']
+  );
+
   // Logging out of device B must not disconnect the still-active device C.
   const exited = await api('/api/exit', { endpoint: endpointB, token: 'fcm-token-b' }, token);
   assert.equal(exited.status, 200);
