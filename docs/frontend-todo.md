@@ -67,6 +67,13 @@ This is an audit queue, not a declaration that each item is defective.
 - [ ] brand switch and bfcache restore do not cause stale header geometry or jump.
 - [ ] Use the contract in `docs/testing/slow-network-layout.md`; do not loosen assertions to hide shifts.
 
+### E1.1 Authenticated coffee first paint — PR #308
+
+- [x] Add a regression test that holds `/api/me` and proves an actual coffee catalog card can render before the staff response is released; after a verified staff role, confirm the full `/api/menu/all` response replaces the interim public list.
+- [ ] Confirm the RED test against the current `pizza` source, then verify GREEN after the boot change and run the complete CI matrix.
+- [ ] Compare authenticated coffee LCP against the recorded production capture under matching device/network/cache conditions. The source capture is bundle `v=4177`; current production's later delivery trace is `v=4198`, so do not combine the numbers.
+- [ ] Capture and inspect the first catalog frame for coffee and delivery, guest and staff, at mobile portrait/landscape and desktop viewports. Keep PR #308 Draft until the PROJECT_RULES.md §10 review record is complete.
+
 ### E1. Mobile initial catalog / LCP — PR #300
 
 **Current state on 2026-11-22:** C8 implementation, cleanup and automated verification are complete on PR branch `perf/mobile-lcp-initial-load` at `8db36bf3bf9d82adf5ae3cb89f0628afda168201`. The PR is still Draft and is not merged into `pizza`.
