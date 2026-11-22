@@ -131,15 +131,20 @@ test('shows the success toast only after activation and reload', async ({ page }
   await expect(page.locator('#toasts .toast', { hasText: 'Приложение обновлено' })).toBeVisible();
 });
 
-test('does not show update dialog in a regular browser tab, including desktop', async ({ page }) => {
+test('does not show update dialog in regular browser tabs on desktop or mobile', async ({ page }) => {
   await installWaitingServiceWorker(page, { standalone: false });
-  await page.setViewportSize({ width: 1440, height: 900 });
-  await page.goto('/?brand=coffee');
+  for (const viewport of [
+    { width: 1440, height: 900 },
+    { width: 390, height: 844 },
+  ]) {
+    await page.setViewportSize(viewport);
+    await page.goto('/?brand=coffee');
 
-  await expect(page.getByRole('dialog', { name: 'Доступно обновление' })).toHaveCount(0);
-  await page.waitForTimeout(3600);
-  await expect(page.getByRole('dialog', { name: 'Доступно обновление' })).toHaveCount(0);
-  await expect(page.locator('#toasts .toast', { hasText: 'Приложение обновлено' })).toHaveCount(0);
+    await expect(page.getByRole('dialog', { name: 'Доступно обновление' })).toHaveCount(0);
+    await page.waitForTimeout(3600);
+    await expect(page.getByRole('dialog', { name: 'Доступно обновление' })).toHaveCount(0);
+    await expect(page.locator('#toasts .toast', { hasText: 'Приложение обновлено' })).toHaveCount(0);
+  }
 });
 
 test('new service workers wait until the page sends SKIP_WAITING', async ({ request }) => {
