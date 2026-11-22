@@ -4,7 +4,7 @@ function urlBase64ToUint8Array(s) {
         const b64 = (s + padding).replace(/-/g, "+").replace(/_/g, "/");
         const raw = atob(b64);
         const out = new Uint8Array(raw.length);
-        for (window.i = 0; i < raw.length; ++i) out[i] = raw.charCodeAt(i);
+        for (let i = 0; i < raw.length; ++i) out[i] = raw.charCodeAt(i);
         return out;
       }
 
@@ -83,7 +83,12 @@ function urlBase64ToUint8Array(s) {
             body: { sub: sub.toJSON(), dev: getDevId() },
           });
           window.refreshPushBtn();
-          toast("Готово! Проверочный пуш уже летит", "🔔");
+          const testResult = await api("/push/test", { method: "POST", body: {} });
+          if (testResult && testResult.ok && (testResult.web?.ok || testResult.fcm?.ok)) {
+            toast("Подписка готова. Проверочное уведомление отправлено", "🔔");
+          } else {
+            toast(testResult?.message || "Подписка сохранена, но доставка на устройство не подтверждена", "⚠️");
+          }
         } catch (e) {
           toast(
             (e && e.message) ||
