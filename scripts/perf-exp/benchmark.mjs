@@ -11,8 +11,10 @@ const args = Object.fromEntries(process.argv.slice(2).map((arg) => {
 const urls = {
   A: args['url-a'],
   F: args['url-f'],
+  C7: args['url-a'],
   C8: args['url-a'],
 };
+const variants = ['A', 'F', 'C7', 'C8'];
 const runs = Number(args.runs || 5);
 const delays = (args.delays || '0,3000').split(',').map(Number);
 const brands = (args.brands || 'coffee,delivery').split(',');
@@ -51,10 +53,15 @@ function pathsFromItem(item, origin) {
     .map((url) => new URL(url, origin).pathname);
   return [...new Set(urls)];
 }
-function requestType(pathname) {
+function requestType(pathname, resourceType) {
   if (apiPaths.has(pathname)) return 'api';
-  if (pathname.startsWith('/media/dishes/')) return 'image';
-  return null;
+  if (resourceType === 'Image' || pathname.startsWith('/media/dishes/')) return 'image';
+  if (resourceType === 'Script' || /\\.m?js(?:$|\\?)/i.test(pathname)) return 'script';
+  if (resourceType === 'Stylesheet' || /\\.css(?:$|\\?)/i.test(pathname)) return 'stylesheet';
+  if (resourceType === 'Font' || /\\.(?:woff2?|ttf|otf)(?:$|\\?)/i.test(pathname)) return 'font';
+  if (resourceType === 'Document') return 'document';
+  if (resourceType === 'XHR' || resourceType === 'Fetch') return 'api';
+  return resourceType ? resourceType.toLowerCase() : 'other';
 }
 
 async function installProbe(context, page, brand) {
@@ -182,15 +189,22 @@ async function runOnce(browser, variant, brand, delayMs, runNumber, captureTrace
     await cdp.send('Emulation.setCPUThrottlingRate', { rate: 4 });
     cdp.on('Network.requestWillBeSent', (event) => {
       const pathname = new URL(event.request.url).pathname;
-      const type = requestType(pathname);
-      if (!type) return;
+      const type = requestType(pathname, event.type);
       const wallTime = Number.isFinite(event.wallTime) ? event.wallTime * 1000 : Date.now();
       const offset = wallTime - event.timestamp * 1000;
       if (clockOffsetMs === null) clockOffsetMs = offset;
       const record = {
         requestId: event.requestId, type, pathname, url: event.request.url,
         startedAt: wallTime, responseAt: null, finishedAt: null,
-        status: null, encodedDataLength: 0, dataChunks: [], failed: false, errorText: null,
+        status: null, encodedDataLength: 0, dataReceivedBytes: 0, dataChunks: [],
+        failed: false, errorText: null, resourceType: event.type || null,
+        priority: event.request.initialPriority || null,
+        initiator: {
+          type: event.initiator?.type || null,
+          url: event.initiator?.url || event.initiator?.stack?.callFrames?.[0]?.url || null,
+          functionName: event.initiator?.stack?.callFrames?.[0]?.functionName || null,
+          lineNumber: event.initiator?.stack?.callFrames?.[0]?.lineNumber ?? null,
+        },
       };
       requestById.set(event.requestId, record);
       row.requests.push(record);
@@ -201,13 +215,23 @@ async function runOnce(browser, variant, brand, delayMs, runNumber, captureTrace
       record.responseAt = event.timestamp * 1000 + clockOffsetMs;
       record.status = event.response.status;
       record.mimeType = event.response.mimeType;
+      record.protocol = event.response.protocol || null;
+      record.remoteIPAddress = event.response.remoteIPAddress || null;
+      record.connectionReused = event.response.connectionReused ?? null;
+      record.fromDiskCache = event.response.fromDiskCache || false;
+      record.fromServiceWorker = event.response.fromServiceWorker || false;
+      record.responseHeaders = Object.keys(event.response.headers || {});
+      record.responseReceivedEncodedLength = event.response.encodedDataLength || 0;
     });
     cdp.on('Network.dataReceived', (event) => {
       const record = requestById.get(event.requestId);
       if (!record) return;
+      const encoded = event.encodedDataLength || 0;
+      record.dataReceivedBytes += encoded;
       record.dataChunks.push({
         at: event.timestamp * 1000 + clockOffsetMs,
-        encodedDataLength: event.encodedDataLength || 0,
+        dataLength: event.dataLength || 0,
+        encodedDataLength: encoded,
       });
     });
     cdp.on('Network.loadingFinished', (event) => {
@@ -267,8 +291,15 @@ async function runOnce(browser, variant, brand, delayMs, runNumber, captureTrace
     row.failedRuns = cardMark ? 0 : 1;
 
     const json = row.requests.find((request) => request.type === 'api' && request.pathname === (brand === 'delivery' ? '/api/dmenu' : '/api/menu'));
-    const image = row.requests.filter((request) => request.type === 'image' && targetPaths.includes(request.pathname))
-      .sort((a, b) => a.startedAt - b.startedAt)[0];
+    const image = row.requests.filter((request) => request.type === 'image' &&
+      (request.pathname === cardMark?.pathname || targetPaths.includes(request.pathname)))
+      .sort((a, b) => {
+        if (cardMark?.pathname) {
+          if (a.pathname === cardMark.pathname && b.pathname !== cardMark.pathname) return -1;
+          if (b.pathname === cardMark.pathname && a.pathname !== cardMark.pathname) return 1;
+        }
+        return a.startedAt - b.startedAt;
+      })[0];
     const diff = (at) => at == null ? null : Math.round(at - tapAt);
     row.phases = {
       jsonRequestStartMs: diff(json?.startedAt),
@@ -278,7 +309,8 @@ async function runOnce(browser, variant, brand, delayMs, runNumber, captureTrace
       firstImageResponseReceivedMs: diff(image?.responseAt),
       firstImageLoadingFinishedMs: diff(image?.finishedAt),
       firstCardVisibleMs: row.clickToCardMs,
-      imageBytes: image?.encodedDataLength ?? null,
+      imageBytes: image?.encodedDataLength ?? image?.dataReceivedBytes ?? null,
+      imagePath: image?.pathname || cardMark?.pathname || null,
     };
     const before = row.requests.filter((request) => request.startedAt < tapAt);
     const after = row.requests.filter((request) => request.startedAt >= tapAt);
@@ -293,8 +325,58 @@ async function runOnce(browser, variant, brand, delayMs, runNumber, captureTrace
     row.apiRequestsAfterClick = after.filter((request) => request.type === 'api').length;
     row.imageRequestsBeforeClick = before.filter((request) => request.type === 'image').length;
     row.imageRequestsAfterClick = after.filter((request) => request.type === 'image').length;
+    // Keep the click-to-card metric and request counts frozen at the visual mark.
+    // Then let in-flight traffic settle briefly so concurrent-request byte totals are complete.
+    const requestsAtCardVisible = row.requests.map((request) => ({ ...request }));
+    await page.waitForTimeout(1200);
+    const imageStart = image?.startedAt ?? null;
+    const imageEnd = image?.finishedAt ?? cardMark?.at ?? null;
+    const observationEnd = Date.now();
+    row.concurrentWithFirstImage = image && imageStart !== null && imageEnd !== null
+      ? row.requests.filter((request) => {
+          if (request.requestId === image.requestId) return false;
+          const requestEnd = request.finishedAt ?? observationEnd;
+          return request.startedAt < imageEnd && requestEnd > imageStart;
+        }).map((request) => ({
+          pathname: request.pathname,
+          url: request.url,
+          type: request.type,
+          resourceType: request.resourceType,
+          startedFromTapMs: Math.round(request.startedAt - tapAt),
+          responseFromTapMs: request.responseAt == null ? null : Math.round(request.responseAt - tapAt),
+          finishedFromTapMs: request.finishedAt == null ? null : Math.round(request.finishedAt - tapAt),
+          status: request.status,
+          mimeType: request.mimeType,
+          protocol: request.protocol,
+          remoteIPAddress: request.remoteIPAddress,
+          connectionReused: request.connectionReused,
+          encodedDataLength: request.encodedDataLength,
+          dataReceivedBytes: request.dataReceivedBytes,
+          bytesAtFirstImageFinish: request.dataChunks
+            .filter((chunk) => chunk.at <= imageEnd)
+            .reduce((sum, chunk) => sum + chunk.encodedDataLength, 0),
+          failed: request.failed,
+          initiator: request.initiator,
+        }))
+      : [];
+    row.requestsAtCardVisible = requestsAtCardVisible.map((request) => ({
+      pathname: request.pathname, type: request.type, resourceType: request.resourceType,
+      startedAt: request.startedAt, responseAt: request.responseAt, finishedAt: request.finishedAt,
+      encodedDataLength: request.encodedDataLength, dataReceivedBytes: request.dataReceivedBytes,
+      failed: request.failed, initiator: request.initiator,
+    }));
+    row.allRequests = row.requests.map((request) => ({
+      pathname: request.pathname, url: request.url, type: request.type, resourceType: request.resourceType,
+      startedFromTapMs: Math.round(request.startedAt - tapAt),
+      responseFromTapMs: request.responseAt == null ? null : Math.round(request.responseAt - tapAt),
+      finishedFromTapMs: request.finishedAt == null ? null : Math.round(request.finishedAt - tapAt),
+      status: request.status, mimeType: request.mimeType, protocol: request.protocol,
+      remoteIPAddress: request.remoteIPAddress, connectionReused: request.connectionReused,
+      encodedDataLength: request.encodedDataLength, dataReceivedBytes: request.dataReceivedBytes,
+      failed: request.failed, errorText: request.errorText, initiator: request.initiator,
+    }));
     row.failedRequests = row.requests.filter((request) => request.failed).map((request) => ({
-      pathname: request.pathname, errorText: request.errorText, status: request.status,
+      pathname: request.pathname, type: request.type, errorText: request.errorText, status: request.status,
     }));
     if (!cardMark) {
       const prefix = 'failure-' + variant + '-' + brand + '-delay' + delayMs + '-run' + runNumber;
@@ -323,7 +405,7 @@ const browser = await chromium.launch({ args: ['--no-sandbox'] });
 const records = [];
 const traceRecords = [];
 try {
-  for (const variant of ['A', 'F', 'C8']) {
+  for (const variant of variants) {
     for (const delay of delays) {
       for (const brand of brands) {
         for (let run = 1; run <= runs; run += 1) {
@@ -333,7 +415,7 @@ try {
     }
   }
   if (traceSamples) {
-    for (const variant of ['A', 'F', 'C8']) {
+    for (const variant of variants) {
       for (const brand of brands) {
         traceRecords.push(await runOnce(browser, variant, brand, 0, 90, true));
       }
@@ -344,7 +426,7 @@ try {
 }
 
 const summary = [];
-for (const variant of ['A', 'F', 'C8']) {
+for (const variant of variants) {
   for (const delay of delays) {
     for (const brand of brands) {
       const rows = records.filter((row) => row.variant === variant && row.delayMs === delay && row.brand === brand);
@@ -365,7 +447,7 @@ for (const variant of ['A', 'F', 'C8']) {
   }
 }
 const phaseSummary = [];
-for (const variant of ['A', 'F', 'C8']) {
+for (const variant of variants) {
   for (const brand of brands) {
     const rows = records.filter((row) => row.variant === variant && row.delayMs === 0 && row.brand === brand);
     phaseSummary.push({
@@ -383,7 +465,7 @@ const result = {
     runsPerBrandPerDelay: runs,
     delays,
     brands,
-    variants: ['A', 'F', 'C8'],
+    variants,
     viewport: '360x800',
     deviceScaleFactor: 1.75,
     networkLatencyMs: network.latency,
