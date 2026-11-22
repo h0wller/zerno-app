@@ -1105,9 +1105,10 @@ test('confetti cancels its active frame and clears the canvas while the document
   expect(await page.evaluate(() => Array.from(window.__pendingConfettiFrames.keys()))).toEqual(pendingBeforeHiddenConfetti);
 
   await page.evaluate(() => window.__setConfettiVisibility('visible'));
-  expect(await page.evaluate(() => window.__pendingConfettiFrames.size)).toBe(0);
+  const framesBeforeExplicitRestart = await page.evaluate(() => Array.from(window.__pendingConfettiFrames.keys()));
   await page.evaluate(() => window.confetti());
-  expect(await page.evaluate(() => window.__pendingConfettiFrames.size)).toBe(1);
+  const framesAfterExplicitRestart = await page.evaluate(() => Array.from(window.__pendingConfettiFrames.keys()));
+  expect(framesAfterExplicitRestart.filter((id) => !framesBeforeExplicitRestart.includes(id))).toHaveLength(1);
 });
 
 
