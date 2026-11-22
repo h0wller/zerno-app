@@ -330,7 +330,8 @@ test('profile name API enforces the published 2–24 character boundary', async 
     body: JSON.stringify({ name: 'A'.repeat(24) })
   });
   assert.equal(maximum.status, 200);
-  assert.equal(maximum.json.customer?.name, 'A'.repeat(24));
+  const maximumJson = await maximum.json();
+  assert.equal(maximumJson.customer?.name, 'A'.repeat(24));
 });
 
 test('Web Push and FCM unregister by device and logout revokes remaining registrations', async () => {
