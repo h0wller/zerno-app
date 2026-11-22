@@ -49,8 +49,8 @@ async function refreshProfileLive(){
 }
 
 if(window.ordersPoll){clearInterval(window.ordersPoll);window.ordersPoll=null;}
-window.ordersPoll=setInterval(refreshOrdersLive,6000);
-setInterval(refreshProfileLive,5000);
+window.ordersPoll=setInterval(refreshOrdersLive,15000);
+setInterval(refreshProfileLive,45000);
 
 document.addEventListener('visibilitychange',function(){refreshOrdersLive();refreshProfileLive();});
 addEventListener('focus',function(){refreshOrdersLive();refreshProfileLive();});
@@ -62,6 +62,7 @@ addEventListener('pageshow',function(e){
   }
 });
 
+// Keep polling as a fallback, but let a push wake the UI immediately.
 if(navigator.serviceWorker)navigator.serviceWorker.addEventListener('message',function(e){
   if(e.data&&e.data.type==='zpush'){refreshOrdersLive();refreshProfileLive();}
 });
