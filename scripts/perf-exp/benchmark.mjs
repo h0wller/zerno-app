@@ -2,7 +2,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { chromium } from '@playwright/test';
-import { installHtmlVariantRoute } from './patch-html.mjs';
 
 const args = Object.fromEntries(process.argv.slice(2).map((arg) => {
   const [key, value] = arg.replace(/^--/, '').split('=');
@@ -11,8 +10,8 @@ const args = Object.fromEntries(process.argv.slice(2).map((arg) => {
 const urls = {
   A: args['url-a'],
   F: args['url-f'],
-  C7: args['url-a'],
-  C8: args['url-a'],
+  C7: args['url-c7'],
+  C8: args['url-c8'],
 };
 const variants = ['A', 'F', 'C7', 'C8'];
 const runs = Number(args.runs || 5);
@@ -23,9 +22,9 @@ const traceSamples = args['trace-samples'] === '1';
 const network = { latency: 150, throughputBytesPerSecond: 1638.4 * 1024 / 8 };
 const apiPaths = new Set(['/api/menu', '/api/dmenu']);
 
-if (!urls.A || !urls.F || delays.some((delay) => ![0, 3000].includes(delay)) ||
+if (!urls.A || !urls.F || !urls.C7 || !urls.C8 || delays.some((delay) => ![0, 3000].includes(delay)) ||
     brands.some((brand) => !['coffee', 'delivery'].includes(brand))) {
-  throw new Error('Expected --url-a, --url-f, --runs, --delays=0,3000, --brands=coffee,delivery');
+  throw new Error('Expected --url-a, --url-f, --url-c7, --url-c8, --runs, --delays=0,3000, --brands=coffee,delivery');
 }
 fs.mkdirSync(outputDir, { recursive: true });
 
@@ -158,8 +157,6 @@ async function runOnce(browser, variant, brand, delayMs, runNumber, captureTrace
       if (['error', 'warning'].includes(message.type())) row.console.push({ type: message.type(), text: message.text() });
     });
     page.on('pageerror', (error) => row.console.push({ type: 'pageerror', text: error.message }));
-
-    if (variant !== 'A' && variant !== 'F') await installHtmlVariantRoute(page, variant);
 
     page.on('response', async (response) => {
       try {
