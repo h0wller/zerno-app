@@ -2,7 +2,7 @@
 
 **Статус:** текущий рабочий чек-лист, не исторический pre-refactor baseline.
 **Проверяемая база:** ветка `pizza`; production URL: `https://friday.andcoffee.online/`.
-**Последнее обновление:** 2026-11-15.
+**Последнее обновление:** 2026-11-22.
 
 Этот список описывает требуемое покрытие. Галочки ставятся только по реально выполненному browser test/manual review с указанием commit, viewport и состояния роли. Отсутствие отметки не означает, что функция сломана.
 
@@ -47,6 +47,20 @@
 - [ ] Медленная сеть: CSS/fonts/menu/image задержаны; измеряется CLS, не только скриншот после загрузки.
 - [ ] Первые карточки и медиа имеют зарезервированное место; image priority соответствует реальному первому ряду.
 - [ ] Safe-area и экранная клавиатура не перекрывают действия.
+
+### Mobile first-load / LCP — PR #300
+
+Automated C8 coverage is complete on PR HEAD `8db36bf3bf9d82adf5ae3cb89f0628afda168201`; CI [run 45030665869](https://github.com/h0wller/zerno-app/actions/runs/45030665869) passed 14/14 jobs. This is test-server evidence only and does not approve production visuals.
+
+- [x] Regression coverage for saved-brand guest prediction, matching-promise reuse, mismatch handling, network/503 fallback, selected-brand image preload and first-row image priority.
+- [ ] Capture and inspect same-context before/after screenshots for both brands, using the production assets/data intended for the review.
+- [ ] Inspect splash-before-choice and first catalog frame after choice for coffee and delivery.
+- [ ] Inspect mobile portrait, mobile landscape, short landscape and a desktop control viewport.
+- [ ] Inspect first-row images, delivery hero, scrolled catalog and horizontal category rail; include guest and relevant staff roles, overlays, cart and checkout.
+- [ ] Inspect address/search with the on-screen keyboard, focus, safe-area, overflow, computed geometry and hit targets.
+- [ ] Record the exact SHA, screenshot source, role, brand, viewport, state, opened frame and `accepted` / `changes requested` / `not reviewed` for every required capture.
+
+The full C8 implementation contract, measurement caveats, cleanup inventory and remaining gate are in [docs/testing/mobile-lcp-initial-load.md](testing/mobile-lcp-initial-load.md). Do not mark this visual review complete from CI screenshots alone.
 
 ## 5. Screenshot protocol
 Каждый набор скриншотов должен включать:

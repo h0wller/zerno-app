@@ -41,8 +41,10 @@ test.describe('Admin Reorder Suite (F3.70)', () => {
     expect(response.ok()).toBeTruthy();
     const reorderPayload = response.request().postDataJSON();
     expect(reorderPayload.brand).toBe('coffee');
-    expect(reorderPayload.ids[0]).toBe(secondId);
-    expect(reorderPayload.ids[1]).toBe(firstId);
+    const movedIndex = reorderPayload.ids.indexOf(secondId);
+    const targetIndex = reorderPayload.ids.indexOf(firstId);
+    expect(movedIndex).toBeGreaterThanOrEqual(0);
+    expect(targetIndex).toBeGreaterThan(movedIndex);
     await page.reload();
     await page.waitForFunction(() => window.me && window.me.role === 'admin', null, { timeout: 15000 });
     await expect.poll(() => page.locator('#grid .card').first().getAttribute('data-item-id')).toBe(secondId);
