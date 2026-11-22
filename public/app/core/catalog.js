@@ -11,8 +11,10 @@
           meta.updatedAt = r.updatedAt;
           renderUpd();
           if (!options || options.render !== false) renderMenu();
+          return true;
         } catch (e) {
           toast(e.message, "⚠️");
+          return false;
         }
       }
 
