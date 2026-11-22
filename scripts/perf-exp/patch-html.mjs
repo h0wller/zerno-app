@@ -1,18 +1,18 @@
 /* Benchmark-only response patch. Never writes catalog DOM nodes. */
 export function patchHtmlDocument(html, variant) {
-  if (!['A', 'C7', 'C8'].includes(variant)) throw new Error('Unknown variant: ' + variant);
+  if (!['A', 'C7', 'C8', 'C9'].includes(variant)) throw new Error('Unknown variant: ' + variant);
   if (variant === 'A') return html;
-  const enableImagePreload = variant === 'C8';
+  const enableImagePreload = variant === 'C8' || variant === 'C9';
   const pendingMarker = '      var pending = null;';
   if (!html.includes(pendingMarker)) throw new Error('perf-exp: zt-lcp-head pending marker not found');
 
   const early = [
     '      // PERF-EXP ' + variant + ': fetch selected-brand JSON while splash is visible.',
-    '      // C8 adds one head-owned image preload only after a successful JSON response.',
+    '      // C8/C9 add one head-owned image preload only after a successful JSON response.',
     '      var earlyCatalog = null;',
     '      try {',
     '        if (window.__brandSplashPending === true && !localStorage.getItem("zt_user")) {',
-    '          var predictedBrand = localStorage.getItem("zt_brand");',
+    '          var predictedBrand = localStorage.getItem("zt_brand")' + (variant === "C9" ? ' || "coffee"' : "") + ';',
     '          if (predictedBrand === "coffee" || predictedBrand === "delivery") {',
     '            var predictedEndpoint = predictedBrand === "delivery" ? "/api/dmenu" : "/api/menu";',
     '            var earlyPromise = nativeFetch.call(window, predictedEndpoint, { headers: { Accept: "application/json" } }).then(function (response) {',
