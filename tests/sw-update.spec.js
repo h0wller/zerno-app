@@ -83,14 +83,12 @@ test('an update waits for explicit choice and stays visible until dismissed', as
         { body: await page.screenshot({ fullPage: false }), contentType: 'image/png' }
       );
 
-      // A transient toast would have disappeared by now; the update prompt must remain.
       await page.waitForTimeout(3600);
       await expect(dialog).toBeVisible();
 
       await later.click();
       await expect(dialog).toBeHidden();
 
-      // "Later" postpones this page session. Returning to the app re-offers the waiting update.
       await page.evaluate(() => window.dispatchEvent(new Event('focus')));
       await expect(dialog).toBeVisible();
     }
@@ -127,8 +125,15 @@ test('shows the success toast only after activation and reload', async ({ page }
   await expect(page.getByRole('dialog', { name: 'Доступно обновление' })).toBeVisible();
   await expect(page.locator('#toasts .toast', { hasText: 'Приложение обновлено' })).toHaveCount(0);
 
+  const initialDocument = await page.evaluate(() => performance.timeOrigin);
+  const navigation = page.waitForEvent('framenavigated', (frame) => frame === page.mainFrame());
   await page.getByRole('button', { name: 'Обновить приложение' }).click();
+  await navigation;
+
+  const resultingDocument = await page.evaluate(() => performance.timeOrigin);
+  expect(resultingDocument).toBeGreaterThan(initialDocument);
   await expect(page.locator('#toasts .toast', { hasText: 'Приложение обновлено' })).toBeVisible();
+  expect(await page.evaluate(() => sessionStorage.getItem('zt_sw_update_applied'))).toBeNull();
 });
 
 test('does not show update dialog in regular browser tabs on desktop or mobile', async ({ page }) => {
@@ -151,7 +156,7 @@ test('new service workers wait until the page sends SKIP_WAITING', async ({ requ
   const response = await request.get('/sw.js');
   expect(response.ok()).toBe(true);
   const source = await response.text();
-  const installHandler = source.match(/self\.addEventListener\('install',[\s\S]*?\n\}\);/);
+  const installHandler = source.match(/self\\.addEventListener\\('install',[\\s\\S]*?\\n\\}\\);/);
 
   expect(installHandler).not.toBeNull();
   expect(installHandler[0]).not.toContain('skipWaiting');
