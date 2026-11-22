@@ -1,5 +1,3 @@
-import { gzipSync } from 'node:zlib';
-
 /* Benchmark-only response patch. Never writes catalog DOM nodes. */
 export function patchHtmlDocument(html, variant) {
   if (!['A', 'C7', 'C8'].includes(variant)) throw new Error('Unknown variant: ' + variant);
@@ -127,18 +125,6 @@ export async function installHtmlVariantRoute(page, variant) {
     }
     const response = await route.fetch();
     const html = await response.text();
-    const patched = patchHtmlDocument(html, variant);
-    // route.fetch() exposes the decoded body. Re-compress the rewritten document so
-    // C7/C8 do not silently turn a compressed production HTML response into a much
-    // larger identity response in the byte-before-click measurements.
-    const body = gzipSync(Buffer.from(patched, 'utf8'));
-    const headers = response.headers();
-    delete headers['content-encoding'];
-    delete headers['content-length'];
-    delete headers['transfer-encoding'];
-    delete headers.etag;
-    headers['content-encoding'] = 'gzip';
-    headers['content-length'] = String(body.length);
-    return route.fulfill({ status: response.status(), headers, body });
+    return route.fulfill({ response, body: patchHtmlDocument(html, variant) });
   });
 }
