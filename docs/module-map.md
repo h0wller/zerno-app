@@ -15,7 +15,7 @@
 | --- | --- | --- |
 | `public/app/main.js` | Единственная ESM-точка входа; порядок импортов = порядок инициализации; `boot.js` строго последним | — |
 | `public/app/core/boot.js` | `renderAll()`, `boot()`; подтверждение сессии и синхронизация проверенной staff-роли (`applyStaffRoleState`); ЕДИНСТВЕННАЯ регистрация SW (SKIP_WAITING + reload только при hadController); install-баннер; iOS-хинт; IMG-FB v1 (фолбэк webp→svg при ошибке загрузки) | `window.renderAll`, `window.boot`, `window.applyStaffRoleState` |
-| `public/sw.js` | `STATIC_CACHE` — App Shell (cache-first + фоновая ревалидация); `MEDIA_CACHE` — svg network-first (no-cache), png/webp SWR; `API_CACHE` — /api/menu SWR 5 мин | — |
+| `public/sw.js` | App Shell Network-First с offline fallback; `MEDIA_CACHE` — svg network-first, raster SWR; `API_CACHE` — /api/menu SWR 5 мин; входящие `push`/`notificationclick`, same-origin navigation и сообщение `zpush` для live refresh | События `push`, `notificationclick`, `message` от окна; новые версии ждут явного подтверждения пользователя перед активацией |
 | `public/index.html` (инлайн, СЛОЙ 4) | early-brand-guard; critical-fouc-guard; perf-bridge (Lighthouse); TgUx-стаб; префетч /api/menu и /api/dmenu; lcp-inline-css; FOUC-guard Ф3.51 (первый кадр шапки/марки/тикера); владелец клика сплэша; early-chrome-guard. Легаси-дубль регистрации SW — кандидат на удаление (владелец boot.js) | — |
 
 ## 1. Глобальное состояние, сеть, утилиты
@@ -25,7 +25,7 @@
 | `core/state.js` | window-глобалы: USER_TOKEN, onboarded, MENU, meta, me, mode, editMode, brand; CATS/TINT; iOS gesture-guard; детект TG Mini App | `window.CATS`, `window.TINT`, `window.__isTgMiniApp` |
 | `core/utils.js` | Чистые утилиты форматирования/DOM | `$`, `clone`, `esc`, `fmt`, `fmtTs`, `ph10`, `fmtPhone`, `bindMask`, `fmtMulti` |
 | `core/api.js` | Определяет базовый URL API для app-origin и локальных frontend-серверов | `window.API_BASE` |
-| `core/ui.js` | `api()` с обработкой 401; тосты; дата обновления меню; PERF-дедуп одинаковых GET | `window.api`, `window.toast`, `window.renderUpd` |
+| `core/ui.js` | `api()` с обработкой 401 и 20-секундным timeout; дедуп только безопасных GET без caller AbortSignal; ARIA live toasts с адаптивной длительностью | `window.api`, `window.toast`, `window.renderUpd` |
 | `core/config.js` | Bootstrap /api/config (имя TG-бота и состояние opt-in-функций), триггеры relink/verifyNote | `window.TG_USERNAME`, `window.SMS_AUTH_ENABLED`; событие `app:config-loaded` |
 
 ## 2. Бренд, виды, шапка
@@ -68,10 +68,10 @@
 
 | Модуль | Владеет | Контракты |
 | --- | --- | --- |
-| `order-tracking.js` | Модалка `#orderTrackModal`, опрос статуса гостевого заказа и повтор заказа | `window.openOrderTrackModal`, `window.closeOrderTrackModal` |
+| `order-tracking.js` | Модалка `#orderTrackModal`, state-specific delivery/pickup/cancel state, items/modifiers/gifts/fees/discounts/eta; перерисовка только при изменении данных | `window.openOrderTrackModal`, `window.closeOrderTrackModal` |
 | `core/order-reorder.js` | Чистое восстановление позиций заказа: выбранные варианты, модификаторы и ключи корзины; общий helper для deep link и tracking | `restoreOrderItems` (ESM export) |
 | `orders.js` | `#ordersList` (диспетчер), обработчики статусов/задержек; «Активация гостей» (`loadPending`); инжект redeems в дашборд | `window.renderOrders`, `window.loadPending` |
-| `live.js` | Поллинги заказов/профиля при изменениях; pageshow/visibilitychange; zpush-сообщения от SW | — |
+| `live.js` | Fallback polling заказов (15 с) и профиля (45 с), быстрый refresh по `zpush`, pageshow/visibilitychange/focus | — |
 
 ## 6. Профиль, бонусы, QR, отзывы
 
@@ -89,7 +89,7 @@
 
 | Модуль | Владеет | Контракты |
 | --- | --- | --- |
-| `core/auth-session.js` | Установка клиентской сессии: токен, `me`, onboarding, аватары, QR и регистрация FCM-токена; публикует изменение профиля | `window.setUser`; `ztBus` event `auth:user-changed` |
+| `core/auth-session.js` | Установка/сброс клиентской сессии, сброс `__ztAuthDead`, безопасная запись localStorage, повторная привязка сохранённого FCM token после входа | `window.setUser`; `ztBus` event `auth:user-changed` |
 | `core/auth.js` | Единственный владелец `#authModal` (open/close/swap и сброс временного состояния), вход по PIN/OTP, `#profileTopBtn`, выход и удаление аккаунта | `window.openAuth`, `window.closeAuth`, `window.authSwap` |
 | `core/auth-pin.js` | Единственный владелец `#setPinModal`: задание PIN для старого профиля и смена PIN | `window.openSetPin`, `window.closeSetPin` |
 | `core/registration.js` | Регистрация, согласие, OTP Telegram и поллинг подтверждения; единственный владелец динамической видимости `#regOtpBtn`/`#regOtpRow` по `window.SMS_AUTH_ENABLED` | `window.resetRegistrationState` |
@@ -118,7 +118,7 @@
 | Модуль | Владеет | Контракты |
 | --- | --- | --- |
 | `core/push.js` | `ensurePush`, VAPID-утилиты, самовосстановление подписки | `window.ensurePush` |
-| `core/push-ui.js` | `enablePush`, видимость `#pushBtn`, пуш-бабл `#pushHint`, FCM/Capacitor, массовая рассылка (админ) | `window.enablePush`, `window.refreshPushBtn`, `window.togglePushHint` |
+| `core/push-ui.js` | `enablePush`, VAPID подписка и подтверждающий `/push/test`, видимость `#pushBtn`, `#pushHint`, FCM/Capacitor; проверка фактической доставки | `window.enablePush`, `window.refreshPushBtn`, `window.togglePushHint` |
 
 Серверный контракт отправки, диагностика ошибок и расследование бонусных уведомлений: [docs/telegram-notification-investigation-2026-10-29.md](telegram-notification-investigation-2026-10-29.md).
 
@@ -161,7 +161,9 @@
 | `server/domain/*` | customers, loyalty (штампы/подарки), helpers, валидация адреса |
 | `server/utils/session-policy.js` | Единая политика абсолютного TTL пользовательских bearer-сессий; используется выпуском токенов и миграцией SQLite | `USER_SESSION_TTL_MS` |
 | `server/utils/auth-rate-limits.js` + `server/utils/otp.js` | Persisted OTP send limits/cooldowns, rate-limit state and bounded in-memory OTP store; `server/routes/auth.js` owns request/verify endpoints | `getOtpSendState`, `recordOtpSend`, `otpStore`, `consumeOtp` |
-| `server/services/*` | Оркестратор пушей (TG+web+FCM), telegram, fcm, sms |
+| `server/services/push.js` | Единый fan-out: Telegram HTML отдельно от plain text Web Push/FCM; возвращает per-channel фактический delivery status и удаляет истёкшие subscriptions | `sendPush(cid, { title, text, html }, markup?)`; legacy positional поддерживается временно |
+| `server/services/telegram.js` | Telegram Bot API; HTML escaping и plain-text fallback при ошибках parse entities/лимите длины | `tgSend`, `escapeTelegramHtml`, `telegramHtmlToPlainText` |
+| `server/services/fcm.js` | FCM отправка и очистка недействительных registration tokens | `sendFcm(cid, title, body)` |
 | `server/middleware/*` | Гарды ролей, security-заголовки, CORS, zod-валидация |
 | `server/db/*` | SQLite-коннект, схема+миграции, сид (меню/dmenu, VAPID) |
 
