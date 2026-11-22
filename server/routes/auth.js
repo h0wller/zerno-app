@@ -483,6 +483,9 @@ authRouter.get('/api/me', userGuard, (req, res) => res.json({ customer: cust(req
 
 authRouter.put('/api/me', userGuard, (req, res) => {
   const name = String(req.body.name || '').trim() || 'Гость';
+  if (name.length < 2 || name.length > 24) {
+    return res.status(400).json({ error: 'Имя должно содержать от 2 до 24 символов' });
+  }
   db.prepare('UPDATE customers SET name=? WHERE id=?').run(name, req.user.id);
   respondWithCustomer(res, req.user.id);
 });
