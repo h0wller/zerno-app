@@ -390,6 +390,37 @@ test('Web Push and FCM unregister by device and logout revokes remaining registr
   assert.equal(inspectDb.prepare('SELECT COUNT(*) AS n FROM tokens WHERE token=?').get(token).n, 0);
 });
 
+
+test('FCM token registration transfers ownership when the same device signs into another account', async () => {
+  const first = await api('/api/auth/register', {
+    name: 'FCM First Owner', phone: '+7 900 000-02-15', pin: '1234', consent: true
+  });
+  const second = await api('/api/auth/register', {
+    name: 'FCM Second Owner', phone: '+7 900 000-02-16', pin: '1234', consent: true
+  });
+  assert.equal(first.status, 200, JSON.stringify(first.json));
+  assert.equal(second.status, 200, JSON.stringify(second.json));
+
+  const firstId = first.json.customer.id;
+  const secondId = second.json.customer.id;
+  const sharedToken = 'fcm-token-device-transfer';
+
+  assert.equal((await api('/api/push/fcm', { token: sharedToken }, first.json.token)).status, 200);
+  assert.deepEqual(
+    inspectDb.prepare('SELECT cid FROM fcm WHERE token=?').get(sharedToken),
+    { cid: firstId }
+  );
+
+  assert.equal((await api('/api/push/fcm', { token: sharedToken }, second.json.token)).status, 200);
+  assert.deepEqual(
+    inspectDb.prepare('SELECT cid FROM fcm WHERE token=?').get(sharedToken),
+    { cid: secondId }
+  );
+  assert.equal(inspectDb.prepare('SELECT COUNT(*) AS n FROM fcm WHERE cid=?').get(firstId).n, 0);
+  assert.equal(inspectDb.prepare('SELECT COUNT(*) AS n FROM fcm WHERE cid=?').get(secondId).n, 1);
+});
+
+
 test('stamp promo applies one batch grant and creates one history entry', async () => {
   const adminPhone = '+7 900 000-02-13';
   const adminRegistration = await api('/api/auth/register', {
