@@ -40,6 +40,8 @@
 - [ ] Возврат из profile/modal свайпом и кнопкой не вызывает скачок layout/header.
 
 ## 4. Responsive and performance
+
+- [ ] **PWA update flow** — installed PWA (iOS/Android/desktop standalone): persistent update dialog with explicit “Обновить приложение” / “Позже”; no prompt in regular browser tabs; wait until cart/checkout/modal closes; show “Приложение обновлено” only after activation and reload.
 - [ ] Viewports: 320, 360, 390, 414, 520, 690, 768, 820, 821, 844×390 и 1024×390 (короткий landscape), 1024×768, 1181, 1440, 1480, 1481, 1920, 2800 и 3840 px. На обоих брендах короткий landscape сохраняет горизонтальную навигацию; rail и первая карточка попадают в видимую область; поворот в обычный desktop возвращает вертикальную sidebar без перезагрузки. `.wrap` ограничен 1480px до 1480px viewport и 2560px начиная с 1481px, центрируется на широких экранах.
 - [ ] Нет горизонтального overflow.
 - [ ] Появление вертикального scrollbar не меняет `documentElement.clientWidth` и геометрию `.wrap` (постоянный `overflow-y: scroll` без дополнительного `scrollbar-gutter`).
