@@ -1,0 +1,69 @@
+name: one-time C8 apply and cleanup
+
+on:
+  push:
+    branches:
+      - perf/mobile-lcp-initial-load
+    paths:
+      - '.github/workflows/c8-one-shot.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  apply-c8:
+    if: github.event.head_commit.message == 'chore: stage C8 patch for one-time application'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+          persist-credentials: true
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Apply C8 feature and separate cleanup commits
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          gzip -dc .github/c8-one-shot/c8-apply.patch.gz | git apply --index
+          git diff --cached --check
+          git commit -m "feat(perf): implement saved-brand C8 catalog prediction"
+
+          gzip -dc .github/c8-one-shot/c8-cleanup.patch.gz | git apply --index
+          git rm -f .github/c8-one-shot/c8-apply.patch.gz .github/c8-one-shot/c8-cleanup.patch.gz .github/workflows/c8-one-shot.yml
+          git add -A
+          git diff --cached --check
+          git commit -m "chore: remove perf-exp benchmark scaffolding"
+
+      - name: Verify final source and tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm ci --no-audit --no-fund
+          npm run lint:code
+          node --input-type=module - <<'NODE'
+          import fs from 'node:fs';
+          const html = fs.readFileSync('public/index.html', 'utf8');
+          const match = html.match(/<script id="zt-lcp-head">([\s\S]*?)<\/script>/);
+          if (!match) throw new Error('zt-lcp-head not found');
+          fs.writeFileSync('/tmp/zt-lcp-head.js', match[1]);
+          NODE
+          node --check /tmp/zt-lcp-head.js
+          node --check tests/mobile-lcp.spec.js
+          node --check tests/integration/mobile-lcp-link-preload.test.mjs
+          node --test tests/integration/mobile-lcp-link-preload.test.mjs
+          npm run test:unit
+          npx playwright install --with-deps chromium
+          npx playwright test tests/mobile-lcp.spec.js --project=chromium --workers=1
+
+      - name: Push C8 and cleanup commits
+        shell: bash
+        run: |
+          git push origin "HEAD:${GITHUB_REF_NAME}"
