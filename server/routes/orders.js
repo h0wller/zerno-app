@@ -235,8 +235,12 @@ ordersRouter.put('/api/admin/weekpromo', adminGuard, (req, res) => {
     db.prepare("INSERT INTO meta(key,value) VALUES('week_promo',?) ON CONFLICT(key) DO UPDATE SET value=excluded.value")
       .run(JSON.stringify({ text: b.text || '', threshold: +b.threshold || 0, gift: b.gift || '', until: b.until || null }));
     if (b.push && b.text) {
-      const cids = db.prepare("SELECT cid FROM subs UNION SELECT id FROM customers WHERE tg IS NOT NULL AND tg != ''").all();
-      for (const c of cids) sendPush(c.cid, '🍕 Пятничный подарок', b.text);
+      const cids = db.prepare("SELECT cid FROM subs UNION SELECT cid FROM fcm UNION SELECT id AS cid FROM customers WHERE tg IS NOT NULL AND tg != ''").all();
+      for (const customer of cids) {
+        sendPush(customer.cid, { title: '🍕 Пятничный подарок', text: String(b.text).slice(0, 2000) }).catch(error => {
+          console.error('[orders] Friday gift notification failed:', error.message);
+        });
+      }
       logEv(req.user.name, 'пуш: пятничный подарок');
     }
   }
