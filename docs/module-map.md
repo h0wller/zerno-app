@@ -99,8 +99,8 @@
 
 | Модуль | Владеет | Контракты |
 | --- | --- | --- |
-| `cashier.js` | cashierView: поиск гостя, штамп/списание, «Новый гость», журнал кассира (`renderLog`); модалка `#redeemPick` (какой кофе списать) | `window.renderLog`, `window.showCust` |
-| `scanner.js` | `#scanModal`, камера, подгрузка jsQR | — |
+| `cashier.js` | cashierView: поиск гостя, штамп/списание, «Новый гость», журнал кассира (`renderLog`); единая модалка `#redeemPick` для выбора напитка перед любым кассовым списанием | `window.renderLog`, `window.showCust`, `window.openRedeemPicker(customer, onSuccess, returnFocus)` — открывает picker; запрос `POST /api/staff/redeem` отправляется только после выбора напитка; `onSuccess` получает обновлённого гостя |
+| `scanner.js` | `#scanModal`, камера/ручной ввод QR, `#guestCard` и штамп гостя; списание подарка делегирует в picker кассира | вызывает `window.openRedeemPicker(customer, onSuccess, returnFocus)`; не отправляет `POST /api/staff/redeem` напрямую |
 | `ui/cashier-card.js` | Кнопка «Закрыть карточку» гостя | — |
 | `ui/cashier-log.js` | Фильтр кофейных событий в `#cashLog`, unhide карточки журнала | — |
 
