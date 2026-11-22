@@ -175,8 +175,11 @@ function orderNotifyStaff(o) {
   };
 
   for (const staffMember of staff) {
-    if (!staffMember.tg || sentTg.has(String(staffMember.tg))) continue;
-    sentTg.add(String(staffMember.tg));
+    // Avoid sending kitchen details twice to the buyer's Telegram chat, but
+    // do not exclude staff who have only Web Push/FCM registered.
+    const telegramId = staffMember.tg ? String(staffMember.tg) : '';
+    if (telegramId && sentTg.has(telegramId)) continue;
+    if (telegramId) sentTg.add(telegramId);
     sendPush(staffMember.id, { title: '', text: pushText, html: telegramHtml }, staffKb);
   }
   logEv(o.name, `${o.is_preorder ? 'предзаказ' : 'заказ'} #${o.no} на ${o.total} ₽`);
