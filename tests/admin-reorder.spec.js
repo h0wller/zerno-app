@@ -35,6 +35,7 @@ test.describe('Admin Reorder Suite (F3.70)', () => {
     await first.dispatchEvent('dragover', { dataTransfer });
     await first.dispatchEvent('drop', { dataTransfer });
     await second.dispatchEvent('dragend', { dataTransfer });
+    await dataTransfer.dispose();
 
     const response = await reorderResponse;
     expect(response.ok()).toBeTruthy();
