@@ -1247,20 +1247,24 @@ paths:
   /api/push/unsubscribe:
     post:
       tags: [Push]
-      summary: Отвязать Web Push endpoint и/или FCM token текущего пользователя
-      description: Без тела запроса удаляет все Web Push и FCM device registrations профиля. При передаче endpoint/token удаляет только совпадающие регистрации.
+      summary: Отвязать Web Push endpoint и/или FCM token текущего устройства
+      description: Требуется endpoint или token. Удаляются только переданные регистрации этого пользователя; пустой запрос возвращает 400 и не затрагивает другие устройства.
       security: [{ BearerAuth: [] }]
       requestBody:
-        required: false
+        required: true
         content:
           application/json:
             schema:
               type: object
               properties:
-                endpoint: { type: string }
-                token: { type: string }
+                endpoint: { type: string, minLength: 1 }
+                token: { type: string, minLength: 1 }
+              anyOf:
+                - required: [endpoint]
+                - required: [token]
       responses:
-        '200': { description: Операция выполнена успешно (ok: true) }
+        '200': { description: Устройство отвязано (ok: true) }
+        '400': { description: Нужно передать endpoint или token }
         '401': { $ref: '#/components/responses/Unauthorized' }
 
   /api/push/del:
