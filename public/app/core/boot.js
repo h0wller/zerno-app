@@ -91,6 +91,11 @@ function preloadDeliveryCatalog() {
   return window.__dlPromise = window.loadDelivery();
 }
 
+function preloadCoffeeCatalog() {
+  if (window.brand !== 'coffee' || typeof window.loadMenu !== 'function') return null;
+  return window.loadMenu();
+}
+
 function applyStaffRoleState(customer) {
   var staffRole = customer && ['admin', 'cashier', 'dispatch'].indexOf(customer.role) !== -1
     ? customer.role
@@ -137,12 +142,17 @@ async function verifyStaffSession() {
   }
 }
 
-async function loadInitialCatalog(earlyDeliveryLoad) {
+async function loadInitialCatalog(earlyDeliveryLoad, earlyCoffeeLoad) {
   // A visible splash owns the next brand choice; don't load the stored brand.
   if (window.__brandSplashPending === true) return;
 
   if (window.brand !== 'delivery') {
-    if (typeof loadMenu === 'function') await loadMenu({ render: false });
+    var coffeePreloadSucceeded = earlyCoffeeLoad ? await earlyCoffeeLoad : false;
+    var isCoffeeStaffRole = window.me && ['admin', 'cashier', 'dispatch'].indexOf(window.me.role) !== -1;
+    // Show the public menu first; request the guarded full list only after /api/me confirms staff.
+    if (isCoffeeStaffRole || !coffeePreloadSucceeded) {
+      if (typeof loadMenu === 'function') await loadMenu({ render: false });
+    }
     return;
   }
 
@@ -167,17 +177,16 @@ async function loadInitialCatalog(earlyDeliveryLoad) {
 async function boot() {
   document.documentElement.setAttribute('data-staff-boot-started', '1');
 
-  // Load the public delivery catalog while staff authentication is being verified.
-  // This keeps the first viewport populated on slow networks without trusting the role hint.
-  // Wait for the explicit choice when the splash is shown.
-  var earlyDeliveryLoad = window.__brandSplashPending === true
-    ? null
-    : preloadDeliveryCatalog();
+  // Start the selected public catalog while staff authentication is being verified.
+  // The guarded full menu remains behind the verified role; a pending splash owns the choice.
+  var canPreloadCatalog = window.__brandSplashPending !== true;
+  var earlyDeliveryLoad = canPreloadCatalog ? preloadDeliveryCatalog() : null;
+  var earlyCoffeeLoad = canPreloadCatalog ? preloadCoffeeCatalog() : null;
 
   await verifyStaffSession();
   if (typeof window.syncBrandViews === 'function') window.syncBrandViews();
   try {
-    await loadInitialCatalog(earlyDeliveryLoad);
+    await loadInitialCatalog(earlyDeliveryLoad, earlyCoffeeLoad);
   } catch (err) {
     console.warn('[BOOT] Ошибка загрузки меню:', err);
   } finally {
