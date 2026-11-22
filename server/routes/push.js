@@ -38,7 +38,8 @@ pushRouter.post('/api/push/test', userGuard, async (req, res) => {
     reason: deliveredToDevice ? undefined : 'no_device_delivery',
     message: deliveredToDevice
       ? 'Тестовое уведомление передано службе доставки устройства'
-      : 'Подписка сохранена, но ни Web Push, ни FCM не подтвердили отправку на устройство'
+      : 'Подписка сохранена, но ни Web Push, ни FCM не подтвердили отправку на устройство',
+    error: deliveredToDevice ? undefined : 'Подписка сохранена, но доставка на устройство не подтверждена'
   });
 });
 
@@ -77,7 +78,7 @@ pushRouter.post('/api/push/send', adminGuard, async (req, res) => {
     }
   }
   logEv(req.user.name, `пуш всем (${rows.length})`);
-  res.json({ ok: failed === 0, recipients: rows.length, delivered, failed, errors: errors.slice(0, 5) });
+  res.json({ ok: failed === 0, sent: rows.length, recipients: rows.length, delivered, failed, errors: errors.slice(0, 5) });
 });
 
 pushRouter.post('/api/push/send-hours-update', adminGuard, async (req, res) => {
