@@ -12,7 +12,6 @@ permissions:
 
 jobs:
   apply-c8:
-    if: github.event.head_commit.message == 'chore: stage C8 patch for one-time application'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
