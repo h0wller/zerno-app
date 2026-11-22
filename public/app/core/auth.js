@@ -227,7 +227,7 @@
       token: token
     };
 
-    if (notifyServer && window.USER_TOKEN) {
+    if (notifyServer && window.USER_TOKEN && (device.endpoint || device.token)) {
       try {
         await api('/push/unsubscribe', { method: 'POST', body: device });
       } catch (_) {
