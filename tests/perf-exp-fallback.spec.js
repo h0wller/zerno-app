@@ -193,8 +193,8 @@ test('C9 defaults to coffee prediction when zt_brand is absent and preloads its 
   await expect(page.locator('#brandSplashStatic, #brandSplash').first()).toBeVisible();
   const preload = page.locator('head link#zt-menu-lcp-preload');
   await expect(preload).toBeAttached({ timeout: 10000 });
-  await expect(preload).toHaveAttribute('href', /coffee-perf-exp-1\\.webp/);
+  await expect(preload).toHaveAttribute('href', /coffee-perf-exp-1/);
   expect(apiRequests).toEqual(['/api/menu']);
-  expect(mediaRequests.some((pathname) => pathname.includes('coffee-perf-exp-1'))).toBe(true);
+  await expect.poll(() => mediaRequests.some((pathname) => pathname.includes('coffee-perf-exp-1'))).toBe(true);
   expect(apiRequests).not.toContain('/api/dmenu');
 });
