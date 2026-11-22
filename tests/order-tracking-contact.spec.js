@@ -309,7 +309,16 @@ test('карточка трекинга различает отмену и са�
   await expect(modal).toContainText('Дополнительный сыр');
   await expect(modal).toContainText('+15 мин');
   await expect(modal).toContainText('Соус');
-  await expect(modal).toContainText('Доставка:');
+  await expect(modal).not.toContainText('Доставка:');
   await expect(modal).toContainText('−100 ₽');
   await expect(modal).toContainText('Итого:');
+  await page.locator('#orderTrackModal [data-ot-close]').click();
+
+  await page.evaluate(() => window.openOrderTrackModal({
+    id: 'delivery-way-order', no: 83, status: 'way', method: 'delivery',
+    addr: 'Советская, 10', fee: 200, total: 1500, eta: '+20 мин', items: []
+  }));
+  await expect(modal).toContainText('Курьер выехал');
+  await expect(modal).toContainText('Доставка:');
+  await expect(modal).toContainText('Советская, 10');
 });
