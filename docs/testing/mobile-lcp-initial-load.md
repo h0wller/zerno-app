@@ -30,7 +30,7 @@ When the selected brand is coffee and the splash is not pending, `boot.js` start
 
 After `/api/me` resolves:
 - guests and non-staff users keep the public menu and do not make a duplicate request;
-- a confirmed cashier, dispatcher or admin waits for the public request to settle, then uses the same loader to fetch guarded `/api/menu/all`, so the full staff menu replaces the interim active-only list;
+- a confirmed cashier, dispatcher or admin waits for the public request to settle, then uses the same loader to fetch guarded `/api/menu/all`; the full result updates `MENU` without replacing the already-painted first catalog DOM during boot, and later ordinary menu renders (for example, entering edit mode) use the full list;
 - if the early public request fails, boot retries through the role-aware loader after session verification.
 
 A pending brand splash does not start a speculative runtime catalog request. Its selected-brand flow remains owned by `splash.js`. The staff endpoint is never requested before the server confirms the role.
@@ -51,7 +51,7 @@ Only local `/media/dishes/` images are eligible. Responsive `imagesrcset` / `ima
 - `server.js`: document-level `Link` preload for explicitly selected brands and audit requests; local media filtering and responsive image parameters.
 - `public/app/core/state.js`: deterministic audit brand initialization.
 - `public/app/core/boot.js`: sequences selected-brand catalog preload with `/api/me`; coffee's public catalog can paint while staff auth is pending, then staff roles upgrade to the guarded full list.
-- `public/app/core/catalog.js`: remains the sole owner of coffee menu data and loads `/api/menu` or `/api/menu/all` according to the server-verified `me` role; `menu.js` remains the sole owner of `#grid` DOM.
+- `public/app/core/catalog.js`: remains the sole owner of coffee menu data and loads `/api/menu` or `/api/menu/all` according to the server-verified `me` role; `menu.js` remains the sole owner of `#grid` DOM. `boot.js` skips only its redundant final `renderMenu()` when the early coffee catalog has already painted.
 - `public/app/menu.js` and `public/app/delivery.js`: catalog DOM/render ownership and first-row image priority after hydration. These modules remain the owners of their respective catalogs; the early document bootstrap is not a second catalog renderer.
 - `docs/module-map.md`: canonical module-to-DOM ownership map.
 
