@@ -10,6 +10,7 @@ test.describe('PWA update prompt and brand splash', () => {
         value: true
       });
 
+      window.__fakeSwRegistered = false;
       const waitingWorker = {
         state: 'installed',
         postMessage() {}
@@ -19,11 +20,14 @@ test.describe('PWA update prompt and brand splash', () => {
         configurable: true,
         value: {
           controller,
-          register: async () => ({
-            waiting: waitingWorker,
-            update: async () => {},
-            addEventListener() {}
-          }),
+          register: async () => {
+            window.__fakeSwRegistered = true;
+            return {
+              waiting: waitingWorker,
+              update: async () => {},
+              addEventListener() {}
+            };
+          },
           addEventListener() {}
         }
       });
@@ -33,6 +37,7 @@ test.describe('PWA update prompt and brand splash', () => {
 
     const splash = page.locator('#brandSplashStatic, #brandSplash');
     await expect(splash).toBeVisible();
+    await expect.poll(() => page.evaluate(() => window.__fakeSwRegistered)).toBe(true);
     await expect(page.locator('.sw-update-dialog')).toHaveCount(0);
 
     await splash.locator('[data-go="coffee"]').click();
