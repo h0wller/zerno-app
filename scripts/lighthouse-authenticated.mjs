@@ -195,11 +195,17 @@ try {
   }
 
   if (primaryError && cleanupErrors.length) {
-    throw new AggregateError([primaryError, ...cleanupErrors], 'Lighthouse run failed and cleanup reported additional errors');
+    primaryError = new AggregateError(
+      [primaryError, ...cleanupErrors],
+      'Lighthouse run failed and cleanup reported additional errors'
+    );
+  } else if (cleanupErrors.length === 1) {
+    primaryError = cleanupErrors[0];
+  } else if (cleanupErrors.length > 1) {
+    primaryError = new AggregateError(cleanupErrors, 'Lighthouse cleanup failed');
   }
-  if (primaryError) throw primaryError;
-  if (cleanupErrors.length === 1) throw cleanupErrors[0];
-  if (cleanupErrors.length > 1) {
-    throw new AggregateError(cleanupErrors, 'Lighthouse cleanup failed');
-  }
+}
+
+if (primaryError) {
+  throw primaryError;
 }
