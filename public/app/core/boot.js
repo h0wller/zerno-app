@@ -242,8 +242,12 @@ function registerSW() {
     let updateCheckFrame = 0;
 
     function hasBlockingWork() {
+      // A modal update prompt uses the browser's top layer; never place it over
+      // the brand chooser or it will intercept the user's first PWA interaction.
+      if (document.documentElement.classList.contains('need-splash') ||
+          document.documentElement.classList.contains('brand-splash-pending')) return true;
       return !!document.querySelector(
-        '#cartPanel.open, .modal.show, #ordersModal.show, #redeemPick.show, #orderTrackModal.show, #authModal.show, #panel.open, #chatPanel.open, #addrBookSheet.open'
+        '#brandSplashStatic, #brandSplash, #cartPanel.open, .modal.show, #ordersModal.show, #redeemPick.show, #orderTrackModal.show, #authModal.show, #panel.open, #chatPanel.open, #addrBookSheet.open'
       );
     }
 
