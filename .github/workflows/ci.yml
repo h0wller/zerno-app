@@ -353,8 +353,10 @@ jobs:
             trap - RETURN
           }
 
-          run_variant "$RUNNER_TEMP/zerno-lcp-base" "base" 3210
-          run_variant "$GITHUB_WORKSPACE" "head" 3211
+          # core/api.js intentionally maps the canonical isolated app origin on localhost:3100.
+          # Variants run sequentially so both can use the same port and same API_BASE behavior.
+          run_variant "$RUNNER_TEMP/zerno-lcp-base" "base" 3100
+          run_variant "$GITHUB_WORKSPACE" "head" 3100
 
           LIGHTHOUSE_EXPECTED_RUNS=2 node scripts/lighthouse-summary.mjs "$REPORT_DIR"
       - name: Upload Lighthouse reports
