@@ -41,6 +41,7 @@ function waitForChromeExit(chromeProcess, timeoutMs, signal) {
   }
 
   return new Promise((resolve, reject) => {
+    let timeout;
     const cleanup = () => {
       clearTimeout(timeout);
       chromeProcess.removeListener('exit', onExit);
@@ -54,7 +55,7 @@ function waitForChromeExit(chromeProcess, timeoutMs, signal) {
       cleanup();
       reject(error);
     };
-    const timeout = setTimeout(() => {
+    timeout = setTimeout(() => {
       cleanup();
       reject(new Error('Timed out waiting for Chrome to exit after ' + signal));
     }, timeoutMs);
