@@ -66,7 +66,6 @@ test.describe('PWA update prompt and brand splash', () => {
       await expect(page.locator('[data-sw-update-accept]')).toBeVisible();
     });
   }
-});
 
   for (const platform of ['iOS standalone', 'Android standalone']) {
     test(`offers a waiting update when the active controller arrives after splash selection on ${platform}`, async ({ page }) => {
