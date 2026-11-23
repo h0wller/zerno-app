@@ -1,7 +1,7 @@
 # Frontend roadmap & UX audit — Zerno
 
 **Base branch:** `pizza`
-**Last documentation reconciliation:** 2026-11-22
+**Last documentation reconciliation:** 2026-11-23
 
 ## Current source-of-truth and status
 
@@ -69,11 +69,17 @@ This is an audit queue, not a declaration that each item is defective.
 
 ### E1.1 Authenticated coffee first paint — PR #308
 
+**Current implementation head:** `57cfab5d333e2812eb4e7952bf9be4ac9e9cac73`  
+**Current CI:** [run 4804](https://github.com/h0wller/zerno-app/actions/runs/45156207212). The run has 12/14 jobs successful at the latest check, with Mobile Chrome responsive and Responsive UI still running; no failed jobs at that point. Confirm the live run before treating this as final.
+**Matched Lighthouse:** run 4804, two repetitions per baseline/head × brand. The coffee observed LCP median was 489 → 500 ms (+11 ms); simulated 4900.7 → 4843.3 ms (−57.4 ms). Delivery observed was 531.5 → 423.5 ms (−108 ms); simulated 5537.6 → 5317.6 ms (−219.9 ms). Preliminary lab data only; no established coffee LCP win.
+
 - [x] Add a regression test that holds `/api/me` and proves an actual coffee catalog card can render before the staff response is released; after staff verification, confirm `/api/menu/all` updates `MENU` without replacing the first-card DOM, and that a later edit-mode render exposes the stopped item.
 - [x] Confirm the RED test against the current `pizza` source: CI run 4764 failed at the missing real coffee catalog card while `/api/me` was held.
-- [ ] Verify GREEN after the boot change and run the complete CI matrix.
-- [ ] Compare authenticated coffee LCP against the recorded production capture under matching device/network/cache conditions. The source capture is bundle `v=4177`; current production's later delivery trace is `v=4198`, so do not combine the numbers.
-- [ ] Capture and inspect the first catalog frame for coffee and delivery, guest and staff, at mobile portrait/landscape and desktop viewports. Keep PR #308 Draft until the PROJECT_RULES.md §10 review record is complete.
+- [x] Verify the regression coverage is green in the current-head `Menu and search` group; run 4804 artifact reports 102 expected, 0 unexpected, 0 flaky.
+- [x] Add coverage for `/api/me` 503/offline and a late coffee response after switching to delivery.
+- [ ] Compare authenticated coffee LCP with a production capture on the same app bundle/device/network/cache conditions. Existing production captures (`v=4177` coffee and `v=4198` delivery) are not a matched pair.
+- [ ] Capture and inspect production-asset first catalog frames for both brands, guest and staff, mobile portrait/landscape/short landscape and desktop. Keep PR #308 Draft until PROJECT_RULES.md §10 is recorded.
+
 
 ### E1. Mobile initial catalog / LCP — PR #300
 
@@ -88,7 +94,7 @@ This is an audit queue, not a declaration that each item is defective.
 - [ ] Complete same-context before/after visual acceptance on production assets for both brands, splash/first catalog frame, mobile portrait/landscape/short landscape, desktop, relevant staff states, cart/checkout and keyboard/focus/safe-area geometry. Record reviewed frames and disposition per `PROJECT_RULES.md §10`.
 - [ ] Treat post-deployment production/field verification as a separate step after the PR is accepted and merged; CI fixtures and lab Lighthouse do not provide field data.
 
-Lighthouse comparison in run 45030665869 used two repeats per baseline/PR × brand. Observed trace LCP moved from 589.5→559 ms for coffee and 490→332.5 ms for delivery, while simulated LCP moved 4745→4639 ms for coffee and 5067→5156 ms for delivery. This is preliminary lab evidence; do not present it as an across-the-board or field improvement. The accepted A/F/C8 click-to-card series measured a preceding candidate, not the final HEAD; no additional benchmark series was started.
+Historical PR #300 Lighthouse comparison in run 45030665869 used two repeats per baseline/PR × brand; those figures apply to that earlier PR #300 head, not PR #308. The current PR #308 matched comparison is run 4804 and is recorded in `docs/testing/mobile-lcp-initial-load.md`: coffee observed LCP 489→500 ms and simulated 4900.7→4843.3 ms; delivery observed 531.5→423.5 ms and simulated 5537.6→5317.6 ms. Two repeats only; lab evidence, not field proof. No across-the-board coffee LCP win is established.
 
 Full contract, ownership, evidence, cleanup and residual acceptance gate: [docs/testing/mobile-lcp-initial-load.md](testing/mobile-lcp-initial-load.md).
 
