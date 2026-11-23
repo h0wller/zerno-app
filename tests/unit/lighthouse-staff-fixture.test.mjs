@@ -40,6 +40,7 @@ test('Lighthouse fixture creates a server-verifiable admin session without expos
 
     assert.equal(customer.role, 'admin');
     assert.equal(customer.verified, 1);
+    assert.match(customer.id, /^u[a-f0-9]{10}$/);
     assert.equal(session.kind, 'user');
     assert.equal(session.ref, customer.id);
     assert.equal(session.ts, new Date(issuedAt).toISOString());
