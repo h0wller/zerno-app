@@ -9,7 +9,7 @@
 - PR #311 (SQLite backup, deploy health check and best-effort code rollback) was merged to `pizza` at `27635e625610434c8a6a4c26a29d0388abc9589f`.
 - Production workflow [Deploy to Timeweb #4894](https://github.com/h0wller/zerno-app/actions/runs/45265137355) completed successfully for that exact SHA on 2026-11-23 at 21:00:43 UTC. The SSH deployment step, PM2 reload and workflow health gate all reported success.
 - The deploy script creates and verifies a SQLite online backup before PM2 reload, but its health endpoint is a process-readiness check, not a database/migration readiness check. The rollback restores code/dependencies/build only, never the DB snapshot; this avoids discarding new orders.
-- Post-merge CI [run #4893](https://github.com/h0wller/zerno-app/actions/runs/45265107345) is running independently of the deployment. At the time this file was updated, Code Quality and several E2E jobs had completed successfully; remaining E2E groups were still running. Re-check the run before treating the merge SHA as fully CI-green.
+- Post-merge CI [run #4893](https://github.com/h0wller/zerno-app/actions/runs/45265107345) completed successfully independently of the deployment. All applicable E2E and quality jobs passed; Lighthouse was skipped by the workflow condition.
 - The workflow remains in-place on `/var/www/app`; it is not an atomic/staged release. A future failed rollback or dependency install may still require manual VPS recovery.
 - VPS PM2/.env/DB-path facts refer only to the inspected deployment configuration and are not universal defaults.
 
