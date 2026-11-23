@@ -2,6 +2,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import Database from 'better-sqlite3';
+import { createLighthouseStaffFixture } from './lighthouse-staff-fixture.mjs';
 
 const origin = new URL(process.env.LCP_FIXTURE_ORIGIN || 'https://friday.andcoffee.online');
 const dbPath = process.env.DB_PATH;
@@ -115,6 +116,9 @@ try {
     }
   });
   replaceMenus();
+  if (process.env.LCP_STAFF_TOKEN_FILE) {
+    await createLighthouseStaffFixture(db, process.env.LCP_STAFF_TOKEN_FILE);
+  }
 } finally {
   db.close();
 }
