@@ -479,7 +479,9 @@ function registerSW() {
     navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' })
       .then((reg) => {
         reg.update();
-        if (reg.waiting && navigator.serviceWorker.controller) {
+        if (reg.waiting) {
+          // Keep the waiting worker even if the active controller is not ready yet.
+          // controllerchange below will re-check the prompt when it becomes available.
           waitingWorker = reg.waiting;
           scheduleUpdateCheck();
         }
@@ -487,8 +489,8 @@ function registerSW() {
           const inst = reg.installing;
           if (!inst) return;
           inst.addEventListener('statechange', () => {
-            if (inst.state === 'installed' && navigator.serviceWorker.controller) {
-              waitingWorker = inst;
+            if (inst.state === 'installed') {
+              waitingWorker = reg.waiting || inst;
               scheduleUpdateCheck();
             }
           });
@@ -497,9 +499,13 @@ function registerSW() {
       .catch(() => {});
 
     navigator.serviceWorker.addEventListener('controllerchange', () => {
-      if (!updateApproved || reloadStarted) return;
-      waitingWorker = navigator.serviceWorker.controller || waitingWorker;
-      reloadPending = true;
+      if (updateApproved) {
+        if (reloadStarted) return;
+        waitingWorker = navigator.serviceWorker.controller || waitingWorker;
+        reloadPending = true;
+      }
+      // The first controller may arrive after the waiting worker was discovered.
+      // Re-check even when the user has not approved an update yet.
       scheduleUpdateCheck();
     });
   });
