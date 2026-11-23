@@ -55,13 +55,13 @@ function waitForChromeExit(chromeProcess, timeoutMs, signal) {
       cleanup();
       reject(error);
     };
+
+    chromeProcess.once('exit', onExit);
+    chromeProcess.once('error', onError);
     timeout = setTimeout(() => {
       cleanup();
       reject(new Error('Timed out waiting for Chrome to exit after ' + signal));
     }, timeoutMs);
-
-    chromeProcess.once('exit', onExit);
-    chromeProcess.once('error', onError);
 
     // Close the race between the state check and listener registration.
     if (chromeProcess.exitCode !== null || chromeProcess.signalCode !== null) onExit();
