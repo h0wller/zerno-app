@@ -56,9 +56,9 @@ The initial source findings above were split into focused PRs after the audit sn
 
 These follow-ups address the corresponding initial findings; do not treat the historical “requiring follow-up” list as proof that the work is still absent from PR branches or that it has already shipped to production. Re-check exact PR heads and acceptance evidence before merge.
 
-## Confirmed findings on the audited pizza snapshot (2026-11-23)
+## Historical findings on audited base `pizza` (2026-11-23)
 
-The findings below describe the audited base commit only. Their current status must be read together with the focused follow-up PR section above; they do not imply that the same work is absent from those PR branches.
+This section is an immutable description of the source findings on base commit `b043180903f14b09461c2d7689554b17e250733c`. The recommendations were triaged into follow-up PRs; this list is not a current backlog and must not be used alone to infer that a fix is still missing from a PR branch or already shipped. Use the exact follow-up PR status above for current implementation and acceptance state.
 
 
 ### Security / server
