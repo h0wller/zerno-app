@@ -27,6 +27,10 @@ jobs:
         run: npm ci
       - name: Run Static Audits & Linters
         run: npm run check && npm run pretest && npm run lint:code && npm run lint:dup && npm run lint:dead && npm run lint:layers
+      - name: Validate OpenAPI YAML and order contract
+        run: node scripts/validate-openapi.mjs
+      - name: Validate OpenAPI 3.0 specification
+        run: npx --yes @redocly/cli@2.13.0 lint --extends minimal docs/openapi.yaml
       - name: Run Contract Smoke Tests
         run: npm run smoke
 
