@@ -94,7 +94,7 @@ function preloadDeliveryCatalog() {
 function preloadCoffeeCatalog() {
   if (window.brand !== 'coffee' || typeof window.loadMenu !== 'function') return null;
   var requestedBrand = window.brand;
-  return window.loadMenu({ expectedBrand: requestedBrand });
+  return window.loadMenu({ expectedBrand: requestedBrand, render: false });
 }
 
 function applyStaffRoleState(customer) {
@@ -152,7 +152,7 @@ async function loadInitialCatalog(earlyDeliveryLoad, earlyCoffeeLoad) {
     var isCoffeeStaffRole = window.me && ['admin', 'cashier', 'dispatch'].indexOf(window.me.role) !== -1;
     // Show the public menu first; request the guarded full list only after /api/me confirms staff.
     if (isCoffeeStaffRole || !coffeePreloadSucceeded) {
-      if (typeof loadMenu === 'function') await loadMenu({ render: false });
+      if (typeof loadMenu === 'function') await loadMenu({ render: false, expectedBrand: 'coffee', expectedRole: window.me.role });
     }
     return coffeePreloadSucceeded;
   }
