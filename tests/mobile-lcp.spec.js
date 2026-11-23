@@ -160,7 +160,6 @@ test.describe('Initial catalog image priorities', () => {
     await expect(page.locator('html')).toHaveAttribute('data-brand', 'delivery');
     await expect.poll(() => page.evaluate(() => document.getElementById('menuView').hidden)).toBe(true);
     await expect(page.locator('#deliveryGrid > .card').first()).toBeVisible();
-    await page.evaluate(() => window.renderAll());
     releaseCoffee();
     await expect.poll(() => page.evaluate(() =>
       Array.isArray(window.MENU) && window.MENU.some(item => item.id === 'coffee-image-1')
