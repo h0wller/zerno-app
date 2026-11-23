@@ -31,8 +31,9 @@ async function reservePort() {
   return value;
 }
 
-async function send(pathname, body, token, raw = false) {
+async function send(pathname, body, token, raw = false, forwardedFor = '') {
   const headers = { 'content-type': 'application/json' };
+  if (forwardedFor) headers['x-forwarded-for'] = forwardedFor;
   if (token) headers.authorization = 'Bearer ' + token;
   const response = await fetch(base + pathname, {
     method: 'POST',
@@ -60,6 +61,7 @@ before(async () => {
       TELEGRAM_BOT_TOKEN: '',
       TG_WEBHOOK_SECRET: '',
       PUBLIC_URL: '',
+      TRUST_PROXY: '1',
       SMS_AUTH_ENABLED: 'false'
     },
     stdio: ['ignore', 'pipe', 'pipe']
@@ -173,4 +175,7 @@ test('client diagnostics have a small body limit and a per-IP request window', a
   const limited = await send('/api/clientlog', { kind: 'test', msg: 'over-limit' });
   assert.equal(limited.status, 429);
   assert.ok(Number(limited.headers.get('retry-after')) > 0);
+
+  const independentIp = await send('/api/clientlog', { kind: 'test', msg: 'other client' }, undefined, false, '203.0.113.15');
+  assert.equal(independentIp.status, 200, 'another forwarded client IP must have an independent request window');
 });
