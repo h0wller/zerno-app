@@ -6,11 +6,11 @@
         var requestedBrand = options && options.expectedBrand;
         var requestedRole = options && options.expectedRole;
         try {
-          const r = await api(
-            me && ["admin", "cashier", "dispatch"].indexOf(me.role) !== -1 ? "/menu/all" : "/menu",
-          );
+          const isStaffRequest = !!(me && ["admin", "cashier", "dispatch"].indexOf(me.role) !== -1);
+          const r = await api(isStaffRequest ? "/menu/all" : "/menu");
           if ((requestedBrand && window.brand !== requestedBrand) ||
-              (requestedRole && (!me || me.role !== requestedRole))) return false;
+              (requestedRole && (!me || me.role !== requestedRole)) ||
+              (!isStaffRequest && me && ["admin", "cashier", "dispatch"].indexOf(me.role) !== -1)) return false;
           MENU = r.items;
           meta.updatedAt = r.updatedAt;
           renderUpd();
