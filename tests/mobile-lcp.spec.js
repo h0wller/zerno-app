@@ -160,11 +160,19 @@ test.describe('Initial catalog image priorities', () => {
     });
     await expect(page.locator('html')).toHaveAttribute('data-brand', 'delivery');
     await expect(page.locator('#deliveryGrid > .card').first()).toBeVisible();
+    await page.evaluate(() => window.renderAll());
     releaseCoffee();
     await expect.poll(() => page.evaluate(() =>
       Array.isArray(window.MENU) && window.MENU.some(item => item.id === 'coffee-image-1')
     )).toBe(false);
     await expect(page.locator('#grid > .card')).toHaveCount(0);
+    await page.evaluate(() => {
+      window.brand = 'coffee';
+      document.documentElement.setAttribute('data-brand', 'coffee');
+      document.body.setAttribute('data-brand', 'coffee');
+      window.renderAll();
+    });
+    await expect.poll(() => page.locator('#grid > .card').count()).toBeGreaterThan(0);
     await expect(page.locator('#deliveryGrid > .card').first()).toBeVisible();
   });
 
