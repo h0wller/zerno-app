@@ -781,8 +781,12 @@ paths:
                   type: string
                   minLength: 16
                   maxLength: 64
-                  pattern: '^[A-Za-z0-9_-]{16,64}
-
+                  pattern: '^[A-Za-z0-9_-]{16,64}$'
+      responses:
+        '200': { description: Возвращает найденный профиль клиента }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { description: 'QR не найден' }
   /api/chat/send:
     post:
       tags: [Chat]
