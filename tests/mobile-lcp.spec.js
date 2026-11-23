@@ -167,12 +167,12 @@ test.describe('Initial catalog image priorities', () => {
     )).toBe(false);
     await expect(page.locator('#grid > .card')).toHaveCount(0);
     await page.evaluate(() => {
-      window.brand = 'coffee';
-      document.documentElement.setAttribute('data-brand', 'coffee');
-      document.body.setAttribute('data-brand', 'coffee');
-      window.renderAll();
+      const coffeeButton = document.querySelector('#brandSeg [data-brand="coffee"]');
+      if (!coffeeButton) throw new Error('coffee brand control not found');
+      coffeeButton.click();
     });
-    await expect.poll(() => page.locator('#grid > .card').count()).toBeGreaterThan(0);
+    await expect(page.locator('html')).toHaveAttribute('data-brand', 'coffee');
+    await expect(page.locator('#grid > .card[data-item-id="coffee-image-1"]')).toBeVisible();
     await expect(page.locator('#deliveryGrid > .card').first()).toBeVisible();
   });
 
