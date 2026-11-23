@@ -4,11 +4,13 @@
       /* ── меню ── */
       async function loadMenu(options) {
         var requestedBrand = options && options.expectedBrand;
+        var requestedRole = options && options.expectedRole;
         try {
           const r = await api(
             me && ["admin", "cashier", "dispatch"].indexOf(me.role) !== -1 ? "/menu/all" : "/menu",
           );
-          if (requestedBrand && window.brand !== requestedBrand) return false;
+          if ((requestedBrand && window.brand !== requestedBrand) ||
+              (requestedRole && (!me || me.role !== requestedRole))) return false;
           MENU = r.items;
           meta.updatedAt = r.updatedAt;
           renderUpd();
