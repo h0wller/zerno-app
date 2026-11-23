@@ -53,6 +53,16 @@ The initial source findings above were split into focused PRs after the audit sn
 
 These follow-ups address the corresponding initial findings; do not treat the historical “requiring follow-up” list as proof that the work is still absent from PR branches or that it has already shipped to production. Re-check exact PR heads and acceptance evidence before merge.
 
+## Follow-up PRs opened after this reconciliation snapshot
+
+The initial findings above were split into focused PRs after the audit snapshot. Each branch currently has a successful CI run, but CI is not production or visual acceptance:
+
+- **PR #313 — client log and upload hardening.** Adds route-specific body limits, client-log rate limiting, upload type/metadata/pixel validation, and regression tests. Verify the production `TRUST_PROXY` value against the actual Nginx topology before merge/deploy. Its limiter is process-local, not shared across workers.
+- **PR #314 — Service Worker media-cache bound.** Adds FIFO retention and concurrency-safe writes without evicting static/API caches. Real-device offline menu acceptance is still required before merge because eviction changes offline media retention.
+- **PR #315 — OpenAPI order-idempotency contract.** Documents `client_order_id`, owner-scoped replay behavior, and `409 IDEMPOTENCY_KEY_REUSED`. The branch spec was fetched and inspected; strict duplicate-key parsing and Postman definition import/readback remain unverified.
+
+These PRs address the corresponding initial findings. Do not read the historical “requiring follow-up” list as proof that the work is still absent from PR branches or that it has shipped to production. Re-check exact heads and acceptance evidence before merging.
+
 ## Confirmed findings requiring follow-up
 
 ### Security / server
