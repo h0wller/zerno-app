@@ -59,7 +59,7 @@ function runWhenIdle(callback, timeout) {
 }
 
 /* ── 1. Агрегатная перерисовка всех видов ── */
-function renderAll() {
+function renderAll(options) {
   const initChar = (window.me && window.me.name && window.me.name.trim())
     ? window.me.name.trim().charAt(0).toUpperCase()
     : '?';
@@ -70,7 +70,7 @@ function renderAll() {
 
   if (window.brand !== 'delivery') {
     if (typeof renderRail === 'function') renderRail();
-    if (typeof renderMenu === 'function') renderMenu();
+    if (!(options && options.skipCoffeeMenu) && typeof renderMenu === 'function') renderMenu();
   }
   if (typeof renderModes === 'function') renderModes();
 
@@ -89,6 +89,12 @@ function preloadDeliveryCatalog() {
   if (window.brand !== 'delivery' || typeof window.loadDelivery !== 'function') return null;
   window.__dlReq = 1;
   return window.__dlPromise = window.loadDelivery();
+}
+
+function preloadCoffeeCatalog() {
+  if (window.brand !== 'coffee' || typeof window.loadMenu !== 'function') return null;
+  var requestedBrand = window.brand;
+  return window.loadMenu({ expectedBrand: requestedBrand });
 }
 
 function applyStaffRoleState(customer) {
@@ -137,13 +143,24 @@ async function verifyStaffSession() {
   }
 }
 
-async function loadInitialCatalog(earlyDeliveryLoad) {
+async function loadInitialCatalog(earlyDeliveryLoad, earlyCoffeeLoad) {
   // A visible splash owns the next brand choice; don't load the stored brand.
-  if (window.__brandSplashPending === true) return;
+  if (window.__brandSplashPending === true) return false;
 
   if (window.brand !== 'delivery') {
-    if (typeof loadMenu === 'function') await loadMenu({ render: false });
-    return;
+    var coffeePreloadSucceeded = earlyCoffeeLoad ? await earlyCoffeeLoad : false;
+    var isCoffeeStaffRole = window.me && ['admin', 'cashier', 'dispatch'].indexOf(window.me.role) !== -1;
+    // Show the public menu first; request the guarded full list only after /api/me confirms staff.
+    if (isCoffeeStaffRole || !coffeePreloadSucceeded) {
+      if (typeof loadMenu === 'function') {
+        return (await loadMenu({
+          render: !coffeePreloadSucceeded,
+          expectedBrand: 'coffee',
+          expectedRole: isCoffeeStaffRole ? window.me.role : null
+        })) || coffeePreloadSucceeded;
+      }
+    }
+    return coffeePreloadSucceeded;
   }
 
   var isStaffRole = window.me && ['admin', 'cashier', 'dispatch'].indexOf(window.me.role) !== -1;
@@ -167,21 +184,20 @@ async function loadInitialCatalog(earlyDeliveryLoad) {
 async function boot() {
   document.documentElement.setAttribute('data-staff-boot-started', '1');
 
-  // Load the public delivery catalog while staff authentication is being verified.
-  // This keeps the first viewport populated on slow networks without trusting the role hint.
-  // Wait for the explicit choice when the splash is shown.
-  var earlyDeliveryLoad = window.__brandSplashPending === true
-    ? null
-    : preloadDeliveryCatalog();
+  // Start the selected public catalog while staff authentication is being verified.
+  // The guarded full menu remains behind the verified role; a pending splash owns the choice.
+  var canPreloadCatalog = window.__brandSplashPending !== true;
+  var earlyDeliveryLoad = canPreloadCatalog ? preloadDeliveryCatalog() : null;
+  var earlyCoffeeLoad = canPreloadCatalog ? preloadCoffeeCatalog() : null;
 
   await verifyStaffSession();
   if (typeof window.syncBrandViews === 'function') window.syncBrandViews();
   try {
-    await loadInitialCatalog(earlyDeliveryLoad);
+    var coffeeCatalogAlreadyRendered = await loadInitialCatalog(earlyDeliveryLoad, earlyCoffeeLoad);
   } catch (err) {
     console.warn('[BOOT] Ошибка загрузки меню:', err);
   } finally {
-    renderAll();
+    renderAll({ skipCoffeeMenu: window.brand === 'coffee' && coffeeCatalogAlreadyRendered });
     if (typeof window.syncBrandViews === 'function') window.syncBrandViews();
     if (typeof showBadge === 'function') showBadge();
     if (typeof maybeAskReview === 'function') maybeAskReview();

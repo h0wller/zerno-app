@@ -1,10 +1,10 @@
 # Mobile first-load LCP — C8 contract and verification
 
-**Updated:** 2026-11-22  
-**Implementation PR:** [#300 — perf: improve mobile first-load LCP](https://github.com/h0wller/zerno-app/pull/300)  
-**Base:** `pizza` at `aa3a958291948a7b2eda04bcbc9c3cf34385b4aa`  
-**Verified PR HEAD:** `8db36bf3bf9d82adf5ae3cb89f0628afda168201`  
-**Status:** C8 implementation, temporary-file cleanup and automated verification complete; production visual acceptance remains open. PR #300 stays Draft.
+**Updated:** 2026-11-23  
+**Implementation PRs:** [#300 — guest C8 and image preload](https://github.com/h0wller/zerno-app/pull/300); [#308 — authenticated coffee first paint](https://github.com/h0wller/zerno-app/pull/308)  
+**Base:** `pizza` at `e9855638031b5df9c66ea28d3b208409981afce3`  
+**Verified implementation snapshot:** `57cfab5d333e2812eb4e7952bf9be4ac9e9cac73` (matched Lighthouse / regression evidence; not the latest branch tip).  
+**Status:** PR #300 C8 work remains Draft with production visual acceptance open. PR #308 implementation and regression evidence below refer to snapshot `57cfab5`. The later CI run 4811 (`8df667c`) passed 14/14 jobs. Production-asset visual acceptance and field verification remain open; PR #308 stays Draft.
 
 This document supersedes earlier performance snapshots for the final C8 implementation. It does not turn lab measurements into production field data.
 
@@ -24,6 +24,17 @@ When the user chooses the same brand, `window.__ztPrimeMenuLcp` reuses the specu
 
 A mismatch that finishes before the user makes a choice may already have preloaded the saved brand's first image. This is the explicit C8 trade-off: the measured candidate's mistaken prediction cost was about **22.5 KiB for coffee** or **49.6 KiB for delivery**. These are measured fixture bytes, not a universal upper bound for every production menu.
 
+### Authenticated coffee startup
+
+When the selected brand is coffee and the splash is not pending, `boot.js` starts the public `/api/menu` request before awaiting `verifyStaffSession()`. The existing `core/catalog.js` loader renders this active public list into the coffee grid as soon as the response is ready; it remains the only owner of coffee menu data. This does not trust `zt_role` or any other client-side role hint.
+
+After `/api/me` resolves:
+- guests and non-staff users keep the public menu and do not make a duplicate request;
+- a confirmed cashier, dispatcher or admin waits for the public request to settle, then uses the same loader to fetch guarded `/api/menu/all`; the full result updates `MENU` without replacing the already-painted first catalog DOM during boot, and later ordinary menu renders (for example, entering edit mode) use the full list;
+- if the early public request fails, boot retries through the role-aware loader after session verification.
+
+A pending brand splash does not start a speculative runtime catalog request. Its selected-brand flow remains owned by `splash.js`. The staff endpoint is never requested before the server confirms the role.
+
 ### Explicit-brand document preload
 
 The middleware in `server.js` adds an HTTP `Link: rel=preload; as=image; fetchpriority=high` header for `GET /` only when the request explicitly selects a brand (`?brand=coffee` or `?brand=delivery`) or uses the deterministic Lighthouse/clean audit input. It selects the first active image in the initial visible category; for delivery this is the first active `pizza`, not the first database row if sauces/add-ons sort earlier.
@@ -39,42 +50,53 @@ Only local `/media/dishes/` images are eligible. Responsive `imagesrcset` / `ima
 - `public/index.html`: early bootstrap, speculative request, image preload and the bridges `window.__ztPrimeMenuLcp` / `window.__ztApplyDeliveryHero`. The document shell may prime the first delivery hero before the bundle is ready.
 - `server.js`: document-level `Link` preload for explicitly selected brands and audit requests; local media filtering and responsive image parameters.
 - `public/app/core/state.js`: deterministic audit brand initialization.
+- `public/app/core/boot.js`: sequences selected-brand catalog preload with `/api/me`; coffee's public catalog can paint while staff auth is pending, then staff roles upgrade to the guarded full list.
+- `public/app/core/catalog.js`: remains the sole owner of coffee menu data and loads `/api/menu` or `/api/menu/all` according to the server-verified `me` role; `menu.js` remains the sole owner of `#grid` DOM. `boot.js` skips only its redundant final `renderMenu()` when the early coffee catalog has already painted.
 - `public/app/menu.js` and `public/app/delivery.js`: catalog DOM/render ownership and first-row image priority after hydration. These modules remain the owners of their respective catalogs; the early document bootstrap is not a second catalog renderer.
 - `docs/module-map.md`: canonical module-to-DOM ownership map.
 
 ## 3. Automated verification
 
-Verified on PR HEAD `8db36bf3bf9d82adf5ae3cb89f0628afda168201`:
+Regression and matched benchmark evidence captured on implementation snapshot `57cfab5d333e2812eb4e7952bf9be4ac9e9cac73` (not latest branch tip):
 
-- `npm run lint:code`: 0 errors; 10 existing warnings in untouched code.
-- `node --check` for the inline bootstrap and the targeted Playwright/integration files: passed.
-- `tests/integration/mobile-lcp-link-preload.test.mjs`: 13/13.
-- Unit/integration suite: 205/205.
-- `tests/mobile-lcp.spec.js`: 21/21.
-- GitHub Actions [run 45030665869](https://github.com/h0wller/zerno-app/actions/runs/45030665869): **14/14 jobs successful**. Mobile Chrome responsive reported 229 passed, 4 skipped, 0 failures/timeouts.
+- Test-first regression reproduced the original defect: with `/api/me` held, the first coffee catalog card did not exist.
+- `tests/mobile-lcp.spec.js` now covers the first coffee card appearing while `/api/me` is pending, staff upgrade to guarded `/api/menu/all` without replacing the first-card DOM, offline/503 session verification, and switching away from coffee while its catalog request is in flight.
+- The isolated Menu and search job passed **102 expected / 0 unexpected / 0 flaky**.
+- Run 4804 is historical implementation-snapshot evidence for `57cfab5`; it is not the latest branch-head check. The later CI run [4811](https://github.com/h0wller/zerno-app/actions/runs/45160086596) on `8df667c216d29e16c35f2209e1fd7553ad47c9eb` completed **14/14 jobs successfully**.
+- The staff Lighthouse fixture uses a valid customer ID and a server-verifiable admin session. It verifies `/api/me` before the audit and records no staff token in the report artifact.
 
 The CI visual captures use isolated test fixtures. They verify layout and browser behavior, but they are not production-asset visual acceptance.
 
 ## 4. Lighthouse evidence and interpretation
 
-Latest comparison: CI [run 45030665869](https://github.com/h0wller/zerno-app/actions/runs/45030665869), artifact `lighthouse-mobile-lcp-45030665869`. Baseline `aa3a958291948a7b2eda04bcbc9c3cf34385b4aa`; PR HEAD `8db36bf3bf9d82adf5ae3cb89f0628afda168201`.
+Latest matched comparison: CI [run 4804](https://github.com/h0wller/zerno-app/actions/runs/45156207212), artifact `lighthouse-mobile-lcp-45156207212`. Baseline `e9855638031b5df9c66ea28d3b208409981afce3`; PR HEAD `57cfab5d333e2812eb4e7952bf9be4ac9e9cac73`.
 
-Lighthouse 13.5.0, mobile 360×800, RTT 150 ms, throughput 1638.4 Kbps, CPU slowdown ×4. There were **two repeats per baseline/PR × brand combination**; treat the medians as preliminary lab evidence, not a statistically strong result or real-user field data.
+Lighthouse 13.5.0, mobile 360×800, RTT 150 ms, throughput 1638.4 Kbps, CPU slowdown ×4. There were **two repeats per baseline/PR × brand combination**; medians are preliminary lab evidence, not a statistically strong result or real-user field data. The LCP candidates were the first product image in each catalog: coffee `Эспрессо` and delivery `Маргарита`.
 
 | Observed trace metric | Coffee baseline | Coffee PR | Delivery baseline | Delivery PR |
 | --- | ---: | ---: | ---: | ---: |
-| LCP median, ms | 589.5 | **559** | 490 | **332.5** |
-| Resource load delay, ms | 282.3 | **45.3** | 36.7 | 40.9 |
-| Element render delay, ms | 290.4 | 501.4 | 438.7 | **274.4** |
-| CLS | 0 | 0 | 0 | 0 |
+| LCP median, ms | 489 | 500 | 531.5 | 423.5 |
+| Change vs baseline | — | **+11 ms (+2.2%)** | — | **−108 ms (−20.3%)** |
+| Simulated LCP median, ms | 4900.7 | 4843.3 | 5537.6 | 5317.6 |
+| Simulated change | — | **−57.4 ms (−1.2%)** | — | **−219.9 ms (−4.0%)** |
 
-Observed trace LCP changed by **−30.5 ms (−5.2%) for coffee** and **−157.5 ms (−32.1%) for delivery**. These improvements do not mean every performance metric improved:
+Interpretation:
+- The runtime change demonstrably starts the public coffee menu request before staff-session verification and the test proves the real coffee card can paint while `/api/me` is unresolved.
+- This matched run does **not** demonstrate an observed LCP improvement for coffee: its two-run median is 11 ms slower on the PR head. The simulated median is 57 ms faster, too small and too noisy to establish a meaningful effect with two repetitions.
+- Delivery's observed and simulated medians are faster in this run, but this is a separate catalog and not evidence that the coffee change improved delivery.
+- Observed trace LCP and simulated Lighthouse LCP are distinct measures and must not be mixed.
+- Production captures from 2026-11-22 used older bundles (`v=4177` for the coffee capture and `v=4198` for a later delivery trace) and different conditions. They are diagnostic context, not a matched before/after result for this PR.
 
-- Simulated Lighthouse LCP: coffee 4745 → 4639 ms (−106 ms); delivery 5067 → 5156 ms (+89 ms). Delivery regressed on this simulated metric.
-- Coffee element-render delay increased by about 211 ms; delivery resource-load delay increased by about 4 ms.
-- Observed trace LCP (~0.3–0.6 s) and simulated Lighthouse LCP (~4.6–5.2 s) are different measurements and must not be mixed.
+Do not present this two-repeat lab result as a field improvement. A same-version authenticated production comparison or post-deployment field measurement remains outstanding.
 
-The approved five-run A/F/C8 latency series measured a **preceding C8 candidate**. The bootstrap was subsequently restored and corrected incrementally; the final HEAD passed functional tests, but the latency series was not repeated. Therefore those candidate click-to-card timings are not a verified latency result for this final HEAD. No additional benchmark series was started after the accepted measurements.
+
+### PR #308: current boot-order verification
+
+- Implementation snapshot measured by this matched Lighthouse run: `57cfab5d333e2812eb4e7952bf9be4ac9e9cac73`; this is not the later branch tip.
+- Matched lab report: [CI run 4804](https://github.com/h0wller/zerno-app/actions/runs/45156207212), artifact `lighthouse-mobile-lcp-45156207212`.
+- Public coffee menu fetch begins during `/api/me`; verified staff role triggers guarded `/api/menu/all` only after server confirmation.
+- Regression tests include session-verification failure and late response after brand switch. Menu and search artifact for run 4804: `playwright-Menu and search-45156207212`.
+- Later branch-head CI: [run 4811](https://github.com/h0wller/zerno-app/actions/runs/45160086596), **14/14 successful** on `8df667c216d29e16c35f2209e1fd7553ad47c9eb`. PR #308 remains Draft: do not merge until the production-asset same-context visual acceptance in §6 is completed.
 
 ## 5. Temporary experiment cleanup
 

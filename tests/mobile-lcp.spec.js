@@ -61,6 +61,157 @@ test.describe('Initial catalog image priorities', () => {
     await expect(page.locator('#grid > .card').first()).toBeVisible();
   });
 
+  test('coffee staff sees the public catalog while /api/me is still pending', async ({ page }) => {
+    const requests = [];
+    const publicItems = imageCatalogItems('coffee');
+    const stoppedItem = { ...publicItems[0], id: 'coffee-stopped', on: 0 };
+    let releaseMe;
+    const meGate = new Promise(resolve => { releaseMe = resolve; });
+
+    await page.addInitScript(() => {
+      localStorage.setItem('zt_brand', 'coffee');
+      localStorage.setItem('zt_onb', '1');
+      localStorage.setItem('zt_user', 'staff-session-token');
+      localStorage.setItem('zt_role', 'admin');
+      localStorage.setItem('zt_inst_hide', '1');
+      sessionStorage.setItem('splashDone', '1');
+    });
+    await routeImageCatalog(page, 'coffee');
+    await page.route('**/api/me', async route => {
+      await meGate;
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ customer: { role: 'admin' } })
+      });
+    });
+    await page.route('**/api/menu/all', route => route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ items: [...publicItems, stoppedItem], updatedAt: Date.now() })
+    }));
+    page.on('request', request => {
+      const path = new URL(request.url()).pathname;
+      if (['/api/me', '/api/menu', '/api/menu/all'].includes(path)) requests.push(path);
+    });
+
+    await page.goto('/?brand=coffee', { waitUntil: 'commit' });
+    await expect.poll(() => requests.includes('/api/me')).toBe(true);
+    const firstCard = page.locator('#grid > .card[data-item-id="coffee-image-1"]');
+    await expect(firstCard).toBeVisible({ timeout: 5000 });
+    await page.evaluate(() => {
+      window.__coffeeFirstCardBeforeStaffUpgrade = document.querySelector('#grid > .card[data-item-id="coffee-image-1"]');
+    });
+    expect(requests).toContain('/api/menu');
+    expect(requests).not.toContain('/api/menu/all');
+
+    releaseMe();
+    await expect.poll(() => requests.includes('/api/menu/all')).toBe(true);
+    await expect.poll(() => page.evaluate(() =>
+      Array.isArray(window.MENU) && window.MENU.some(item => item.id === 'coffee-stopped')
+    )).toBe(true);
+    expect(await page.evaluate(() =>
+      window.__coffeeFirstCardBeforeStaffUpgrade === document.querySelector('#grid > .card[data-item-id="coffee-image-1"]')
+    )).toBe(true);
+    await page.evaluate(() => {
+      window.editMode = true;
+      window.renderMenu();
+    });
+    await expect(page.locator('#grid > .card[data-item-id="coffee-stopped"]')).toBeVisible();
+    expect(requests.filter(path => path === '/api/menu')).toHaveLength(1);
+    expect(requests.filter(path => path === '/api/menu/all')).toHaveLength(1);
+  });
+
+  test('late coffee catalog response is ignored after switching to delivery', async ({ page }) => {
+    let releaseCoffee;
+    const coffeeGate = new Promise(resolve => { releaseCoffee = resolve; });
+    const deliveryItems = imageCatalogItems('delivery');
+    const coffeeItems = imageCatalogItems('coffee');
+    await page.addInitScript(() => {
+      localStorage.setItem('zt_brand', 'coffee');
+      localStorage.setItem('zt_onb', '1');
+      localStorage.removeItem('zt_user');
+      localStorage.setItem('zt_inst_hide', '1');
+      sessionStorage.setItem('splashDone', '1');
+    });
+    await page.route('**/api/menu', async route => {
+      await coffeeGate;
+      await route.fulfill({
+        status: 200, contentType: 'application/json',
+        body: JSON.stringify({ items: coffeeItems, updatedAt: Date.now() })
+      });
+    });
+    await page.route('**/api/dmenu', route => route.fulfill({
+      status: 200, contentType: 'application/json',
+      body: JSON.stringify({ items: deliveryItems, updatedAt: Date.now() })
+    }));
+    await page.route('**/media/dishes/**', route => route.fulfill({
+      status: 200, contentType: 'image/webp',
+      body: Buffer.from('UklGRiQAAABXRUJQVlA4IBgAAAAwAQCdASoBAAEAAUAmJaQAA3AA/vz0AAA=', 'base64')
+    }));
+
+    await page.goto('/?brand=coffee', { waitUntil: 'commit' });
+    await expect.poll(() => page.evaluate(() => document.documentElement.dataset.staffBootStarted === '1')).toBe(true);
+    await page.evaluate(() => {
+      const deliveryButton = document.querySelector('#brandSeg [data-brand="delivery"]');
+      if (!deliveryButton) throw new Error('delivery brand control not found');
+      deliveryButton.click();
+    });
+    await expect(page.locator('html')).toHaveAttribute('data-brand', 'delivery');
+    await expect.poll(() => page.evaluate(() => document.getElementById('menuView').hidden)).toBe(true);
+    await expect(page.locator('#deliveryGrid > .card').first()).toBeVisible();
+    releaseCoffee();
+    await expect.poll(() => page.evaluate(() =>
+      Array.isArray(window.MENU) && window.MENU.some(item => item.id === 'coffee-image-1')
+    )).toBe(false);
+    await expect.poll(() => page.evaluate(() => document.getElementById('menuView').hidden)).toBe(true);
+    await page.evaluate(() => {
+      const coffeeButton = document.querySelector('#brandSeg [data-brand="coffee"]');
+      if (!coffeeButton) throw new Error('coffee brand control not found');
+      coffeeButton.click();
+    });
+    await expect(page.locator('html')).toHaveAttribute('data-brand', 'coffee');
+    await expect.poll(() => page.evaluate(() => !document.getElementById('menuView').hidden)).toBe(true);
+    await expect(page.locator('#grid > .card[data-item-id="coffee-image-1"]')).toBeVisible();
+    await expect.poll(() => page.evaluate(() => getComputedStyle(document.getElementById('deliveryView')).display === 'none')).toBe(true);
+  });
+
+  test('coffee public catalog remains visible when staff session verification is offline', async ({ page }) => {
+    const requests = [];
+    const publicItems = imageCatalogItems('coffee');
+    await page.addInitScript(() => {
+      localStorage.setItem('zt_brand', 'coffee');
+      localStorage.setItem('zt_onb', '1');
+      localStorage.setItem('zt_user', 'staff-session-token');
+      localStorage.setItem('zt_role', 'admin');
+      localStorage.setItem('zt_inst_hide', '1');
+      sessionStorage.setItem('splashDone', '1');
+    });
+    await routeImageCatalog(page, 'coffee', { delayMs: 120 });
+    await page.route('**/api/me', async route => {
+      requests.push('/api/me');
+      await route.fulfill({ status: 503, contentType: 'application/json', body: JSON.stringify({ error: 'offline' }) });
+    });
+    await page.route('**/api/menu/all', async route => {
+      requests.push('/api/menu/all');
+      await route.fulfill({ status: 403, contentType: 'application/json', body: JSON.stringify({ error: 'forbidden' }) });
+    });
+    page.on('request', request => {
+      const path = new URL(request.url()).pathname;
+      if (path === '/api/menu') requests.push('/api/menu');
+    });
+
+    await page.goto('/?brand=coffee', { waitUntil: 'commit' });
+    await expect(page.locator('#grid > .card[data-item-id="coffee-image-1"]')).toBeVisible();
+    await expect.poll(() => requests.includes('/api/me')).toBe(true);
+    await expect.poll(() => requests.includes('/api/menu')).toBe(true);
+    expect(requests).not.toContain('/api/menu/all');
+    await expect(page.locator('#grid > .card[data-item-id="coffee-image-1"]')).toBeVisible();
+    await expect(page.locator('html')).toHaveAttribute('data-staff-ready', '1');
+    await expect(page.locator('html')).not.toHaveAttribute('data-staff-role', /.+/);
+    await expect(page.locator('#grid > .card')).toHaveCount(publicItems.length);
+  });
+
   test('coffee startup does not request the hidden delivery hero image', async ({ page }) => {
     const deliveryHeroRequests = [];
     page.on('request', (request) => {
@@ -531,30 +682,36 @@ test.describe('Initial catalog image priorities', () => {
 
   async function assertFirstRowPriorities(page, gridSelector) {
     const cards = page.locator(`${gridSelector} > .card`);
-    await expect.poll(async () => cards.evaluateAll((nodes) => {
+    await expect.poll(async () => cards.evaluateAll(async (nodes) => {
+      await new Promise((resolve) => requestAnimationFrame(() =>
+        requestAnimationFrame(resolve)
+      ));
       if (!nodes.length) return false;
-      const top = nodes[0].offsetTop;
+      const top = nodes[0].getBoundingClientRect().top;
       const firstRow = nodes
-        .filter((node) => Math.abs(node.offsetTop - top) < 1)
+        .filter((node) => Math.abs(node.getBoundingClientRect().top - top) <= 1)
         .map((node) => node.querySelector('.media img[src]'))
         .filter(Boolean);
       const otherRows = nodes
-        .filter((node) => node.offsetTop > top + 1)
+        .filter((node) => node.getBoundingClientRect().top > top + 1)
         .map((node) => node.querySelector('.media img[src]'))
         .filter(Boolean);
       return firstRow.length > 0 &&
         firstRow.every((image) => image.getAttribute('loading') === 'eager') &&
         firstRow[0].getAttribute('fetchpriority') === 'high' &&
-        firstRow.slice(1).every((image) => image.getAttribute('fetchpriority') !== 'high') &&
-        otherRows.every((image) => image.getAttribute('loading') === 'lazy');
+        firstRow.slice(1).every((image) => image.getAttribute('fetchpriority') === 'auto') &&
+        otherRows.every((image) =>
+          image.getAttribute('loading') === 'lazy' &&
+          image.getAttribute('fetchpriority') === 'auto'
+        );
     })).toBe(true);
 
     await expect(page.locator(`${gridSelector} > .card img[fetchpriority="high"]`)).toHaveCount(1);
   }
 
-  test('coffee eagerly loads every image in the actual first row after viewport changes', async ({ page }) => {
+  test('coffee first-row image priorities follow responsive grid geometry', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
     await routeImageCatalog(page, 'coffee');
-    await page.setViewportSize({ width: 1440, height: 900 });
     await page.addInitScript(() => {
       localStorage.setItem('zt_brand', 'coffee');
       localStorage.setItem('zt_onb', '1');
@@ -564,12 +721,12 @@ test.describe('Initial catalog image priorities', () => {
     await page.goto('/?brand=coffee');
     await expect(page.locator('#grid > .card').first()).toBeAttached();
     await expect.poll(() => page.locator('#grid > .card img').count()).toBeGreaterThan(1);
+    await page.evaluate(() => document.fonts.ready);
 
-    await assertFirstRowPriorities(page, '#grid');
-    await page.setViewportSize({ width: 390, height: 844 });
-    await assertFirstRowPriorities(page, '#grid');
-    await page.setViewportSize({ width: 1440, height: 900 });
-    await assertFirstRowPriorities(page, '#grid');
+    for (const width of [390, 520, 690, 821, 1024, 1181, 1440, 1600]) {
+      await page.setViewportSize({ width, height: width < 700 ? 844 : 900 });
+      await assertFirstRowPriorities(page, '#grid');
+    }
   });
 
   test('delivery eagerly loads every image in the actual first row after viewport changes', async ({ page }) => {

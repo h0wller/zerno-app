@@ -214,7 +214,7 @@ jobs:
 
   lighthouse-mobile:
     name: Lighthouse / Mobile LCP comparison
-    if: github.event_name == 'pull_request' && github.event.pull_request.number == 300
+    if: github.event_name == 'pull_request' && (github.event.pull_request.number == 300 || github.event.pull_request.number == 308)
     needs: quality-gates
     runs-on: ubuntu-latest
     timeout-minutes: 40
@@ -313,32 +313,39 @@ jobs:
               return 1
             fi
 
-            DB_PATH="$db_path" PUBLIC_DIR="$project_dir/public" \
+            local staff_token_file="$RUNNER_TEMP/lcp-$label-staff-token"
+            DB_PATH="$db_path" PUBLIC_DIR="$project_dir/public" LCP_STAFF_TOKEN_FILE="$staff_token_file" \
               node "$GITHUB_WORKSPACE/scripts/lighthouse-fixture.mjs"
             curl -fsS "http://127.0.0.1:$port/api/menu" > "$REPORT_DIR/$label-coffee-menu.json"
             curl -fsS "http://127.0.0.1:$port/api/dmenu" > "$REPORT_DIR/$label-delivery-menu.json"
 
             for brand in coffee delivery; do
               for sample in 1 2; do
+                local report_path="$REPORT_DIR/$label-$brand-$sample.json"
+                local audit_url="http://127.0.0.1:$port/?brand=$brand&lighthouse=1"
                 echo "Lighthouse $label / $brand / sample $sample"
-                npx --yes lighthouse@13.5.0 \
-                  "http://127.0.0.1:$port/?brand=$brand&lighthouse=1" \
-                  --chrome-path="$CHROME_PATH" \
-                  --chrome-flags="--headless --no-sandbox --disable-dev-shm-usage" \
-                  --form-factor=mobile \
-                  --throttling-method=simulate \
-                  --throttling.rttMs=150 \
-                  --throttling.throughputKbps=1638.4 \
-                  --throttling.cpuSlowdownMultiplier=4 \
-                  --screenEmulation.mobile=true \
-                  --screenEmulation.width=360 \
-                  --screenEmulation.height=800 \
-                  --screenEmulation.deviceScaleFactor=1.75 \
-                  --only-categories=performance \
-                  --max-wait-for-load=45000 \
-                  --output=json \
-                  --output-path="$REPORT_DIR/$label-$brand-$sample.json" \
-                  --quiet
+                if [ "$brand" = "coffee" ]; then
+                  CHROME_PATH="$CHROME_PATH" LCP_STAFF_TOKEN_FILE="$staff_token_file" \
+                    node "$GITHUB_WORKSPACE/scripts/lighthouse-authenticated.mjs" "$audit_url" "$report_path"
+                else
+                  npx --yes lighthouse@13.5.0 "$audit_url" \
+                    --chrome-path="$CHROME_PATH" \
+                    --chrome-flags="--headless --no-sandbox --disable-dev-shm-usage" \
+                    --form-factor=mobile \
+                    --throttling-method=simulate \
+                    --throttling.rttMs=150 \
+                    --throttling.throughputKbps=1638.4 \
+                    --throttling.cpuSlowdownMultiplier=4 \
+                    --screenEmulation.mobile=true \
+                    --screenEmulation.width=360 \
+                    --screenEmulation.height=800 \
+                    --screenEmulation.deviceScaleFactor=1.75 \
+                    --only-categories=performance \
+                    --max-wait-for-load=45000 \
+                    --output=json \
+                    --output-path="$report_path" \
+                    --quiet
+                fi
               done
             done
 
@@ -346,8 +353,10 @@ jobs:
             trap - RETURN
           }
 
-          run_variant "$RUNNER_TEMP/zerno-lcp-base" "base" 3210
-          run_variant "$GITHUB_WORKSPACE" "head" 3211
+          # core/api.js intentionally maps the canonical isolated app origin on localhost:3100.
+          # Variants run sequentially so both can use the same port and same API_BASE behavior.
+          run_variant "$RUNNER_TEMP/zerno-lcp-base" "base" 3100
+          run_variant "$GITHUB_WORKSPACE" "head" 3100
 
           LIGHTHOUSE_EXPECTED_RUNS=2 node scripts/lighthouse-summary.mjs "$REPORT_DIR"
       - name: Upload Lighthouse reports
