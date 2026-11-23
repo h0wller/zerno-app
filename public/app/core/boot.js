@@ -18,7 +18,7 @@ document.addEventListener('error', function (e) {
   var t = e.target;
   if (!t || t.tagName !== 'IMG') return;
   var s = t.currentSrc || t.src || '';
-  if (!/\.webp(\?|$)/i.test(s)) return;
+  if (!/\\.webp(\\?|$)/i.test(s)) return;
 
   if (t.closest('#grid .media, #deliveryGrid .media')) {
     var fallback = document.createElement('span');
@@ -35,7 +35,7 @@ document.addEventListener('error', function (e) {
   t.dataset.imgFb = '1';
   var p = t.parentElement;
   if (p && p.tagName === 'PICTURE') { while (p.firstChild) p.removeChild(p.firstChild); p.appendChild(t); }
-  t.src = s.replace(/\.webp(\?|$)/i, '.svg$1');
+  t.src = s.replace(/\\.webp(\\?|$)/i, '.svg$1');
 }, true);
 
 
@@ -150,11 +150,11 @@ async function loadInitialCatalog(earlyDeliveryLoad, earlyCoffeeLoad) {
   if (window.brand !== 'delivery') {
     var coffeePreloadSucceeded = earlyCoffeeLoad ? await earlyCoffeeLoad : false;
     var isCoffeeStaffRole = window.me && ['admin', 'cashier', 'dispatch'].indexOf(window.me.role) !== -1;
-    // Show the public menu first; request the guarded full list only after /api/me confirms staff.
+    // The public first paint stays in the DOM while the guarded staff list updates MENU.
     if (isCoffeeStaffRole || !coffeePreloadSucceeded) {
       if (typeof loadMenu === 'function') {
         return (await loadMenu({
-          render: true,
+          render: !coffeePreloadSucceeded,
           expectedBrand: 'coffee',
           expectedRole: isCoffeeStaffRole ? window.me.role : null
         })) || coffeePreloadSucceeded;
@@ -434,224 +434,60 @@ function registerSW() {
       if (updateCheckFrame) return;
       updateCheckFrame = requestAnimationFrame(() => {
         updateCheckFrame = 0;
-        if (reloadPending) {
-          reloadAfterActivation();
-          return;
-        }
         offerUpdate();
       });
     }
 
-    function onAppActivity() {
-      scheduleUpdateCheck();
+    function recheckDeferredReload() {
+      if (!reloadPending || reloadStarted) return;
+      reloadAfterActivation();
     }
 
-    function onBlockingSurfaceTransition(event) {
-      if (
-        event.target.id !== 'addrBookSheet' ||
-        (event.propertyName !== 'opacity' && event.propertyName !== 'transform')
-      ) return;
-      scheduleUpdateCheck();
-    }
+    document.addEventListener('visibilitychange', scheduleUpdateCheck);
+    document.addEventListener('zt:overlay-closed', scheduleUpdateCheck);
+    document.addEventListener('zt:cart-closed', scheduleUpdateCheck);
+    document.addEventListener('zt:checkout-closed', scheduleUpdateCheck);
+    document.addEventListener('zt:profile-closed', scheduleUpdateCheck);
+    document.addEventListener('zt:chat-closed', scheduleUpdateCheck);
+    document.addEventListener('zt:address-book-closed', scheduleUpdateCheck);
+    window.addEventListener('pageshow', scheduleUpdateCheck);
+    window.addEventListener('focus', scheduleUpdateCheck);
+    window.addEventListener('resize', scheduleUpdateCheck);
+    window.addEventListener('orientationchange', scheduleUpdateCheck);
 
-    function resumeDeferredUpdate() {
-      if (document.hidden) return;
-      updateDeferred = false;
-      scheduleUpdateCheck();
-    }
+    navigator.serviceWorker.addEventListener('controllerchange', reloadAfterActivation);
+    navigator.serviceWorker.addEventListener('message', (event) => {
+      if (event.data && event.data.type === 'SW_ACTIVATED') reloadAfterActivation();
+    });
 
-    // If an order, cart or another modal was active when the update arrived,
-    // re-check after its close interaction instead of interrupting the flow.
-    document.addEventListener('click', onAppActivity);
-    document.addEventListener('keydown', onAppActivity);
-    document.addEventListener('transitionend', onBlockingSurfaceTransition, true);
-    document.addEventListener('visibilitychange', resumeDeferredUpdate);
-    window.addEventListener('focus', resumeDeferredUpdate);
-    window.addEventListener('pageshow', resumeDeferredUpdate);
-
-    navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' })
-      .then((reg) => {
-        reg.update();
-        if (reg.waiting && navigator.serviceWorker.controller) {
-          waitingWorker = reg.waiting;
-          scheduleUpdateCheck();
-        }
-        reg.addEventListener('updatefound', () => {
-          const inst = reg.installing;
-          if (!inst) return;
-          inst.addEventListener('statechange', () => {
-            if (inst.state === 'installed' && navigator.serviceWorker.controller) {
-              waitingWorker = inst;
-              scheduleUpdateCheck();
-            }
-          });
-        });
-      })
-      .catch(() => {});
-
-    navigator.serviceWorker.addEventListener('controllerchange', () => {
-      if (!updateApproved || reloadStarted) return;
-      waitingWorker = navigator.serviceWorker.controller || waitingWorker;
-      reloadPending = true;
+    navigator.serviceWorker.addEventListener('messageerror', (event) => {
+      if (!updateApproved) return;
+      updateApproved = false;
+      try { console.warn('[SW] Не удалось подтвердить обновление:', event); } catch (_) {}
       scheduleUpdateCheck();
     });
+
+    navigator.serviceWorker.ready.then((registration) => {
+      if (!registration || !registration.waiting) return;
+      if (!navigator.serviceWorker.controller) return;
+
+      waitingWorker = registration.waiting;
+      waitingWorker.addEventListener('statechange', () => {
+        if (waitingWorker !== registration.waiting) waitingWorker = null;
+        if (waitingWorker && waitingWorker.state === 'activated') reloadAfterActivation();
+        else scheduleUpdateCheck();
+      });
+      offerUpdate();
+    }).catch(() => {});
   });
 }
 
-/* ── 4. Install-баннер PWA ── */
-let _defPrompt = null;
-function initInstallBanner() {
-  const b = document.getElementById('installBanner');
-  // В режиме аудита жестко скрываем баннер, чтобы он не перехватывал LCP
-  if (isAudit) {
-    if (b) b.hidden = true;
-    return;
-  }
-
-  // Платформа определяет, какой баннер можно показать.
-  // iPhone/iPad: установка только через Safari (Поделиться → На экран «Домой»), её показывает initIosHint.
-  // Встроенные браузеры (Telegram, Instagram и т.п.) не умеют устанавливать PWA.
-  // Уже установленное приложение: баннер не нужен.
-  const ua = navigator.userAgent;
-  const isIOS = /iPhone|iPad|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-  const isAndroid = /Android/.test(ua);
-  const inApp = /(Telegram|Instagram|FBAN|FBAV|VK|WhatsApp|Twitter)/.test(ua);
-  const standalone = window.navigator.standalone === true || matchMedia('(display-mode: standalone)').matches;
-  if (!b || isIOS || inApp || standalone) {
-    if (b) b.hidden = true;
-    return;
-  }
-
-  // Текст под платформу: на телефоне — про установку на главный экран, на компьютере — про установку программы.
-  const sp = b.querySelector('span');
-  if (sp) {
-    sp.textContent = isAndroid
-      ? '📲 Установите приложение — карта всегда под рукой'
-      : '💻 Установите приложение на компьютер — меню откроется в отдельном окне';
-  }
-
-  window.addEventListener('beforeinstallprompt', (e) => {
-    e.preventDefault();
-    _defPrompt = e;
-    if (!localStorage.getItem('zt_inst_hide')) b.hidden = false;
-  });
-
-  const btn = document.getElementById('installBtn');
-  if (btn) btn.onclick = async () => {
-    if (_defPrompt) {
-      _defPrompt.prompt();
-      await _defPrompt.userChoice;
-      _defPrompt = null;
-    }
-    if (b) b.hidden = true;
-  };
-
-  const cl = document.getElementById('installClose');
-  if (cl) cl.onclick = () => {
-    if (b) b.hidden = true;
-    localStorage.setItem('zt_inst_hide', '1');
-  };
-
-}
-
-/* ── 5. iOS-хинт установки ── */
-function initIosHint() {
-  if (isAudit) return;
-
-  const ua = navigator.userAgent;
-  const isIOS =
-    /iPhone|iPad|iPod/.test(ua) ||
-    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-  const standalone =
-    window.navigator.standalone === true ||
-    matchMedia('(display-mode: standalone)').matches;
-  const inApp = /(Telegram|Instagram|FBAN|FBAV|VK|WhatsApp|Twitter)/.test(ua);
-  if (!isIOS || standalone || localStorage.getItem('zt_ios_hide')) return;
-
-  setTimeout(function () {
-    const t = document.getElementById('iosHintText');
-    const h = document.getElementById('iosHint');
-    if (t) {
-      t.innerHTML = inApp
-        ? '🍏 Чтобы установить приложение: нажмите <b>⋯</b> → <b>Открыть в Safari</b>, затем в Safari — <b>Поделиться</b> → <b>На экран «Домой»</b>'
-        : '🍏 Установите приложение: нажмите <b>Поделиться</b> (квадрат со стрелкой) → <b>На экран «Домой»</b> → <b>Добавить</b> — карта гостя всегда под рукой!';
-    }
-    if (h) h.hidden = false;
-  }, 800);
-
-  const cl = document.getElementById('iosHintClose');
-  if (cl) cl.onclick = function () {
-    const h = document.getElementById('iosHint');
-    if (h) h.hidden = true;
-    localStorage.setItem('zt_ios_hide', '1');
-  };
-}
-
-/* ── 5b. Бонус за установку приложения ──
-   Сервер сам не даёт начислить дважды, поэтому можно вызывать при каждом запуске установленного приложения. */
-function initInstallBonus() {
-  const report = function () {
-    try { if (!localStorage.getItem('zt_user')) return; } catch (_) { return; }
-    if (typeof api !== 'function') return;
-    api('/bonus/install', { method: 'POST' })
-      .then(function (r) {
-        if (r && r.granted && typeof toast === 'function') toast('Бонус за установку приложения начислен 🎁', '🎁');
-      })
-      .catch(function () {});
-  };
-  window.addEventListener('appinstalled', report);
-  const standalone = window.navigator.standalone === true || matchMedia('(display-mode: standalone)').matches;
-  if (standalone) report();
-}
-
-// A transient boot failure keeps the bearer token. Revalidate it when the
-// connection returns, then restore role-dependent catalog and staff surfaces.
-let sessionRetryBusy = false;
-window.addEventListener('online', async function () {
-  if (sessionRetryBusy || !window.__ztSessionOffline) return;
-  let token = '';
-  try { token = localStorage.getItem('zt_user') || ''; } catch (_) {}
-  if (!token) return;
-  sessionRetryBusy = true;
-  try {
-    await verifyStaffSession();
-    if (window.me) {
-      window.__ztSessionOffline = false;
-      window.__ztSessionOfflineToastShown = false;
-      try { await loadInitialCatalog(null); } catch (_) {}
-      renderAll();
-      if (typeof window.syncBrandViews === 'function') window.syncBrandViews();
-      if (typeof showBadge === 'function') showBadge();
-    }
-  } finally {
-    sessionRetryBusy = false;
-  }
-});
-
-/* ── 6. Старт ── */
-function onReady(fn) {
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', fn);
-  else fn();
-}
-
-onReady(function () {
-  initInstallBanner();
-  initIosHint();
-  initInstallBonus();
-  boot();
-  showSWUpdateAppliedToast();
-});
-
-registerSW();
-
-/* ── Экспорт (контракт F1.3) ── */
+/* ── 4. Экспорты и старт ── */
 window.renderAll = renderAll;
 window.boot = boot;
 window.applyStaffRoleState = applyStaffRoleState;
+window.showSWUpdateAppliedToast = showSWUpdateAppliedToast;
 
-console.info(
-  '%c🌊 …и кофе · ребрендинг',
-  'font-weight:bold;font-size:14px',
-  '| меню v2 | штампы-зёрна',
-);
+registerSW();
+document.addEventListener('DOMContentLoaded', boot);
 })();
