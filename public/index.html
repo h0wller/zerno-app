@@ -4346,7 +4346,7 @@ html body #tickerTrack .tickerGroup > span {
         // Переключаем вид SPA без перезагрузки
         if (typeof window.sv === "function") window.sv();
         if (typeof window.syncBrandViews === "function") window.syncBrandViews();
-        window.dispatchEvent(new Event("zt:brand-selected"));
+        if (window.ztBus && typeof window.ztBus.emit === "function") window.ztBus.emit("brand:selected");
       });
     })();
   </script>
