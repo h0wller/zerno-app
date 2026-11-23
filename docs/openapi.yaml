@@ -1521,7 +1521,7 @@ paths:
           name: closed
           schema: { type: string, enum: ['0', '1'] }
       responses:
-        '200': { description: Список тредов }
+        '200': { description: 'Список тредов' }
         '403': { $ref: '#/components/responses/Forbidden' }
 
   /api/chat/dialog:
@@ -2178,7 +2178,7 @@ paths:
           name: closed
           schema: { type: string, enum: ['0', '1'] }
       responses:
-        '200': { description: Список тредов }
+        '200': { description: 'Список тредов' }
         '403': { $ref: '#/components/responses/Forbidden' }
 
   /api/chat/dialog:
@@ -2825,7 +2825,7 @@ paths:
           name: closed
           schema: { type: string, enum: ['0', '1'] }
       responses:
-        '200': { description: Список тредов }
+        '200': { description: 'Список тредов' }
         '403': { $ref: '#/components/responses/Forbidden' }
 
   /api/chat/dialog:
@@ -3481,7 +3481,7 @@ paths:
           name: closed
           schema: { type: string, enum: ['0', '1'] }
       responses:
-        '200': { description: Список тредов }
+        '200': { description: 'Список тредов' }
         '403': { $ref: '#/components/responses/Forbidden' }
 
   /api/chat/dialog:
@@ -4128,7 +4128,7 @@ paths:
           name: closed
           schema: { type: string, enum: ['0', '1'] }
       responses:
-        '200': { description: Список тредов }
+        '200': { description: 'Список тредов' }
         '403': { $ref: '#/components/responses/Forbidden' }
 
   /api/chat/dialog:
@@ -4785,7 +4785,7 @@ paths:
           name: closed
           schema: { type: string, enum: ['0', '1'] }
       responses:
-        '200': { description: Список тредов }
+        '200': { description: 'Список тредов' }
         '403': { $ref: '#/components/responses/Forbidden' }
 
   /api/chat/dialog:
@@ -5432,7 +5432,7 @@ paths:
           name: closed
           schema: { type: string, enum: ['0', '1'] }
       responses:
-        '200': { description: Список тредов }
+        '200': { description: 'Список тредов' }
         '403': { $ref: '#/components/responses/Forbidden' }
 
   /api/chat/dialog:
