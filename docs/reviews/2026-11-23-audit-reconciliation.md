@@ -43,6 +43,16 @@
 - `public/app/ui/category-rail.js` uses scroll events coalesced with `requestAnimationFrame`, plus bounded fallback timers for visual fade/programmatic scroll completion. This is not an unconditional polling loop.
 - Do not change these modules based solely on stale symbol names from the audit.
 
+## Follow-up PRs opened after this reconciliation snapshot
+
+The initial source findings above were split into focused PRs after the audit snapshot. These branches have green CI at their current heads, but CI success is not equivalent to production or visual acceptance:
+
+- **PR #313 — client log and menu upload hardening.** Implements route-specific request-size limits, client-log rate limiting, upload format/metadata/pixel validation, and regression tests. Before merge/deploy, verify the production `TRUST_PROXY` value against the actual Nginx topology. Its limiter is process-local; it is not a shared multi-worker quota.
+- **PR #314 — bounded Service Worker media cache.** Implements FIFO retention and concurrency-safe writes while preserving static/API caches. Requires real-device offline menu acceptance before merge because eviction changes offline media retention.
+- **PR #315 — OpenAPI order idempotency.** Documents `client_order_id`, owner-scoped replay behavior, and the `409 IDEMPOTENCY_KEY_REUSED` contract against the current server implementation. YAML was fetched from the PR branch and inspected; strict duplicate-key parsing and Postman definition readback/import were not completed in this reconciliation.
+
+These follow-ups address the corresponding initial findings; do not treat the historical “requiring follow-up” list as proof that the work is still absent from PR branches or that it has already shipped to production. Re-check exact PR heads and acceptance evidence before merge.
+
 ## Confirmed findings requiring follow-up
 
 ### Security / server
