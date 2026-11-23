@@ -122,6 +122,42 @@ test.describe('Initial catalog image priorities', () => {
     expect(requests.filter(path => path === '/api/menu/all')).toHaveLength(1);
   });
 
+  test('coffee public catalog remains visible when staff session verification is offline', async ({ page }) => {
+    const requests = [];
+    const publicItems = imageCatalogItems('coffee');
+    await page.addInitScript(() => {
+      localStorage.setItem('zt_brand', 'coffee');
+      localStorage.setItem('zt_onb', '1');
+      localStorage.setItem('zt_user', 'staff-session-token');
+      localStorage.setItem('zt_role', 'admin');
+      localStorage.setItem('zt_inst_hide', '1');
+      sessionStorage.setItem('splashDone', '1');
+    });
+    await routeImageCatalog(page, 'coffee', { delayMs: 120 });
+    await page.route('**/api/me', async route => {
+      requests.push('/api/me');
+      await route.fulfill({ status: 503, contentType: 'application/json', body: JSON.stringify({ error: 'offline' }) });
+    });
+    await page.route('**/api/menu/all', async route => {
+      requests.push('/api/menu/all');
+      await route.fulfill({ status: 403, contentType: 'application/json', body: JSON.stringify({ error: 'forbidden' }) });
+    });
+    page.on('request', request => {
+      const path = new URL(request.url()).pathname;
+      if (path === '/api/menu') requests.push('/api/menu');
+    });
+
+    await page.goto('/?brand=coffee', { waitUntil: 'commit' });
+    await expect(page.locator('#grid > .card[data-item-id="coffee-image-1"]')).toBeVisible();
+    await expect.poll(() => requests.includes('/api/me')).toBe(true);
+    await expect.poll(() => requests.includes('/api/menu')).toBe(true);
+    expect(requests).not.toContain('/api/menu/all');
+    await expect(page.locator('#grid > .card[data-item-id="coffee-image-1"]')).toBeVisible();
+    await expect(page.locator('html')).toHaveAttribute('data-staff-ready', '1');
+    await expect(page.locator('html')).not.toHaveAttribute('data-staff-role', /.+/);
+    await expect(page.locator('#grid > .card')).toHaveCount(publicItems.length);
+  });
+
   test('coffee startup does not request the hidden delivery hero image', async ({ page }) => {
     const deliveryHeroRequests = [];
     page.on('request', (request) => {
