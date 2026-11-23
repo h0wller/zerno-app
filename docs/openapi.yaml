@@ -2070,14 +2070,12 @@ paths:
           content:
             application/json:
               schema:
-                oneOf:
-                  - $ref: '#/components/schemas/Error'
-                  - type: object
-                    required: [error, code, order]
-                    properties:
-                      error: { type: string }
-                      code: { type: string, enum: [IDEMPOTENCY_KEY_REUSED] }
-                      order: { type: object, description: Уже созданный заказ для проверки и восстановления }
+                type: object
+                required: [error]
+                properties:
+                  error: { type: string }
+                  code: { type: string, enum: [IDEMPOTENCY_KEY_REUSED] }
+                  order: { type: object, description: Уже созданный заказ для проверки и восстановления; присутствует при IDEMPOTENCY_KEY_REUSED }
         '410': { description: Промокод истёк или исчерпан }
         '500': { description: Внутренняя ошибка при создании заказа }
     get:
