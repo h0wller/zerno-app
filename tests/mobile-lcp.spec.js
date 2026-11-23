@@ -172,8 +172,9 @@ test.describe('Initial catalog image priorities', () => {
       coffeeButton.click();
     });
     await expect(page.locator('html')).toHaveAttribute('data-brand', 'coffee');
+    await expect.poll(() => page.evaluate(() => !document.getElementById('menuView').hidden)).toBe(true);
     await expect(page.locator('#grid > .card[data-item-id="coffee-image-1"]')).toBeVisible();
-    await expect(page.locator('#deliveryGrid > .card').first()).toBeVisible();
+    await expect.poll(() => page.evaluate(() => getComputedStyle(document.getElementById('deliveryView')).display === 'none')).toBe(true);
   });
 
   test('coffee public catalog remains visible when staff session verification is offline', async ({ page }) => {
