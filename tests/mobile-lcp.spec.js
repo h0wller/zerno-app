@@ -152,7 +152,7 @@ test.describe('Initial catalog image priorities', () => {
 
     await page.goto('/?brand=coffee', { waitUntil: 'commit' });
     await expect.poll(() => page.evaluate(() => document.documentElement.dataset.staffBootStarted === '1')).toBe(true);
-    await expect(page.locator('#grid > .card:visible')).toHaveCount(0);
+    await expect(page.locator('#grid > .card')).toHaveCount(0);
     await page.evaluate(() => {
       const deliveryButton = document.querySelector('#brandSeg [data-brand="delivery"]');
       if (!deliveryButton) throw new Error('delivery brand control not found');
@@ -165,7 +165,7 @@ test.describe('Initial catalog image priorities', () => {
     await expect.poll(() => page.evaluate(() =>
       Array.isArray(window.MENU) && window.MENU.some(item => item.id === 'coffee-image-1')
     )).toBe(false);
-    await expect(page.locator('#grid > .card:visible')).toHaveCount(0);
+    await expect(page.locator('#grid > .card')).toHaveCount(0);
     await page.evaluate(() => {
       const coffeeButton = document.querySelector('#brandSeg [data-brand="coffee"]');
       if (!coffeeButton) throw new Error('coffee brand control not found');
