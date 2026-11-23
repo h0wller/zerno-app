@@ -21,7 +21,7 @@
 |---|---|---|
 | `GET /api/health` | Health-check | Публичный |
 | `GET /api/config` | Публичный bootstrap-конфиг | Публичный |
-| `POST /api/clientlog` | Лог клиентских событий | Публичный |
+| `POST /api/clientlog` | Лог клиентских событий; тело до 4 KiB, до 60 запросов/минуту на эффективный IP (`429`, `Retry-After`) | Публичный |
 | `GET /api/tg/diag` | Диагностика Telegram webhook/Bot API | adminGuard |
 | `POST /api/tg/webhook` | Входящий Telegram webhook | Проверка webhook маршрутом |
 
@@ -62,7 +62,7 @@ SMS.ru сохранён как будущий платный канал авто
 | `PUT /api/menu/reorder` | Изменить порядок позиций | adminGuard |
 | `PUT /api/menu/:id` | Администратор редактирует позицию; сотрудник переключает только стоп-лист своей секции | menuGuard |
 | `DELETE /api/menu/:id` | Удалить позицию меню | adminGuard |
-| `POST /api/menu/upload` | Загрузить изображение позиции | adminGuard |
+| `POST /api/menu/upload` | Загрузить JPEG/PNG/WebP до 4 MiB; до 6 MP и 4096 px по стороне; JSON body до 6 MiB (`413` при превышении) | adminGuard |
 | `GET /api/dmenu` | Меню доставки | Публичный |
 | `GET /api/delivery/info` | Часы, зоны, интервалы и конфигурация доставки | Публичный |
 | `GET /api/delivery/addr` | Подсказки улиц по населённому пункту (`place`, `q`) | Публичный |

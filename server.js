@@ -162,6 +162,7 @@ app.post('/api/menu/upload',
         !metadata.width || !metadata.height ||
         metadata.width > MAX_MENU_UPLOAD_DIMENSION ||
         metadata.height > MAX_MENU_UPLOAD_DIMENSION ||
+        metadata.width * metadata.height > MAX_MENU_UPLOAD_PIXELS ||
         metadata.pages > 1
       ) {
         return res.status(400).json({ error: 'Неподдерживаемый формат или размер изображения' });
