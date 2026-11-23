@@ -85,6 +85,18 @@ try {
     localStorage.setItem('zt_onb', '1');
     localStorage.setItem('zt_inst_hide', '1');
   }, token);
+  const verifiedRole = await page.evaluate(async () => {
+    const sessionToken = localStorage.getItem('zt_user');
+    const response = await fetch('/api/me', {
+      headers: { Authorization: 'Bearer ' + sessionToken }
+    });
+    if (!response.ok) throw new Error('Lighthouse fixture /api/me returned HTTP ' + response.status);
+    const payload = await response.json();
+    return payload.customer?.role || '';
+  });
+  if (verifiedRole !== 'admin') {
+    throw new Error('Lighthouse staff fixture was not verified as admin by /api/me');
+  }
   await page.close();
   await browser.close();
   browser = null;
