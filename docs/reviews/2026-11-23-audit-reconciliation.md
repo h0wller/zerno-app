@@ -55,7 +55,10 @@ The initial source findings above were split into focused PRs after the audit sn
 
 These follow-ups address the corresponding initial findings; do not treat the historical “requiring follow-up” list as proof that the work is still absent from PR branches or that it has already shipped to production. Re-check exact PR heads and acceptance evidence before merge.
 
-## Confirmed findings requiring follow-up
+## Confirmed findings on the audited pizza snapshot (2026-11-23)
+
+The findings below describe the audited base commit only. Their current status must be read together with the focused follow-up PR section above; they do not imply that the same work is absent from those PR branches.
+
 
 ### Security / server
 
