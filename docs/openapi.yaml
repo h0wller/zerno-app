@@ -1462,7 +1462,7 @@ paths:
       responses:
         '200': { description: OK }
         '401': { $ref: '#/components/responses/Unauthorized' }
-        '403': { $ref: '#/components/responses/Forbidden' }, description: 'Секрет роли из соответствующей переменной окружения' } } }
+        '403': { $ref: '#/components/responses/Forbidden' }
       responses:
         '200': { description: Возвращает customer }
         '404': { description: QR не найден }
@@ -2766,7 +2766,7 @@ paths:
       responses:
         '200': { description: OK }
         '401': { $ref: '#/components/responses/Unauthorized' }
-        '403': { $ref: '#/components/responses/Forbidden' }, description: 'Секрет роли из соответствующей переменной окружения' } } }
+        '403': { $ref: '#/components/responses/Forbidden' }
       responses:
         '200': { description: Возвращает customer }
         '404': { description: QR не найден }
@@ -4069,7 +4069,7 @@ paths:
       responses:
         '200': { description: OK }
         '401': { $ref: '#/components/responses/Unauthorized' }
-        '403': { $ref: '#/components/responses/Forbidden' }, description: 'Секрет роли из соответствующей переменной окружения' } } }
+        '403': { $ref: '#/components/responses/Forbidden' }
       responses:
         '200': { description: Возвращает customer }
         '404': { description: QR не найден }
@@ -5373,7 +5373,7 @@ paths:
       responses:
         '200': { description: OK }
         '401': { $ref: '#/components/responses/Unauthorized' }
-        '403': { $ref: '#/components/responses/Forbidden' }, description: 'Секрет роли из соответствующей переменной окружения' } } }
+        '403': { $ref: '#/components/responses/Forbidden' }
       responses:
         '200': { description: Возвращает customer }
         '404': { description: QR не найден }
