@@ -7,13 +7,13 @@ import { setTimeout as delay } from 'node:timers/promises';
 
 import { chromium } from '@playwright/test';
 
-function run(command, args, options = {}) {
+function run(command, args) {
   return new Promise((resolve, reject) => {
-    const child = spawn(command, args, { stdio: 'inherit', ...options });
+    const child = spawn(command, args, { stdio: 'inherit' });
     child.once('error', reject);
     child.once('exit', (code, signal) => {
       if (code === 0) resolve();
-      else reject(new Error(`${command} exited with code ${code ?? 'null'} (signal ${signal ?? 'none'})`));
+      else reject(new Error(command + ' exited with code ' + (code ?? 'null') + ' (signal ' + (signal ?? 'none') + ')'));
     });
   });
 }
@@ -23,10 +23,10 @@ async function waitForDebuggingPort(profileDir, chromeProcess) {
   const deadline = Date.now() + 15_000;
   while (Date.now() < deadline) {
     if (chromeProcess.exitCode !== null) {
-      throw new Error(`Chrome exited before opening DevTools (code ${chromeProcess.exitCode})`);
+      throw new Error('Chrome exited before opening DevTools (code ' + chromeProcess.exitCode + ')');
     }
     try {
-      const [port] = (await fs.readFile(activePortFile, 'utf8')).trim().split(/\\r?\\n/);
+      const [port] = (await fs.readFile(activePortFile, 'utf8')).trim().split(/\r?\n/);
       const parsed = Number(port);
       if (Number.isInteger(parsed) && parsed > 0) return parsed;
     } catch {}
@@ -68,17 +68,17 @@ try {
     '--no-first-run',
     '--no-default-browser-check',
     '--remote-debugging-port=0',
-    `--user-data-dir=${profileDir}`,
+    '--user-data-dir=' + profileDir,
     'about:blank'
   ], { stdio: 'ignore' });
 
   const port = await waitForDebuggingPort(profileDir, chromeProcess);
-  browser = await chromium.connectOverCDP(`http://127.0.0.1:${port}`, { timeout: 15_000 });
+  browser = await chromium.connectOverCDP('http://127.0.0.1:' + port, { timeout: 15_000 });
   const context = browser.contexts()[0];
   if (!context) throw new Error('Chrome did not expose its default browser context');
 
   const page = await context.newPage();
-  await page.goto(`${origin}/api/health`, { waitUntil: 'domcontentloaded', timeout: 15_000 });
+  await page.goto(origin + '/api/health', { waitUntil: 'domcontentloaded', timeout: 15_000 });
   await page.evaluate(sessionToken => {
     localStorage.setItem('zt_user', sessionToken);
     localStorage.setItem('zt_brand', 'coffee');
@@ -94,7 +94,7 @@ try {
     '--yes',
     'lighthouse@13.5.0',
     targetUrl,
-    `--port=${port}`,
+    '--port=' + port,
     '--form-factor=mobile',
     '--throttling-method=simulate',
     '--throttling.rttMs=150',
@@ -107,7 +107,7 @@ try {
     '--only-categories=performance',
     '--max-wait-for-load=45000',
     '--output=json',
-    `--output-path=${reportPath}`,
+    '--output-path=' + reportPath,
     '--quiet'
   ]);
 } finally {
