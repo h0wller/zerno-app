@@ -165,7 +165,7 @@ test.describe('Initial catalog image priorities', () => {
     await expect.poll(() => page.evaluate(() =>
       Array.isArray(window.MENU) && window.MENU.some(item => item.id === 'coffee-image-1')
     )).toBe(false);
-    await expect(page.locator('#grid > .card')).toHaveCount(0);
+    await expect.poll(() => page.evaluate(() => document.getElementById('menuView').hidden)).toBe(true);
     await page.evaluate(() => {
       const coffeeButton = document.querySelector('#brandSeg [data-brand="coffee"]');
       if (!coffeeButton) throw new Error('coffee brand control not found');
