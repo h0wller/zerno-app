@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto';
 import fs from 'node:fs/promises';
 import { USER_SESSION_TTL_MS } from '../server/utils/session-policy.js';
 
-const CUSTOMER_ID = 'lcp-staff-admin';
+const CUSTOMER_ID = 'u1c2d3e4f5a';
 
 export async function createLighthouseStaffFixture(db, tokenFile, { issuedAt = Date.now() } = {}) {
   const token = randomUUID();
