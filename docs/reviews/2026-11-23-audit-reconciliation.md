@@ -25,7 +25,8 @@
 - Replays do not re-run promo consumption, order-number allocation, or notifications.
 - Different request payload under the same key returns HTTP 409 / `IDEMPOTENCY_KEY_REUSED`.
 - Existing resolution record: `docs/reviews/order-idempotency-egm-resolution.md`.
-- **Remaining:** `docs/openapi.yaml` has not been reconciled with this contract: its `POST /api/orders` request schema omits `client_order_id` and the 400/409 response contract. This is documentation drift, not a missing server feature.
+- **Follow-up:** PR #315 updates `docs/openapi.yaml` and `docs/api.md` with the optional `client_order_id` field and replay/error semantics. On PR #315 HEAD `ed594b82ae0a7fa24e31e06292b448279954edac`, CI #4883 passed static audits and the strict YAML/order-contract validator, but Redocly rejected the spec because the `/api/staff/scan` 404 response was nested inside `requestBody`. That structure was corrected in commit `b95b4700eb53491b588d225b679210d02113af39`; a CI run for this new SHA has not yet been observed. Keep OpenAPI validation unresolved until Redocly and contract smoke complete successfully.
+- **Postman:** the full 75 KB spec import/readback remains unverified; the connector rejected the full-file update with HTTP 413. A previously performed route-fragment validation does not substitute for full-spec validation.
 - **Residual risk:** notifications are post-commit and not a transactional outbox; crash after DB commit and before notification can lose the notification. Do not claim exactly-once external delivery.
 
 ### Chat rate-limit storage abuse
@@ -99,5 +100,5 @@ The findings below describe the audited base commit only. Their current status m
 - Context7 verified the installed Sharp 0.35.5 `metadata()` and `limitInputPixels` API.
 - Graphify index commit: `b043180903f14b09461c2d7689554b17e250733c`; Graphify retrieval was corroborated against live GitHub files. Graphify independent PR review was not run in this pass.
 - Ponytail guidance was used as a review constraint: avoid broad rewrites; preserve behavior; test each focused change. No code change is claimed from that skill.
-- Postman API operations were inspected but no workspace/collection or runtime request was created; import validation remains open.
+- Postman workspace/spec API operations were inspected. A temporary extracted route-fragment spec was parsed and used to generate a temporary collection, then both temporary resources were deleted. The persistent full 75 KB specification update was rejected with HTTP 413; full import/readback remains open.
 - No application source, database, production configuration, or deployment was changed by this reconciliation.
