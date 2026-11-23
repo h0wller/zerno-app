@@ -93,7 +93,8 @@ function preloadDeliveryCatalog() {
 
 function preloadCoffeeCatalog() {
   if (window.brand !== 'coffee' || typeof window.loadMenu !== 'function') return null;
-  return window.loadMenu();
+  var requestedBrand = window.brand;
+  return window.loadMenu({ expectedBrand: requestedBrand });
 }
 
 function applyStaffRoleState(customer) {
