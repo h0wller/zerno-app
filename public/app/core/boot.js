@@ -152,7 +152,13 @@ async function loadInitialCatalog(earlyDeliveryLoad, earlyCoffeeLoad) {
     var isCoffeeStaffRole = window.me && ['admin', 'cashier', 'dispatch'].indexOf(window.me.role) !== -1;
     // Show the public menu first; request the guarded full list only after /api/me confirms staff.
     if (isCoffeeStaffRole || !coffeePreloadSucceeded) {
-      if (typeof loadMenu === 'function') await loadMenu({ render: false, expectedBrand: 'coffee', expectedRole: window.me.role });
+      if (typeof loadMenu === 'function') {
+        return (await loadMenu({
+          render: true,
+          expectedBrand: 'coffee',
+          expectedRole: isCoffeeStaffRole ? window.me.role : null
+        })) || coffeePreloadSucceeded;
+      }
     }
     return coffeePreloadSucceeded;
   }
