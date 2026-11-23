@@ -22,11 +22,11 @@ async function waitForDebuggingPort(profileDir, chromeProcess) {
   const activePortFile = path.join(profileDir, 'DevToolsActivePort');
   const deadline = Date.now() + 15_000;
   while (Date.now() < deadline) {
-    if (chromeProcess.exitCode !== null) {
-      throw new Error('Chrome exited before opening DevTools (code ' + chromeProcess.exitCode + ')');
+    if (chromeProcess.exitCode !== null || chromeProcess.signalCode !== null) {
+      throw new Error('Chrome exited before opening DevTools (code ' + chromeProcess.exitCode + ', signal ' + chromeProcess.signalCode + ')');
     }
     try {
-      const [port] = (await fs.readFile(activePortFile, 'utf8')).trim().split(/\r?\n/);
+      const [port] = (await fs.readFile(activePortFile, 'utf8')).trim().split(/\\r?\\n/);
       const parsed = Number(port);
       if (Number.isInteger(parsed) && parsed > 0) return parsed;
     } catch {}
@@ -35,14 +35,61 @@ async function waitForDebuggingPort(profileDir, chromeProcess) {
   throw new Error('Timed out waiting for Chrome DevToolsActivePort');
 }
 
+function waitForChromeExit(chromeProcess, timeoutMs, signal) {
+  if (chromeProcess.exitCode !== null || chromeProcess.signalCode !== null) {
+    return Promise.resolve();
+  }
+
+  return new Promise((resolve, reject) => {
+    const cleanup = () => {
+      clearTimeout(timeout);
+      chromeProcess.removeListener('exit', onExit);
+      chromeProcess.removeListener('error', onError);
+    };
+    const onExit = () => {
+      cleanup();
+      resolve();
+    };
+    const onError = error => {
+      cleanup();
+      reject(error);
+    };
+    const timeout = setTimeout(() => {
+      cleanup();
+      reject(new Error('Timed out waiting for Chrome to exit after ' + signal));
+    }, timeoutMs);
+
+    chromeProcess.once('exit', onExit);
+    chromeProcess.once('error', onError);
+
+    // Close the race between the state check and listener registration.
+    if (chromeProcess.exitCode !== null || chromeProcess.signalCode !== null) onExit();
+  });
+}
+
 async function stopChrome(chromeProcess) {
-  if (chromeProcess.exitCode !== null) return;
+  if (chromeProcess.exitCode !== null || chromeProcess.signalCode !== null) return;
+
   chromeProcess.kill('SIGTERM');
-  await Promise.race([
-    new Promise(resolve => chromeProcess.once('exit', resolve)),
-    delay(4_000)
-  ]);
-  if (chromeProcess.exitCode === null) chromeProcess.kill('SIGKILL');
+  try {
+    await waitForChromeExit(chromeProcess, 4_000, 'SIGTERM');
+    return;
+  } catch (error) {
+    if (chromeProcess.exitCode !== null || chromeProcess.signalCode !== null) return;
+    if (error.message !== 'Timed out waiting for Chrome to exit after SIGTERM') throw error;
+  }
+
+  chromeProcess.kill('SIGKILL');
+  await waitForChromeExit(chromeProcess, 4_000, 'SIGKILL');
+}
+
+async function removeProfile(profileDir) {
+  await fs.rm(profileDir, {
+    recursive: true,
+    force: true,
+    maxRetries: 5,
+    retryDelay: 200
+  });
 }
 
 const [targetUrl, reportPath] = process.argv.slice(2);
@@ -58,6 +105,7 @@ const origin = new URL(targetUrl).origin;
 const profileDir = await fs.mkdtemp(path.join(os.tmpdir(), 'zerno-lighthouse-auth-'));
 let chromeProcess;
 let browser;
+let primaryError;
 
 try {
   chromeProcess = spawn(chromePath, [
@@ -122,8 +170,36 @@ try {
     '--output-path=' + reportPath,
     '--quiet'
   ]);
+} catch (error) {
+  primaryError = error;
 } finally {
-  if (browser) await browser.close().catch(() => {});
-  if (chromeProcess) await stopChrome(chromeProcess);
-  await fs.rm(profileDir, { recursive: true, force: true });
+  const cleanupErrors = [];
+  if (browser) {
+    try {
+      await browser.close();
+    } catch (error) {
+      cleanupErrors.push(error);
+    }
+  }
+  if (chromeProcess) {
+    try {
+      await stopChrome(chromeProcess);
+    } catch (error) {
+      cleanupErrors.push(error);
+    }
+  }
+  try {
+    await removeProfile(profileDir);
+  } catch (error) {
+    cleanupErrors.push(error);
+  }
+
+  if (primaryError && cleanupErrors.length) {
+    throw new AggregateError([primaryError, ...cleanupErrors], 'Lighthouse run failed and cleanup reported additional errors');
+  }
+  if (primaryError) throw primaryError;
+  if (cleanupErrors.length === 1) throw cleanupErrors[0];
+  if (cleanupErrors.length > 1) {
+    throw new AggregateError(cleanupErrors, 'Lighthouse cleanup failed');
+  }
 }
