@@ -153,14 +153,18 @@ async function loadInitialCatalog(earlyDeliveryLoad, earlyCoffeeLoad) {
     // The public first paint stays in the DOM while the guarded staff list updates MENU.
     if (isCoffeeStaffRole || !coffeePreloadSucceeded) {
       if (typeof loadMenu === 'function') {
-        return (await loadMenu({
+        var staffUpgradeSucceeded = await loadMenu({
           render: !coffeePreloadSucceeded,
           expectedBrand: 'coffee',
           expectedRole: isCoffeeStaffRole ? window.me.role : null
-        })) || coffeePreloadSucceeded;
+        });
+        return {
+          rendered: coffeePreloadSucceeded || staffUpgradeSucceeded,
+          loaded: staffUpgradeSucceeded || coffeePreloadSucceeded
+        };
       }
     }
-    return coffeePreloadSucceeded;
+    return { rendered: coffeePreloadSucceeded, loaded: coffeePreloadSucceeded };
   }
 
   var isStaffRole = window.me && ['admin', 'cashier', 'dispatch'].indexOf(window.me.role) !== -1;
@@ -193,11 +197,11 @@ async function boot() {
   await verifyStaffSession();
   if (typeof window.syncBrandViews === 'function') window.syncBrandViews();
   try {
-    var coffeeCatalogAlreadyRendered = await loadInitialCatalog(earlyDeliveryLoad, earlyCoffeeLoad);
+    var coffeeCatalogResult = await loadInitialCatalog(earlyDeliveryLoad, earlyCoffeeLoad);
   } catch (err) {
     console.warn('[BOOT] Ошибка загрузки меню:', err);
   } finally {
-    renderAll({ skipCoffeeMenu: window.brand === 'coffee' && coffeeCatalogAlreadyRendered });
+    renderAll({ skipCoffeeMenu: window.brand === 'coffee' && coffeeCatalogResult && coffeeCatalogResult.rendered });
     if (typeof window.syncBrandViews === 'function') window.syncBrandViews();
     if (typeof showBadge === 'function') showBadge();
     if (typeof maybeAskReview === 'function') maybeAskReview();
