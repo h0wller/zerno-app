@@ -152,13 +152,13 @@ test.describe('Initial catalog image priorities', () => {
 
     await page.goto('/?brand=coffee', { waitUntil: 'commit' });
     await expect.poll(() => page.evaluate(() => document.documentElement.dataset.staffBootStarted === '1')).toBe(true);
-    await expect(page.locator('#grid > .card')).toHaveCount(0);
     await page.evaluate(() => {
       const deliveryButton = document.querySelector('#brandSeg [data-brand="delivery"]');
       if (!deliveryButton) throw new Error('delivery brand control not found');
       deliveryButton.click();
     });
     await expect(page.locator('html')).toHaveAttribute('data-brand', 'delivery');
+    await expect.poll(() => page.evaluate(() => document.getElementById('menuView').hidden)).toBe(true);
     await expect(page.locator('#deliveryGrid > .card').first()).toBeVisible();
     await page.evaluate(() => window.renderAll());
     releaseCoffee();
