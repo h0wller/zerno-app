@@ -3,8 +3,8 @@
 **Updated:** 2026-11-23  
 **Implementation PRs:** [#300 — guest C8 and image preload](https://github.com/h0wller/zerno-app/pull/300); [#308 — authenticated coffee first paint](https://github.com/h0wller/zerno-app/pull/308)  
 **Base:** `pizza` at `e9855638031b5df9c66ea28d3b208409981afce3`  
-**Verified PR HEAD:** `57cfab5d333e2812eb4e7952bf9be4ac9e9cac73`  
-**Status:** PR #300 C8 work remains Draft with production visual acceptance open. PR #308 boot-order change and regression coverage passed its matched CI/Lighthouse run on `57cfab5`; production-asset visual acceptance and field verification remain open. PR #308 stays Draft.
+**Verified implementation snapshot:** `57cfab5d333e2812eb4e7952bf9be4ac9e9cac73` (matched Lighthouse / regression evidence; not the latest branch tip).  
+**Status:** PR #300 C8 work remains Draft with production visual acceptance open. PR #308 implementation and regression evidence below refer to snapshot `57cfab5`. The later CI run 4811 (`8df667c`) passed 14/14 jobs. Production-asset visual acceptance and field verification remain open; PR #308 stays Draft.
 
 This document supersedes earlier performance snapshots for the final C8 implementation. It does not turn lab measurements into production field data.
 
@@ -57,12 +57,12 @@ Only local `/media/dishes/` images are eligible. Responsive `imagesrcset` / `ima
 
 ## 3. Automated verification
 
-Verified on PR HEAD `57cfab5d333e2812eb4e7952bf9be4ac9e9cac73`:
+Regression and matched benchmark evidence captured on implementation snapshot `57cfab5d333e2812eb4e7952bf9be4ac9e9cac73` (not latest branch tip):
 
 - Test-first regression reproduced the original defect: with `/api/me` held, the first coffee catalog card did not exist.
 - `tests/mobile-lcp.spec.js` now covers the first coffee card appearing while `/api/me` is pending, staff upgrade to guarded `/api/menu/all` without replacing the first-card DOM, offline/503 session verification, and switching away from coffee while its catalog request is in flight.
 - The isolated Menu and search job passed **102 expected / 0 unexpected / 0 flaky**.
-- The final current-head CI result is tracked in [run 4804](https://github.com/h0wller/zerno-app/actions/runs/45156207212). The run includes Quality Gate, all browser/E2E groups and matched Lighthouse; see the live run summary for the final Mobile Chrome responsive job status.
+- Run 4804 is historical implementation-snapshot evidence for `57cfab5`; it is not the latest branch-head check. The later CI run [4811](https://github.com/h0wller/zerno-app/actions/runs/45160086596) on `8df667c216d29e16c35f2209e1fd7553ad47c9eb` completed **14/14 jobs successfully**.
 - The staff Lighthouse fixture uses a valid customer ID and a server-verifiable admin session. It verifies `/api/me` before the audit and records no staff token in the report artifact.
 
 The CI visual captures use isolated test fixtures. They verify layout and browser behavior, but they are not production-asset visual acceptance.
@@ -92,11 +92,11 @@ Do not present this two-repeat lab result as a field improvement. A same-version
 
 ### PR #308: current boot-order verification
 
-- Current branch head at this report update: `57cfab5d333e2812eb4e7952bf9be4ac9e9cac73`.
+- Implementation snapshot measured by this matched Lighthouse run: `57cfab5d333e2812eb4e7952bf9be4ac9e9cac73`; this is not the later branch tip.
 - Matched lab report: [CI run 4804](https://github.com/h0wller/zerno-app/actions/runs/45156207212), artifact `lighthouse-mobile-lcp-45156207212`.
 - Public coffee menu fetch begins during `/api/me`; verified staff role triggers guarded `/api/menu/all` only after server confirmation.
 - Regression tests include session-verification failure and late response after brand switch. Menu and search artifact for run 4804: `playwright-Menu and search-45156207212`.
-- PR #308 remains Draft: do not merge until live CI is fully green and the production-asset same-context visual acceptance in §6 is completed.
+- Later branch-head CI: [run 4811](https://github.com/h0wller/zerno-app/actions/runs/45160086596), **14/14 successful** on `8df667c216d29e16c35f2209e1fd7553ad47c9eb`. PR #308 remains Draft: do not merge until the production-asset same-context visual acceptance in §6 is completed.
 
 ## 5. Temporary experiment cleanup
 
