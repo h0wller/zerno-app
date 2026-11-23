@@ -2656,7 +2656,7 @@ paths:
                 - required: [endpoint]
                 - required: [token]
       responses:
-        '200': { description: Устройство отвязано (ok: true) }
+        '200': { description: 'Устройство отвязано (ok: true)' }
         '400': { description: Нужно передать endpoint или token }
         '401': { $ref: '#/components/responses/Unauthorized' }
 
