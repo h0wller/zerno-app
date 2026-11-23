@@ -2012,19 +2012,19 @@ paths:
                 addr: { type: string, description: Legacy-поле адреса, принимаемое вместо street/house }
                 slot: { type: string, default: asap, description: asap либо идентификатор доступного интервала предзаказа }
                 pay: { type: string, enum: [cash, card], default: cash }
-                comment: { type: string, maxLength: 300 }
+                comment: { type: string, description: Сервер сохраняет не более 300 символов }
                 promo: { type: string, description: Необязательный промокод доставки }
                 items:
                   type: array
                   minItems: 1
-                  maxItems: 50
+                  description: Сервер обрабатывает первые 50 позиций массива
                   items:
                     type: object
                     required: [id]
                     properties:
                       id: { type: string, description: Идентификатор позиции меню }
-                      oi: { type: integer, minimum: -1, description: Индекс выбранного варианта; -1 или отсутствие — базовый вариант }
-                      qty: { type: integer, minimum: 1, maximum: 99 }
+                      oi: { type: integer, description: Индекс выбранного варианта; целое значение >= 0 выбирает вариант, отсутствие или отрицательное значение — базовый вариант }
+                      qty: { type: integer, description: Сервер округляет количество вниз и ограничивает его диапазоном 1–99; при отсутствии использует 1 }
                       modifiers:
                         type: array
                         items:
