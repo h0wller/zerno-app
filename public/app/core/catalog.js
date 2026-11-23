@@ -3,10 +3,12 @@
 
       /* ── меню ── */
       async function loadMenu(options) {
+        var requestedBrand = options && options.expectedBrand;
         try {
           const r = await api(
             me && ["admin", "cashier", "dispatch"].indexOf(me.role) !== -1 ? "/menu/all" : "/menu",
           );
+          if (requestedBrand && window.brand !== requestedBrand) return false;
           MENU = r.items;
           meta.updatedAt = r.updatedAt;
           renderUpd();
