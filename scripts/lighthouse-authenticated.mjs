@@ -26,7 +26,7 @@ async function waitForDebuggingPort(profileDir, chromeProcess) {
       throw new Error('Chrome exited before opening DevTools (code ' + chromeProcess.exitCode + ', signal ' + chromeProcess.signalCode + ')');
     }
     try {
-      const [port] = (await fs.readFile(activePortFile, 'utf8')).trim().split(/\\r?\\n/);
+      const [port] = (await fs.readFile(activePortFile, 'utf8')).trim().split(/\r?\n/);
       const parsed = Number(port);
       if (Number.isInteger(parsed) && parsed > 0) return parsed;
     } catch {}
