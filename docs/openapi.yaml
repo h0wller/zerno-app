@@ -1913,7 +1913,7 @@ paths:
       tags: [Push]
       summary: Отправить тестовое push текущему пользователю
       security: [{ BearerAuth: [] }]
-      responses: { '200': { description: Результат отправки } }
+      responses: { '200': { description: 'Результат отправки' } }
 
   /api/push/fcm:
     post:
@@ -3217,7 +3217,7 @@ paths:
       tags: [Push]
       summary: Отправить тестовое push текущему пользователю
       security: [{ BearerAuth: [] }]
-      responses: { '200': { description: Результат отправки } }
+      responses: { '200': { description: 'Результат отправки' } }
 
   /api/push/fcm:
     post:
@@ -4520,7 +4520,7 @@ paths:
       tags: [Push]
       summary: Отправить тестовое push текущему пользователю
       security: [{ BearerAuth: [] }]
-      responses: { '200': { description: Результат отправки } }
+      responses: { '200': { description: 'Результат отправки' } }
 
   /api/push/fcm:
     post:
@@ -5824,7 +5824,7 @@ paths:
       tags: [Push]
       summary: Отправить тестовое push текущему пользователю
       security: [{ BearerAuth: [] }]
-      responses: { '200': { description: Результат отправки } }
+      responses: { '200': { description: 'Результат отправки' } }
 
   /api/push/fcm:
     post:
