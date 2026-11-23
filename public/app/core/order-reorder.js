@@ -1,15 +1,26 @@
 export function restoreOrderItems(orderItems, menu) {
   var products = Array.isArray(menu) ? menu : [];
-  return (Array.isArray(orderItems) ? orderItems : []).map(function (item) {
-    var id = String(item.id || '');
-    var product = products.find(function (entry) { return String(entry.id) === id; });
-    var options = product && Array.isArray(product.opts) ? product.opts : [];
-    if (product && typeof product.opts === 'string') {
+  var productById = new Map();
+
+  products.forEach(function (product) {
+    var id = String(product.id);
+    if (productById.has(id)) return;
+
+    var options = Array.isArray(product.opts) ? product.opts : [];
+    if (typeof product.opts === 'string') {
       try {
         var parsed = JSON.parse(product.opts);
         if (Array.isArray(parsed)) options = parsed;
       } catch (_) {}
     }
+
+    productById.set(id, { product: product, options: options });
+  });
+
+  return (Array.isArray(orderItems) ? orderItems : []).map(function (item) {
+    var id = String(item.id || '');
+    var entry = productById.get(id);
+    var options = entry ? entry.options : [];
 
     var oi = Number.isInteger(item.oi) ? item.oi : -1;
     if (oi >= 0 && options.length && !options[oi]) oi = -1;
