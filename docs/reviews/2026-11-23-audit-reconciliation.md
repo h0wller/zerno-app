@@ -43,7 +43,9 @@
 - `public/app/ui/category-rail.js` uses scroll events coalesced with `requestAnimationFrame`, plus bounded fallback timers for visual fade/programmatic scroll completion. This is not an unconditional polling loop.
 - Do not change these modules based solely on stale symbol names from the audit.
 
-## Follow-up PRs opened after this reconciliation snapshot
+## Historical findings and follow-up PR status
+
+The sections below retain the findings as they were observed on the audited `pizza` snapshot. They are historical source findings, not a statement that the issues remain unaddressed on later branches or have shipped to production.
 
 The initial source findings above were split into focused PRs after the audit snapshot. These branches have green CI at their current heads, but CI success is not equivalent to production or visual acceptance:
 
@@ -52,16 +54,6 @@ The initial source findings above were split into focused PRs after the audit sn
 - **PR #315 — OpenAPI order idempotency.** Documents `client_order_id`, owner-scoped replay behavior, and the `409 IDEMPOTENCY_KEY_REUSED` contract against the current server implementation. YAML was fetched from the PR branch and inspected; strict duplicate-key parsing and Postman definition readback/import were not completed in this reconciliation.
 
 These follow-ups address the corresponding initial findings; do not treat the historical “requiring follow-up” list as proof that the work is still absent from PR branches or that it has already shipped to production. Re-check exact PR heads and acceptance evidence before merge.
-
-## Follow-up PRs opened after this reconciliation snapshot
-
-The initial findings above were split into focused PRs after the audit snapshot. Each branch currently has a successful CI run, but CI is not production or visual acceptance:
-
-- **PR #313 — client log and upload hardening.** Adds route-specific body limits, client-log rate limiting, upload type/metadata/pixel validation, and regression tests. Verify the production `TRUST_PROXY` value against the actual Nginx topology before merge/deploy. Its limiter is process-local, not shared across workers.
-- **PR #314 — Service Worker media-cache bound.** Adds FIFO retention and concurrency-safe writes without evicting static/API caches. Real-device offline menu acceptance is still required before merge because eviction changes offline media retention.
-- **PR #315 — OpenAPI order-idempotency contract.** Documents `client_order_id`, owner-scoped replay behavior, and `409 IDEMPOTENCY_KEY_REUSED`. The branch spec was fetched and inspected; strict duplicate-key parsing and Postman definition import/readback remain unverified.
-
-These PRs address the corresponding initial findings. Do not read the historical “requiring follow-up” list as proof that the work is still absent from PR branches or that it has shipped to production. Re-check exact heads and acceptance evidence before merging.
 
 ## Confirmed findings requiring follow-up
 
