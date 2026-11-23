@@ -468,6 +468,7 @@ function registerSW() {
     // re-check after its close interaction instead of interrupting the flow.
     document.addEventListener('click', onAppActivity);
     document.addEventListener('keydown', onAppActivity);
+    window.addEventListener('zt:brand-selected', onAppActivity);
     document.addEventListener('transitionend', onBlockingSurfaceTransition, true);
     document.addEventListener('visibilitychange', resumeDeferredUpdate);
     window.addEventListener('focus', resumeDeferredUpdate);
