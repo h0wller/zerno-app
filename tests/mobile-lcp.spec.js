@@ -122,6 +122,51 @@ test.describe('Initial catalog image priorities', () => {
     expect(requests.filter(path => path === '/api/menu/all')).toHaveLength(1);
   });
 
+  test('late coffee catalog response is ignored after switching to delivery', async ({ page }) => {
+    let releaseCoffee;
+    const coffeeGate = new Promise(resolve => { releaseCoffee = resolve; });
+    const deliveryItems = imageCatalogItems('delivery');
+    const coffeeItems = imageCatalogItems('coffee');
+    await page.addInitScript(() => {
+      localStorage.setItem('zt_brand', 'coffee');
+      localStorage.setItem('zt_onb', '1');
+      localStorage.removeItem('zt_user');
+      localStorage.setItem('zt_inst_hide', '1');
+      sessionStorage.setItem('splashDone', '1');
+    });
+    await page.route('**/api/menu', async route => {
+      await coffeeGate;
+      await route.fulfill({
+        status: 200, contentType: 'application/json',
+        body: JSON.stringify({ items: coffeeItems, updatedAt: Date.now() })
+      });
+    });
+    await page.route('**/api/dmenu', route => route.fulfill({
+      status: 200, contentType: 'application/json',
+      body: JSON.stringify({ items: deliveryItems, updatedAt: Date.now() })
+    }));
+    await page.route('**/media/dishes/**', route => route.fulfill({
+      status: 200, contentType: 'image/webp',
+      body: Buffer.from('UklGRiQAAABXRUJQVlA4IBgAAAAwAQCdASoBAAEAAUAmJaQAA3AA/vz0AAA=', 'base64')
+    }));
+
+    await page.goto('/?brand=coffee', { waitUntil: 'commit' });
+    await expect.poll(() => page.evaluate(() => document.documentElement.dataset.staffBootStarted === '1')).toBe(true);
+    await expect.poll(() => page.evaluate(() => !!window.__ztCoffeeCatalogPending)).toBe(true);
+    await page.evaluate(() => {
+      const deliveryButton = document.querySelector('#brandSeg [data-brand="delivery"]');
+      if (!deliveryButton) throw new Error('delivery brand control not found');
+      deliveryButton.click();
+    });
+    await expect(page.locator('html')).toHaveAttribute('data-brand', 'delivery');
+    await expect(page.locator('#deliveryGrid > .card').first()).toBeVisible();
+    releaseCoffee();
+    await expect.poll(() => page.evaluate(() =>
+      Array.isArray(window.MENU) && window.MENU.some(item => item.id === 'coffee-image-1')
+    )).toBe(false);
+    await expect(page.locator('#deliveryGrid > .card').first()).toBeVisible();
+  });
+
   test('coffee public catalog remains visible when staff session verification is offline', async ({ page }) => {
     const requests = [];
     const publicItems = imageCatalogItems('coffee');
