@@ -447,6 +447,7 @@ for (const viewport of REVIEW_VIEWPORTS) {
 // Delivery search is an interaction state owned by delivery-search.js.
 // Capture both a matching result and an empty result at mobile portrait/landscape and desktop.
 for (const viewport of [
+  { id: '320x568', width: 320, height: 568 },
   { id: '390x844', width: 390, height: 844 },
   { id: '844x390', width: 844, height: 390 },
   { id: '1440x900', width: 1440, height: 900 },
@@ -488,6 +489,31 @@ for (const viewport of [
         : 0,
       documentWidth: document.documentElement.scrollWidth,
       clientWidth: document.documentElement.clientWidth,
+      searchGeometry: (() => {
+        const input = document.querySelector('#deliveryView #dSearch');
+        const hitArea = input?.closest('.search') || input;
+        const inputRect = input?.getBoundingClientRect();
+        const hitRect = hitArea?.getBoundingClientRect();
+        const style = input ? getComputedStyle(input) : null;
+        const hitStyle = hitArea ? getComputedStyle(hitArea) : null;
+        const probe = document.createElement('div');
+        probe.style.paddingTop = 'env(safe-area-inset-top, 0px)';
+        document.body.appendChild(probe);
+        const safeAreaTop = parseFloat(getComputedStyle(probe).paddingTop) || 0;
+        probe.remove();
+        return {
+          input: inputRect ? { x: inputRect.x, y: inputRect.y, width: inputRect.width, height: inputRect.height } : null,
+          hitArea: hitRect ? { x: hitRect.x, y: hitRect.y, width: hitRect.width, height: hitRect.height } : null,
+          focus: {
+            active: document.activeElement === input,
+            outlineStyle: style?.outlineStyle ?? null,
+            outlineWidth: style?.outlineWidth ?? null,
+            hitAreaBoxShadow: hitStyle?.boxShadow ?? null
+          },
+          safeAreaTop,
+          virtualKeyboard: 'not emulated by Playwright Chromium; requires physical iOS check'
+        };
+      })(),
     }));
 
     expect(runtime.brand).toBe('delivery');
