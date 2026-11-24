@@ -590,6 +590,9 @@ function handleBrandSegmentClick(e) {
   loadCoffeeMenuOnBrandSwitch(brand);
   syncChatContextOnBrandSwitch(brand);
   reloadOpenChatForBrandSwitch();
+  if (window.ztBus && typeof window.ztBus.emit === 'function') {
+    window.ztBus.emit('brand:selected', { brand: brand, source: 'switcher' });
+  }
 }
 
 if (brandSegEl) brandSegEl.addEventListener('click', handleBrandSegmentClick);
