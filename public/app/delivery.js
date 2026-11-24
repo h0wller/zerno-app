@@ -305,6 +305,13 @@ function renderSubFilter(categoryItems) {
   if (!bar) return;
   bar.dataset.rendered = '1';
 
+  if (deliverySearchQuery) {
+    bar.hidden = true;
+    bar.innerHTML = '';
+    syncDeliverySubFilterCue(bar);
+    return;
+  }
+
   var isAddons = (dcat === 'sauces');
 
   if (isAddons) {
@@ -674,7 +681,7 @@ function renderDeliveryMenu() {
 
   // A non-empty search spans the full delivery catalog; category/subfilter
   // selection resumes unchanged as soon as the query is cleared.
-  renderSubFilter(deliverySearchQuery ? [] : catItems);
+  renderSubFilter(catItems);
   const list = deliverySearchQuery
     ? DMENU.filter(item => getDeliverySearchText(item).includes(deliverySearchQuery))
     : getFilteredDeliveryItems(catItems);
