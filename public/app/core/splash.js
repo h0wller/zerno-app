@@ -68,7 +68,8 @@
   }
 
   function hideSplashDom() {
-    document.documentElement.classList.remove('need-splash');
+    window.__brandSplashPending = false;
+    document.documentElement.classList.remove('need-splash', 'brand-splash-pending');
     document.documentElement.classList.add('no-splash');
     if (document.body) {
       document.body.classList.remove('need-splash');
@@ -146,6 +147,12 @@
       setTimeout(function () {
         try { sessionStorage.removeItem('splashDone'); } catch (e) {}
       }, 20);
+    }
+
+    // The update manager deferred its prompt while the chooser was visible.
+    // Notify it after the actual splash owner has removed that blocking surface.
+    if (window.ztBus && typeof window.ztBus.emit === 'function') {
+      window.ztBus.emit('brand:selected', { brand: choice, source: 'splash' });
     }
   }
 
