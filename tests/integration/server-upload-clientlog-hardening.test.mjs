@@ -62,6 +62,7 @@ before(async () => {
       TG_WEBHOOK_SECRET: '',
       PUBLIC_URL: '',
       TRUST_PROXY: '1',
+      HOST: '',
       SMS_AUTH_ENABLED: 'false'
     },
     stdio: ['ignore', 'pipe', 'pipe']
@@ -88,6 +89,35 @@ after(async () => {
     await Promise.race([once(server, 'exit'), new Promise(resolve => setTimeout(resolve, 4000))]);
   }
   fs.rmSync(tempRoot, { recursive: true, force: true });
+});
+
+test('server listens only on loopback unless an explicit HOST is configured', async () => {
+  const interfaceAddress = Object.values(os.networkInterfaces())
+    .flat()
+    .find(address => address && address.family === 'IPv4' && !address.internal)?.address;
+  assert.ok(interfaceAddress, 'integration environment must expose a non-loopback IPv4 interface');
+
+  const connected = await new Promise((resolve, reject) => {
+    const socket = net.createConnection({ host: interfaceAddress, port });
+    socket.setTimeout(1500);
+    socket.once('connect', () => {
+      socket.destroy();
+      resolve(true);
+    });
+    socket.once('timeout', () => {
+      socket.destroy();
+      resolve(false);
+    });
+    socket.once('error', error => {
+      if (['ECONNREFUSED', 'EHOSTUNREACH', 'ENETUNREACH'].includes(error.code)) {
+        resolve(false);
+      } else {
+        reject(error);
+      }
+    });
+  });
+
+  assert.equal(connected, false, 'default server binding must not expose the app on a non-loopback interface');
 });
 
 test('menu image upload validates input before processing and stores only bounded raster images', async () => {
