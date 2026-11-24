@@ -58,4 +58,22 @@ test.describe('Поиск в меню доставки', () => {
     await search.fill('позиция-которой-нет');
     await expect(pizza).toBeHidden();
   });
+
+  test('ищет по всем категориям и возвращает выбранную категорию после очистки', async ({ page }) => {
+    const search = page.locator('#deliveryView #dSearch');
+    const pizza = page.locator('#deliveryGrid [data-product-id="pz-marg"]');
+    const roll = page.locator('#deliveryGrid [data-product-id="rl-hos-og"]');
+
+    await expect(pizza).toBeVisible();
+    await expect(roll).toHaveCount(0);
+
+    await search.fill('микрозелень');
+    await expect(roll).toBeVisible();
+    await expect(pizza).toHaveCount(0);
+
+    await search.fill('');
+    await expect(pizza).toBeVisible();
+    await expect(roll).toHaveCount(0);
+  });
+
 });

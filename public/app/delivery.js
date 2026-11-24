@@ -44,6 +44,7 @@ if (typeof window !== 'undefined') {
 /* public/app/delivery.js — F2.5: доставка — state, рендер меню, субфильтры и корзина */
 
 window.DMENU = [];
+var deliverySearchQuery = '';
 
 window.deliveryInfo = null;
 window.promoInfo = null;
@@ -303,6 +304,13 @@ function renderSubFilter(categoryItems) {
   var bar = ensureSubFilterBar();
   if (!bar) return;
   bar.dataset.rendered = '1';
+
+  if (deliverySearchQuery) {
+    bar.hidden = true;
+    bar.innerHTML = '';
+    syncDeliverySubFilterCue(bar);
+    return;
+  }
 
   var isAddons = (dcat === 'sauces');
 
@@ -650,6 +658,17 @@ function renderDeliveryGrid(list) {
   applyPendingDeliveryHeroForList(list);
 }
 
+function getDeliverySearchText(item) {
+  var composition = Array.isArray(item.comp) ? item.comp : [];
+  if (typeof item.comp === 'string') {
+    try {
+      var parsed = JSON.parse(item.comp);
+      if (Array.isArray(parsed)) composition = parsed;
+    } catch (e) {}
+  }
+  return [item.name, item.desc].concat(composition).filter(Boolean).join(' ').toLowerCase();
+}
+
 function renderDeliveryMenu() {
   const catItems = DMENU.filter(p => p.cat === dcat);
 
@@ -660,8 +679,12 @@ function renderDeliveryMenu() {
     if (catItems.length <= 5) activeIngredient = 'all';
   }
 
+  // A non-empty search spans the full delivery catalog; category/subfilter
+  // selection resumes unchanged as soon as the query is cleared.
   renderSubFilter(catItems);
-  const list = getFilteredDeliveryItems(catItems);
+  const list = deliverySearchQuery
+    ? DMENU.filter(item => getDeliverySearchText(item).includes(deliverySearchQuery))
+    : getFilteredDeliveryItems(catItems);
   renderDeliveryGrid(list);
   patchDeliveryCards(list);
   syncDeliveryImagePriorities();
@@ -669,10 +692,19 @@ function renderDeliveryMenu() {
   const addCard = document.getElementById('addDelivCard');
   if (addCard) addCard.onclick = () => openEditor(null, 'delivery');
 
-  // Delivery owns the grid render; search subscribes to this explicit post-render contract.
   if (window.ztBus && typeof window.ztBus.emit === 'function') {
-    window.ztBus.emit('delivery:menu-rendered', { category: dcat });
+    window.ztBus.emit('delivery:menu-rendered', {
+      category: dcat,
+      query: deliverySearchQuery,
+    });
   }
+}
+
+if (window.ztBus && typeof window.ztBus.on === 'function') {
+  window.ztBus.on('delivery:search-changed', function (detail) {
+    deliverySearchQuery = String(detail && detail.query || '').trim().toLowerCase();
+    window.renderDeliveryMenu();
+  });
 }
 
 /* ── Слушатель кликов по чипсам и табам субфильтров ── */

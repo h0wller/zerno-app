@@ -1,38 +1,5 @@
 /* Ф3.4: перенесено из fix-views.js (поиск в Пятнице) */
 (function(){
-  var dQuery='';
-  function applyDFilter(){
-    var productsById = new Map();
-    (window.DMENU || []).forEach(function(product){
-      // DOM data attributes are strings; retain the first string-ID match as Array.find did.
-      if (product && typeof product.id === 'string' && !productsById.has(product.id)) {
-        productsById.set(product.id, product);
-      }
-    });
-
-    document.querySelectorAll('#deliveryGrid .card').forEach(function(card){
-      var add=card.querySelector('[data-add]');var id=add&&add.getAttribute('data-add');
-      var p=id&&productsById.get(id);
-      if(!p){card.style.display='';return;}
-      card.style.display=(!dQuery||getSearchText(p).includes(dQuery))?'':'none';
-    });
-  }
-
-  if (window.ztBus && typeof window.ztBus.on === 'function') {
-    window.ztBus.on('delivery:menu-rendered', applyDFilter);
-  }
-  
-  function getSearchText(item){
-    var composition=Array.isArray(item.comp)?item.comp:[];
-    if(typeof item.comp==='string'){
-      try{
-        var parsed=JSON.parse(item.comp);
-        if(Array.isArray(parsed))composition=parsed;
-      }catch(e){}
-    }
-    return [item.name,item.desc].concat(composition).filter(Boolean).join(' ').toLowerCase();
-  }
-
   (function(){
     var dv=document.getElementById('deliveryView');
     if(!dv)return;
@@ -61,8 +28,9 @@
     if(!input||input.dataset.deliverySearchBound==='1')return;
     input.dataset.deliverySearchBound='1';
     input.addEventListener('input',function(e){
-      dQuery=e.target.value.trim().toLowerCase();
-      applyDFilter();
+      if (window.ztBus && typeof window.ztBus.emit === 'function') {
+        window.ztBus.emit('delivery:search-changed', { query: e.target.value });
+      }
     });
   })();
 })();
