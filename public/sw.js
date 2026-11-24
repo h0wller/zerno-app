@@ -57,6 +57,26 @@ const STATIC_ASSETS = [
 ];
 
 const API_TTL = 5 * 60 * 1000;
+const MAX_MEDIA_CACHE_ENTRIES = 300;
+let mediaCacheWriteQueue = Promise.resolve();
+
+async function trimMediaCache(cache) {
+  const requests = await cache.keys();
+  const excess = requests.length - MAX_MEDIA_CACHE_ENTRIES;
+  if (excess > 0) {
+    await Promise.all(requests.slice(0, excess).map((entry) => cache.delete(entry)));
+  }
+}
+
+function cacheMediaResponse(request, response) {
+  const write = mediaCacheWriteQueue.then(async () => {
+    const cache = await caches.open(MEDIA_CACHE);
+    await cache.put(request, response);
+    await trimMediaCache(cache);
+  });
+  mediaCacheWriteQueue = write.catch(() => {});
+  return write;
+}
 
 self.addEventListener('install', (e) => {
   e.waitUntil(
@@ -71,15 +91,16 @@ self.addEventListener('install', (e) => {
 });
 
 self.addEventListener('activate', (e) => {
-  e.waitUntil(
+  e.waitUntil(Promise.all([
     caches.keys().then((keys) =>
       Promise.all(
         keys
           .filter((k) => ![STATIC_CACHE, MEDIA_CACHE, API_CACHE].includes(k))
           .map((k) => caches.delete(k))
       )
-    )
-  );
+    ),
+    caches.open(MEDIA_CACHE).then(trimMediaCache).catch(() => {})
+  ]));
   self.clients.claim();
 });
 
@@ -202,33 +223,33 @@ self.addEventListener('fetch', (e) => {
   }
 
   if (/\.svg$/.test(url.pathname)) {
-    e.respondWith(
-      fetch(request, { cache: 'no-cache' })
-        .then((netRes) => {
-          if (netRes.ok) {
-            const clone = netRes.clone();
-            caches.open(MEDIA_CACHE).then((c) => c.put(request, clone)).catch(() => {});
-          }
-          return netRes;
-        })
-        .catch(() => caches.match(request).then((m) => m || new Response('', { status: 503, statusText: 'offline' })))
-    );
+    let mediaWrite = Promise.resolve();
+    const network = fetch(request, { cache: 'no-cache' })
+      .then((netRes) => {
+        if (netRes.ok) mediaWrite = cacheMediaResponse(request, netRes.clone()).catch(() => {});
+        return netRes;
+      })
+      .catch(() => caches.match(request).then((m) => m || new Response('', { status: 503, statusText: 'offline' })));
+    e.waitUntil(network.then(() => mediaWrite));
+    e.respondWith(network);
     return;
   }
 
   if (/\.(png|jpg|jpeg|webp|ico)$/.test(url.pathname)) {
-    e.respondWith(
-      caches.open(MEDIA_CACHE).then(async (cache) => {
-        const match = await cache.match(request);
-        const network = fetch(request)
-          .then((netRes) => {
-            if (netRes.ok) cache.put(request, netRes.clone());
-            return netRes;
-          })
-          .catch(() => match || new Response('', { status: 503, statusText: 'offline' }));
-        return match || network;
-      })
-    );
+    let network = Promise.resolve();
+    let mediaWrite = Promise.resolve();
+    const response = caches.open(MEDIA_CACHE).then(async (cache) => {
+      const match = await cache.match(request);
+      network = fetch(request)
+        .then((netRes) => {
+          if (netRes.ok) mediaWrite = cacheMediaResponse(request, netRes.clone()).catch(() => {});
+          return netRes;
+        })
+        .catch(() => match || new Response('', { status: 503, statusText: 'offline' }));
+      return match || network;
+    });
+    e.waitUntil(response.then(() => network).then(() => mediaWrite));
+    e.respondWith(response);
     return;
   }
 

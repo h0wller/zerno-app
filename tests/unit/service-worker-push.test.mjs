@@ -139,3 +139,161 @@ test('new Service Worker waits for explicit user consent before activation', asy
   await worker.dispatch('message', { data: { type: 'SKIP_WAITING' } });
   assert.equal(worker.skipWaitingCalls.length, 1, 'explicit SKIP_WAITING consent activates the worker');
 });
+
+
+function createMediaCacheWorker(fetcher = async request => new Response('network:' + request.url, { status: 200 })) {
+  const handlers = new Map();
+  const entries = new Map();
+  const staticEntries = new Map([['https://zerno.test/index.html', new Response('shell')]]);
+  const apiEntries = new Map([['https://zerno.test/api/menu', new Response('menu')]]);
+  const cachesByName = new Map([
+    ['zerno-static-v670', staticEntries],
+    ['zerno-media-v20', entries],
+    ['zerno-api-v14', apiEntries]
+  ]);
+  const cacheFor = name => {
+    if (!cachesByName.has(name)) cachesByName.set(name, new Map());
+    const store = cachesByName.get(name);
+    return {
+      async put(request, response) { store.set(request.url, response); },
+      async match(request) { return store.get(request.url) || null; },
+      async keys() { return [...store.keys()].map(url => new Request(url)); },
+      async delete(request) { return store.delete(request.url); }
+    };
+  };
+  const scope = {
+    URL,
+    Request,
+    Response,
+    Headers,
+    console,
+    location: { origin: 'https://zerno.test' },
+    addEventListener(type, handler) {
+      const bucket = handlers.get(type) || [];
+      bucket.push(handler);
+      handlers.set(type, bucket);
+    },
+    caches: {
+      async open(name) { return cacheFor(name); },
+      async keys() { return [...cachesByName.keys()]; },
+      async delete(name) { return cachesByName.delete(name); },
+      async match(request) {
+        for (const store of cachesByName.values()) {
+          if (store.has(request.url)) return store.get(request.url);
+        }
+        return null;
+      }
+    },
+    fetch: fetcher,
+    clients: { matchAll: async () => [], openWindow: async () => null, claim: async () => {} },
+    registration: { showNotification: async () => {} },
+    skipWaiting: async () => {}
+  };
+  scope.self = scope;
+  vm.runInNewContext(source, scope, { filename: 'public/sw.js' });
+
+  return {
+    entries,
+    staticEntries,
+    apiEntries,
+    async fetch(url) {
+      const event = {
+        request: new Request(url),
+        waits: [],
+        respondWith(promise) { this.response = promise; },
+        waitUntil(promise) { this.waits.push(promise); }
+      };
+      const listeners = handlers.get('fetch') || [];
+      assert.ok(listeners.length, 'Service Worker must register a fetch handler');
+      for (const listener of listeners) listener(event);
+      assert.ok(event.response, 'media request must be handled by the Service Worker');
+      const response = await event.response;
+      await Promise.all(event.waits);
+      return response;
+    },
+    async activate() {
+      const event = { waits: [], waitUntil(promise) { this.waits.push(promise); } };
+      const listeners = handlers.get('activate') || [];
+      assert.ok(listeners.length, 'Service Worker must register an activate handler');
+      for (const listener of listeners) listener(event);
+      await Promise.all(event.waits);
+    }
+  };
+}
+
+test('Service Worker trims an oversized existing MEDIA_CACHE during activation', async () => {
+  const worker = createMediaCacheWorker();
+  const total = 305;
+  for (let index = 0; index < total; index++) {
+    worker.entries.set('https://zerno.test/media/legacy-' + index + '.webp', new Response('legacy:' + index));
+  }
+
+  await worker.activate();
+
+  assert.equal(worker.entries.size, 300);
+  for (let index = 0; index < total - 300; index++) {
+    assert.equal(worker.entries.has('https://zerno.test/media/legacy-' + index + '.webp'), false,
+      'activation should evict the oldest existing media entries');
+  }
+  assert.equal(worker.entries.has('https://zerno.test/media/legacy-304.webp'), true);
+  assert.equal(worker.staticEntries.size, 1, 'activation cleanup must preserve STATIC_CACHE');
+  assert.equal(worker.apiEntries.size, 1, 'activation cleanup must preserve API_CACHE');
+});
+
+test('Service Worker preserves offline fallback for SVG and raster media', async () => {
+  let online = true;
+  const worker = createMediaCacheWorker(async request => {
+    if (!online) throw new Error('offline');
+    return new Response('fresh:' + request.url, { status: 200 });
+  });
+  const svgUrl = 'https://zerno.test/media/brand-logo.svg';
+  const rasterUrl = 'https://zerno.test/media/dish-offline.webp';
+
+  let response = await worker.fetch(svgUrl);
+  assert.equal(await response.text(), 'fresh:' + svgUrl);
+  response = await worker.fetch(rasterUrl);
+  assert.equal(await response.text(), 'fresh:' + rasterUrl);
+
+  online = false;
+  response = await worker.fetch(svgUrl);
+  assert.equal(response.status, 200);
+  assert.equal(await response.text(), 'fresh:' + svgUrl, 'SVG Network-First should fall back to cached media');
+  response = await worker.fetch(rasterUrl);
+  assert.equal(response.status, 200);
+  assert.equal(await response.text(), 'fresh:' + rasterUrl, 'raster SWR should serve its cached match offline');
+});
+
+test('Service Worker serializes concurrent media writes so MEDIA_CACHE stays bounded', async () => {
+  const worker = createMediaCacheWorker();
+  const total = 305;
+
+  const responses = await Promise.all(Array.from({ length: total }, (_, index) =>
+    worker.fetch('https://zerno.test/media/concurrent-' + index + '.webp')
+  ));
+
+  assert.equal(responses.length, total);
+  assert.ok(responses.every(response => response.status === 200));
+  assert.equal(worker.entries.size, 300);
+});
+
+test('Service Worker bounds MEDIA_CACHE with FIFO eviction and leaves shell/API caches intact', async () => {
+  const worker = createMediaCacheWorker();
+  const total = 305;
+
+  for (let index = 0; index < total; index++) {
+    const response = await worker.fetch('https://zerno.test/media/dish-' + index + '.webp');
+    assert.equal(response.status, 200);
+  }
+
+  assert.equal(worker.entries.size, 300);
+  for (let index = 0; index < total - 300; index++) {
+    assert.equal(worker.entries.has('https://zerno.test/media/dish-' + index + '.webp'), false,
+      'oldest media entry should be evicted first');
+  }
+  for (let index = total - 300; index < total; index++) {
+    assert.equal(worker.entries.has('https://zerno.test/media/dish-' + index + '.webp'), true,
+      'newest media entry should remain cached');
+  }
+  assert.equal(worker.staticEntries.size, 1, 'media eviction must not touch STATIC_CACHE');
+  assert.equal(worker.apiEntries.size, 1, 'media eviction must not touch API_CACHE');
+});

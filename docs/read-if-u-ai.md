@@ -53,7 +53,7 @@ npm run build:client
 
 * `STATIC_CACHE` — App Shell (Cache-First с фоновой ревалидацией `cache: 'reload'`).
 
-* `MEDIA_CACHE` — SVG (Network-First), растровые изображения (SWR).
+* `MEDIA_CACHE` — SVG (Network-First), растровые изображения (SWR), FIFO-ограничение до 300 записей; offline fallback сохраняется.
 
 * `API_CACHE` — кэширование меню (`/api/menu`, `/api/dmenu`) на 5 минут.
 
@@ -100,7 +100,7 @@ npm run build:client
 
 Перед предложением любых изменений в коде необходимо соблюдать следующие правила:
 
-* **Инкремент кэша Service Worker:** `npm run build:client` запускает `npm run bump:sw` (`scripts/bump-sw.mjs`) перед сборкой bundle. Поэтому ручной инкремент `STATIC_CACHE` не требуется, если перед релизом/проверкой выполняется штатная сборка. Не пропускайте сборку после клиентских изменений; поведение самого `public/sw.js` проверяйте по его текущему коду.
+* **Инкремент кэша Service Worker:** `npm run build:client` запускает `npm run bump:sw` (`scripts/bump-sw.mjs`) перед сборкой bundle. Поэтому ручной инкремент `STATIC_CACHE` не требуется, если перед релизом/проверкой выполняется штатная сборка. `MEDIA_CACHE` сохраняется между релизами и ограничен FIFO до 300 записей; не менять его версию только ради каждого build. Не пропускайте штатную сборку после изменений `public/*`; поведение самого `public/sw.js` проверяйте по его текущему коду.
 
 * **Правило одного владельца DOM (Single Source of Truth):** Никаких параллельных мутаций одного DOM-узла из разных модулей. Карта закреплена в `docs/module-map.md`:
 
