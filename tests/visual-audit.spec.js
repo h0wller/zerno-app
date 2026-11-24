@@ -387,6 +387,7 @@ test('visual audit: delivery pizza and rolls card grids at desktop width', async
 const REVIEW_VIEWPORTS = [
   { id: '320x740', width: 320, height: 740 },
   { id: '360x780', width: 360, height: 780 },
+  { id: '320x568', width: 320, height: 568 },
   { id: '390x844', width: 390, height: 844 },
   { id: '430x932', width: 430, height: 932 },
   { id: '844x390', width: 844, height: 390 },
@@ -442,6 +443,195 @@ for (const viewport of REVIEW_VIEWPORTS) {
     );
   });
 }
+
+// Delivery search is an interaction state owned by delivery-search.js.
+// Capture both a matching result and an empty result at mobile portrait/landscape and desktop.
+for (const viewport of [
+  { id: '320x568', width: 320, height: 568 },
+  { id: '390x844', width: 390, height: 844 },
+  { id: '844x390', width: 844, height: 390 },
+  { id: '1440x900', width: 1440, height: 900 },
+]) {
+  test(`visual audit: delivery search states at ${viewport.id}`, async ({ page }) => {
+    await prepareColdGuest(page, 'delivery', viewport);
+    await waitForHydratedStorefront(page, 'delivery');
+    if (viewport.width >= 821 && viewport.height > 480) {
+      await page.waitForFunction(() => {
+        const panel = document.querySelector('#panel');
+        const rect = panel?.getBoundingClientRect();
+        const style = panel ? getComputedStyle(panel) : null;
+        return !!panel
+          && !panel.hidden
+          && style.display !== 'none'
+          && style.visibility !== 'hidden'
+          && style.opacity !== '0'
+          && rect.width >= 300
+          && rect.left <= window.innerWidth - 360;
+      }, null, { timeout: 5000 });
+    }
+
+    const search = page.locator('#deliveryView #dSearch');
+    await expect(search).toBeVisible();
+    await expect(search).toHaveCount(1);
+
+    await search.fill('маргарита');
+    const matchingCard = page.locator('#deliveryGrid [data-product-id="pz-marg"]');
+    await expect(matchingCard).toBeVisible();
+    await expect(page.locator('#deliveryGrid .card:not(.skeleton-card):visible')).toHaveCount(1);
+
+    const matching = await capture(page, {
+      brand: 'delivery',
+      viewport,
+      state: 'search-match',
+    });
+
+    await search.fill('позиция-которой-нет');
+    await expect(page.locator('#deliveryGrid .card:not(.skeleton-card):visible')).toHaveCount(0);
+    const empty = await capture(page, {
+      brand: 'delivery',
+      viewport,
+      state: 'search-empty',
+    });
+
+    const runtime = await page.evaluate(() => ({
+      brand: document.documentElement.dataset.brand || null,
+      staffRole: document.documentElement.getAttribute('data-staff-role'),
+      query: document.querySelector('#deliveryView #dSearch')?.value ?? null,
+      visibleCards: document.querySelectorAll('#deliveryGrid .card:not(.skeleton-card)').length
+        ? [...document.querySelectorAll('#deliveryGrid .card:not(.skeleton-card)')]
+          .filter((card) => getComputedStyle(card).display !== 'none').length
+        : 0,
+      documentWidth: document.documentElement.scrollWidth,
+      clientWidth: document.documentElement.clientWidth,
+      searchGeometry: (() => {
+        const input = document.querySelector('#deliveryView #dSearch');
+        const hitArea = input?.closest('.search') || input;
+        const inputRect = input?.getBoundingClientRect();
+        const hitRect = hitArea?.getBoundingClientRect();
+        const style = input ? getComputedStyle(input) : null;
+        const hitStyle = hitArea ? getComputedStyle(hitArea) : null;
+        const probe = document.createElement('div');
+        probe.style.paddingTop = 'env(safe-area-inset-top, 0px)';
+        document.body.appendChild(probe);
+        const safeAreaTop = parseFloat(getComputedStyle(probe).paddingTop) || 0;
+        probe.remove();
+        return {
+          input: inputRect ? { x: inputRect.x, y: inputRect.y, width: inputRect.width, height: inputRect.height } : null,
+          hitArea: hitRect ? { x: hitRect.x, y: hitRect.y, width: hitRect.width, height: hitRect.height } : null,
+          focus: {
+            active: document.activeElement === input,
+            outlineStyle: style?.outlineStyle ?? null,
+            outlineWidth: style?.outlineWidth ?? null,
+            hitAreaBoxShadow: hitStyle?.boxShadow ?? null
+          },
+          safeAreaTop,
+          virtualKeyboard: 'not emulated by Playwright Chromium; requires physical iOS check'
+        };
+      })(),
+    }));
+
+    expect(runtime.brand).toBe('delivery');
+    expect(runtime.staffRole).toBeNull();
+    expect(runtime.query).toBe('позиция-которой-нет');
+    expect(runtime.visibleCards).toBe(0);
+    expect(runtime.documentWidth).toBeLessThanOrEqual(viewport.width);
+
+    fs.writeFileSync(
+      path.join(OUT, `delivery-search-${viewport.id}.json`),
+      JSON.stringify({ matching, empty, runtime }, null, 2)
+    );
+  });
+}
+
+
+test('visual audit: delivery search states for admin at 390x844', async ({ page }) => {
+  const viewport = { id: '390x844', width: 390, height: 844 };
+  const menuResponse = await page.request.get(`${BASE}/api/dmenu`);
+  expect(menuResponse.ok()).toBe(true);
+  const publicMenu = await menuResponse.json();
+  const staffItems = (publicMenu.items || []).map((item) => ({ ...item, section: 'delivery' }));
+
+  await page.route('**/api/me', (route) => route.fulfill({
+    status: 200,
+    contentType: 'application/json',
+    body: JSON.stringify({
+      customer: {
+        id: 'visual-delivery-admin',
+        name: 'Visual Admin',
+        phone: '+70000000000',
+        role: 'admin',
+        verified: 1,
+        cups: 0,
+        stamps: 0,
+        free: 0,
+        history: [],
+        qr: 'visual-delivery-admin'
+      }
+    })
+  }));
+  await page.route('**/api/menu/all', (route) => route.fulfill({
+    status: 200,
+    contentType: 'application/json',
+    body: JSON.stringify({ items: staffItems, updatedAt: '2026-11-24T00:00:00.000Z' })
+  }));
+  await page.addInitScript(() => {
+    localStorage.setItem('zt_onb', '1');
+    localStorage.setItem('zt_inst_hide', '1');
+    localStorage.setItem('zt_user', 'visual-delivery-admin-token');
+    localStorage.setItem('zt_role', 'admin');
+    sessionStorage.setItem('splashDone', '1');
+  });
+
+  await page.setViewportSize({ width: viewport.width, height: viewport.height });
+  await page.goto(`${BASE}/?brand=delivery`, { waitUntil: 'domcontentloaded' });
+  await page.waitForFunction(() =>
+    document.documentElement.getAttribute('data-staff-role') === 'admin' &&
+    document.documentElement.getAttribute('data-staff-ready') === '1'
+  );
+  await page.evaluate(() => window.setMode('admin'));
+  await expect(page.locator('#adminBar')).toBeVisible();
+  await expect(page.locator('#toasts .toast')).toHaveCount(0, { timeout: 5000 });
+
+  const search = page.locator('#deliveryView #dSearch');
+  const matchingCard = page.locator('#deliveryGrid [data-product-id="pz-marg"]');
+  await expect(search).toBeVisible();
+  await expect(matchingCard).toBeVisible();
+  await search.fill('маргарита');
+  await expect(matchingCard).toBeVisible();
+  await expect(page.locator('#deliveryGrid [data-product-id]:visible')).toHaveCount(1);
+  await page.screenshot({
+    path: path.join(OUT, 'DELIVERY-ADMIN-SEARCH-MATCH-390x844.png'),
+    animations: 'disabled'
+  });
+
+  await search.fill('позиция-которой-нет');
+  await expect(page.locator('#deliveryGrid [data-product-id]:visible')).toHaveCount(0);
+  const runtime = await page.evaluate(() => ({
+    brand: document.documentElement.dataset.brand || null,
+    staffRole: document.documentElement.getAttribute('data-staff-role'),
+    query: document.querySelector('#deliveryView #dSearch')?.value ?? null,
+    visibleCards: document.querySelectorAll('#deliveryGrid [data-product-id]:not([style*="display: none"])').length,
+    documentWidth: document.documentElement.scrollWidth,
+    clientWidth: document.documentElement.clientWidth,
+    searchRect: (() => {
+      const rect = document.querySelector('#deliveryView #dSearch').getBoundingClientRect();
+      return { x: rect.x, y: rect.y, width: rect.width, height: rect.height };
+    })()
+  }));
+  expect(runtime.brand).toBe('delivery');
+  expect(runtime.staffRole).toBe('admin');
+  expect(runtime.query).toBe('позиция-которой-нет');
+  expect(runtime.visibleCards).toBe(0);
+  expect(runtime.documentWidth).toBeLessThanOrEqual(viewport.width);
+  await page.screenshot({
+    path: path.join(OUT, 'DELIVERY-ADMIN-SEARCH-EMPTY-390x844.png'),
+    animations: 'disabled'
+  });
+  fs.writeFileSync(
+    path.join(OUT, 'delivery-search-admin-390x844.json'),
+    JSON.stringify({ viewport, role: 'admin', runtime }, null, 2)
+  );
+});
 
 // Delivery is the ordering storefront. Only this brand is captured with a populated cart.
 for (const viewport of REVIEW_VIEWPORTS) {

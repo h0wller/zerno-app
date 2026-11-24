@@ -2,14 +2,25 @@
 (function(){
   var dQuery='';
   function applyDFilter(){
+    var productsById = new Map();
+    (window.DMENU || []).forEach(function(product){
+      // DOM data attributes are strings; retain the first string-ID match as Array.find did.
+      if (product && typeof product.id === 'string' && !productsById.has(product.id)) {
+        productsById.set(product.id, product);
+      }
+    });
+
     document.querySelectorAll('#deliveryGrid .card').forEach(function(card){
       var add=card.querySelector('[data-add]');var id=add&&add.getAttribute('data-add');
-      var p=id&&DMENU.find(function(x){return x.id===id;});
+      var p=id&&productsById.get(id);
       if(!p){card.style.display='';return;}
       card.style.display=(!dQuery||getSearchText(p).includes(dQuery))?'':'none';
     });
   }
-  renderDeliveryMenu=(function(_rm){return function(){var r=_rm.apply(this,arguments);applyDFilter();return r;};})(renderDeliveryMenu);
+
+  if (window.ztBus && typeof window.ztBus.on === 'function') {
+    window.ztBus.on('delivery:menu-rendered', applyDFilter);
+  }
   
   function getSearchText(item){
     var composition=Array.isArray(item.comp)?item.comp:[];

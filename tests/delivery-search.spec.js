@@ -31,6 +31,23 @@ test.describe('Поиск в меню доставки', () => {
     await expect(roll).toBeHidden();
   });
 
+  test('сохраняет запрос после повторного рендера категории и субфильтра', async ({ page }) => {
+    const search = page.locator('#deliveryView #dSearch');
+    await search.fill('позиция-которой-нет');
+
+    await page.evaluate(() => {
+      window.renderDeliveryMenu();
+    });
+    await expect(page.locator('#deliveryGrid .card:not(.skeleton-card):visible')).toHaveCount(0);
+
+    await page.evaluate(() => {
+      window.dcat = 'rolls';
+      window.renderDeliveryMenu();
+    });
+    await expect(page.locator('#deliveryGrid .card:not(.skeleton-card):visible')).toHaveCount(0);
+    await expect(search).toHaveValue('позиция-которой-нет');
+  });
+
   test('поиск по названию и описанию остаётся доступен', async ({ page }) => {
     const search = page.locator('#deliveryView #dSearch');
     const pizza = page.locator('#deliveryGrid [data-product-id="pz-marg"]');
