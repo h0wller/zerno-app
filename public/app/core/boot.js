@@ -241,14 +241,27 @@ function registerSW() {
     let updateDialog = null;
     let updateCheckFrame = 0;
 
+    function isVisibleSurface(element) {
+      if (!element || !element.isConnected || element.hidden) return false;
+      const style = window.getComputedStyle(element);
+      if (style.display === 'none' || style.visibility === 'hidden' || style.visibility === 'collapse') {
+        return false;
+      }
+      const rects = element.getClientRects();
+      return Array.from(rects).some((rect) => rect.width > 0 && rect.height > 0);
+    }
+
+    function hasVisibleSurface(selector) {
+      return Array.from(document.querySelectorAll(selector)).some(isVisibleSurface);
+    }
+
     function hasBlockingWork() {
-      // A modal update prompt uses the browser's top layer; never place it over
-      // the brand chooser or it will intercept the user's first PWA interaction.
-      if (document.documentElement.classList.contains('need-splash') ||
-          document.documentElement.classList.contains('brand-splash-pending')) return true;
-      return !!document.querySelector(
-        '#brandSplashStatic, #brandSplash, #cartPanel.open, .modal.show, #ordersModal.show, #redeemPick.show, #orderTrackModal.show, #authModal.show, #panel.open, #chatPanel.open, #addrBookSheet.open'
-      );
+      // Check actual rendered surfaces, not just classes: an open modal inside
+      // the inactive brand view must not suppress the PWA update prompt.
+      return hasVisibleSurface('#brandSplashStatic, #brandSplash') ||
+        hasVisibleSurface(
+          '#cartPanel.open, .modal.show, #ordersModal.show, #redeemPick.show, #orderTrackModal.show, #authModal.show, #panel.open, #chatPanel.open, #addrBookSheet.open'
+        );
     }
 
     function closeUpdateDialog() {
