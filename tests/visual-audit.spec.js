@@ -575,6 +575,8 @@ test('visual audit: delivery search states for admin at 390x844', async ({ page 
     document.documentElement.getAttribute('data-staff-ready') === '1'
   );
   await page.evaluate(() => window.setMode('admin'));
+  await expect(page.locator('#adminBar')).toBeVisible();
+  await expect(page.locator('#toasts .toast')).toHaveCount(0, { timeout: 5000 });
 
   const search = page.locator('#deliveryView #dSearch');
   const matchingCard = page.locator('#deliveryGrid [data-product-id="pz-marg"]');
