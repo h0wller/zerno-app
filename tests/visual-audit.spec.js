@@ -455,6 +455,15 @@ for (const viewport of [
   test(`visual audit: delivery search states at ${viewport.id}`, async ({ page }) => {
     await prepareColdGuest(page, 'delivery', viewport);
     await waitForHydratedStorefront(page, 'delivery');
+    if (viewport.width >= 821 && viewport.height > 480) {
+      await page.waitForFunction(() => {
+        const panel = document.querySelector('#panel');
+        const rect = panel?.getBoundingClientRect();
+        return !!panel?.classList.contains('open')
+          && rect.width >= 300
+          && rect.left <= window.innerWidth - 360;
+      }, null, { timeout: 5000 });
+    }
 
     const search = page.locator('#deliveryView #dSearch');
     await expect(search).toBeVisible();
