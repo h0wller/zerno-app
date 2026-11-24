@@ -223,3 +223,83 @@ test('keeps the update available when SKIP_WAITING cannot be posted', async ({ p
   await expect(dialog).toBeVisible();
   await expect(page.locator('#toasts .toast', { hasText: 'Приложение обновлено' })).toHaveCount(0);
 });
+
+
+
+test('offers an already-waiting update immediately after startup brand selection', async ({ page }, testInfo) => {
+  await page.addInitScript(() => {
+    Object.defineProperty(navigator, 'standalone', { configurable: true, value: true });
+    localStorage.setItem('zt_onb', '1');
+    sessionStorage.removeItem('splashDone');
+    sessionStorage.removeItem('zt_splash_clicked');
+
+    const container = new EventTarget();
+    container.controller = { state: 'activated', scriptURL: location.origin + '/sw.js' };
+
+    const waitingWorker = {
+      state: 'installed',
+      postMessage() {}
+    };
+    const registration = new EventTarget();
+    registration.installing = null;
+    registration.waiting = waitingWorker;
+    registration.update = () => Promise.resolve();
+
+    const ready = Promise.resolve(registration);
+    container.register = () => {
+      window.__testSwRegistered = true;
+      return ready;
+    };
+    Object.defineProperty(navigator, 'serviceWorker', {
+      configurable: true,
+      value: container,
+    });
+  });
+
+  for (const viewport of [
+    { width: 390, height: 844 },
+    { width: 844, height: 390 },
+  ]) {
+    for (const brand of ['delivery', 'coffee']) {
+      await page.setViewportSize(viewport);
+      await page.goto('/?splash=1&sw-regression=' + brand + '-' + viewport.width, { waitUntil: 'load' });
+
+      const splash = page.locator('#brandSplashStatic, #brandSplash');
+      const dialog = page.getByRole('dialog', { name: 'Доступно обновление' });
+      await expect(splash).toBeVisible();
+      await expect.poll(() => page.evaluate(() => window.__testSwRegistered === true)).toBe(true);
+      await expect(dialog).toHaveCount(0);
+
+      await splash.locator('[data-go="' + brand + '"]').click();
+
+      await expect(page.locator('html')).toHaveAttribute('data-brand', brand);
+      await expect(splash).toHaveCount(0);
+      await expect(dialog).toBeVisible();
+
+      await testInfo.attach('sw-update-after-splash-' + brand + '-' + viewport.width + 'x' + viewport.height + '.png', {
+        body: await page.screenshot({ fullPage: false }),
+        contentType: 'image/png'
+      });
+      await page.getByRole('button', { name: 'Позже' }).click();
+      await expect(dialog).toBeHidden();
+    }
+  }
+});
+
+test('an update prompt is not blocked by a modal inside the inactive brand view', async ({ page }) => {
+  await page.addInitScript(() => {
+    document.addEventListener('DOMContentLoaded', () => {
+      const inactiveView = document.getElementById('menuView');
+      const staleModal = document.createElement('div');
+      staleModal.id = 'sw-update-hidden-brand-modal';
+      staleModal.className = 'modal show';
+      inactiveView.appendChild(staleModal);
+    }, { once: true });
+  });
+  await installWaitingServiceWorker(page);
+  await page.goto('/?brand=delivery');
+
+  await expect(page.locator('#menuView')).toBeHidden();
+  await expect(page.locator('#sw-update-hidden-brand-modal')).toHaveClass(/show/);
+  await expect(page.getByRole('dialog', { name: 'Доступно обновление' })).toBeVisible();
+});
