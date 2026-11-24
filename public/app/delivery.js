@@ -668,6 +668,11 @@ function renderDeliveryMenu() {
 
   const addCard = document.getElementById('addDelivCard');
   if (addCard) addCard.onclick = () => openEditor(null, 'delivery');
+
+  // Delivery owns the grid render; search subscribes to this explicit post-render contract.
+  if (window.ztBus && typeof window.ztBus.emit === 'function') {
+    window.ztBus.emit('delivery:menu-rendered', { category: dcat });
+  }
 }
 
 /* ── Слушатель кликов по чипсам и табам субфильтров ── */
