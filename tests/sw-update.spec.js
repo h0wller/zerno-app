@@ -223,3 +223,48 @@ test('keeps the update available when SKIP_WAITING cannot be posted', async ({ p
   await expect(dialog).toBeVisible();
   await expect(page.locator('#toasts .toast', { hasText: 'Приложение обновлено' })).toHaveCount(0);
 });
+
+
+test('offers an already-waiting update as soon as the startup brand chooser is dismissed', async ({ page }) => {
+  await page.addInitScript(() => {
+    Object.defineProperty(navigator, 'standalone', { configurable: true, value: true });
+    localStorage.setItem('zt_onb', '1');
+    sessionStorage.removeItem('splashDone');
+
+    const container = new EventTarget();
+    container.controller = { state: 'activated', scriptURL: location.origin + '/sw.js' };
+
+    const waitingWorker = {
+      state: 'installed',
+      postMessage() {}
+    };
+    const registration = new EventTarget();
+    registration.installing = null;
+    registration.waiting = waitingWorker;
+    registration.update = () => Promise.resolve();
+
+    const ready = Promise.resolve(registration);
+    container.register = () => {
+      window.__testSwRegistered = true;
+      return ready;
+    };
+    Object.defineProperty(navigator, 'serviceWorker', {
+      configurable: true,
+      value: container,
+    });
+  });
+
+  await page.goto('/?splash=1', { waitUntil: 'load' });
+
+  const splash = page.locator('#brandSplashStatic, #brandSplash');
+  const dialog = page.getByRole('dialog', { name: 'Доступно обновление' });
+  await expect(splash).toBeVisible();
+  await expect.poll(() => page.evaluate(() => window.__testSwRegistered === true)).toBe(true);
+  await expect(dialog).toHaveCount(0);
+
+  await splash.locator('[data-go="delivery"]').click();
+
+  await expect(page.locator('html')).toHaveAttribute('data-brand', 'delivery');
+  await expect(splash).toHaveCount(0);
+  await expect(dialog).toBeVisible();
+});
