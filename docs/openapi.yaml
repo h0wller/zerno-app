@@ -509,7 +509,10 @@ paths:
     post:
       tags: [Menu]
       summary: Загрузить изображение позиции меню
-      description: Только adminGuard; принимает data URL и сохраняет responsive WebP варианты.
+      description: >-
+        Только adminGuard. Принимает data URL JPEG, PNG или WebP; Base64-файл до 4 MiB,
+        изображение до 6 мегапикселей и не более 4096 px по каждой стороне;
+        анимированные и несовпадающие с MIME форматы отклоняются. JSON body ограничен 6 MiB.
       security: [{ BearerAuth: [] }]
       requestBody:
         required: true
@@ -519,12 +522,14 @@ paths:
               type: object
               required: [data]
               properties:
-                id: { type: string }
-                data: { type: string, description: Data URL изображения }
+                id: { type: string, maxLength: 128 }
+                data: { type: string, maxLength: 5592431, description: Data URL JPEG/PNG/WebP с Base64-файлом до 4 MiB }
       responses:
         '200': { description: Возвращает ok и URL загруженного изображения }
-        '400': { description: Некорректные данные изображения }
+        '400': { description: Некорректный Base64, MIME, формат или размер изображения }
+        '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
+        '413': { description: JSON body или изображение превышают лимит }
         '500': { description: Ошибка сохранения изображения }
 
   /api/dmenu:

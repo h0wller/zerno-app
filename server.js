@@ -65,6 +65,143 @@ app.use((req, res, next) => {
   next();
 });
 
+const CLIENT_LOG_WINDOW_MS = 60 * 1000;
+const CLIENT_LOG_MAX_REQUESTS = 60;
+const CLIENT_LOG_MAX_KEYS = 2000;
+const clientLogWindows = new Map();
+
+const MAX_MENU_UPLOAD_BYTES = 4 * 1024 * 1024;
+const MAX_MENU_UPLOAD_BASE64_LENGTH = 4 * Math.ceil(MAX_MENU_UPLOAD_BYTES / 3);
+const MAX_MENU_UPLOAD_PIXELS = 6_000_000;
+const MAX_MENU_UPLOAD_DIMENSION = 4096;
+
+function limitedJsonBody(limit, errorMessage) {
+  const parser = express.json({ limit });
+  return (req, res, next) => parser(req, res, (error) => {
+    if (!error) return next();
+    const tooLarge = error.status === 413 || error.type === 'entity.too.large';
+    return res.status(tooLarge ? 413 : 400).json({
+      error: tooLarge ? errorMessage : 'Некорректный JSON'
+    });
+  });
+}
+
+function clientLogRateLimit(req, res, next) {
+  const now = Date.now();
+  const ip = String(req.ip || req.socket?.remoteAddress || 'unknown');
+  const previous = clientLogWindows.get(ip);
+
+  if (previous && previous.resetAt > now) {
+    if (previous.requests >= CLIENT_LOG_MAX_REQUESTS) {
+      res.set('Retry-After', String(Math.max(1, Math.ceil((previous.resetAt - now) / 1000))));
+      return res.status(429).json({ error: 'Слишком много диагностических запросов. Попробуйте позже.' });
+    }
+    previous.requests += 1;
+    return next();
+  }
+
+  if (!previous && clientLogWindows.size >= CLIENT_LOG_MAX_KEYS) {
+    for (const [key, entry] of clientLogWindows) {
+      if (entry.resetAt <= now) clientLogWindows.delete(key);
+    }
+    if (clientLogWindows.size >= CLIENT_LOG_MAX_KEYS) {
+      let earliestReset = Infinity;
+      for (const entry of clientLogWindows.values()) earliestReset = Math.min(earliestReset, entry.resetAt);
+      res.set('Retry-After', String(Math.max(1, Math.ceil((earliestReset - now) / 1000))));
+      return res.status(429).json({ error: 'Временно достигнут лимит диагностических запросов. Попробуйте позже.' });
+    }
+  }
+
+  clientLogWindows.set(ip, { requests: 1, resetAt: now + CLIENT_LOG_WINDOW_MS });
+  return next();
+}
+
+app.post('/api/clientlog',
+  clientLogRateLimit,
+  limitedJsonBody('4kb', 'Слишком большой запрос диагностических данных'),
+  (req, res) => {
+    const kind = String((req.body && req.body.kind) || '?').slice(0, 40);
+    const msg = String((req.body && req.body.msg) || '').slice(0, 300);
+    console.log('[client]', kind, msg);
+    res.json({ ok: true });
+  }
+);
+
+app.post('/api/menu/upload',
+  adminGuard,
+  limitedJsonBody('6mb', 'Изображение слишком большое'),
+  async (req, res) => {
+    try {
+      const { id, data } = req.body || {};
+      const match = typeof data === 'string'
+        ? /^data:(image\/(?:jpeg|png|webp));base64,([A-Za-z0-9+/]+={0,2})$/i.exec(data)
+        : null;
+      if (!match) return res.status(400).json({ error: 'Некорректные данные изображения' });
+
+      const mimeType = match[1].toLowerCase();
+      const base64 = match[2];
+      if (base64.length > MAX_MENU_UPLOAD_BASE64_LENGTH) {
+        return res.status(413).json({ error: 'Изображение слишком большое' });
+      }
+      const buffer = Buffer.from(base64, 'base64');
+      if (!buffer.length || buffer.length > MAX_MENU_UPLOAD_BYTES || buffer.toString('base64') !== base64) {
+        return res.status(buffer.length > MAX_MENU_UPLOAD_BYTES ? 413 : 400).json({
+          error: buffer.length > MAX_MENU_UPLOAD_BYTES ? 'Изображение слишком большое' : 'Некорректные данные изображения'
+        });
+      }
+
+      const formatByMime = { 'image/jpeg': 'jpeg', 'image/png': 'png', 'image/webp': 'webp' };
+      let metadata;
+      try {
+        metadata = await sharp(buffer, { limitInputPixels: MAX_MENU_UPLOAD_PIXELS }).metadata();
+      } catch {
+        return res.status(400).json({ error: 'Некорректные данные изображения' });
+      }
+      if (
+        metadata.format !== formatByMime[mimeType] ||
+        !metadata.width || !metadata.height ||
+        metadata.width > MAX_MENU_UPLOAD_DIMENSION ||
+        metadata.height > MAX_MENU_UPLOAD_DIMENSION ||
+        metadata.width * metadata.height > MAX_MENU_UPLOAD_PIXELS ||
+        metadata.pages > 1
+      ) {
+        return res.status(400).json({ error: 'Неподдерживаемый формат или размер изображения' });
+      }
+
+      const rawId = String(id || ('dish_' + Date.now()));
+      if (rawId.length > 128) return res.status(400).json({ error: 'Некорректный идентификатор позиции меню' });
+      const cleanId = rawId.replace(/[^a-zA-Z0-9_-]/g, '_');
+      const dishesDir = path.resolve(PUBLIC_DIR, 'media/dishes');
+      const resizedDir = path.join(dishesDir, 'resized');
+      fs.mkdirSync(resizedDir, { recursive: true });
+
+      const cardFileName = cleanId + '-card.webp';
+      const zoomFileName = cleanId + '-zoom.webp';
+      const sharpOptions = { limitInputPixels: MAX_MENU_UPLOAD_PIXELS };
+
+      await Promise.all([
+        sharp(buffer, sharpOptions).rotate().resize(640, 400, { fit: 'cover', position: 'center' })
+          .webp({ quality: 84, smartSubsampling: true }).toFile(path.join(dishesDir, cardFileName)),
+        sharp(buffer, sharpOptions).rotate().resize(300, 188, { fit: 'cover', position: 'center' })
+          .webp({ quality: 78, smartSubsampling: true }).toFile(path.join(resizedDir, cleanId + '-card-300.webp')),
+        sharp(buffer, sharpOptions).rotate().resize(600, 375, { fit: 'cover', position: 'center' })
+          .webp({ quality: 82, smartSubsampling: true }).toFile(path.join(resizedDir, cleanId + '-card-600.webp'))
+      ]);
+
+      await sharp(buffer, sharpOptions)
+        .rotate()
+        .resize(1400, 1400, { fit: 'inside', withoutEnlargement: true })
+        .webp({ quality: 90, smartSubsampling: true })
+        .toFile(path.join(dishesDir, zoomFileName));
+
+      res.json({ ok: true, url: '/media/dishes/' + cardFileName + '?v=' + Date.now() });
+    } catch (err) {
+      console.error('Ошибка upload:', err);
+      res.status(500).json({ error: 'Ошибка сохранения изображения' });
+    }
+  }
+);
+
 app.use(express.json({ limit: '10mb' }));
 
 // ── Роутеры ──
@@ -78,13 +215,6 @@ app.use(pushRouter);
 app.use(statsRouter);
 
 app.get('/api/health', (req, res) => res.json({ ok: true }));
-app.post('/api/clientlog', (req, res) => {
-  // Ограничиваем длину, чтобы сюда нельзя было засорить логи большим текстом.
-  const kind = String((req.body && req.body.kind) || '?').slice(0, 40);
-  const msg = String((req.body && req.body.msg) || '').slice(0, 300);
-  console.log('[client]', kind, msg);
-  res.json({ ok: true });
-});
 app.get('/api/config', (req, res) => res.json({
   tgUsername: TG_BOT_USERNAME,
   smsAuthEnabled: SMS_AUTH_ENABLED
@@ -260,48 +390,6 @@ app.use(express.static(PUBLIC_DIR, {
   }
 }));
 
-/* POST /api/menu/upload — автоматическая Retina WebP нарезка из админки */
-app.post('/api/menu/upload', adminGuard, async (req, res) => {
-  try {
-    const { id, data } = req.body || {};
-    if (!data || typeof data !== 'string' || !data.includes(',')) {
-      return res.status(400).json({ error: 'Некорректные данные изображения' });
-    }
-    const cleanId = String(id || ('dish_' + Date.now())).replace(/[^a-zA-Z0-9_-]/g, '_');
-    const base64Str = data.split(',')[1].replace(/\s+/g, '');
-    const buffer = Buffer.from(base64Str, 'base64');
-
-    const dishesDir = path.resolve('public/media/dishes');
-    if (!fs.existsSync(dishesDir)) fs.mkdirSync(dishesDir, { recursive: true });
-
-    const cardFileName = `${cleanId}-card.webp`;
-    const zoomFileName = `${cleanId}-zoom.webp`;
-    const resizedDir = path.join(dishesDir, 'resized');
-    fs.mkdirSync(resizedDir, { recursive: true });
-
-    // One original plus responsive 300/600 px variants for card-sized slots.
-    await Promise.all([
-      sharp(buffer).rotate().resize(640, 400, { fit: 'cover', position: 'center' })
-        .webp({ quality: 84, smartSubsampling: true }).toFile(path.join(dishesDir, cardFileName)),
-      sharp(buffer).rotate().resize(300, 188, { fit: 'cover', position: 'center' })
-        .webp({ quality: 78, smartSubsampling: true }).toFile(path.join(resizedDir, `${cleanId}-card-300.webp`)),
-      sharp(buffer).rotate().resize(600, 375, { fit: 'cover', position: 'center' })
-        .webp({ quality: 82, smartSubsampling: true }).toFile(path.join(resizedDir, `${cleanId}-card-600.webp`))
-    ]);
-
-    // 2. Зум высокого разрешения 1400x1400 WebP
-    await sharp(buffer)
-      .rotate()
-      .resize(1400, 1400, { fit: 'inside', withoutEnlargement: true })
-      .webp({ quality: 90, smartSubsampling: true })
-      .toFile(path.join(dishesDir, zoomFileName));
-
-    res.json({ ok: true, url: `/media/dishes/${cardFileName}?v=${Date.now()}` });
-  } catch (err) {
-    console.error('Ошибка upload:', err);
-    res.status(500).json({ error: 'Ошибка сохранения изображения' });
-  }
-});
 // ── Автомиграция base64 картинок меню в компактные WebP на диск ──
 async function migrateBase64ImagesToWebP() {
   try {
