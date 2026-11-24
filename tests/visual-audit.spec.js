@@ -443,6 +443,65 @@ for (const viewport of REVIEW_VIEWPORTS) {
   });
 }
 
+// Delivery search is an interaction state owned by delivery-search.js.
+// Capture both a matching result and an empty result at mobile portrait/landscape and desktop.
+for (const viewport of [
+  { id: '390x844', width: 390, height: 844 },
+  { id: '844x390', width: 844, height: 390 },
+  { id: '1440x900', width: 1440, height: 900 },
+]) {
+  test(`visual audit: delivery search states at ${viewport.id}`, async ({ page }) => {
+    await prepareColdGuest(page, 'delivery', viewport);
+    await waitForHydratedStorefront(page, 'delivery');
+
+    const search = page.locator('#deliveryView #dSearch');
+    await expect(search).toBeVisible();
+    await expect(search).toHaveCount(1);
+
+    await search.fill('маргарита');
+    const matchingCard = page.locator('#deliveryGrid [data-product-id="pz-marg"]');
+    await expect(matchingCard).toBeVisible();
+    await expect(page.locator('#deliveryGrid .card:not(.skeleton-card):visible')).toHaveCount(1);
+
+    const matching = await capture(page, {
+      brand: 'delivery',
+      viewport,
+      state: 'search-match',
+    });
+
+    await search.fill('позиция-которой-нет');
+    await expect(page.locator('#deliveryGrid .card:not(.skeleton-card):visible')).toHaveCount(0);
+    const empty = await capture(page, {
+      brand: 'delivery',
+      viewport,
+      state: 'search-empty',
+    });
+
+    const runtime = await page.evaluate(() => ({
+      brand: document.documentElement.dataset.brand || null,
+      staffRole: document.documentElement.getAttribute('data-staff-role'),
+      query: document.querySelector('#deliveryView #dSearch')?.value ?? null,
+      visibleCards: document.querySelectorAll('#deliveryGrid .card:not(.skeleton-card)').length
+        ? [...document.querySelectorAll('#deliveryGrid .card:not(.skeleton-card)')]
+          .filter((card) => getComputedStyle(card).display !== 'none').length
+        : 0,
+      documentWidth: document.documentElement.scrollWidth,
+      clientWidth: document.documentElement.clientWidth,
+    }));
+
+    expect(runtime.brand).toBe('delivery');
+    expect(runtime.staffRole).toBeNull();
+    expect(runtime.query).toBe('позиция-которой-нет');
+    expect(runtime.visibleCards).toBe(0);
+    expect(runtime.documentWidth).toBeLessThanOrEqual(viewport.width);
+
+    fs.writeFileSync(
+      path.join(OUT, `delivery-search-${viewport.id}.json`),
+      JSON.stringify({ matching, empty, runtime }, null, 2)
+    );
+  });
+}
+
 // Delivery is the ordering storefront. Only this brand is captured with a populated cart.
 for (const viewport of REVIEW_VIEWPORTS) {
   test(`visual audit: delivery guest cart open at ${viewport.id}`, async ({ page }) => {
