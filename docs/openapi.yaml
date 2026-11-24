@@ -147,6 +147,9 @@ paths:
     post:
       tags: [System]
       summary: Лог клиентских событий
+      description: >-
+        Публичный endpoint: до 60 запросов в минуту на эффективный IP;
+        JSON ограничен 4 KiB. kind обрезается до 40 символов, msg — до 300.
       requestBody:
         required: true
         content:
@@ -155,21 +158,13 @@ paths:
               type: object
               required: [kind, msg]
               properties:
-                kind: { type: string }
-                msg:  { type: string, maxLength: 500 }
+                kind: { type: string, maxLength: 40 }
+                msg:  { type: string, maxLength: 300 }
       responses:
         '200': { description: OK }
-        '401': { $ref: '#/components/responses/Unauthorized' }
-        '403':
-          description: Номер телефона гостя не подтверждён
-          content:
-            application/json:
-              schema:
-                type: object
-                required: [error, code]
-                properties:
-                  error: { type: string }
-                  code: { type: string, enum: [CUSTOMER_NOT_VERIFIED] }
+        '400': { description: Некорректный JSON }
+        '413': { description: JSON body превышает 4 KiB }
+        '429': { description: Превышен лимит запросов; Retry-After содержит время ожидания }
 
   /api/auth/register:
     post:
@@ -526,7 +521,7 @@ paths:
                 data: { type: string, maxLength: 5592431, description: Data URL JPEG/PNG/WebP с Base64-файлом до 4 MiB }
       responses:
         '200': { description: Возвращает ok и URL загруженного изображения }
-        '400': { description: Некорректный Base64, MIME, формат или размер изображения }
+        '400': { description: 'Некорректный data URL/Base64, MIME не соответствует формату, анимированное изображение или превышены ограничения размеров' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '413': { description: JSON body или изображение превышают лимит }
