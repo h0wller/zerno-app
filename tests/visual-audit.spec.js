@@ -459,7 +459,12 @@ for (const viewport of [
       await page.waitForFunction(() => {
         const panel = document.querySelector('#panel');
         const rect = panel?.getBoundingClientRect();
-        return !!panel?.classList.contains('open')
+        const style = panel ? getComputedStyle(panel) : null;
+        return !!panel
+          && !panel.hidden
+          && style.display !== 'none'
+          && style.visibility !== 'hidden'
+          && style.opacity !== '0'
           && rect.width >= 300
           && rect.left <= window.innerWidth - 360;
       }, null, { timeout: 5000 });
