@@ -13,7 +13,7 @@ import express from 'express';
 import compression from 'compression';
 
 // ── Конфигурация и БД ──
-import { PORT, PUBLIC_DIR, SMS_AUTH_ENABLED } from './server/config.js';
+import { HOST, PORT, PUBLIC_DIR, SMS_AUTH_ENABLED } from './server/config.js';
 import { db } from './server/db/connection.js';
 // ── Утилиты ──
 import { uid } from './server/utils/id-time.js';
@@ -439,8 +439,8 @@ async function migrateBase64ImagesToWebP() {
     console.error('[migrate] Ошибка миграции изображений:', err);
   }
 }
-const server = app.listen(PORT, async () => {
-  console.log(`☕ ЗЕРНО API запущен на порту ${PORT}`);
+const server = app.listen(PORT, HOST, async () => {
+  console.log(`☕ ЗЕРНО API запущен на ${HOST}:${PORT}`);
   await migrateBase64ImagesToWebP();
   tgEnsureWebhook();
 });
