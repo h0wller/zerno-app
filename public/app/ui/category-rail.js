@@ -1,5 +1,5 @@
 /* public/app/ui/category-rail.js
-   Shared rail viewport positioning and transient scroll fade.
+   Shared rail viewport positioning and direction-aware scroll visibility.
    menu.js / delivery.js own category state and markup; CSS owns the capsule geometry. */
 var railHeadObserver = null;
 var observedRailHead = null;
