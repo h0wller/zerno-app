@@ -123,6 +123,21 @@ test('welcome Telegram copy distinguishes already granted from unknown outcome',
   assert.match(unknown, /не удалось подтвердить/i);
 });
 
+test('grantBonusDetailed supports the QR welcome channel without changing its eligibility rules', () => {
+  configureWelcome();
+  const id = makeCustomer();
+  const result = grantBonusDetailed(id, 'qr');
+
+  assert.equal(result.status, 'granted');
+  assert.equal(result.bonus.kind, 'qr');
+  assert.equal(result.bonus.coffee, 10);
+  assert.ok(result.bonus.freeCode);
+  assert.deepEqual(
+    db.prepare('SELECT kind FROM bonus_grants WHERE cid=?').all(id).map(row => row.kind),
+    ['qr']
+  );
+});
+
 test('test database is removed', () => {
   db.close();
   for (const suffix of ['', '-wal', '-shm']) {
