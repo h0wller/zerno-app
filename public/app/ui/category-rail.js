@@ -315,6 +315,8 @@ function beginRailCategoryAlignment(event) {
   if (!button) return;
 
   railCategoryAlignmentPending = true;
+  railLastUserScrollInputAt = 0;
+  railUserScrollInputDirection = 0;
   if (railCategoryAlignmentTimer) window.clearTimeout(railCategoryAlignmentTimer);
   railCategoryAlignmentTimer = window.setTimeout(function () {
     railCategoryAlignmentTimer = null;
@@ -333,6 +335,8 @@ function finishRailCategoryAlignment() {
 
 function syncRailAfterBrandSelection() {
   var shouldRemainHidden = railScrollHidden;
+  railLastUserScrollInputAt = 0;
+  railUserScrollInputDirection = 0;
   railBrandChangePending = true;
   resetRailScrollDirection(readPageScrollY());
   applyScrollFadeState(shouldRemainHidden);
