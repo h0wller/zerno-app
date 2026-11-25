@@ -19,7 +19,7 @@ initSchema();
 function createCustomer() {
   const id = randomUUID();
   db.prepare('INSERT INTO customers(id,name,phone,verified,role,cups,stamps,free) VALUES(?,?,?,?,?,?,?,?)')
-    .run(id, 'Benefit Test', '+79990000001', 1, 'guest', 0, 4, 0);
+    .run(id, 'Benefit Test', '+7999' + id.replaceAll('-', '').slice(0, 7), 1, 'guest', 0, 4, 0);
   return id;
 }
 
