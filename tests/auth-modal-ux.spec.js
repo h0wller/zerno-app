@@ -436,11 +436,6 @@ test('login completes and creates a session when the modal is closed mid-request
     localStorage.setItem('zt_onb', '1');
     sessionStorage.setItem('splashDone', '1');
   });
-  await page.route('**/api/orders/mine', (route) => route.fulfill({
-    status: 200,
-    contentType: 'application/json',
-    body: JSON.stringify({ orders: [] })
-  }));
   let markRequestStarted;
   let releaseRequest;
   const requestStarted = new Promise((resolve) => { markRequestStarted = resolve; });
@@ -766,7 +761,7 @@ test('registration completes and creates a session when the modal is closed mid-
       contentType: 'application/json',
       body: JSON.stringify({
         token: 'auth-modal-register-test',
-        customer: { id: 888888, name: 'Auth Modal Test', verified: true }
+        customer: { id: 888888, name: 'Auth Modal Test', role: 'guest', verified: 0 }
       })
     });
   });
@@ -788,6 +783,7 @@ test('registration completes and creates a session when the modal is closed mid-
   await expect(page.locator('#authModal')).not.toHaveClass(/show/);
   releaseRequest();
   await expect.poll(() => page.evaluate(() => window.me && window.me.name)).toBe('Auth Modal Test');
+  await expect.poll(() => page.evaluate(() => window.me && Number(window.me.verified))).toBe(0);
   await expect(page.locator('#authModal')).not.toHaveClass(/show/);
   expect(requestCount).toBe(1);
 });

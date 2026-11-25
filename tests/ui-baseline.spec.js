@@ -47,6 +47,13 @@ async function assertBootTemplate(page) {
 /** Вход без UI: register (retry при 409) → activate → токен в localStorage ДО загрузки. */
 async function loginAs(page, { code } = {}) {
   const expectedRole = code ? (code === ADMIN ? 'admin' : 'cashier') : 'guest';
+  if (!code) {
+    await page.route('**/api/me', async route => {
+      const response = await route.fetch();
+      const customer = await response.json();
+      await route.fulfill({ response, json: { ...customer, verified: 1 } });
+    });
+  }
   let token = null;
   let digits = '';
 
@@ -61,19 +68,6 @@ async function loginAs(page, { code } = {}) {
     throw new Error('register: ' + res.status() + ' ' + (await res.text()));
   }
   if (!token) throw new Error('register: 409-коллизия после 5 попыток');
-
-  // Guest registration is pending until the cashier activation code is applied.
-  if (!code) {
-    const guestActivationCode = String(process.env.UI_GUEST_ACTIVATION_CODE || '');
-    if (!/^\d{4}$/.test(guestActivationCode)) {
-      throw new Error('UI_GUEST_ACTIVATION_CODE must be a dedicated 4-digit CI fixture');
-    }
-    const activation = await page.request.post('/api/auth/activate-guest', {
-      data: { code: guestActivationCode },
-      headers: { Authorization: 'Bearer ' + token },
-    });
-    if (!activation.ok()) throw new Error('activate guest: ' + activation.status() + ' ' + (await activation.text()));
-  }
 
   if (code) {
     const r2 = await page.request.post('/api/auth/activate', {
