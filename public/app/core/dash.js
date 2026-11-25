@@ -41,7 +41,7 @@ function renderCoffeeStats(s, report) {
       <span class="btOwn">${esc(monthLabel)}</span>
     </div>
     <div class="bt btSpan2">
-      <span class="btLabel">Штампов начислено</span>
+      <span class="btLabel">Кассовых штампов</span>
       <b class="btVal">${Number(report.stamps) || 0}</b>
       <span class="btOwn">за выбранный месяц</span>
     </div>
@@ -64,7 +64,7 @@ function renderCoffeeStats(s, report) {
     const detail = (day.items || [])
       .map((item) => `${item.name} ×${item.qty}`)
       .join(", ");
-    const tip = `${day.label}: ${redemptions} списаний${detail ? ` · ${detail}` : ""} · штампов: ${day.stamps || 0}`;
+    const tip = `${day.label}: ${redemptions} списаний${detail ? ` · ${detail}` : ""} · кассовых штампов: ${day.stamps || 0}`;
     return `
       <div class="btBarCol">
         <div class="btBar ${redemptions ? "hasData" : ""}" style="height:${height}px" title="${esc(tip)}"></div>
@@ -92,7 +92,7 @@ function renderCoffeeStats(s, report) {
         <time class="coffeeDayDate" datetime="${day.date}">${day.label}</time>
         <div class="coffeeDayContent">
           <span class="coffeeDayItems">${details}</span>
-          <small>Подарков: ${Number(day.redemptions) || 0} · штампов: ${Number(day.stamps) || 0}</small>
+          <small>Подарков: ${Number(day.redemptions) || 0} · кассовых штампов: ${Number(day.stamps) || 0}</small>
         </div>
       </div>`;
   }).join("");
@@ -116,7 +116,7 @@ function renderCoffeeStats(s, report) {
       <div class="coffeeDayList">${dailyRows}</div>
     </section>
     <p class="coffeeDataNote btFull">
-      Подарочные напитки считаются по выбранному виду при списании. Штампы показывают только начисления в программе лояльности: они не содержат вид купленного напитка и не включают продажи без штампа. Расход зерна и молока по текущим данным не рассчитывается.
+      Подарочные напитки считаются по выбранному виду при списании. Кассовые штампы — только записи о начислении штампа на кассе; промокоды и бонусные начисления в этот счётчик не входят. Они не содержат вид купленного напитка и не включают продажи без штампа. Расход зерна и молока по текущим данным не рассчитывается.
     </p>`;
 }
 
