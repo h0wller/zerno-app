@@ -78,6 +78,7 @@ test('coffee redemptions and loyalty punches are grouped by local calendar day',
 });
 
 test('month validation rejects invalid calendar values', () => {
+  assert.equal(getCoffeeMonthPeriod(''), null);
   assert.equal(getCoffeeMonthPeriod('2026-13'), null);
   assert.equal(getCoffeeMonthPeriod('2026-2'), null);
   assert.equal(getCoffeeMonthPeriod('not-a-month'), null);
