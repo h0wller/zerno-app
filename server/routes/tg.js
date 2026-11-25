@@ -77,7 +77,7 @@ export function createTgRouter({ appKb }) {
 
   async function sendLinkPhonePrompt(targetChatId) {
     await tgSend(targetChatId,
-      'Привяжите номер телефона, чтобы копить штампы и получать бонусы.\n\n' +
+      'Привяжите номер телефона, чтобы видеть свою карту штампов и доступные предложения.\n\n' +
       'Если у вас <b>уже есть профиль</b> в приложении — нажмите кнопку ниже и поделитесь номером 👇',
       appKb()
     );
