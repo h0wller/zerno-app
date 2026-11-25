@@ -5,6 +5,22 @@ const BRANDS = [
   { brand: 'delivery', rail: '#deliveryRail', active: '#deliveryRail button.on' },
 ];
 
+async function scrollPageAsUser(page, top) {
+  await page.evaluate((nextTop) => {
+    const deltaY = nextTop - window.scrollY;
+    if (deltaY) {
+      window.dispatchEvent(new WheelEvent('wheel', {
+        deltaY,
+        deltaMode: 0,
+        bubbles: true,
+        cancelable: true,
+      }));
+    }
+    window.scrollTo({ top: nextTop, behavior: 'instant' });
+  }, top);
+  await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(top);
+}
+
 for (const brand of BRANDS) {
   test(`${brand.brand}: tapping the selected category returns to the page top`, async ({ page }, testInfo) => {
     await page.setViewportSize({ width: 390, height: 844 });
@@ -22,7 +38,7 @@ for (const brand of BRANDS) {
       await expect(cartFab).toBeVisible();
     }
 
-    await page.evaluate(() => window.scrollTo({ top: 700, behavior: 'instant' }));
+    await scrollPageAsUser(page, 700);
     await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(300);
     await expect(rail).toHaveClass(/is-scroll-fading/);
     if (brand.brand === 'delivery') await expect(cartFab).toHaveClass(/is-scroll-fading/);
@@ -79,10 +95,7 @@ for (const brand of BRANDS) {
       window.alignRailWithCard();
     });
 
-    const scrollTo = async (top) => {
-      await page.evaluate((nextTop) => window.scrollTo({ top: nextTop, behavior: 'instant' }), top);
-      await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(top);
-    };
+    const scrollTo = async (top) => scrollPageAsUser(page, top);
 
     await testInfo.attach(`${brand.brand}-rail-visible-initial-390x844`, {
       body: await page.screenshot({ animations: 'disabled' }),
@@ -99,7 +112,6 @@ for (const brand of BRANDS) {
     await scrollTo(0);
     await expect(rail).not.toHaveClass(/is-scroll-fading/);
 
-    const documentHeight = await page.evaluate(() => document.documentElement.scrollHeight);
     await scrollTo(700);
     await expect(rail).toHaveClass(/is-scroll-fading/);
     await expect.poll(() => rail.evaluate(el => Number.parseFloat(getComputedStyle(el).opacity)))
@@ -109,6 +121,7 @@ for (const brand of BRANDS) {
     // Stopping must preserve the hidden state; no timeout may reveal the rail.
     await page.waitForTimeout(650);
     await expect(rail).toHaveClass(/is-scroll-fading/);
+    const documentHeightWhileHidden = await page.evaluate(() => document.documentElement.scrollHeight);
     await testInfo.attach(`${brand.brand}-rail-hidden-down-390x844`, {
       body: await page.screenshot({ animations: 'disabled' }),
       contentType: 'image/png',
@@ -122,6 +135,8 @@ for (const brand of BRANDS) {
     // The eighth pixel in the same direction reveals it.
     await scrollTo(692);
     await expect(rail).not.toHaveClass(/is-scroll-fading/);
+    await expect.poll(() => page.evaluate(() => document.documentElement.scrollHeight))
+      .toBe(documentHeightWhileHidden);
     await expect.poll(() => rail.evaluate(el => Number.parseFloat(getComputedStyle(el).opacity)))
       .toBeGreaterThan(0.9);
     if (brand.brand === 'delivery') await expect(cartFab).not.toHaveClass(/is-scroll-fading/);
@@ -146,8 +161,6 @@ for (const brand of BRANDS) {
     // Returning to the page top overrides the previous direction/state.
     await scrollTo(0);
     await expect(rail).not.toHaveClass(/is-scroll-fading/);
-    await expect.poll(() => page.evaluate(() => document.documentElement.scrollHeight))
-      .toBe(documentHeight);
     await expect.poll(() => rail.evaluate(el => Number.parseFloat(getComputedStyle(el).opacity)))
       .toBeGreaterThan(0.9);
     await testInfo.attach(`${brand.brand}-rail-visible-at-top-390x844`, {
@@ -167,7 +180,7 @@ test('brand transitions retain the scroll state and reveal the newly active rail
   const deliveryRail = page.locator('#deliveryRail');
   await expect(coffeeRail).toBeVisible({ timeout: 15000 });
 
-  await page.evaluate(() => window.scrollTo({ top: 700, behavior: 'instant' }));
+  await scrollPageAsUser(page, 700);
   await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(700);
   await expect(coffeeRail).toHaveClass(/is-scroll-fading/);
 
@@ -185,7 +198,7 @@ test('brand transitions retain the scroll state and reveal the newly active rail
   await expect(page.locator('html')).toHaveAttribute('data-brand', 'coffee');
   await expect(coffeeRail).toHaveClass(/is-scroll-fading/);
 
-  await page.evaluate(() => window.scrollTo({ top: 680, behavior: 'instant' }));
+  await scrollPageAsUser(page, 680);
   await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(680);
   await expect(coffeeRail).not.toHaveClass(/is-scroll-fading/);
   await expect.poll(() => coffeeRail.evaluate(el => Number.parseFloat(getComputedStyle(el).opacity)))
@@ -204,11 +217,14 @@ for (const brand of BRANDS) {
     const rail = page.locator(brand.rail);
     await expect(rail).toBeVisible({ timeout: 15000 });
 
-    await page.evaluate(() => window.scrollTo({ top: 700, behavior: 'instant' }));
-    await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(700);
+    const maxScroll = await page.evaluate(() =>
+      Math.max(0, document.documentElement.scrollHeight - window.innerHeight)
+    );
+    const downPosition = Math.min(500, maxScroll - 16);
+    expect(downPosition).toBeGreaterThan(8);
+    await scrollPageAsUser(page, downPosition);
     await expect(rail).not.toHaveClass(/is-scroll-fading/);
-    await page.evaluate(() => window.scrollTo({ top: 500, behavior: 'instant' }));
-    await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(500);
+    await scrollPageAsUser(page, downPosition - 12);
     await expect(rail).not.toHaveClass(/is-scroll-fading/);
     await expect.poll(() => page.evaluate(() =>
       document.documentElement.scrollWidth <= window.innerWidth
@@ -226,10 +242,10 @@ for (const brand of BRANDS) {
     await expect(rail).toBeVisible({ timeout: 15000 });
     await expect.poll(() => rail.evaluate(el => getComputedStyle(el).transitionDuration)).toBe('0s');
 
-    await page.evaluate(() => window.scrollTo({ top: 700, behavior: 'instant' }));
+    await scrollPageAsUser(page, 700);
     await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(700);
     await expect(rail).toHaveClass(/is-scroll-fading/);
-    await page.evaluate(() => window.scrollTo({ top: 680, behavior: 'instant' }));
+    await scrollPageAsUser(page, 680);
     await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(680);
     await expect(rail).not.toHaveClass(/is-scroll-fading/);
   });
@@ -302,7 +318,7 @@ for (const brand of BRANDS) {
       await expect(page.locator(brand.brand === 'coffee' ? '#grid .card' : '#deliveryGrid .card').first())
         .toBeVisible({ timeout: 15000 });
 
-      await page.evaluate(() => window.scrollTo({ top: 700, behavior: 'instant' }));
+      await scrollPageAsUser(page, 700);
       await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(300);
       await page.evaluate(() => { window.__categoryScrollBehaviors = []; });
 
