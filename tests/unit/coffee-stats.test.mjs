@@ -41,9 +41,6 @@ test('coffee redemptions and loyalty punches are grouped by local calendar day',
       ts: '2026-11-30T21:59:00.000Z',
     },
     {
-      a: 'Начислено 10 шт. → 0/10, подарок(ов): +1',
-      by: 'Промокод',
-      ts: '2026-11-02T10:00:00.000Z',
     },
     {
       a: '🎁 Списан бесплатный кофе: Эспрессо (осталось 0)',
@@ -82,4 +79,13 @@ test('month validation rejects invalid calendar values', () => {
   assert.equal(getCoffeeMonthPeriod('2026-13'), null);
   assert.equal(getCoffeeMonthPeriod('2026-2'), null);
   assert.equal(getCoffeeMonthPeriod('not-a-month'), null);
+});
+
+test('only cashier punch operations count as coffee sales indicators', () => {
+  const report = buildCoffeeMonthStats('2026-11', [
+    { a: 'Штамп 2 из 10', by: 'Кассир', ts: '2026-11-03T09:00:00.000Z' },
+    { a: 'Начислено 10 шт. → 0/10', by: 'Промокод', ts: '2026-11-03T10:00:00.000Z' },
+  ]);
+  assert.equal(report.stamps, 1);
+  assert.equal(report.days[2].stamps, 1);
 });
