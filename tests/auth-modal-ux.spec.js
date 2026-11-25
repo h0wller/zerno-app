@@ -177,6 +177,7 @@ test('registration and login tabs stay in sync with the active form and keyboard
   expect(registerStyle.color).not.toBe(loginStyle.color);
 
   await page.evaluate(() => window.openAuth(true));
+  await expect(benefit).toContainText('Войдите по номеру телефона');
   await expect(loginTab).toHaveAttribute('aria-pressed', 'true');
   await expect(registerTab).toHaveAttribute('aria-pressed', 'false');
   await expect(page.locator('#loginForm')).toBeVisible();
@@ -275,7 +276,7 @@ test('auth modal keeps the short unified-profile registration benefit visible in
   await page.waitForFunction(() => typeof window.openAuth === 'function');
 
   const benefit = page.locator('#authModal .msub');
-  const expected = 'Бонусы за регистрацию — внутри';
+  const expected = 'Профиль сохраняет ваши заказы. Первая доставка бесплатна, если сервер назначит вам персональный код: корзина применит его автоматически и покажет результат в расчёте доставки.';
 
   await page.evaluate(() => window.openAuth(false));
   await expect(benefit).toHaveText(expected);

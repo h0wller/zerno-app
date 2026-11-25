@@ -676,8 +676,8 @@ test('P0: closing auth during the phone registration request preserves the resul
   });
 
   await page.goto('/?brand=delivery');
-  await page.waitForFunction(() => typeof window.openAuth === 'function');
-  await page.evaluate(() => window.openAuth(false));
+  await page.waitForFunction(() => typeof window.openAuth === 'function' && typeof window.__profileMeReady === 'function');
+  await page.evaluate(() => { window.__profileMeReady(); window.openAuth(false); });
   await page.locator('#regName').fill('P0 Closed Network');
   await page.locator('#regPhone').fill('+7 900 000-00-07');
   await page.locator('#regPin').fill('1357');

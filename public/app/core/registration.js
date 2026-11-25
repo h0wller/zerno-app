@@ -171,6 +171,7 @@
     window.setUser(response.token, customer);
     var modal = document.getElementById('authModal');
     if (modal && modal.classList.contains('show')) closeAuth();
+    if (typeof window.__profileMeReady === 'function') window.__profileMeReady();
     if (typeof renderAll === 'function') renderAll();
 
     if (!customerIsVerified(customer)) {
@@ -414,7 +415,7 @@
           if (statusRow) {
             statusRow.hidden = false;
             statusRow.className = 'auth-tg-pending';
-            statusRow.textContent = 'Ожидаем подтверждение в Telegram. Вернитесь в приложение — профиль активируется автоматически.';
+            statusRow.textContent = 'Ожидаем подтверждение в Telegram…';
             if (r && r.tgUrl && !telegramOpened) {
               appendTelegramFallbackLink(statusRow, r.tgUrl);
               toast('Откройте Telegram по ссылке в окне подтверждения', '🤖');

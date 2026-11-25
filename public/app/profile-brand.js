@@ -36,6 +36,15 @@
 /* ── брендовые правила: слияние v64 profileBrandRules + R4 applyProfileBrand ── */
 function brandRules(){
   var deliv=(typeof brand!=='undefined'&&brand==='delivery');
+  var activationNote = document.getElementById('verifyNote');
+  if(activationNote && activationNote.classList.contains('profile-activation-status')){
+    var currentCustomer = window.me || (typeof me !== 'undefined' ? me : null);
+    var currentStaff = !!(currentCustomer && currentCustomer.role && currentCustomer.role !== 'guest');
+    var currentVerified = !!currentCustomer && (
+      currentCustomer.verified === true || currentCustomer.verified === 1 || Number(currentCustomer.verified) > 0
+    );
+    activationNote.hidden = !currentCustomer || currentStaff || currentVerified;
+  }
   var deliverySection=document.getElementById('profileOrdersSection');
   var coffeeSection=document.getElementById('profileCoffeeSection');
   var deliveryPrompt=document.getElementById('profileDeliveryPrompt');
@@ -128,7 +137,42 @@ window.renderVerifyNote=function(){
     : '<p>Назовите номер кассиру и получите 4-значный код активации, затем введите его ниже. До подтверждения номера преимущества ещё не активны.</p>' +
       '<p>После активации откроется карта кофейни: за покупку начисляется 1 штамп, 10 штампов дают бесплатный кофе. QR на карте покажите кассиру.</p>';
 
-  n.hidden = false;
+  if(!isDelivery){
+    var freeCoffees = Math.max(0, Number(customer.free) || 0);
+    n.hidden = false;
+    n.innerHTML =
+      '<details class="profile-loyalty-help">' +
+        '<summary><span>Как работают бонусы?</span><span class="profile-loyalty-help-chevron" aria-hidden="true">⌄</span></summary>' +
+        '<div class="profile-loyalty-help-content">' +
+          '<p>🫘 <b>Штампы.</b> После покупки кассир сканирует ваш QR и начисляет 1 штамп. 10 штампов — бесплатный кофе.</p>' +
+          (freeCoffees > 0
+            ? '<p>🎁 <b>Ваши подарки.</b> На карте профиля уже есть ' + freeCoffees + ' бесплатных кофе.</p>'
+            : '<p>🎁 <b>Приветственный подарок.</b> Сейчас бесплатных кофе нет. Подарок появится здесь, только когда его начислит сервер.</p>') +
+        '</div>' +
+      '</details>' +
+      '<div class="profile-activation-copy">' +
+        '<h4>Профиль создан, но ещё не активирован</h4>' + guidance +
+      '</div>' +
+      '<div class="profile-activation-row">' +
+        '<label class="profile-activation-label" for="actCode">Код активации</label>' +
+        '<input id="actCode" inputmode="numeric" maxlength="4" placeholder="4 цифры" aria-label="Четырёхзначный код активации" autocomplete="one-time-code">' +
+        '<button class="btn fire" id="actBtn" type="button">Активировать</button>' +
+      '</div>';
+  } else {
+    n.hidden = false;
+    n.innerHTML =
+      '<div class="profile-activation-copy">' +
+        '<h4>Профиль создан, но ещё не активирован</h4>' +
+        guidance +
+      '</div>' +
+      '<div class="profile-activation-row">' +
+        '<label class="profile-activation-label" for="actCode">Код активации</label>' +
+        '<input id="actCode" inputmode="numeric" maxlength="4" placeholder="4 цифры" aria-label="Четырёхзначный код активации" autocomplete="one-time-code">' +
+        '<button class="btn fire" id="actBtn" type="button">Активировать</button>' +
+      '</div>';
+  }
+
+  relink();  n.hidden = false;
   n.innerHTML =
     '<div class="profile-activation-copy">' +
       '<h4>Профиль создан, но ещё не активирован</h4>' +
@@ -162,6 +206,7 @@ window.renderVerifyNote=function(){
       }
       if(typeof window.setUser === 'function') window.setUser(window.USER_TOKEN, r.customer);
       else window.me = r.customer;
+      if(typeof window.__profileMeReady === 'function') window.__profileMeReady();
       if(typeof window.renderAll === 'function') window.renderAll();
 
       if(!isDelivery){
