@@ -85,7 +85,8 @@ test('only cashier punch operations count as coffee sales indicators', () => {
   const report = buildCoffeeMonthStats('2026-11', [
     { a: 'Штамп 2 из 10', by: 'Кассир', ts: '2026-11-03T09:00:00.000Z' },
     { a: 'Начислено 10 шт. → 0/10', by: 'Промокод', ts: '2026-11-03T10:00:00.000Z' },
+    { a: 'Начислено 2 шт. → 2/10', by: 'Кассир', ts: '2026-11-03T11:00:00.000Z' },
   ]);
-  assert.equal(report.stamps, 1);
-  assert.equal(report.days[2].stamps, 1);
+  assert.equal(report.stamps, 2);
+  assert.equal(report.days[2].stamps, 2);
 });
