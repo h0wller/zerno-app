@@ -135,6 +135,7 @@ window.renderVerifyNote=function(){
         '<summary><span>Как работают бонусы?</span><span class="profile-loyalty-help-chevron" aria-hidden="true">⌄</span></summary>' +
         '<div class="profile-loyalty-help-content">' +
           '<p>🫘 <b>Штампы.</b> После покупки кассир сканирует ваш QR и начисляет 1 штамп. 10 штампов — бесплатный кофе.</p>' +
+          '<p>Новости кофейни и связь: <a href="https://t.me/' + (window.TG_USERNAME || 'and_coffee_bot') + '" target="_blank" rel="noopener noreferrer">Telegram</a>.</p>' +
           (isVerified
             ? (freeCoffees > 0
               ? '<p>🎁 <b>Ваши подарки.</b> На карте профиля уже есть ' + freeCoffees + ' ' + (freeCoffees === 1 ? 'бесплатный кофе.' : 'бесплатных кофе.') + '</p>'
