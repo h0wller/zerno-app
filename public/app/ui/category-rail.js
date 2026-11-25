@@ -331,7 +331,9 @@ window.scrollToTopWithoutRailFade = function () {
   window.scrollToWithoutRailFade(0);
 };
 
-window.addEventListener('scrollend', finishProgrammaticScrollToTop, { passive: true });
+window.addEventListener('scrollend', function () {
+  if (programmaticScrollToTop) finishProgrammaticScrollToTop();
+}, { passive: true });
 ['wheel', 'touchstart', 'pointerdown'].forEach(function (eventName) {
   window.addEventListener(eventName, cancelProgrammaticScrollToTop, { passive: true });
 });
