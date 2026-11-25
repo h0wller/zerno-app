@@ -8,7 +8,20 @@ const BRANDS = [
 async function scrollPageAsUser(page, top) {
   await page.evaluate((nextTop) => {
     const deltaY = nextTop - window.scrollY;
-    if (deltaY) {
+    if (deltaY && (navigator.maxTouchPoints > 0 || 'ontouchstart' in window)) {
+      const startY = Math.max(40, window.innerHeight - 40);
+      const endY = Math.max(0, Math.min(window.innerHeight, startY - deltaY));
+      const dispatchTouch = (type, y, hasActiveTouch) => {
+        const event = new Event(type, { bubbles: true, cancelable: true });
+        Object.defineProperty(event, 'touches', {
+          value: hasActiveTouch ? [{ clientY: y }] : [],
+        });
+        window.dispatchEvent(event);
+      };
+      dispatchTouch('touchstart', startY, true);
+      dispatchTouch('touchmove', endY, true);
+      dispatchTouch('touchend', endY, false);
+    } else if (deltaY) {
       window.dispatchEvent(new WheelEvent('wheel', {
         deltaY,
         deltaMode: 0,
@@ -361,7 +374,7 @@ test('delivery subfilters remain visible while the primary category rail fades d
   const firstSubfilter = subfilters.locator('button').first();
   await expect(firstSubfilter).toBeVisible();
 
-  await page.evaluate(() => window.scrollTo({ top: 500, behavior: 'instant' }));
+  await scrollPageAsUser(page, 500);
   await expect(page.locator('#deliveryRail')).toHaveCSS('opacity', '0.06');
   await expect(subfilters).toHaveCSS('opacity', '1');
   await expect(firstSubfilter).toHaveCSS('opacity', '1');
@@ -379,10 +392,11 @@ for (const width of [390, 820, 1024]) {
     const selectedBeforeScroll = await rail.locator('button[aria-pressed="true"]').getAttribute('data-dcat');
     expect(selectedBeforeScroll).toBeTruthy();
 
-    await page.evaluate(() => {
-      window.scrollTo(0, Math.min(900, document.documentElement.scrollHeight));
-      window.__syncDeliveryScrollSpy?.();
-    });
+    const scrollTarget = await page.evaluate(() =>
+      Math.min(900, Math.max(0, document.documentElement.scrollHeight - window.innerHeight))
+    );
+    await scrollPageAsUser(page, scrollTarget);
+    await page.evaluate(() => window.__syncDeliveryScrollSpy?.());
 
     await expect.poll(() => rail.locator('button[aria-current="location"]').count()).toBe(1);
     const current = rail.locator('button[aria-current="location"]');
