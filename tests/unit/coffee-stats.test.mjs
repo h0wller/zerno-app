@@ -41,8 +41,6 @@ test('coffee redemptions and loyalty punches are grouped by local calendar day',
       ts: '2026-11-30T21:59:00.000Z',
     },
     {
-    },
-    {
       a: '🎁 Списан бесплатный кофе: Эспрессо (осталось 0)',
       by: 'Кассир',
       ts: '2026-11-30T22:00:00.000Z',
