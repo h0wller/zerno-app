@@ -6,6 +6,9 @@
   var STAFF_READY_ATTRIBUTE = 'data-staff-ready';
 
   function setUser(token, customer) {
+    // Monotonic revision lets async auth flows detect that another flow changed
+    // the active session while a one-time response was in flight.
+    window.__authSessionRevision = (Number(window.__authSessionRevision) || 0) + 1;
     window.USER_TOKEN = token;
     window.__ztAuthDead = !token;
     try {
