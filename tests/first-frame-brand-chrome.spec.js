@@ -262,6 +262,26 @@ for (const brand of ['coffee', 'delivery']) {
       ), { timeout: 12000 }).toBe(true);
       await logo.evaluate((img) => img.decode());
       const firstFramePresentation = await measureLogoPresentation(page);
+      if (viewport.width <= 820) {
+        const avatarFace = await page.locator('#profileTopBtn').evaluate((button) => {
+          const buttonStyle = getComputedStyle(button);
+          const face = getComputedStyle(button, '::before');
+          return {
+            buttonPosition: buttonStyle.position,
+            buttonIsolation: buttonStyle.isolation,
+            faceContent: face.content,
+            facePosition: face.position,
+            faceWidth: face.width,
+            faceHeight: face.height
+          };
+        });
+        expect(avatarFace.buttonPosition, 'mobile avatar face must be positioned against its own hit cell').toBe('relative');
+        expect(avatarFace.buttonIsolation).toBe('isolate');
+        expect(avatarFace.faceContent).not.toBe('none');
+        expect(avatarFace.facePosition).toBe('absolute');
+        expect(avatarFace.faceWidth).toBe('32px');
+        expect(avatarFace.faceHeight).toBe('32px');
+      }
       await testInfo.attach(`${brand}-${viewport.name}-logo-first-frame-metrics.json`, {
         body: Buffer.from(JSON.stringify(firstFramePresentation, null, 2)),
         contentType: 'application/json'
