@@ -803,13 +803,32 @@ test('P0 registration baseline: capture guest, auth, Telegram waiting and both p
       }, pendingCustomer);
       await expect(page.locator('#profileBox')).toBeVisible();
       await expect(page.locator('#verifyNote')).toBeVisible();
+      await expect(page.locator('#verifyNote')).toContainText('Профиль создан, но ещё не активирован');
+      if (brand === 'delivery') {
+        await expect(page.locator('#verifyNote')).toContainText('заказы недоступны');
+        await expect(page.locator('#actCode')).toBeVisible();
+      } else {
+        await expect(page.locator('#verifyNote')).toContainText('10 штампов');
+        await expect(page.locator('#actCode')).toBeVisible();
+      }
       await page.evaluate(() => document.fonts.ready);
       await testInfo.attach(prefix + '-pending-profile.png', {
         body: await page.screenshot({ fullPage: false }),
         contentType: 'image/png'
       });
 
+      // The profile remains reachable and keeps its pending status after close/reopen.
       await page.evaluate(() => {
+        window.closePanel();
+        window.openPanel();
+        window.renderProfile();
+        window.renderVerifyNote();
+      });
+      await expect(page.locator('#profileBox')).toBeVisible();
+      await expect(page.locator('#verifyNote')).toBeVisible();
+      await expect(page.locator('#verifyNote')).toContainText('Профиль создан, но ещё не активирован');
+
+      await page.evaluate((brandName) => {
         window.setUser('p0-baseline-session', {
           id: 'p0-baseline-verified',
           name: 'P0 Baseline Guest',
@@ -826,9 +845,16 @@ test('P0 registration baseline: capture guest, auth, Telegram waiting and both p
         });
         window.renderProfile();
         window.renderVerifyNote();
-      });
+      }, brand);
       await expect(page.locator('#profileBox')).toBeVisible();
-      await expect(page.locator('#verifyNote')).toBeHidden();
+      if (brand === 'delivery') {
+        await expect(page.locator('#verifyNote')).toBeHidden();
+      } else {
+        await expect(page.locator('#verifyNote')).toBeVisible();
+        await expect(page.locator('#verifyNote .profile-loyalty-help')).toBeVisible();
+        await expect(page.locator('#verifyNote')).toContainText('На карте профиля уже есть 1 бесплатный кофе');
+        await expect(page.locator('#verifyNote')).not.toContainText('ещё не активирован');
+      }
       await testInfo.attach(prefix + '-verified-profile.png', {
         body: await page.screenshot({ fullPage: false }),
         contentType: 'image/png'
