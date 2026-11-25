@@ -217,7 +217,7 @@ test('visual audit: coffee profile loyalty without duplicate progress UI at 390p
   await expect(help).not.toHaveAttribute('open', '');
   await expect(page.locator('#verifyNote > small')).toHaveCount(0);
   await expect(help).toContainText('Ваши подарки');
-  await expect(help).toContainText('На карте профиля уже есть 1 бесплатных кофе');
+  await expect(help).toContainText('На карте профиля уже есть 1 бесплатный кофе');
 
   // The stamp grid and the reward card are the only loyalty status displays.
   await expect(page.locator(

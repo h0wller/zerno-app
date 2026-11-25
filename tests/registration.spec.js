@@ -641,6 +641,13 @@ test('P0: an existing customer returns to the profile without a repeated welcome
 });
 
 test('P0: closing auth during the phone registration request preserves the result', async ({ page }) => {
+  // This test uses a deliberately fake token. Keep background profile hydration
+  // deterministic instead of letting /api/orders/mine invalidate that fixture.
+  await page.route('**/api/orders/mine', (route) => route.fulfill({
+    status: 200,
+    contentType: 'application/json',
+    body: JSON.stringify({ orders: [] })
+  }));
   let markStarted;
   let releaseRequest;
   const requestStarted = new Promise((resolve) => { markStarted = resolve; });
