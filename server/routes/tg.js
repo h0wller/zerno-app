@@ -79,7 +79,7 @@ export function createTgRouter({ appKb }) {
       return;
     }
     await tgSend(targetChatId,
-      '🎁 <b>Ваши преимущества</b>\\n\\n' + telegramBenefitsMessage(c),
+      '🎁 <b>Ваши преимущества</b>\n\n' + telegramBenefitsMessage(c),
       bonusKeyboard()
     );
   }
@@ -264,9 +264,9 @@ export function createTgRouter({ appKb }) {
     if (text === '/start') {
       const c = getUniqueCustomerByTelegram(chatId);
       const hello = c
-        ? `С возвращением, <b>${escapeTelegramHtml(c.name)}</b>!\\n\\n` + telegramBenefitsMessage(c)
-        : '☕ Привет! Я бот «…и кофе» и доставки «Пятница» 🌊🍕\\n\\n' +
-          'Привяжите номер и создайте профиль. Доступные преимущества зависят от состояния профиля и условий акций; после подтверждения я покажу, что доступно.\\n\\n' +
+        ? `С возвращением, <b>${escapeTelegramHtml(c.name)}</b>!\n\n` + telegramBenefitsMessage(c)
+        : '☕ Привет! Я бот «…и кофе» и доставки «Пятница» 🌊🍕\n\n' +
+          'Привяжите номер и создайте профиль. Доступные преимущества зависят от состояния профиля и условий акций; после подтверждения я покажу, что доступно.\n\n' +
           'Меню, профиль, заказы и чат поддержки — всё здесь 👇';
       await tgSend(chatId, hello, welcomeKeyboard(c));
       return;
@@ -372,9 +372,9 @@ export function createTgRouter({ appKb }) {
             ? telegramBenefitsMessage(finalCust)
             : 'Не удалось загрузить состояние преимуществ. Откройте профиль в приложении и проверьте данные.';
           await tgSend(chatId,
-            '🎉 <b>Профиль готов, ' + escapeTelegramHtml(custObj ? custObj.name : '') + '!</b>\\n\\n' +
-            formatWelcomeBonusMessage(bonusOutcome) + '\\n\\n' + benefitDetails +
-            '\\n\\nВ браузере вход выполнился автоматически. Кнопки ниже открывают нужный раздел 👇',
+            '🎉 <b>Профиль готов, ' + escapeTelegramHtml(custObj ? custObj.name : '') + '!</b>\n\n' +
+            formatWelcomeBonusMessage(bonusOutcome) + '\n\n' + benefitDetails +
+            '\n\nВ браузере вход выполнился автоматически. Кнопки ниже открывают нужный раздел 👇',
             {
               inline_keyboard: [
                 [{ text: '☕ Открыть карту и QR', web_app: { url: APP_URL + authQuery + '&brand=coffee&tab=bonus' } }],
@@ -414,14 +414,14 @@ export function createTgRouter({ appKb }) {
         if (!c.welcome) {
           grantWelcome(c.id, 'Telegram');
           const bonusOutcome = grantBonusDetailed(c.id, c.src === QR_SOURCE ? 'qr' : 'signup');
-          grantSummary = formatWelcomeBonusMessage(bonusOutcome) + '\\n\\n';
+          grantSummary = formatWelcomeBonusMessage(bonusOutcome) + '\n\n';
         }
         const refreshedCustomer = db.prepare('SELECT * FROM customers WHERE id=?').get(c.id);
         const benefitDetails = refreshedCustomer
           ? telegramBenefitsMessage(refreshedCustomer)
           : 'Не удалось загрузить состояние преимуществ. Откройте профиль в приложении и проверьте данные.';
         await tgSend(chatId,
-          '✅ Готово, ' + escapeTelegramHtml(c.name) + '! Профиль привязан.\\n\\n' +
+          '✅ Готово, ' + escapeTelegramHtml(c.name) + '! Профиль привязан.\n\n' +
           grantSummary + benefitDetails,
           bonusKeyboard()
         ); else {
