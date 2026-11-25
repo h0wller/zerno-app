@@ -1,0 +1,356 @@
+import { test, expect } from '@playwright/test';
+
+// First-frame contract coverage: see docs/css-architecture.md §4 and docs/module-map.md §0–2.
+
+test.use({ serviceWorkers: 'block' });
+
+const VIEWPORTS = [
+  { name: 'mobile-narrow', width: 320, height: 740 },
+  { name: 'mobile-portrait', width: 390, height: 844 },
+  { name: 'short-landscape', width: 844, height: 390 },
+  { name: 'desktop', width: 1440, height: 900 }
+];
+
+function logoFor(brand) {
+  return brand === 'delivery'
+    ? { src: '/friday-logo.svg', width: 160, height: 40, alt: 'Пятница' }
+    : { src: '/andCoffee.svg', width: 42, height: 42, alt: '…и кофе' };
+}
+
+async function waitForDeferredTheme(page) {
+  await page.waitForFunction(() => {
+    const links = Array.from(document.querySelectorAll('link[rel="stylesheet"]'))
+      .filter((link) => link.href.includes('/app/ui/theme/'));
+    return links.length > 0 &&
+      links.every((link) => link.media !== 'print' && link.sheet !== null);
+  }, null, { timeout: 15000 });
+  await page.evaluate(() => document.fonts.ready.then(() => true));
+}
+
+async function holdBeforeBundle(page, brand, viewport) {
+  await page.setViewportSize({ width: viewport.width, height: viewport.height });
+  await page.addInitScript((selectedBrand) => {
+    localStorage.setItem('zt_brand', selectedBrand);
+    localStorage.setItem('zt_onb', '1');
+    localStorage.setItem('zt_inst_hide', '1');
+    localStorage.removeItem('zt_user');
+    sessionStorage.setItem('splashDone', '1');
+  }, brand);
+
+  let resumeBundle;
+  const bundleGate = new Promise((resolve) => { resumeBundle = resolve; });
+  await page.route('**/dist/main.bundle.js*', (route) =>
+    bundleGate.then(() => route.continue())
+  );
+
+  await page.goto('/', { waitUntil: 'commit' });
+  await expect(page.locator('#zt-early-chrome-guard')).toBeAttached();
+  await page.waitForFunction(() => window.__ztBrandLogoPrimed === true);
+  await expect(page.locator('#brandMark')).toBeAttached();
+  await expect(page.locator('#brandTitle')).toBeAttached();
+  await page.evaluate(() => {
+    window.__brandLogoAtFirstFrame = document.getElementById('brandLogoImg');
+  });
+  return resumeBundle;
+}
+
+async function selectBrandThroughUi(page, selectedBrand) {
+  const toggle = page.locator('#venueToggle');
+  await expect(toggle).toBeVisible();
+  await toggle.click();
+
+  const option = page.locator(`#brandSeg [data-brand="${selectedBrand}"]`);
+  await expect(option).toBeVisible();
+  await option.click();
+
+  await expect(page.locator('html')).toHaveAttribute('data-brand', selectedBrand);
+  await expect.poll(() => page.evaluate(() => window.brand)).toBe(selectedBrand);
+}
+
+async function measureLogoPresentation(page) {
+  return page.evaluate(() => {
+    const rect = (element) => {
+      if (!element) return null;
+      const box = element.getBoundingClientRect();
+      return {
+        x: box.x, y: box.y, width: box.width, height: box.height,
+        top: box.top, right: box.right, bottom: box.bottom, left: box.left
+      };
+    };
+    const style = (element, pseudo = null) => {
+      if (!element) return null;
+      const computed = getComputedStyle(element, pseudo);
+      return {
+        content: computed.content,
+        display: computed.display,
+        visibility: computed.visibility,
+        opacity: computed.opacity,
+        position: computed.position,
+        zIndex: computed.zIndex,
+        top: computed.top,
+        right: computed.right,
+        bottom: computed.bottom,
+        left: computed.left,
+        width: computed.width,
+        height: computed.height,
+        transform: computed.transform,
+        filter: computed.filter,
+        clipPath: computed.clipPath,
+        overflow: computed.overflow,
+        objectFit: computed.objectFit,
+        backgroundColor: computed.backgroundColor,
+        backgroundImage: computed.backgroundImage,
+        border: computed.border,
+        borderRadius: computed.borderRadius,
+        boxShadow: computed.boxShadow
+      };
+    };
+    const pseudoStyles = (element) => ({
+      before: style(element, '::before'),
+      after: style(element, '::after')
+    });
+    const header = document.querySelector('header.topbar');
+    const mark = document.getElementById('brandMark');
+    const image = document.getElementById('brandLogoImg');
+    const title = document.getElementById('brandTitle');
+    const profile = document.getElementById('profileTopBtn');
+    const children = header ? Array.from(header.children).map((element) => ({
+      tagName: element.tagName,
+      id: element.id,
+      className: typeof element.className === 'string' ? element.className : '',
+      rect: rect(element),
+      style: style(element)
+    })) : [];
+    return {
+      viewport: { width: innerWidth, height: innerHeight },
+      documentBrand: document.documentElement.getAttribute('data-brand'),
+      header: { rect: rect(header), style: style(header), children },
+      headerBrand: {
+        rect: rect(document.getElementById('headerBrand')),
+        style: style(document.getElementById('headerBrand'))
+      },
+      mark: { rect: rect(mark), style: style(mark) },
+      logo: {
+        rect: rect(image), style: style(image),
+        src: image && image.currentSrc,
+        complete: image && image.complete,
+        naturalWidth: image && image.naturalWidth,
+        naturalHeight: image && image.naturalHeight
+      },
+      title: { rect: rect(title), style: style(title) },
+      profile: { rect: rect(profile), style: style(profile) },
+      pseudo: {
+        body: pseudoStyles(document.body),
+        header: pseudoStyles(header),
+        headerBrand: pseudoStyles(document.getElementById('headerBrand')),
+        mark: pseudoStyles(mark),
+        logo: pseudoStyles(image),
+        title: pseudoStyles(title),
+        profile: pseudoStyles(profile)
+      },
+      hitStacks: [
+        [8, 30], [innerWidth / 2, 30], [innerWidth - 8, 30],
+        [innerWidth / 2, 8], [innerWidth / 2, 52]
+      ].map(([x, y]) => ({
+        point: { x, y },
+        stack: document.elementsFromPoint(x, y).slice(0, 8).map((element) => ({
+          tagName: element.tagName, id: element.id,
+          className: typeof element.className === 'string' ? element.className : ''
+        }))
+      }))
+    };
+  });
+}
+
+async function measureHeader(page) {
+  return page.evaluate(() => {
+    const rect = (element) => {
+      if (!element) return null;
+      const box = element.getBoundingClientRect();
+      return {
+        x: box.x,
+        y: box.y,
+        width: box.width,
+        height: box.height,
+        right: box.right,
+        bottom: box.bottom
+      };
+    };
+    const title = document.getElementById('brandTitle');
+    const bean = title && title.querySelector('.bean');
+    const svg = bean && bean.querySelector('svg');
+    return {
+      mark: rect(document.getElementById('brandMark')),
+      title: rect(title),
+      bean: bean ? {
+        box: rect(bean),
+        svg: rect(svg),
+        display: getComputedStyle(bean).display,
+        fontSize: parseFloat(getComputedStyle(bean).fontSize),
+        relativeX: bean.getBoundingClientRect().left - title.getBoundingClientRect().left,
+        relativeY: bean.getBoundingClientRect().top - title.getBoundingClientRect().top
+      } : null
+    };
+  });
+}
+
+for (const viewport of VIEWPORTS) {
+  test(`FP-001: coffee bean first-frame geometry is stable at ${viewport.name}`, async ({ page }, testInfo) => {
+    test.setTimeout(60000);
+    const resumeBundle = await holdBeforeBundle(page, 'coffee', viewport);
+    await waitForDeferredTheme(page);
+    const before = await measureHeader(page);
+
+    expect(before.bean).not.toBeNull();
+    expect(before.bean.display).toBe('inline-block');
+    expect(before.bean.box.width).toBeCloseTo(before.bean.fontSize * 0.8, 1);
+    expect(before.bean.box.height).toBeCloseTo(before.bean.fontSize * 0.8, 1);
+    expect(before.bean.svg.width).toBeCloseTo(before.bean.box.width, 1);
+    expect(before.bean.svg.height).toBeCloseTo(before.bean.box.height, 1);
+
+    await testInfo.attach(`coffee-${viewport.name}-bean-before-hydration.png`, {
+      body: await page.screenshot(),
+      contentType: 'image/png'
+    });
+
+    resumeBundle();
+    await page.waitForLoadState('domcontentloaded');
+    await page.waitForFunction(() => typeof window.applyBrandChrome === 'function');
+    await waitForDeferredTheme(page);
+    const after = await measureHeader(page);
+
+    // Assert the bean's geometry in its title-local coordinate space.
+    // Header placement itself may be finalized by views.js after the bundle runs.
+    for (const key of ['relativeX', 'relativeY']) {
+      expect(Math.abs(after.bean[key] - before.bean[key]),
+        `bean ${key} remains stable relative to the wordmark after hydration`).toBeLessThanOrEqual(1);
+    }
+    for (const key of ['width', 'height']) {
+      expect(Math.abs(after.bean.box[key] - before.bean.box[key]),
+        `bean ${key} remains stable after hydration`).toBeLessThanOrEqual(1);
+      expect(Math.abs(after.bean.svg[key] - before.bean.svg[key]),
+        `bean SVG ${key} remains stable after hydration`).toBeLessThanOrEqual(1);
+    }
+    expect(after.bean.box.width).toBeCloseTo(after.bean.fontSize * 0.8, 1);
+    expect(after.bean.box.height).toBeCloseTo(after.bean.fontSize * 0.8, 1);
+    expect(after.bean.svg.width).toBeCloseTo(after.bean.box.width, 1);
+    expect(after.bean.svg.height).toBeCloseTo(after.bean.box.height, 1);
+
+    await testInfo.attach(`coffee-${viewport.name}-bean-after-hydration.png`, {
+      body: await page.screenshot(),
+      contentType: 'image/png'
+    });
+  });
+}
+
+for (const brand of ['coffee', 'delivery']) {
+  for (const viewport of VIEWPORTS) {
+    test(`FP-003: ${brand} actual logo is present before hydration and sync is idempotent at ${viewport.name}`, async ({ page }, testInfo) => {
+      test.setTimeout(60000);
+      const resumeBundle = await holdBeforeBundle(page, brand, viewport);
+      await waitForDeferredTheme(page);
+      const expected = logoFor(brand);
+      const logo = page.locator('#brandLogoImg');
+
+      await expect(logo).toBeAttached();
+      await expect(logo).toHaveAttribute('src', expected.src);
+      await expect(logo).toHaveAttribute('alt', expected.alt);
+      await expect(logo).toHaveAttribute('width', String(expected.width));
+      await expect(logo).toHaveAttribute('height', String(expected.height));
+      await expect.poll(() => logo.evaluate((img) =>
+        img.complete && img.naturalWidth > 0
+      ), { timeout: 12000 }).toBe(true);
+      await logo.evaluate((img) => img.decode());
+      const firstFramePresentation = await measureLogoPresentation(page);
+      if (viewport.width <= 820) {
+        const avatarFace = await page.locator('#profileTopBtn').evaluate((button) => {
+          const buttonStyle = getComputedStyle(button);
+          const face = getComputedStyle(button, '::before');
+          const buttonRect = button.getBoundingClientRect();
+          const faceRect = face.width === 'auto' ? null : {
+            width: parseFloat(face.width),
+            height: parseFloat(face.height),
+            left: parseFloat(face.left),
+            right: parseFloat(face.right),
+            top: parseFloat(face.top),
+            bottom: parseFloat(face.bottom)
+          };
+          return {
+            buttonPosition: buttonStyle.position,
+            buttonIsolation: buttonStyle.isolation,
+            buttonWidth: buttonRect.width,
+            buttonHeight: buttonRect.height,
+            faceContent: face.content,
+            facePosition: face.position,
+            faceWidth: face.width,
+            faceHeight: face.height,
+            faceLeft: faceRect && faceRect.left,
+            faceRight: faceRect && faceRect.right,
+            faceTop: faceRect && faceRect.top,
+            faceBottom: faceRect && faceRect.bottom
+          };
+        });
+        expect(avatarFace.buttonPosition, 'mobile avatar face must be positioned against its own hit cell').toBe('relative');
+        expect(avatarFace.buttonIsolation).toBe('isolate');
+        expect(avatarFace.faceContent).not.toBe('none');
+        expect(avatarFace.facePosition).toBe('absolute');
+        expect(avatarFace.buttonWidth).toBe(44);
+        expect(avatarFace.buttonHeight).toBe(44);
+        expect(avatarFace.faceWidth).not.toBe('auto');
+        expect(avatarFace.faceHeight).not.toBe('auto');
+        expect(Math.abs(avatarFace.faceLeft - avatarFace.faceRight)).toBeLessThanOrEqual(1);
+        expect(Math.abs(avatarFace.faceTop - avatarFace.faceBottom)).toBeLessThanOrEqual(1);
+        expect(avatarFace.faceLeft).toBeGreaterThanOrEqual(-1);
+        expect(avatarFace.faceTop).toBeGreaterThanOrEqual(-1);
+      }
+      await testInfo.attach(`${brand}-${viewport.name}-logo-first-frame-metrics.json`, {
+        body: Buffer.from(JSON.stringify(firstFramePresentation, null, 2)),
+        contentType: 'application/json'
+      });
+
+      await testInfo.attach(`${brand}-${viewport.name}-logo-before-hydration.png`, {
+        body: await page.screenshot(),
+        contentType: 'image/png'
+      });
+
+      resumeBundle();
+      await page.waitForLoadState('domcontentloaded');
+      await page.waitForFunction(() => typeof window.applyBrandChrome === 'function');
+      await waitForDeferredTheme(page);
+      await page.evaluate(() => {
+        window.applyBrandChrome(true);
+        window.applyBrandChrome(true);
+      });
+
+      expect(await page.evaluate(() =>
+        window.__brandLogoAtFirstFrame === document.getElementById('brandLogoImg')
+      )).toBe(true);
+
+      const nextBrand = brand === 'coffee' ? 'delivery' : 'coffee';
+      await selectBrandThroughUi(page, nextBrand);
+      await expect(logo).toHaveAttribute('src', logoFor(nextBrand).src);
+      await page.evaluate(() => {
+        window.applyBrandChrome(true);
+        window.applyBrandChrome(true);
+      });
+      expect(await page.evaluate(() =>
+        window.__brandLogoAtFirstFrame === document.getElementById('brandLogoImg')
+      )).toBe(true);
+
+      await selectBrandThroughUi(page, brand);
+      await expect(logo).toHaveAttribute('src', expected.src);
+      await page.evaluate(() => {
+        window.applyBrandChrome(true);
+        window.applyBrandChrome(true);
+      });
+      expect(await page.evaluate(() =>
+        window.__brandLogoAtFirstFrame === document.getElementById('brandLogoImg')
+      )).toBe(true);
+
+      await testInfo.attach(`${brand}-${viewport.name}-logo-after-hydration.png`, {
+        body: await page.screenshot(),
+        contentType: 'image/png'
+      });
+    });
+  }
+}
