@@ -139,7 +139,7 @@
   border-radius: var(--profile-section-radius, 14px);
   background: var(--profile-section-bg, var(--card-bg, #fff));
 }
-#settingsModal .settings-section + .settings-section {
+#settingsModal .settings-section + .settings-section:not(.settings-danger-zone) {
   border-top: 1px solid var(--line);
 }
 #settingsModal .settings-section-title {
@@ -303,7 +303,7 @@
 #settingsModal .settings-card .msub {
   margin-bottom: 14px;
 }
-#settingsModal .settings-section + .settings-section {
+#settingsModal .settings-section + .settings-section:not(.settings-danger-zone) {
   margin-top: 14px;
   padding-top: 14px;
   border-top: 1px solid var(--line);
