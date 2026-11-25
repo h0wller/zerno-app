@@ -378,6 +378,7 @@
           window.__registrationTgPoll = null;
         }
         var pollGeneration = (window.__regTgPollGeneration = (window.__regTgPollGeneration || 0) + 1);
+        var authSessionRevision = Number(window.__authSessionRevision) || 0;
         var pollBusy = false;
         var statusRow = document.getElementById('regTgRow');
         if (statusRow) {
@@ -461,6 +462,15 @@
               if (pollGeneration !== window.__regTgPollGeneration) return;
               if (c && c.confirmed) {
                 if (c.token && c.customer) {
+                  if ((Number(window.__authSessionRevision) || 0) !== authSessionRevision) {
+                    finishPoll();
+                    if (statusRow) {
+                      statusRow.hidden = false;
+                      statusRow.className = 'auth-tg-superseded';
+                      statusRow.textContent = 'Вход уже выполнен в другом профиле. Подтверждение Telegram не применено.';
+                    }
+                    return;
+                  }
                   await completeRegistration({ token: c.token, customer: c.customer }, c.isNew);
                   finishPoll();
                   return;
