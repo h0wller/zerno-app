@@ -1012,3 +1012,97 @@ test('P0 registration baseline: capture guest, auth, Telegram waiting and both p
     }
   }
 });
+
+
+test('an accepted Telegram result cannot overwrite a newer authenticated session', async ({ page }) => {
+  let markCheckStarted;
+  let resolveCheck;
+  const checkStarted = new Promise((resolve) => { markCheckStarted = resolve; });
+  const checkResponseGate = new Promise((resolve) => { resolveCheck = resolve; });
+
+  await page.route('**/api/orders/mine', (route) => route.fulfill({
+    status: 200,
+    contentType: 'application/json',
+    body: JSON.stringify({ orders: [] })
+  }));
+  await page.route('**/api/auth/request-reg-otp', (route) => route.fulfill({
+    status: 200,
+    contentType: 'application/json',
+    body: JSON.stringify({ pollToken: 'b'.repeat(64), tgUrl: 'https://t.me/test_bot?start=reg_session_race' })
+  }));
+  await page.route('https://t.me/**', (route) => route.fulfill({
+    status: 200,
+    contentType: 'text/html',
+    body: '<!doctype html><title>Telegram test stub</title>'
+  }));
+  await page.route('**/api/auth/check-reg', async (route) => {
+    markCheckStarted();
+    await checkResponseGate;
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        confirmed: true,
+        token: 'old-telegram-session-token',
+        isNew: true,
+        customer: {
+          id: 'old-telegram-customer',
+          name: 'Old Telegram Customer',
+          phone: '+7 900 000-00-41',
+          role: 'guest',
+          stamps: 0,
+          free: 0,
+          verified: 1,
+          history: []
+        }
+      })
+    });
+  });
+  await page.route('**/api/auth/login', (route) => route.fulfill({
+    status: 200,
+    contentType: 'application/json',
+    body: JSON.stringify({
+      token: 'new-manual-session-token',
+      customer: {
+        id: 'new-manual-customer',
+        name: 'New Manual Customer',
+        phone: '+7 900 000-00-42',
+        role: 'guest',
+        stamps: 2,
+        free: 0,
+        verified: 1,
+        history: []
+      }
+    })
+  }));
+
+  await page.goto('/?brand=coffee');
+  await page.evaluate(() => window.openAuth(false));
+  await page.locator('#regName').fill('Old Telegram Customer');
+  await page.locator('#regPhone').fill('+7 900 000-00-41');
+  await page.locator('#consentBox').check();
+  const popupPromise = page.waitForEvent('popup');
+  await page.locator('#regTgBtn').click();
+  const telegramPopup = await popupPromise;
+  await telegramPopup.waitForLoadState('domcontentloaded');
+  await checkStarted;
+
+  await page.evaluate(() => {
+    window.closeAuth();
+    window.openAuth(false);
+  });
+  await expect(page.locator('#regTgRow')).toContainText('Ожидаем подтверждение в Telegram');
+
+  await page.evaluate(() => window.openAuth(true));
+  await page.locator('#logPhone').fill('+7 900 000-00-42');
+  await page.locator('#logPin').fill('1357');
+  await page.locator('#logBtn').click();
+  await expect.poll(() => page.evaluate(() => window.USER_TOKEN)).toBe('new-manual-session-token');
+
+  resolveCheck();
+  await expect.poll(() => page.evaluate(() => window.USER_TOKEN)).toBe('new-manual-session-token');
+  await expect.poll(() => page.evaluate(() => window.me && window.me.name)).toBe('New Manual Customer');
+  await expect.poll(() => page.evaluate(() => localStorage.getItem('zt_user'))).toBe('new-manual-session-token');
+
+  await telegramPopup.close();
+});
