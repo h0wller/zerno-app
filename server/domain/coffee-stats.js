@@ -49,9 +49,7 @@ function currentMonthKey(now) {
 }
 
 export function getCoffeeMonthPeriod(monthValue, now = new Date()) {
-  const month = monthValue == null || monthValue === ''
-    ? currentMonthKey(now)
-    : String(monthValue).trim();
+  const month = monthValue == null ? currentMonthKey(now) : String(monthValue).trim();
   const match = /^(\\d{4})-(0[1-9]|1[0-2])$/.exec(month);
   if (!match) return null;
 
