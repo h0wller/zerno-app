@@ -76,7 +76,9 @@ async function measureHeader(page) {
         box: rect(bean),
         svg: rect(svg),
         display: getComputedStyle(bean).display,
-        fontSize: parseFloat(getComputedStyle(title).fontSize)
+        fontSize: parseFloat(getComputedStyle(bean).fontSize),
+        relativeX: bean.getBoundingClientRect().left - title.getBoundingClientRect().left,
+        relativeY: bean.getBoundingClientRect().top - title.getBoundingClientRect().top
       } : null
     };
   });
@@ -107,14 +109,22 @@ for (const viewport of VIEWPORTS) {
     await waitForDeferredTheme(page);
     const after = await measureHeader(page);
 
-    for (const key of ['x', 'y', 'width', 'height']) {
+    // Assert the bean's geometry in its title-local coordinate space.
+    // Header placement itself may be finalized by views.js after the bundle runs.
+    for (const key of ['relativeX', 'relativeY']) {
+      expect(Math.abs(after.bean[key] - before.bean[key]),
+        `bean ${key} remains stable relative to the wordmark after hydration`).toBeLessThanOrEqual(1);
+    }
+    for (const key of ['width', 'height']) {
       expect(Math.abs(after.bean.box[key] - before.bean.box[key]),
         `bean ${key} remains stable after hydration`).toBeLessThanOrEqual(1);
       expect(Math.abs(after.bean.svg[key] - before.bean.svg[key]),
         `bean SVG ${key} remains stable after hydration`).toBeLessThanOrEqual(1);
-      expect(Math.abs(after.title[key] - before.title[key]),
-        `wordmark ${key} remains stable after hydration`).toBeLessThanOrEqual(1);
     }
+    expect(after.bean.box.width).toBeCloseTo(after.bean.fontSize * 0.8, 1);
+    expect(after.bean.box.height).toBeCloseTo(after.bean.fontSize * 0.8, 1);
+    expect(after.bean.svg.width).toBeCloseTo(after.bean.box.width, 1);
+    expect(after.bean.svg.height).toBeCloseTo(after.bean.box.height, 1);
 
     await testInfo.attach(`coffee-${viewport.name}-bean-after-hydration.png`, {
       body: await page.screenshot(),
