@@ -48,6 +48,12 @@ if (supportPending) {
 /* ========== 1. CSS (СЛОЙ 2: layout + брендовые переопределения) ========== */
 var css = document.createElement('style');
 var rules = [
+ 
+/* Delivery profile uses the Friday palette without moving brand selectors into theme CSS. */
+'[data-brand="delivery"] #profileBox > .profile-identity,[data-brand="delivery"] #profileBox > .profile-brand-section,[data-brand="delivery"] #profileBox > .placebox,[data-brand="delivery"] #profileBox > #fridayInfo,[data-brand="delivery"] #profileBox > .profile-history-section{background:var(--fr-paper,#F6EEE1);border-color:var(--fr-tan,#E0D2BE)}',
+'[data-brand="delivery"] #profileOrdersSection .myOrderCard{padding:14px;border-radius:14px}',
+'[data-brand="delivery"] #profileOrdersSection .profile-section-heading{gap:12px}',
+
  'html[data-brand="delivery"] a, html[data-brand="delivery"] a:visited, html[data-brand="delivery"] a:hover, html[data-brand="delivery"] a:active, html[data-brand="delivery"] a:focus { text-decoration: none; }',
  'html[data-brand="delivery"].is-cashier, html[data-brand="delivery"] body.is-cashier, html[data-brand="delivery"] #cashierView, html[data-brand="delivery"] #ordersView { background: var(--cashier-bg, #F6EEE1); }',
  'html[data-brand="delivery"] .cash-card, html[data-brand="delivery"] #ordersView .card, html[data-brand="delivery"] #ordersView article { background: #FFFDF9; border-color: #E8DCCB; }',

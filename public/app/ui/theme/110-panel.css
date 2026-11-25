@@ -676,23 +676,6 @@
 }
 
 
-/* Delivery profile: keep section surfaces aligned with the active brand palette. */
-[data-brand="delivery"] #profileBox > .profile-identity,
-[data-brand="delivery"] #profileBox > .profile-brand-section,
-[data-brand="delivery"] #profileBox > .placebox,
-[data-brand="delivery"] #profileBox > #fridayInfo,
-[data-brand="delivery"] #profileBox > .profile-history-section {
-  background: var(--fr-paper, var(--profile-section-bg, var(--card-bg, #fff)));
-  border-color: var(--fr-tan, var(--line));
-}
-[data-brand="delivery"] #profileOrdersSection .myOrderCard {
-  padding: 14px;
-  border-radius: 14px;
-}
-[data-brand="delivery"] #profileOrdersSection .profile-section-heading {
-  gap: 12px;
-}
-
 @media (prefers-reduced-motion: reduce) {
   .stamp {
     transition: none;
