@@ -1014,7 +1014,7 @@ test('P0 registration baseline: capture guest, auth, Telegram waiting and both p
 });
 
 
-test('an accepted Telegram result cannot overwrite a newer authenticated session', async ({ page }) => {
+test('an accepted Telegram result cannot overwrite a newer authenticated session', async ({ page }, testInfo) => {
   let markCheckStarted;
   let resolveCheck;
   const checkStarted = new Promise((resolve) => { markCheckStarted = resolve; });
@@ -1103,6 +1103,12 @@ test('an accepted Telegram result cannot overwrite a newer authenticated session
   await expect.poll(() => page.evaluate(() => window.USER_TOKEN)).toBe('new-manual-session-token');
   await expect.poll(() => page.evaluate(() => window.me && window.me.name)).toBe('New Manual Customer');
   await expect.poll(() => page.evaluate(() => localStorage.getItem('zt_user'))).toBe('new-manual-session-token');
+  await page.evaluate(() => window.openAuth(false));
+  await expect(page.locator('#regTgRow')).toContainText('Вход уже выполнен в другом профиле');
+  await testInfo.attach('telegram-session-superseded.png', {
+    body: await page.screenshot({ fullPage: false }),
+    contentType: 'image/png'
+  });
 
   await telegramPopup.close();
 });
@@ -1201,7 +1207,7 @@ test('Telegram polling retries after a temporary network failure while auth is c
   await popup.close();
 });
 
-test('Telegram poll TTL ends the loop and clears its lifecycle handles', async ({ page }) => {
+test('Telegram poll TTL ends the loop and clears its lifecycle handles', async ({ page }, testInfo) => {
   await page.route('**/api/orders/mine', (route) => route.fulfill({
     status: 200, contentType: 'application/json', body: JSON.stringify({ orders: [] })
   }));
@@ -1243,6 +1249,10 @@ test('Telegram poll TTL ends the loop and clears its lifecycle handles', async (
     }
   });
   await expect(page.locator('#regTgRow')).toContainText('Не получили подтверждение');
+  await testInfo.attach('telegram-poll-expired.png', {
+    body: await page.screenshot({ fullPage: false }),
+    contentType: 'image/png'
+  });
   await expect.poll(() => page.evaluate(() => ({
     timer: window.__registrationTgPoll,
     finish: window.__registrationTgPollFinish
@@ -1394,7 +1404,7 @@ test('a replacement Telegram attempt ignores the cancelled attempt response', as
 });
 
 
-test('explicitly cancelling Telegram polling ignores an already in-flight confirmation', async ({ page }) => {
+test('explicitly cancelling Telegram polling ignores an already in-flight confirmation', async ({ page }, testInfo) => {
   let markCheckStarted;
   let releaseCheck;
   const checkStarted = new Promise(resolve => { markCheckStarted = resolve; });
@@ -1443,5 +1453,9 @@ test('explicitly cancelling Telegram polling ignores an already in-flight confir
   await expect.poll(() => page.evaluate(() => window.USER_TOKEN)).toBeNull();
   await expect.poll(() => page.evaluate(() => window.__registrationTgPoll)).toBeNull();
   await expect(page.locator('#regTgRow')).toContainText('Подтверждение остановлено');
+  await testInfo.attach('telegram-poll-cancelled.png', {
+    body: await page.screenshot({ fullPage: false }),
+    contentType: 'image/png'
+  });
   await popup.close();
 });
