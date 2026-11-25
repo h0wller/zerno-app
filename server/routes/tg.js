@@ -13,7 +13,6 @@ import { cust, addHist, issueToken } from '../domain/helpers.js';
 import { createCustomer } from '../domain/customers.js';
 import { linkTelegram, findUniqueTelegramCustomer } from '../domain/telegram-link.js';
 import { nowISO } from '../utils/id-time.js';
-import { stampBar } from '../utils/loyalty-helpers.js';
 import { botIntent } from '../utils/bot-nlu.js';
 
 function getUniqueCustomerByTelegram(telegramId) {
@@ -64,7 +63,7 @@ async function answerCallback(cbId) {
 
 function bonusKeyboard() {
   return { inline_keyboard: [
-    [{ text: '☕ Открыть карту и QR', web_app: { url: APP_URL + '/?src=tg&brand=coffee&tab=bonus' } }],
+    [{ text: '☕ Открыть карту и QR', web_app: { url: APP_URL + authQuery + '&brand=coffee&tab=bonus' } }],
     [{ text: '🍕 Открыть «Пятницу»', web_app: { url: APP_URL + '/?src=tg&brand=delivery' } }],
     [{ text: '🔄 Обновить статусы', callback_data: 'bonus' }],
   ]};
@@ -368,7 +367,7 @@ export function createTgRouter({ appKb }) {
 
           await tgSend(chatId, '👍 Номер подтверждён', { remove_keyboard: true });
           const baseSite = (typeof APP_URL !== 'undefined' && APP_URL) || 'https://friday.andcoffee.online';
-          const authLink = sessionToken ? (baseSite + '/?auth_token=' + sessionToken) : (baseSite + '/?src=tg');
+          const authQuery = sessionToken ? '?auth_token=' + encodeURIComponent(sessionToken) : '?src=tg';
 
           const benefitDetails = finalCust
             ? telegramBenefitsMessage(finalCust)
@@ -380,7 +379,7 @@ export function createTgRouter({ appKb }) {
             {
               inline_keyboard: [
                 [{ text: '☕ Открыть карту и QR', web_app: { url: APP_URL + '/?src=tg&brand=coffee&tab=bonus' } }],
-                [{ text: '🍕 Открыть «Пятницу»', web_app: { url: APP_URL + '/?auth_token=' + encodeURIComponent(sessionToken || '') + '&src=tg&brand=delivery' } }],
+                [{ text: '🍕 Открыть «Пятницу»', web_app: { url: APP_URL + authQuery + '&brand=delivery' } }],
               ]
             }
           );
