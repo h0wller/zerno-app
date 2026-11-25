@@ -48,10 +48,19 @@ async function assertBootTemplate(page) {
 async function loginAs(page, { code } = {}) {
   const expectedRole = code ? (code === ADMIN ? 'admin' : 'cashier') : 'guest';
   if (!code) {
-    await page.route('**/api/me', async route => {
+    await page.route(url => {
+      return url.pathname === '/api/me' && url.search === '';
+    }, async route => {
       const response = await route.fetch();
-      const customer = await response.json();
-      await route.fulfill({ response, json: { ...customer, verified: 1 } });
+      const payload = await response.json();
+      const customer = payload && payload.customer;
+      await route.fulfill({
+        response,
+        json: {
+          ...payload,
+          customer: customer ? { ...customer, verified: 1 } : customer
+        }
+      });
     });
   }
   let token = null;
