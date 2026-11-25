@@ -55,13 +55,14 @@ for (const brand of BRANDS) {
     await expect(page.locator('#scrollTopBtn')).toHaveCount(0);
   });
 
-  test(`${brand.brand}: category rail fades while scrolling and returns after scroll settles`, async ({ page }, testInfo) => {
+  test(`${brand.brand}: scroll direction controls rail visibility with an 8px threshold`, async ({ page }, testInfo) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.addInitScript(() => sessionStorage.setItem('splashDone', '1'));
     await page.goto('/?brand=' + brand.brand, { waitUntil: 'domcontentloaded' });
     const rail = page.locator(brand.rail);
     const cartFab = page.locator('#cartFab');
     await expect(rail).toBeVisible({ timeout: 15000 });
+
     if (brand.brand === 'delivery') {
       const card = page.locator('#deliveryGrid .card:not(.skeleton-card)').first();
       await expect(card).toBeVisible({ timeout: 15000 });
@@ -70,48 +71,103 @@ for (const brand of BRANDS) {
       await card.locator('[data-add]').click();
       await expect(cartFab).toBeVisible();
     }
-    await page.mouse.move(180, 420);
-    await page.mouse.wheel(0, 700);
 
-    await expect.poll(() => rail.evaluate(el => el.classList.contains('is-scroll-fading'))).toBe(true);
-    await expect.poll(() => rail.evaluate(el => Number.parseFloat(getComputedStyle(el).opacity))).toBeLessThan(0.1);
-    await expect.poll(() => rail.evaluate(el => getComputedStyle(el).pointerEvents)).toBe('auto');
-    if (brand.brand === 'delivery') {
-      await expect(cartFab).toHaveClass(/is-scroll-fading/);
-      await expect.poll(() => cartFab.evaluate(el => Number.parseFloat(getComputedStyle(el).opacity))).toBeLessThan(0.1);
-    }
-    await testInfo.attach(`${brand.brand}-rail-faded-390x844`, {
+    // Repeated layout alignment must not register another scroll handler.
+    await page.evaluate(() => {
+      window.alignRailWithCard();
+      window.alignRailWithCard();
+      window.alignRailWithCard();
+    });
+
+    const scrollTo = async (top) => {
+      await page.evaluate((nextTop) => window.scrollTo(0, nextTop), top);
+      await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(top);
+    };
+
+    await testInfo.attach(`${brand.brand}-rail-visible-initial-390x844`, {
       body: await page.screenshot({ animations: 'disabled' }),
       contentType: 'image/png',
     });
 
-    await expect.poll(() => rail.evaluate(el => el.classList.contains('is-scroll-fading')), { timeout: 5000 }).toBe(false);
-    await expect.poll(() => rail.evaluate(el => Number.parseFloat(getComputedStyle(el).opacity))).toBeGreaterThan(0.9);
-    await expect.poll(() => rail.evaluate(el => getComputedStyle(el).pointerEvents)).toBe('auto');
-    if (brand.brand === 'delivery') {
-      await expect(cartFab).not.toHaveClass(/is-scroll-fading/);
-      await expect.poll(() => cartFab.evaluate(el => Number.parseFloat(getComputedStyle(el).opacity))).toBeGreaterThan(0.9);
-    }
-    await testInfo.attach(`${brand.brand}-rail-restored-390x844`, {
-      body: await page.screenshot({ animations: 'disabled' }),
-      contentType: 'image/png',
-    });
-    if (brand.brand === 'delivery') {
-      const subfilters = page.locator('#deliverySubFilter');
-      await expect(subfilters).not.toHaveClass(/is-scroll-fading/);
-      await expect.poll(() => subfilters.evaluate(el => Number.parseFloat(getComputedStyle(el).opacity))).toBeGreaterThan(0.9);
-    }
-
-    await page.mouse.wheel(0, -200);
-    await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(300);
+    const documentHeight = await page.evaluate(() => document.documentElement.scrollHeight);
+    await scrollTo(700);
     await expect(rail).toHaveClass(/is-scroll-fading/);
+    await expect.poll(() => rail.evaluate(el => Number.parseFloat(getComputedStyle(el).opacity)))
+      .toBeLessThan(0.1);
     if (brand.brand === 'delivery') await expect(cartFab).toHaveClass(/is-scroll-fading/);
-    await expect.poll(() => rail.evaluate(el => el.classList.contains('is-scroll-fading')), { timeout: 5000 }).toBe(false);
-    if (brand.brand === 'delivery') {
-      await expect.poll(() => cartFab.evaluate(el => el.classList.contains('is-scroll-fading')), { timeout: 5000 }).toBe(false);
-    }
+
+    // Stopping must preserve the hidden state; no timeout may reveal the rail.
+    await page.waitForTimeout(650);
+    await expect(rail).toHaveClass(/is-scroll-fading/);
+    await testInfo.attach(`${brand.brand}-rail-hidden-down-390x844`, {
+      body: await page.screenshot({ animations: 'disabled' }),
+      contentType: 'image/png',
+    });
+
+    // Seven pixels upward is below threshold and must not flicker the rail.
+    await scrollTo(695);
+    await expect(rail).toHaveClass(/is-scroll-fading/);
+    await scrollTo(693);
+    await expect(rail).toHaveClass(/is-scroll-fading/);
+    // The eighth pixel in the same direction reveals it.
+    await scrollTo(692);
+    await expect(rail).not.toHaveClass(/is-scroll-fading/);
+    await expect.poll(() => rail.evaluate(el => Number.parseFloat(getComputedStyle(el).opacity)))
+      .toBeGreaterThan(0.9);
+    if (brand.brand === 'delivery') await expect(cartFab).not.toHaveClass(/is-scroll-fading/);
+
+    await testInfo.attach(`${brand.brand}-rail-visible-up-390x844`, {
+      body: await page.screenshot({ animations: 'disabled' }),
+      contentType: 'image/png',
+    });
+    await page.waitForTimeout(650);
+    await expect(rail).not.toHaveClass(/is-scroll-fading/);
+
+    // Fast reversal is handled once each direction crosses the same threshold.
+    await scrollTo(696);
+    await expect(rail).not.toHaveClass(/is-scroll-fading/);
+    await scrollTo(700);
+    await expect(rail).toHaveClass(/is-scroll-fading/);
+    await scrollTo(696);
+    await expect(rail).toHaveClass(/is-scroll-fading/);
+    await scrollTo(692);
+    await expect(rail).not.toHaveClass(/is-scroll-fading/);
+
+    // Returning to the page top overrides the previous direction/state.
+    await scrollTo(0);
+    await expect(rail).not.toHaveClass(/is-scroll-fading/);
+    await expect.poll(() => page.evaluate(() => document.documentElement.scrollHeight))
+      .toBe(documentHeight);
+    await expect.poll(() => rail.evaluate(el => Number.parseFloat(getComputedStyle(el).opacity)))
+      .toBeGreaterThan(0.9);
+    await testInfo.attach(`${brand.brand}-rail-visible-at-top-390x844`, {
+      body: await page.screenshot({ animations: 'disabled' }),
+      contentType: 'image/png',
+    });
   });
 }
+
+
+
+for (const brand of BRANDS) {
+  test(`${brand.brand}: reduced motion preserves direction behavior without rail animation`, async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await page.addInitScript(() => sessionStorage.setItem('splashDone', '1'));
+    await page.goto('/?brand=' + brand.brand, { waitUntil: 'domcontentloaded' });
+    const rail = page.locator(brand.rail);
+    await expect(rail).toBeVisible({ timeout: 15000 });
+    await expect.poll(() => rail.evaluate(el => getComputedStyle(el).transitionDuration)).toBe('0s');
+
+    await page.evaluate(() => window.scrollTo(0, 700));
+    await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(700);
+    await expect(rail).toHaveClass(/is-scroll-fading/);
+    await page.evaluate(() => window.scrollTo(0, 680));
+    await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(680);
+    await expect(rail).not.toHaveClass(/is-scroll-fading/);
+  });
+}
+
 
 
 for (const brand of BRANDS) {
@@ -121,7 +177,7 @@ for (const brand of BRANDS) {
     await page.goto('/?brand=' + brand.brand, { waitUntil: 'domcontentloaded' });
     const rail = page.locator(brand.rail);
     await expect(page.locator(brand.active)).toBeVisible({ timeout: 15000 });
-    await page.evaluate(() => window.scrollTo(0, 700));
+    await page.evaluate(() => window.scrollToWithoutRailFade(700));
     await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(300);
     await expect.poll(() => rail.evaluate(el => el.classList.contains('is-scroll-fading')), { timeout: 5000 }).toBe(false);
 
