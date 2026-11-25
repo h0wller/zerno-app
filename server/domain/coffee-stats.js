@@ -86,7 +86,7 @@ export function buildCoffeeMonthStats(monthValue, rows = []) {
     }
 
     if (!/списан бесплатный кофе/i.test(action)) continue;
-    const match = action.match(/списан бесплатный кофе:\\s*(.+?)\\s*\\(/i);
+    const match = action.match(/списан бесплатный кофе:\s*(.+?)\s*\(/i);
     const item = match ? match[1].trim() : 'неизвестно';
 
     total += 1;
