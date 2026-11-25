@@ -681,6 +681,14 @@ test('visual audit: delivery search states for admin at 390x844', async ({ page 
     path: path.join(OUT, 'DELIVERY-ADMIN-PROMO-MODAL-390x844.png'),
     animations: 'disabled'
   });
+  const promoCard = promoModal.locator('.modal-card');
+  await promoCard.evaluate(element => { element.scrollTop = element.scrollHeight; });
+  await expect(promoModal.locator('#pmOn')).toBeVisible();
+  await expect(promoModal.locator('#bzDays')).toBeVisible();
+  await page.screenshot({
+    path: path.join(OUT, 'DELIVERY-ADMIN-PROMO-MODAL-BOTTOM-390x844.png'),
+    animations: 'disabled'
+  });
   const promoRuntime = await page.evaluate(() => {
     const modal = document.getElementById('promoModal');
     const card = modal.querySelector('.modal-card');

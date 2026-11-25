@@ -302,7 +302,7 @@ test.describe('Модуль заказов профиля', () => {
     await expect(pin).not.toHaveClass(/show/);
   });
 
-  test('повторное закрытие профиля через backdrop снимает blur и освобождает клики', async ({ page }) => {
+  test('повторное закрытие профиля через backdrop снимает blur и освобождает клики', async ({ page }, testInfo) => {
     const panel = page.locator('#panel');
     const overlay = page.locator('#overlay');
     const profileButton = page.locator('#profileTopBtn');
@@ -338,6 +338,13 @@ test.describe('Модуль заказов профиля', () => {
           opacity: Number(style.opacity)
         };
       })).toEqual({ visibility: 'hidden', pointerEvents: 'none', opacity: 0 });
+
+      if (attempt === 0) {
+        await testInfo.attach('delivery-profile-backdrop-dismissed-390x844', {
+          body: await page.screenshot({ fullPage: false, animations: 'disabled' }),
+          contentType: 'image/png'
+        });
+      }
 
       await expect(profileButton).toBeVisible();
       await profileButton.click();
