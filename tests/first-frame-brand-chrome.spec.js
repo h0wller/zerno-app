@@ -266,21 +266,42 @@ for (const brand of ['coffee', 'delivery']) {
         const avatarFace = await page.locator('#profileTopBtn').evaluate((button) => {
           const buttonStyle = getComputedStyle(button);
           const face = getComputedStyle(button, '::before');
+          const buttonRect = button.getBoundingClientRect();
+          const faceRect = face.width === 'auto' ? null : {
+            width: parseFloat(face.width),
+            height: parseFloat(face.height),
+            left: parseFloat(face.left),
+            right: parseFloat(face.right),
+            top: parseFloat(face.top),
+            bottom: parseFloat(face.bottom)
+          };
           return {
             buttonPosition: buttonStyle.position,
             buttonIsolation: buttonStyle.isolation,
+            buttonWidth: buttonRect.width,
+            buttonHeight: buttonRect.height,
             faceContent: face.content,
             facePosition: face.position,
             faceWidth: face.width,
-            faceHeight: face.height
+            faceHeight: face.height,
+            faceLeft: faceRect && faceRect.left,
+            faceRight: faceRect && faceRect.right,
+            faceTop: faceRect && faceRect.top,
+            faceBottom: faceRect && faceRect.bottom
           };
         });
         expect(avatarFace.buttonPosition, 'mobile avatar face must be positioned against its own hit cell').toBe('relative');
         expect(avatarFace.buttonIsolation).toBe('isolate');
         expect(avatarFace.faceContent).not.toBe('none');
         expect(avatarFace.facePosition).toBe('absolute');
-        expect(avatarFace.faceWidth).toBe('32px');
-        expect(avatarFace.faceHeight).toBe('32px');
+        expect(avatarFace.buttonWidth).toBe(44);
+        expect(avatarFace.buttonHeight).toBe(44);
+        expect(avatarFace.faceWidth).not.toBe('auto');
+        expect(avatarFace.faceHeight).not.toBe('auto');
+        expect(Math.abs(avatarFace.faceLeft - avatarFace.faceRight)).toBeLessThanOrEqual(1);
+        expect(Math.abs(avatarFace.faceTop - avatarFace.faceBottom)).toBeLessThanOrEqual(1);
+        expect(avatarFace.faceLeft).toBeGreaterThanOrEqual(-1);
+        expect(avatarFace.faceTop).toBeGreaterThanOrEqual(-1);
       }
       await testInfo.attach(`${brand}-${viewport.name}-logo-first-frame-metrics.json`, {
         body: Buffer.from(JSON.stringify(firstFramePresentation, null, 2)),
