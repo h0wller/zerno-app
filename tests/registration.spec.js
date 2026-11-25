@@ -690,3 +690,247 @@ test('P0 registration baseline: capture guest, auth and both profile activation 
     }
   }
 });
+
+
+test('P0: registration value copy changes by brand and never promises a bonus during login', async ({ page }) => {
+  for (const brand of ['coffee', 'delivery']) {
+    await page.goto('/?brand=' + brand);
+    await page.waitForFunction(() => typeof window.openAuth === 'function');
+    await page.evaluate(() => window.openAuth(false));
+
+    const subtitle = page.locator('#authModal .msub');
+    if (brand === 'coffee') {
+      await expect(page.locator('#authTitle')).toContainText('…и кофе');
+      await expect(subtitle).toContainText('10 штампов');
+      await expect(subtitle).toContainText('QR');
+      await expect(subtitle).toContainText('только если');
+    } else {
+      await expect(page.locator('#authTitle')).toContainText('Пятницы');
+      await expect(subtitle).toContainText('сохранять заказы');
+      await expect(subtitle).toContainText('корзина применит');
+    }
+
+    await page.locator('#toLogin').click();
+    await expect(subtitle).toContainText('Войдите');
+    await expect(subtitle).not.toContainText(/приветствен|бесплатн|штамп/i);
+  }
+});
+
+test('P0: phone registration creates a clearly pending profile for both brands', async ({ page }) => {
+  await page.route('**/api/auth/register', (route) => route.fulfill({
+    status: 200,
+    contentType: 'application/json',
+    body: JSON.stringify({
+      token: 'p0-pending-token',
+      customer: {
+        id: 'p0-pending-customer',
+        name: 'P0 Pending',
+        phone: '+7 900 000-00-02',
+        role: 'guest',
+        cups: 0,
+        stamps: 0,
+        free: 0,
+        qr: 'Z-P0PENDING',
+        verified: 0,
+        welcome: 0,
+        tg: 0,
+        history: []
+      }
+    })
+  }));
+  await page.route('**/api/orders/mine', (route) => route.fulfill({
+    status: 200,
+    contentType: 'application/json',
+    body: JSON.stringify({ orders: [] })
+  }));
+
+  for (const brand of ['coffee', 'delivery']) {
+    await page.goto('/?brand=' + brand);
+    await page.waitForFunction(() => typeof window.openAuth === 'function');
+    await page.evaluate(() => window.openAuth(false));
+    await page.locator('#regName').fill('P0 Pending');
+    await page.locator('#regPhone').fill('+7 900 000-00-02');
+    await page.locator('#regPin').fill('1357');
+    await page.locator('#consentBox').check();
+    await page.locator('#regBtn').click();
+
+    await expect(page.locator('#profileBox')).toBeVisible();
+    await expect(page.locator('#verifyNote')).toBeVisible();
+    await expect(page.locator('#verifyNote')).toContainText('Профиль создан, но ещё не активирован');
+    await expect(page.locator('#verifyNote')).toContainText('4-значный код');
+    await expect(page.locator('#actCode')).toBeVisible();
+    await expect(page.locator('#actBtn')).toBeVisible();
+    if (brand === 'delivery') {
+      await expect(page.locator('#verifyNote')).toContainText('Заказы станут доступны после активации');
+    } else {
+      await expect(page.locator('#verifyNote')).toContainText('10 штампов');
+    }
+  }
+});
+
+test('P0: cashier activation confirms the coffee card without inventing a welcome gift', async ({ page }) => {
+  await page.route('**/api/orders/mine', (route) => route.fulfill({
+    status: 200,
+    contentType: 'application/json',
+    body: JSON.stringify({ orders: [] })
+  }));
+  await page.route('**/api/auth/activate-guest', (route) => route.fulfill({
+    status: 200,
+    contentType: 'application/json',
+    body: JSON.stringify({
+      customer: {
+        id: 'p0-coffee-activated',
+        name: 'P0 Coffee',
+        phone: '+7 900 000-00-03',
+        role: 'guest',
+        cups: 0,
+        stamps: 0,
+        free: 0,
+        qr: 'Z-P0COFFEE',
+        verified: 1,
+        welcome: 1,
+        tg: 0,
+        history: []
+      }
+    })
+  }));
+
+  await page.goto('/?brand=coffee');
+  await page.waitForFunction(() => typeof window.setUser === 'function' && typeof window.renderVerifyNote === 'function');
+  await page.evaluate(() => {
+    window.setUser('p0-coffee-pending', {
+      id: 'p0-coffee-pending',
+      name: 'P0 Coffee',
+      phone: '+7 900 000-00-03',
+      role: 'guest',
+      cups: 0,
+      stamps: 0,
+      free: 0,
+      qr: 'Z-P0COFFEE',
+      verified: 0,
+      welcome: 0,
+      tg: 0,
+      history: []
+    });
+    window.renderProfile();
+    window.renderVerifyNote();
+    window.openPanel();
+  });
+  await page.locator('#actCode').fill('2468');
+  await page.locator('#actBtn').click();
+
+  await expect(page.locator('#verifyNote')).toBeHidden();
+  await expect(page.locator('#profileCoffeeSection')).toBeVisible();
+  await expect(page.locator('#qrOpenProfile')).toBeVisible();
+  await expect(page.locator('#toasts .toast').last()).toContainText('10 штампов');
+  await expect(page.locator('#toasts .toast').last()).not.toContainText('приветственный напиток уже ваш');
+});
+
+test('P0: Friday activation reports a free-delivery code only when the server returns one', async ({ page }) => {
+  await page.route('**/api/orders/mine', (route) => route.fulfill({
+    status: 200,
+    contentType: 'application/json',
+    body: JSON.stringify({ orders: [] })
+  }));
+  await page.route('**/api/auth/activate-guest', (route) => route.fulfill({
+    status: 200,
+    contentType: 'application/json',
+    body: JSON.stringify({
+      customer: {
+        id: 'p0-delivery-activated',
+        name: 'P0 Delivery',
+        phone: '+7 900 000-00-04',
+        role: 'guest',
+        cups: 0,
+        stamps: 0,
+        free: 0,
+        qr: 'Z-P0DELIVERY',
+        verified: 1,
+        welcome: 1,
+        tg: 1,
+        history: []
+      }
+    })
+  }));
+  await page.route('**/api/me/free-delivery', (route) => route.fulfill({
+    status: 200,
+    contentType: 'application/json',
+    body: JSON.stringify({ code: null })
+  }));
+
+  await page.goto('/?brand=delivery');
+  await page.waitForFunction(() => typeof window.setUser === 'function' && typeof window.renderVerifyNote === 'function');
+  await page.evaluate(() => {
+    window.setUser('p0-delivery-pending', {
+      id: 'p0-delivery-pending',
+      name: 'P0 Delivery',
+      phone: '+7 900 000-00-04',
+      role: 'guest',
+      cups: 0,
+      stamps: 0,
+      free: 0,
+      qr: 'Z-P0DELIVERY',
+      verified: 0,
+      welcome: 0,
+      tg: 0,
+      history: []
+    });
+    window.renderProfile();
+    window.renderVerifyNote();
+    window.openPanel();
+  });
+  await expect(page.locator('#actCode')).toBeVisible();
+  await page.locator('#actCode').fill('2468');
+  await page.locator('#actBtn').click();
+
+  await expect(page.locator('#verifyNote')).toBeHidden();
+  await expect(page.locator('#profileOrdersSection')).toBeVisible();
+  await expect(page.locator('#toasts .toast').last()).toContainText('персональный код бесплатной первой доставки не назначен');
+  await expect(page.locator('#toasts .toast').last()).not.toContainText('бесплатная доставка доступна');
+});
+
+test('P0: Friday welcome delivery is explained as automatically applied only with a server code', async ({ page }) => {
+  await page.route('**/api/auth/tg-link', (route) => route.fulfill({
+    status: 200,
+    contentType: 'application/json',
+    body: JSON.stringify({
+      isNew: true,
+      token: 'p0-delivery-tg-token',
+      customer: {
+        id: 'p0-delivery-tg',
+        name: 'P0 Delivery',
+        phone: '+7 900 000-00-05',
+        role: 'guest',
+        cups: 0,
+        stamps: 0,
+        free: 0,
+        qr: 'Z-P0TG',
+        verified: 1,
+        welcome: 1,
+        tg: 1,
+        history: []
+      }
+    })
+  }));
+  await page.route('**/api/me/free-delivery', (route) => route.fulfill({
+    status: 200,
+    contentType: 'application/json',
+    body: JSON.stringify({ code: 'B1234ABCD' })
+  }));
+
+  await page.goto('/?brand=delivery');
+  await page.waitForFunction(() => typeof window.openAuth === 'function');
+  await page.evaluate(() => {
+    window.__tgInitData = 'test-init-data';
+    window.openAuth(false);
+  });
+  await page.locator('#regName').fill('P0 Delivery');
+  await page.locator('#regPhone').fill('+7 900 000-00-05');
+  await page.locator('#regPin').fill('1357');
+  await page.locator('#consentBox').check();
+  await page.locator('#regBtn').click();
+
+  await expect(page.locator('#toasts .toast').last()).toContainText('бесплатная первая доставка доступна');
+  await expect(page.locator('#toasts .toast').last()).toContainText('корзина применит');
+  await expect(page.locator('#profileOrdersSection')).toBeVisible();
+});
