@@ -73,27 +73,50 @@
     row.appendChild(link);
   }
 
-  // Сброс Telegram-подтверждения при закрытии auth-модалки.
-  window.resetRegistrationState = function () {
-    window.__regTgPollGeneration = (window.__regTgPollGeneration || 0) + 1;
-    if (typeof window.__registrationTgPollFinish === 'function') window.__registrationTgPollFinish();
-    else if (window.__registrationTgPoll) {
-      clearInterval(window.__registrationTgPoll);
-      window.__registrationTgPoll = null;
-    }
+  // Accepted Telegram registration is independent from auth-modal visibility.
+  var activeTelegramRegistration = null;
+
+  function renderRegistrationState() {
     var row = document.getElementById('regTgRow');
-    if (row) {
+    var button = document.getElementById('regTgBtn');
+    if (!row) return;
+
+    if (!activeTelegramRegistration) {
       row.hidden = true;
       row.className = '';
       row.textContent = '✅ Номер подтверждён — завершите регистрацию';
+      if (button) {
+        button.disabled = false;
+        button.removeAttribute('aria-busy');
+        var emptyLabel = button.querySelector('span');
+        if (emptyLabel) emptyLabel.textContent = 'Подтвердить в Telegram · бесплатно';
+      }
+      return;
     }
-    var button = document.getElementById('regTgBtn');
+
+    row.hidden = false;
+    row.className = activeTelegramRegistration.className || 'auth-tg-pending';
+    row.textContent = activeTelegramRegistration.message || 'Ожидаем подтверждение в Telegram…';
+    if (activeTelegramRegistration.fallbackUrl) {
+      appendTelegramFallbackLink(row, activeTelegramRegistration.fallbackUrl);
+    }
     if (button) {
-      button.disabled = false;
-      button.removeAttribute('aria-busy');
+      var requesting = activeTelegramRegistration.status === 'requesting';
+      button.disabled = requesting;
+      if (requesting) button.setAttribute('aria-busy', 'true');
+      else button.removeAttribute('aria-busy');
       var label = button.querySelector('span');
-      if (label) label.textContent = 'Подтвердить в Telegram · бесплатно';
+      if (label) label.textContent = activeTelegramRegistration.status === 'pending'
+        ? 'Отправить повторно в Telegram'
+        : 'Подтвердить в Telegram · бесплатно';
     }
+  }
+
+  window.renderRegistrationState = renderRegistrationState;
+
+  // Auth may reset transient form controls at any time; it must not cancel an accepted attempt.
+  window.resetRegistrationState = function () {
+    renderRegistrationState();
   };
 
   function readRegistrationForm() {
@@ -372,20 +395,28 @@
         }
         if (ph10(ph).length < 10) return toast('Введите номер полностью', '📵');
 
+        if (activeTelegramRegistration && (
+          activeTelegramRegistration.status === 'requesting' ||
+          activeTelegramRegistration.status === 'pending'
+        )) {
+          activeTelegramRegistration.status = 'replaced';
+          activeTelegramRegistration.className = 'auth-tg-timeout';
+          activeTelegramRegistration.message = 'Предыдущее подтверждение заменено новым запросом.';
+          renderRegistrationState();
+        }
         if (typeof window.__registrationTgPollFinish === 'function') window.__registrationTgPollFinish();
-        else if (window.__registrationTgPoll) {
-          clearInterval(window.__registrationTgPoll);
-          window.__registrationTgPoll = null;
-        }
         var pollGeneration = (window.__regTgPollGeneration = (window.__regTgPollGeneration || 0) + 1);
+        var authSessionRevision = Number(window.__authSessionRevision) || 0;
+        var attempt = {
+          generation: pollGeneration,
+          status: 'requesting',
+          className: 'auth-tg-pending',
+          message: 'Отправляем запрос в Telegram…',
+          fallbackUrl: ''
+        };
+        activeTelegramRegistration = attempt;
+        renderRegistrationState();
         var pollBusy = false;
-        var statusRow = document.getElementById('regTgRow');
-        if (statusRow) {
-          statusRow.hidden = true;
-          statusRow.className = '';
-          statusRow.textContent = '✅ Номер подтверждён — завершите регистрацию';
-        }
-
         var buttonLabel = regTgBtn.querySelector('span');
         var requestAccepted = false;
         var telegramTarget = reserveTelegramRegistrationTarget();
@@ -405,6 +436,8 @@
             throw new Error('Не удалось создать ключ подтверждения. Повторите попытку.');
           }
           requestAccepted = true;
+          attempt.status = 'pending';
+          attempt.message = 'Ожидаем подтверждение в Telegram…';
 
           var telegramOpened = false;
           if (r && r.tgUrl) {
@@ -413,15 +446,11 @@
           }
           toast('Подтвердите номер в Telegram', '🤖');
 
-          if (statusRow) {
-            statusRow.hidden = false;
-            statusRow.className = 'auth-tg-pending';
-            statusRow.textContent = 'Ожидаем подтверждение в Telegram…';
-            if (r && r.tgUrl && !telegramOpened) {
-              appendTelegramFallbackLink(statusRow, r.tgUrl);
-              toast('Откройте Telegram по ссылке в окне подтверждения', '🤖');
-            }
+          if (r && r.tgUrl && !telegramOpened) {
+            attempt.fallbackUrl = r.tgUrl;
+            toast('Откройте Telegram по ссылке в окне подтверждения', '🤖');
           }
+          renderRegistrationState();
 
           // Поллинг остаётся активным после закрытия модалки и завершает вход в фоне.
           // Лимит: 60 попыток × 2.5 с ≈ 2.5 мин.
@@ -434,6 +463,13 @@
             clearInterval(pollTimer);
             if (window.__registrationTgPoll === pollTimer) window.__registrationTgPoll = null;
             if (window.__registrationTgPollFinish === finishPoll) window.__registrationTgPollFinish = null;
+            if (activeTelegramRegistration === attempt &&
+              (attempt.status === 'requesting' || attempt.status === 'pending')) {
+              attempt.status = 'cancelled';
+              attempt.className = 'auth-tg-timeout';
+              attempt.message = 'Подтверждение остановлено. Нажмите кнопку, чтобы начать заново.';
+              renderRegistrationState();
+            }
             endAuthOperation();
           }
           beginAuthOperation();
@@ -444,12 +480,11 @@
             }
             if (pollBusy) return;
             if (++regPollTries > 60) {
+              attempt.status = 'expired';
+              attempt.className = 'auth-tg-timeout';
+              attempt.message = 'Не получили подтверждение. Отправьте запрос повторно.';
+              renderRegistrationState();
               finishPoll();
-              if (pollGeneration === window.__regTgPollGeneration && statusRow) {
-                statusRow.hidden = false;
-                statusRow.className = 'auth-tg-timeout';
-                statusRow.textContent = 'Не получили подтверждение. Отправьте запрос повторно.';
-              }
               return;
             }
             pollBusy = true;
@@ -458,18 +493,29 @@
                 method: 'POST',
                 body: { pollToken: pollToken }
               });
-              if (pollGeneration !== window.__regTgPollGeneration) return;
+              if (pollFinished || pollGeneration !== window.__regTgPollGeneration) return;
               if (c && c.confirmed) {
                 if (c.token && c.customer) {
+                  if ((Number(window.__authSessionRevision) || 0) !== authSessionRevision) {
+                    attempt.status = 'superseded';
+                    attempt.className = 'auth-tg-timeout';
+                    attempt.message = 'Вход уже выполнен в другом профиле. Подтверждение Telegram не применено.';
+                    renderRegistrationState();
+                    finishPoll();
+                    return;
+                  }
                   await completeRegistration({ token: c.token, customer: c.customer }, c.isNew);
+                  attempt.status = 'completed';
+                  attempt.className = 'auth-badge-confirmed';
+                  attempt.message = 'Номер подтверждён в Telegram. Профиль открыт.';
+                  renderRegistrationState();
                   finishPoll();
                   return;
                 }
-                if (statusRow) {
-                  statusRow.hidden = false;
-                  statusRow.className = 'auth-badge-confirmed';
-                  statusRow.textContent = '✅ Номер подтверждён в Telegram';
-                }
+                attempt.status = 'confirmed';
+                attempt.className = 'auth-badge-confirmed';
+                attempt.message = 'Номер подтверждён в Telegram';
+                renderRegistrationState();
                 toast('Номер подтверждён через Telegram', '🎉');
               }
             } catch (_) {
@@ -481,17 +527,22 @@
           window.__registrationTgPoll = pollTimer;
           window.__registrationTgPollFinish = finishPoll;
         } catch (e) {
-          if (!requestAccepted) closeTelegramRegistrationTarget(telegramTarget);
+          if (!requestAccepted) {
+            closeTelegramRegistrationTarget(telegramTarget);
+            if (activeTelegramRegistration === attempt) {
+              activeTelegramRegistration = null;
+              renderRegistrationState();
+            }
+          }
           if (pollGeneration === window.__regTgPollGeneration) toast(e.message, '⚠️');
         } finally {
           if (pollGeneration === window.__regTgPollGeneration) {
-            regTgBtn.disabled = false;
-            regTgBtn.removeAttribute('aria-busy');
             if (buttonLabel) {
               buttonLabel.textContent = requestAccepted
                 ? 'Отправить повторно в Telegram'
                 : 'Подтвердить в Telegram · бесплатно';
             }
+            renderRegistrationState();
           }
           endAuthOperation();
         }
