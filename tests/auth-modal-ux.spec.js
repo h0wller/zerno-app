@@ -159,6 +159,7 @@ test('registration and login tabs stay in sync with the active form and keyboard
   await page.waitForFunction(() => typeof window.openAuth === 'function');
   await page.evaluate(() => window.openAuth(false));
 
+  const benefit = page.locator('#authModal .msub');
   const registerTab = page.locator('#toReg');
   const loginTab = page.locator('#toLogin');
   await expect(registerTab).toHaveAttribute('type', 'button');
