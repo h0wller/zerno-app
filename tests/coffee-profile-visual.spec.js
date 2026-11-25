@@ -383,7 +383,7 @@ test('coffee profile groups bonus explanations in one collapsed disclosure', asy
   await expect(content).toBeHidden();
   await expect(help).toContainText('кассир сканирует ваш QR и начисляет 1 штамп');
   await expect(help).toContainText('10 штампов — бесплатный кофе');
-  await expect(help).toContainText('При регистрации доступны приветственный кофе и бесплатная первая доставка');
+  await expect(help).toContainText('Преимущества карты станут доступны после подтверждения номера');
 
   await help.locator('summary').click();
   await expect(help).toHaveAttribute('open', '');

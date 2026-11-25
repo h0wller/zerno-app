@@ -62,6 +62,19 @@ async function loginAs(page, { code } = {}) {
   }
   if (!token) throw new Error('register: 409-коллизия после 5 попыток');
 
+  // Guest registration is pending until the cashier activation code is applied.
+  if (!code) {
+    const guestActivationCode = String(process.env.UI_GUEST_ACTIVATION_CODE || '');
+    if (!/^\d{4}$/.test(guestActivationCode)) {
+      throw new Error('UI_GUEST_ACTIVATION_CODE must be a dedicated 4-digit CI fixture');
+    }
+    const activation = await page.request.post('/api/auth/activate-guest', {
+      data: { code: guestActivationCode },
+      headers: { Authorization: 'Bearer ' + token },
+    });
+    if (!activation.ok()) throw new Error('activate guest: ' + activation.status() + ' ' + (await activation.text()));
+  }
+
   if (code) {
     const r2 = await page.request.post('/api/auth/activate', {
       data: { code },
@@ -151,6 +164,7 @@ test('baseline: профиль и бонусы (зарегистрирован)'
   await expect(panel).toBeVisible({ timeout: 8000 });
 
   await expect(page.locator('#profileBox')).toBeVisible({ timeout: 10000 });
+  await expect.poll(() => page.evaluate(() => window.me && (window.me.verified === true || window.me.verified === 1 || Number(window.me.verified) > 0))).toBe(true);
   await expect(page.locator('#profileCoffeeSection .stats')).toBeHidden();
   await expect(page.locator('.profile-qr-access')).toBeVisible();
   await expect(page.locator('.profile-qr-link')).toHaveText('Показать QR');

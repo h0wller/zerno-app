@@ -97,7 +97,6 @@ if (document.readyState === 'loading') {
 } else {
   brandRules();
 }
-setTimeout(brandRules, 300);
 /* ── relink + verifyNote (было секция 6) ── */
 function relink(){document.querySelectorAll('a[href*="t.me/and_coffee_bot"]').forEach(function(a){a.href='https://t.me/'+(window.TG_USERNAME||'and_coffee_bot');});}
 window.renderVerifyNote=function(){

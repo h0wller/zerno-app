@@ -728,6 +728,21 @@ test('switching to and from Telegram code entry moves focus to the active field'
 
 
 test('registration completes and creates a session when the modal is closed mid-request', async ({ page }) => {
+  await page.route('**/api/orders/mine', (route) => route.fulfill({
+    status: 200,
+    contentType: 'application/json',
+    body: JSON.stringify({ orders: [] })
+  }));
+  await page.route('**/api/chat/**', (route) => route.fulfill({
+    status: 200,
+    contentType: 'application/json',
+    body: JSON.stringify({})
+  }));
+  await page.route('**/api/me/free-delivery', (route) => route.fulfill({
+    status: 200,
+    contentType: 'application/json',
+    body: JSON.stringify({ code: null })
+  }));
   await page.addInitScript(() => {
     localStorage.setItem('zt_onb', '1');
     sessionStorage.setItem('splashDone', '1');

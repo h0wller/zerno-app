@@ -225,7 +225,8 @@ test('Задачи 5 и 6: Модалка «Мои заказы» в TMA и по
         free: 1,
         cups: 15,
         qr: 'Z-777777',
-        role: 'guest'
+        role: 'guest',
+        verified: 1
       });
     }
     if (typeof window.renderAll === 'function') window.renderAll();
