@@ -268,6 +268,26 @@ test('auth modal closes on backdrop click but stays open for card clicks', async
 
 
 
+test('auth modal explains the coffee stamp card before registration and avoids a gift promise during login', async ({ page }) => {
+  await page.addInitScript(() => {
+    localStorage.setItem('zt_onb', '1');
+    sessionStorage.setItem('splashDone', '1');
+  });
+  await page.goto('/?brand=coffee');
+  await page.waitForFunction(() => typeof window.openAuth === 'function');
+
+  const subtitle = page.locator('#authModal .msub');
+  await page.evaluate(() => window.openAuth(false));
+  await expect(subtitle).toContainText('1 штамп за покупку');
+  await expect(subtitle).toContainText('10 штампов');
+  await expect(subtitle).toContainText('QR');
+  await expect(subtitle).toContainText('только после начисления сервером');
+
+  await page.evaluate(() => window.openAuth(true));
+  await expect(subtitle).toContainText('Войдите по номеру телефона');
+  await expect(subtitle).not.toContainText(/бесплатный кофе|приветственн|начисления сервером/i);
+});
+
 test('auth modal explains Friday delivery value in registration and avoids it in login mode', async ({ page }) => {
   await page.addInitScript(() => {
     localStorage.setItem('zt_onb', '1');
