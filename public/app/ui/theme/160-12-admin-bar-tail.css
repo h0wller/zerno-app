@@ -1539,7 +1539,9 @@ html[data-staff-role] body .menu-head .menu-title-group > .upd {
 
 /* Mobile avatar: retain the 44px hit cell while drawing only a 32px brand face. */
 @media (max-width: 820px) {
-  html body header.topbar #profileTopBtn {
+  /* Match the stronger mobile grid selector in 160-03 so the pseudo-face
+     stays anchored to the 44px button instead of the entire sticky header. */
+  html body header.topbar button#profileTopBtn.ava {
     position: relative;
     isolation: isolate;
     background: transparent;
