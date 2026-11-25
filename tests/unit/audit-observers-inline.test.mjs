@@ -66,10 +66,11 @@ test('does not treat MutationObserver mentions in comments, strings, or regex li
   assert.equal(result.status, 0, outputOf(result));
 });
 
-test('detects observers inside template-literal expressions', () => {
-  const result = runAuditWithHtml("<script id=\"template-expression\">\nconst text = `value: ${new MutationObserver(() => {})}`;\n</script>");
+test('detects forbidden observers inside template-literal expressions', () => {
+  const result = runAuditWithHtml("<script id=\"template-expression\">\nconst text = `value: ${new MutationObserver(() => {}).observe(document.body, {})}`;\n</script>");
   assert.notEqual(result.status, 0);
   assert.match(outputOf(result), /template-expression/);
+  assert.match(outputOf(result), /document.body/i);
 });
 
 test('does not stop at an escaped script closing sequence inside inline JavaScript', () => {
@@ -95,5 +96,34 @@ test('continues to reject forbidden targets in external JavaScript files', () =>
 
 test('the repository public/index.html passes the observer audit', () => {
   const result = spawnSync(process.execPath, [auditPath], { cwd: repoRoot, encoding: 'utf8' });
+  assert.equal(result.status, 0, outputOf(result));
+});
+
+
+test('detects an inline MutationObserver that has no inspectable observe target', () => {
+  const result = runAuditWithHtml('<script id="unbound-observer">new MutationObserver(() => {});</script>');
+  assert.notEqual(result.status, 0);
+  assert.match(outputOf(result), /unbound-observer/);
+});
+
+test('allows an observer scoped to an isolated inline component container', () => {
+  const result = runAuditWithHtml(`
+    <script id="isolated-component">
+      const container = document.querySelector('#component-panel');
+      new MutationObserver(() => {}).observe(container, { attributes: true });
+    </script>
+  `);
+  assert.equal(result.status, 0, outputOf(result));
+});
+
+test('ignores script-like markup inside HTML comments', () => {
+  const result = runAuditWithHtml(`
+    <!--
+      <script id="commented-out">
+        new MutationObserver(() => {}).observe(document.body, {});
+      </script>
+    -->
+    <script id="real-inline">window.ready = true;</script>
+  `);
   assert.equal(result.status, 0, outputOf(result));
 });

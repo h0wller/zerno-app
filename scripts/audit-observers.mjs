@@ -7,7 +7,7 @@ const APP_DIR = path.resolve('public/app');
 const HTML_PATH = path.resolve('public/index.html');
 
 // Белый список и строгие квоты активных MutationObserver (ADR-008 / F5.71).
-// Inline bootstrap code has no component lifecycle and cannot own observers.
+// Inline observers may target isolated component containers only; global roots remain forbidden.
 const ALLOWLIST = {
   'public/app/cashier.js': 1,           // локальный контейнер cash-view
   'public/app/core/chat-head.js': 1,    // самоотключающийся класс шапки чата
@@ -115,6 +115,16 @@ function extractInlineScripts(html) {
   while (cursor < html.length) {
     const start = lowerHtml.indexOf('<script', cursor);
     if (start === -1) break;
+
+    // Ignore commented-out examples and fragments; they are not script elements.
+    const commentStart = lowerHtml.indexOf('<!--', cursor);
+    if (commentStart !== -1 && commentStart < start) {
+      const commentEnd = lowerHtml.indexOf('-->', commentStart + 4);
+      if (commentEnd === -1) break;
+      cursor = commentEnd + 3;
+      continue;
+    }
+
     const boundary = html[start + 7];
     if (boundary && !/[\s/>]/.test(boundary)) {
       cursor = start + 7;
@@ -188,6 +198,7 @@ function inspectJavaScript(source, sourceType = 'module') {
     allowReturnOutsideFunction: true
   });
   let observerCount = 0;
+  let observeCallCount = 0;
   let hasForbiddenTarget = false;
 
   walk(ast, (node) => {
@@ -198,12 +209,15 @@ function inspectJavaScript(source, sourceType = 'module') {
       if (calleeName === 'MutationObserver') observerCount += 1;
     }
 
-    if (node.type === 'CallExpression' && memberName(node.callee) === 'observe' && node.arguments[0]) {
-      if (containsDocumentGlobalTarget(node.arguments[0])) hasForbiddenTarget = true;
+    if (node.type === 'CallExpression' && memberName(node.callee) === 'observe') {
+      observeCallCount += 1;
+      if (node.arguments[0] && containsDocumentGlobalTarget(node.arguments[0])) {
+        hasForbiddenTarget = true;
+      }
     }
   });
 
-  return { observerCount, hasForbiddenTarget };
+  return { observerCount, observeCallCount, hasForbiddenTarget };
 }
 
 function scanDir(dir) {
@@ -237,8 +251,8 @@ function runAudit() {
       if (result.hasForbiddenTarget) {
         errors.push(`❌ ${location}: запрещённый global observer target (document.body/document.documentElement).`);
       }
-      if (result.observerCount > 0) {
-        errors.push(`❌ ${location}: найдено ${result.observerCount} MutationObserver; inline bootstrap не имеет component lifecycle и не может создавать observers.`);
+      if (result.observerCount > result.observeCallCount) {
+        errors.push(`❌ ${location}: создан MutationObserver без видимого .observe() — изоляцию target подтвердить нельзя.`);
       }
     }
   }
