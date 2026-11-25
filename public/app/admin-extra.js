@@ -332,21 +332,26 @@
         h: 42,
         alt: '…и кофе'
       };
-      mark.innerHTML =
-        '<img class="brandLogo" id="brandLogoImg" src="' +
-        lg.src +
-        '" alt="' +
-        lg.alt +
-        '"' +
-        ' width="' +
-        lg.w +
-        '" height="' +
-        lg.h +
-        '"' +
-        ' decoding="async" fetchpriority="high"' +
-        ' onerror="this.outerHTML=\'<span style=&quot;font-size:26px&quot;>' +
-        (bConfig.emoji || '☕') +
-        '</span>\'">';
+      var logo = mark.querySelector('#brandLogoImg') || mark.querySelector('img.brandLogo');
+      if (!logo) {
+        logo = document.createElement('img');
+        logo.className = 'brandLogo';
+        logo.id = 'brandLogoImg';
+        logo.decoding = 'async';
+        logo.fetchPriority = 'high';
+        logo.onerror = function () {
+          var fallback = document.createElement('span');
+          fallback.style.fontSize = '26px';
+          fallback.textContent = bConfig.emoji || '☕';
+          this.replaceWith(fallback);
+        };
+        mark.replaceChildren(logo);
+      }
+      // Reconcile the existing first-frame node instead of replacing mark contents.
+      logo.alt = lg.alt;
+      logo.width = Number(lg.w) || 42;
+      logo.height = Number(lg.h) || 42;
+      if (logo.getAttribute('src') !== lg.src) logo.src = lg.src
     }
   }
 
