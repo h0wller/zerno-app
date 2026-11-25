@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 
 const coffeeMenu = {
   items: [{
-    id: 'coffee-probe',
+    id: 'probe',
     name: 'Probe Coffee',
     cat: 'coffee',
     on: 1,
@@ -71,7 +71,7 @@ test.describe('Item deep-link catalog request lifecycle', () => {
     await expect.poll(() => page.evaluate(() => window.__brandSplashPending)).toBe(false);
 
     // The card is rendered only after the catalog response has been consumed by boot.
-    await expect(page.locator('#grid > .card[data-item-id="coffee-probe"]')).toBeVisible();
+    await expect(page.locator('#grid > .card[data-item-id="probe"]')).toBeVisible();
     await expect.poll(() => menuResponseFinished).toBe(true);
     await expect.poll(() => page.evaluate(() =>
       document.documentElement.hasAttribute('data-staff-ready')
@@ -134,7 +134,7 @@ test.describe('Item deep-link catalog request lifecycle', () => {
     await expect.poll(() => menuResponseFinished).toBe(true);
 
     await page.locator('#brandSplashStatic [data-go="coffee"], #brandSplash [data-go="coffee"]').first().click();
-    await expect(page.locator('#grid > .card[data-item-id="coffee-probe"]')).toBeVisible();
+    await expect(page.locator('#grid > .card[data-item-id="probe"]')).toBeVisible();
     await expect.poll(() => page.evaluate(() =>
       document.documentElement.hasAttribute('data-staff-ready')
     )).toBe(true);
