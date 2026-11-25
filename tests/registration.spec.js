@@ -1249,3 +1249,57 @@ test('Telegram poll TTL ends the loop and clears its lifecycle handles', async (
   }))).toEqual({ timer: null, finish: undefined });
   await popup.close();
 });
+
+
+test('resetting auth form state does not cancel an accepted Telegram registration', async ({ page }) => {
+  let markCheckStarted;
+  let releaseCheck;
+  const checkStarted = new Promise(resolve => { markCheckStarted = resolve; });
+  const responseGate = new Promise(resolve => { releaseCheck = resolve; });
+
+  await page.route('**/api/orders/mine', route => route.fulfill({
+    status: 200, contentType: 'application/json', body: JSON.stringify({ orders: [] })
+  }));
+  await page.route('**/api/auth/request-reg-otp', route => route.fulfill({
+    status: 200, contentType: 'application/json',
+    body: JSON.stringify({ pollToken: 'f'.repeat(64), tgUrl: 'https://t.me/test_bot?start=reg_reset_state' })
+  }));
+  await page.route('https://t.me/**', route => route.fulfill({
+    status: 200, contentType: 'text/html', body: '<!doctype html><title>Telegram test stub</title>'
+  }));
+  await page.route('**/api/auth/check-reg', async route => {
+    markCheckStarted();
+    await responseGate;
+    await route.fulfill({
+      status: 200, contentType: 'application/json',
+      body: JSON.stringify({
+        confirmed: true, token: 'reset-safe-session', isNew: true,
+        customer: {
+          id: 'reset-safe-customer', name: 'Reset Safe Customer',
+          phone: '+7 900 000-00-46', role: 'guest', stamps: 0, free: 0,
+          verified: 1, history: []
+        }
+      })
+    });
+  });
+
+  await page.goto('/?brand=coffee');
+  await page.evaluate(() => window.openAuth(false));
+  await page.locator('#regName').fill('Reset Safe Customer');
+  await page.locator('#regPhone').fill('+7 900 000-00-46');
+  await page.locator('#consentBox').check();
+  const popupPromise = page.waitForEvent('popup');
+  await page.locator('#regTgBtn').click();
+  const popup = await popupPromise;
+  await popup.waitForLoadState('domcontentloaded');
+  await checkStarted;
+
+  await page.evaluate(() => window.resetRegistrationState());
+  releaseCheck();
+
+  await expect.poll(() => page.evaluate(() => window.USER_TOKEN), { timeout: 10000 })
+    .toBe('reset-safe-session');
+  await expect.poll(() => page.evaluate(() => window.me && window.me.name))
+    .toBe('Reset Safe Customer');
+  await popup.close();
+});
