@@ -52,6 +52,19 @@ async function holdBeforeBundle(page, brand, viewport) {
   return resumeBundle;
 }
 
+async function selectBrandThroughUi(page, selectedBrand) {
+  const toggle = page.locator('#venueToggle');
+  await expect(toggle).toBeVisible();
+  await toggle.click();
+
+  const option = page.locator(`#brandSeg [data-brand="${selectedBrand}"]`);
+  await expect(option).toBeVisible();
+  await option.click();
+
+  await expect(page.locator('html')).toHaveAttribute('data-brand', selectedBrand);
+  await expect.poll(() => page.evaluate(() => window.brand)).toBe(selectedBrand);
+}
+
 async function measureHeader(page) {
   return page.evaluate(() => {
     const rect = (element) => {
@@ -171,24 +184,22 @@ for (const brand of ['coffee', 'delivery']) {
       )).toBe(true);
 
       const nextBrand = brand === 'coffee' ? 'delivery' : 'coffee';
-      await page.evaluate((selectedBrand) => {
-        window.brand = selectedBrand;
-        document.documentElement.setAttribute('data-brand', selectedBrand);
-        document.body.setAttribute('data-brand', selectedBrand);
-        window.applyBrandChrome(true);
-      }, nextBrand);
+      await selectBrandThroughUi(page, nextBrand);
       await expect(logo).toHaveAttribute('src', logoFor(nextBrand).src);
+      await page.evaluate(() => {
+        window.applyBrandChrome(true);
+        window.applyBrandChrome(true);
+      });
       expect(await page.evaluate(() =>
         window.__brandLogoAtFirstFrame === document.getElementById('brandLogoImg')
       )).toBe(true);
 
-      await page.evaluate((selectedBrand) => {
-        window.brand = selectedBrand;
-        document.documentElement.setAttribute('data-brand', selectedBrand);
-        document.body.setAttribute('data-brand', selectedBrand);
-        window.applyBrandChrome(true);
-      }, brand);
+      await selectBrandThroughUi(page, brand);
       await expect(logo).toHaveAttribute('src', expected.src);
+      await page.evaluate(() => {
+        window.applyBrandChrome(true);
+        window.applyBrandChrome(true);
+      });
       expect(await page.evaluate(() =>
         window.__brandLogoAtFirstFrame === document.getElementById('brandLogoImg')
       )).toBe(true);
