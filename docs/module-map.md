@@ -141,7 +141,7 @@
 | Модуль | Владеет | Контракты |
 | --- | --- | --- |
 | `core/promo.js` | `#promoModal`: CRUD кодов, недельная акция и пицца месяца | `window.closePromo`, `window.loadWeekPromo` |
-| `core/dash.js` | `#dashModal` и `#dashCoffee`: вкладки брендов, Bento-отчёт кофейни за календарный месяц (списания по напиткам и дням, кассовых записей «Штамп» ), подписчики пушей | `window.loadSubs`, `window.closeDash` |
+| `core/dash.js` | `#dashModal` и `#dashCoffee`: вкладки брендов, Bento-отчёт кофейни за календарный месяц (списания по напиткам и дням, кассовых записей «Штамп»), подписчики пушей | `window.loadSubs`, `window.closeDash` |
 | `core/dash-orders.js` | вкладка «Пятница» в `#dashModal`: Bento-плитки заказов, график 14 дней, топ-5 позиций и блок «свои» | `window.loadOrdersStats` |
 
 ## 13. CSS по слоям (подробнее — docs/css-architecture.md)
