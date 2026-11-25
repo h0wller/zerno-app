@@ -1,28 +1,17 @@
 const COFFEE_TIME_ZONE = 'Europe/Kaliningrad';
 
-const zonedDateFormatter = new Intl.DateTimeFormat('sv-SE', {
-  timeZone: COFFEE_TIME_ZONE,
-  year: 'numeric',
-  month: '2-digit',
-  day: '2-digit',
-});
-
 function localDateKey(value) {
   const date = new Date(value);
   if (!Number.isFinite(date.getTime())) return null;
-  return zonedDateFormatter.format(date);
+  return new Intl.DateTimeFormat('sv-SE', { timeZone: COFFEE_TIME_ZONE }).format(date);
 }
 
 function localMidnightUtc(year, month, day) {
   return new Date(Date.UTC(year, month - 1, day) - 2 * 60 * 60 * 1000).toISOString();
 }
 
-function currentMonthKey(now) {
-  return localDateKey(now).slice(0, 7);
-}
-
 export function getCoffeeMonthPeriod(monthValue, now = new Date()) {
-  const month = monthValue == null ? currentMonthKey(now) : String(monthValue).trim();
+  const month = monthValue == null ? localDateKey(now).slice(0, 7) : String(monthValue).trim();
   const match = /^(\d{4})-(0[1-9]|1[0-2])$/.exec(month);
   if (!match) return null;
 
