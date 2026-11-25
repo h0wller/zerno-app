@@ -1246,7 +1246,7 @@ test('Telegram poll TTL ends the loop and clears its lifecycle handles', async (
   await expect.poll(() => page.evaluate(() => ({
     timer: window.__registrationTgPoll,
     finish: window.__registrationTgPollFinish
-  }))).toEqual({ timer: null, finish: undefined });
+  }))).toEqual({ timer: null, finish: null });
   await popup.close();
 });
 
