@@ -32,7 +32,7 @@ test('reports Friday free delivery only when an active personal code exists', ()
   });
 
   assert.match(message, /Персональная бесплатная первая доставка доступна/);
-  assert.match(message, /подставит код автоматически/);
+  assert.match(message, /подставит его автоматически, если в корзине не выбран другой промокод/);
   assert.doesNotMatch(message, /B12345678/);
 });
 
