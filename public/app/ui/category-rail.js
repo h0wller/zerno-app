@@ -6,8 +6,12 @@ var observedRailHead = null;
 var observedRailTopbar = null;
 var railStickyLayout = null;
 var railDesktopAnchor = new WeakMap();
-var railFadeTimer = null;
 var fadedElements = [];
+var railScrollLastY = null;
+var railScrollDirection = 0;
+var railScrollDirectionDistance = 0;
+var railScrollHidden = false;
+var RAIL_SCROLL_DIRECTION_THRESHOLD = 8;
 var programmaticScrollToTop = false;
 var programmaticScrollToTopTimer = null;
 var railScrollTick = false;
@@ -179,6 +183,13 @@ function alignRailWithCard() {
     if (head) railHeadObserver.observe(head);
     if (topbar) railHeadObserver.observe(topbar);
   }
+
+  if (!window.matchMedia || !window.matchMedia('(max-width: 820px)').matches) {
+    resetRailScrollDirection(readPageScrollY());
+    setRailScrollHidden(false);
+  } else {
+    applyScrollFadeState(railScrollHidden);
+  }
 }
 
 function activeRail() {
@@ -187,8 +198,7 @@ function activeRail() {
 }
 
 function clearScrollFade() {
-  if (railFadeTimer) window.clearTimeout(railFadeTimer);
-  railFadeTimer = null;
+  railScrollHidden = false;
   fadedElements.forEach(function (element) {
     if (element && element.classList) element.classList.remove('is-scroll-fading');
   });
@@ -209,26 +219,81 @@ function currentScrollFadeTargets() {
   return targets;
 }
 
-function markRailScrolling() {
-  if (programmaticScrollToTop) return;
+function readPageScrollY() {
+  return Math.max(0, window.scrollY || document.documentElement.scrollTop || 0);
+}
 
-  /* Preserve #269: fade only portrait/tablet rails; compact landscape is not faded. */
-  if (!window.matchMedia || !window.matchMedia('(max-width: 820px)').matches) {
-    clearScrollFade();
-    return;
-  }
+function resetRailScrollDirection(position) {
+  railScrollLastY = typeof position === 'number' ? position : readPageScrollY();
+  railScrollDirection = 0;
+  railScrollDirectionDistance = 0;
+}
 
+function applyScrollFadeState(hidden) {
   var targets = currentScrollFadeTargets();
   fadedElements.forEach(function (element) {
     if (targets.indexOf(element) === -1) element.classList.remove('is-scroll-fading');
   });
   fadedElements = targets;
   fadedElements.forEach(function (element) {
-    element.classList.add('is-scroll-fading');
+    element.classList.toggle('is-scroll-fading', hidden);
   });
+}
 
-  if (railFadeTimer) window.clearTimeout(railFadeTimer);
-  railFadeTimer = window.setTimeout(clearScrollFade, 520);
+function setRailScrollHidden(hidden) {
+  railScrollHidden = hidden;
+  applyScrollFadeState(hidden);
+}
+
+function markRailScrolling() {
+  var currentY = readPageScrollY();
+  if (railScrollLastY === null) {
+    resetRailScrollDirection(currentY);
+    return;
+  }
+
+  var delta = currentY - railScrollLastY;
+  railScrollLastY = currentY;
+
+  /* The top of the document always wins, including the final inertial scroll frame. */
+  if (currentY <= 0) {
+    resetRailScrollDirection(currentY);
+    setRailScrollHidden(false);
+    return;
+  }
+
+  /* App-driven category alignment must never change the user's rail visibility state. */
+  if (programmaticScrollToTop) {
+    resetRailScrollDirection(currentY);
+    return;
+  }
+
+  /* Preserve the existing contract: fade only portrait/tablet rails, not compact landscape or desktop. */
+  if (!window.matchMedia || !window.matchMedia('(max-width: 820px)').matches) {
+    resetRailScrollDirection(currentY);
+    setRailScrollHidden(false);
+    return;
+  }
+
+  if (delta === 0) return;
+
+  var nextDirection = delta > 0 ? 1 : -1;
+  if (nextDirection !== railScrollDirection) {
+    railScrollDirection = nextDirection;
+    railScrollDirectionDistance = delta;
+  } else {
+    railScrollDirectionDistance += delta;
+  }
+
+  if (nextDirection > 0 &&
+      railScrollDirectionDistance >= RAIL_SCROLL_DIRECTION_THRESHOLD &&
+      !railScrollHidden) {
+    setRailScrollHidden(true);
+  } else if (nextDirection < 0 &&
+      railScrollDirectionDistance <= -RAIL_SCROLL_DIRECTION_THRESHOLD &&
+      railScrollHidden) {
+    setRailScrollHidden(false);
+  }
 }
 
 function finishProgrammaticScrollToTop() {
@@ -237,6 +302,7 @@ function finishProgrammaticScrollToTop() {
     programmaticScrollToTopTimer = null;
   }
   programmaticScrollToTop = false;
+  resetRailScrollDirection(readPageScrollY());
 }
 
 function cancelProgrammaticScrollToTop() {
@@ -272,6 +338,8 @@ window.addEventListener('scrollend', finishProgrammaticScrollToTop, { passive: t
 
 window.alignRailWithCard = alignRailWithCard;
 window.usesHorizontalCategoryRailViewport = usesFloatingCategoryRailViewport;
+
+resetRailScrollDirection(readPageScrollY());
 
 window.addEventListener('scroll', function () {
   markRailScrolling();
