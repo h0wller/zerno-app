@@ -134,7 +134,7 @@ test('registration without consent neither creates a usable profile nor consumes
 
 
 test('cashier activation code verifies a pending profile and grants the welcome benefit once', async () => {
-  const phone = uniquePhone();
+  const phone = '+7 900 000-01-16';
   const pending = await api('/api/auth/register', {
     name: 'Cashier Activation Integration',
     phone,
@@ -185,6 +185,69 @@ test('cashier activation code verifies a pending profile and grants the welcome 
   );
   assert.equal(duplicateActivation.status, 409);
   assert.equal(grants(), 1);
+});
+
+test('cashier activation does not invent a welcome gift when bonus_cfg disables it', async () => {
+  const bonusKey = "SELECT value FROM meta WHERE key='bonus_cfg'";
+  const previousConfig = inspectDb.prepare(bonusKey).get();
+  const disabledConfig = {
+    days: 30,
+    kinds: {
+      signup: { coffee: 0, delivery: 0, freeFirstDelivery: 0 },
+      qr: { coffee: 0, delivery: 0, freeFirstDelivery: 0 },
+      install: { coffee: 0, delivery: 0, freeFirstDelivery: 0 }
+    }
+  };
+
+  try {
+    inspectDb.prepare(
+      "INSERT INTO meta(key,value) VALUES('bonus_cfg',?) ON CONFLICT(key) DO UPDATE SET value=excluded.value"
+    ).run(JSON.stringify(disabledConfig));
+
+    const phone = '+7 900 000-01-17';
+    const pending = await api('/api/auth/register', {
+      name: 'No Welcome Benefit Integration',
+      phone,
+      pin: '1357',
+      consent: true
+    });
+    assert.equal(pending.status, 200, JSON.stringify(pending.json));
+    assert.equal(pending.json.customer?.verified, 0);
+
+    const pendingRow = inspectDb.prepare(
+      'SELECT actcode FROM customers WHERE id=?'
+    ).get(pending.json.customer.id);
+    assert.match(pendingRow?.actcode || '', /^\d{4}$/);
+
+    const activation = await api(
+      '/api/auth/activate-guest',
+      { code: pendingRow.actcode },
+      pending.json.token
+    );
+    assert.equal(activation.status, 200, JSON.stringify(activation.json));
+    assert.equal(activation.json.customer?.verified, 1);
+    assert.equal(activation.json.customer?.free, 0);
+    assert.equal(activation.json.customer?.stamps, 0);
+
+    const grants = inspectDb.prepare(
+      "SELECT COUNT(*) AS count FROM bonus_grants WHERE cid=? AND kind IN ('signup','qr')"
+    ).get(pending.json.customer.id).count;
+    assert.equal(grants, 0);
+
+    const deliveryResponse = await fetch(base + '/api/me/free-delivery', {
+      headers: { authorization: 'Bearer ' + pending.json.token }
+    });
+    assert.equal(deliveryResponse.status, 200);
+    assert.equal((await deliveryResponse.json()).code, null);
+  } finally {
+    if (previousConfig) {
+      inspectDb.prepare(
+        "UPDATE meta SET value=? WHERE key='bonus_cfg'"
+      ).run(previousConfig.value);
+    } else {
+      inspectDb.prepare("DELETE FROM meta WHERE key='bonus_cfg'").run();
+    }
+  }
 });
 
 test('cashier-created guests get a PIN immediately and duplicate registration reuses the same profile', async () => {
