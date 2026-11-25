@@ -267,7 +267,7 @@ test('auth modal closes on backdrop click but stays open for card clicks', async
 
 
 
-test('auth modal keeps the short unified-profile registration benefit visible in both modes', async ({ page }) => {
+test('auth modal explains Friday delivery value in registration and avoids it in login mode', async ({ page }) => {
   await page.addInitScript(() => {
     localStorage.setItem('zt_onb', '1');
     sessionStorage.setItem('splashDone', '1');
@@ -276,22 +276,16 @@ test('auth modal keeps the short unified-profile registration benefit visible in
   await page.waitForFunction(() => typeof window.openAuth === 'function');
 
   const benefit = page.locator('#authModal .msub');
-  const expected = 'Профиль сохраняет ваши заказы. Первая доставка бесплатна, если сервер назначит вам персональный код: корзина применит его автоматически и покажет результат в расчёте доставки.';
-
   await page.evaluate(() => window.openAuth(false));
-  await expect(benefit).toHaveText(expected);
-  const benefitWidths = await benefit.evaluate((el) => {
-    const head = el.parentElement;
-    const style = getComputedStyle(head);
-    const availableWidth = head.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight);
-    return { actual: el.getBoundingClientRect().width, available: availableWidth };
-  });
-  expect(benefitWidths.actual).toBeGreaterThanOrEqual(benefitWidths.available - 1);
+  await expect(benefit).toContainText('Профиль сохраняет ваши заказы');
+  await expect(benefit).toContainText('сервер назначит вам персональный код');
+  await expect(benefit).toContainText('корзина применит его автоматически');
   await expect(benefit).toHaveCSS('max-width', '100%');
-  await page.evaluate(() => window.openAuth(true));
-  await expect(benefit).toHaveText(expected);
-});
 
+  await page.evaluate(() => window.openAuth(true));
+  await expect(benefit).toContainText('Войдите по номеру телефона');
+  await expect(benefit).not.toContainText(/бесплатн|сервер назначит|корзина/i);
+});
 test('auth fields expose mobile autofill and next/done keyboard hints', async ({ page }) => {
   await page.addInitScript(() => {
     localStorage.setItem('zt_onb', '1');

@@ -172,25 +172,14 @@ window.renderVerifyNote=function(){
       '</div>';
   }
 
-  relink();  n.hidden = false;
-  n.innerHTML =
-    '<div class="profile-activation-copy">' +
-      '<h4>Профиль создан, но ещё не активирован</h4>' +
-      guidance +
-    '</div>' +
-    '<div class="profile-activation-row">' +
-      '<label class="profile-activation-label" for="actCode">Код активации</label>' +
-      '<input id="actCode" inputmode="numeric" maxlength="4" placeholder="4 цифры" aria-label="Четырёхзначный код активации" autocomplete="one-time-code">' +
-      '<button class="btn fire" id="actBtn" type="button">Активировать</button>' +
-    '</div>';
-
+  relink();
   var ab = document.getElementById('actBtn');
   if(!ab) return;
   ab.onclick = async function(){
     if(ab.disabled) return;
     var input = document.getElementById('actCode');
     var code = input ? input.value.trim() : '';
-    if(!/^\d{4}$/.test(code)){
+    if(!/^\\d{4}$/.test(code)){
       toast('Введите 4-значный код активации', '⚠️');
       if(input) input.focus();
       return;
@@ -201,7 +190,7 @@ window.renderVerifyNote=function(){
     ab.textContent = 'Проверяем код…';
     try{
       var r = await api('/auth/activate-guest',{method:'POST',body:{code:code}});
-      if(!r || !r.customer || !r.customer.verified){
+      if(!r || !r.customer || !(r.customer.verified === true || r.customer.verified === 1 || Number(r.customer.verified) > 0)){
         throw new Error('Сервер не подтвердил активацию. Обновите профиль и проверьте статус.');
       }
       if(typeof window.setUser === 'function') window.setUser(window.USER_TOKEN, r.customer);
@@ -221,7 +210,7 @@ window.renderVerifyNote=function(){
         return;
       }
 
-      var freeDelivery = null;
+      var freeDelivery = false;
       var deliveryStatusKnown = false;
       try{
         var deliveryResponse = await api('/me/free-delivery');
