@@ -485,3 +485,51 @@ function contrastRatio(first, second) {
   const values = [luminance(first), luminance(second)].sort((a, b) => b - a);
   return (values[0] + 0.05) / (values[1] + 0.05);
 }
+
+test.describe('iOS storefront search zoom guard', () => {
+  for (const scenario of [
+    { brand: 'coffee', selector: '#menuView #searchInput' },
+    { brand: 'delivery', selector: '#deliveryView #dSearch' },
+  ]) {
+    test(`${scenario.brand} search stays at iOS-safe text size through focus and blur`, async ({ page }) => {
+      await page.setViewportSize({ width: 390, height: 844 });
+      await page.addInitScript(() => {
+        localStorage.clear();
+        sessionStorage.clear();
+        localStorage.setItem('zt_onb', '1');
+        sessionStorage.setItem('splashDone', '1');
+      });
+      await page.goto(`/?brand=${scenario.brand}`, { waitUntil: 'domcontentloaded' });
+
+      const input = page.locator(scenario.selector);
+      await expect(input).toBeVisible();
+
+      const readGeometry = () => page.evaluate((selector) => {
+        const element = document.querySelector(selector);
+        const style = element && getComputedStyle(element);
+        return {
+          fontSize: style ? Number.parseFloat(style.fontSize) : null,
+          documentWidth: document.documentElement.scrollWidth,
+          clientWidth: document.documentElement.clientWidth,
+          scrollX: window.scrollX,
+          visualViewportScale: window.visualViewport ? window.visualViewport.scale : null,
+        };
+      }, scenario.selector);
+
+      const beforeFocus = await readGeometry();
+      expect(beforeFocus.fontSize, `${scenario.brand}: search text must not trigger iOS focus auto-zoom`).toBeGreaterThanOrEqual(16);
+      expect(beforeFocus.documentWidth, `${scenario.brand}: initial page has no horizontal overflow`).toBeLessThanOrEqual(beforeFocus.clientWidth + 1);
+
+      await input.focus();
+      await expect(input).toBeFocused();
+      await input.fill('тест');
+      await input.evaluate((element) => element.blur());
+
+      const afterBlur = await readGeometry();
+      expect(afterBlur.fontSize, `${scenario.brand}: focused search keeps iOS-safe text size`).toBeGreaterThanOrEqual(16);
+      expect(afterBlur.documentWidth, `${scenario.brand}: search focus cycle must not widen the page`).toBeLessThanOrEqual(afterBlur.clientWidth + 1);
+      expect(Math.abs(afterBlur.scrollX), `${scenario.brand}: search focus cycle must not leave horizontal page offset`).toBeLessThanOrEqual(1);
+      expect(afterBlur.visualViewportScale, `${scenario.brand}: emulated viewport scale remains unchanged`).toBe(beforeFocus.visualViewportScale);
+    });
+  }
+});
