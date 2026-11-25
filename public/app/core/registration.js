@@ -493,7 +493,7 @@
                 method: 'POST',
                 body: { pollToken: pollToken }
               });
-              if (pollGeneration !== window.__regTgPollGeneration) return;
+              if (pollFinished || pollGeneration !== window.__regTgPollGeneration) return;
               if (c && c.confirmed) {
                 if (c.token && c.customer) {
                   if ((Number(window.__authSessionRevision) || 0) !== authSessionRevision) {
