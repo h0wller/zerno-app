@@ -7,11 +7,15 @@
   z-index: 110;
   opacity: 0;
   pointer-events: none;
-  transition: opacity var(--motion-duration-spatial) var(--motion-ease-standard);
+  visibility: hidden;
+  transition: opacity var(--motion-duration-spatial) var(--motion-ease-standard),
+    visibility 0s linear var(--motion-duration-spatial);
 }
 .overlay.show{
   opacity: 1;
-  pointer-events: auto
+  pointer-events: auto;
+  visibility: visible;
+  transition-delay: 0s;
 }
 .modal{
   position: fixed;
@@ -413,6 +417,59 @@ label.chk{
   flex-wrap: wrap
 }
 
+
+
+/* Admin promotion editor: one bounded code list, predictable modal scrolling. */
+#promoModal .modal-card {
+  box-sizing: border-box;
+  width: min(620px, 100%);
+  max-height: calc(100dvh - 24px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+}
+#promoModal .modal-card > h3 {
+  padding-right: 42px;
+}
+#promoModal .promo-code-list {
+  margin-top: 16px;
+}
+#promoModal .promo-code-list h4,
+#promoModal .promo-section-heading {
+  margin: 18px 0 8px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+}
+#promoModal .promo-code-list .pm-chips {
+  margin: 8px 0;
+}
+#promoModal .pm-scroll {
+  max-height: min(240px, 28dvh);
+  padding: 8px;
+  background: var(--profile-section-bg, var(--panel, #fff));
+}
+#promoModal #pmList .logrow {
+  gap: 8px;
+  padding: 10px 8px;
+  border-bottom: 1px solid var(--line);
+  border-radius: 8px;
+}
+#promoModal #pmList .logrow:last-child {
+  border-bottom: 0;
+}
+@media (max-width: 560px) {
+  #promoModal {
+    padding: max(12px, env(safe-area-inset-top, 0px))
+      max(12px, env(safe-area-inset-right, 0px))
+      max(12px, env(safe-area-inset-bottom, 0px))
+      max(12px, env(safe-area-inset-left, 0px));
+  }
+  #promoModal .modal-card {
+    width: 100%;
+    max-height: 100%;
+    padding: 18px;
+    border-radius: 20px;
+  }
+}
 
 /* Auth modal: clearer hierarchy, comfortable controls and small-screen scrolling. */
 #authModal {

@@ -5134,11 +5134,12 @@ html body #tickerTrack .tickerGroup > span {
         </div>
         <button class="btn fire" id="pmCreate">Создать промокод</button>
       </div>
-      <h4 style="margin-top: 16px">Список кодов</h4>
-      <div id="pmChips" class="pm-chips"></div>
-      <div class="pm-scroll"><div id="pmList"></div></div><h4 style="margin-top: 16px">Список кодов</h4>
-      <div id="pmList"></div>
-      <h4 style="margin-top: 16px">🍕 Пятничный подарок (доставка)</h4>
+      <section class="promo-code-list" aria-labelledby="promoCodeListHeading">
+        <h4 id="promoCodeListHeading">Список кодов</h4>
+        <div id="pmChips" class="pm-chips"></div>
+        <div class="pm-scroll"><div id="pmList"></div></div>
+      </section>
+      <h4 class="promo-section-heading">🍕 Пятничный подарок (доставка)</h4>
       <div class="form">
         <label for="wpText">Текст акции для гостей<input id="wpText" name="wpText"
             placeholder="Каждые 2000 ₽ в чеке — бутылка пива в подарок 🍺" /></label>
@@ -5155,7 +5156,7 @@ html body #tickerTrack .tickerGroup > span {
           Сохранить пятничный подарок
         </button>
       </div>
-      <h4 style="margin-top: 16px">🍕 Пицца месяца</h4>
+      <h4 class="promo-section-heading">🍕 Пицца месяца</h4>
       <div class="form">
         <label for="pmName">Название подарочной (30 см, тонкое)<input id="pmName" name="pmName"
             placeholder="Маргарита" /></label>
@@ -5163,7 +5164,7 @@ html body #tickerTrack .tickerGroup > span {
           см → подарок» включена</label>
         <button class="btn fire" id="pmSave">Сохранить пиццу месяца</button>
       </div>
-      <h4 style="margin-top: 16px">🎁 Бонусы</h4>
+      <h4 class="promo-section-heading">🎁 Бонусы</h4>
       <div class="form">
         <small>0 — выключено. Кофейня: штампы (10 = напиток). Доставка: скидка ₽ по персональному промокоду (одноразовый).
           Каждый бонус гость получает один раз и только после подтверждения профиля.</small>

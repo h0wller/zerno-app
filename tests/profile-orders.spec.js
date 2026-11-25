@@ -292,6 +292,47 @@ test.describe('Модуль заказов профиля', () => {
     await expect(pin).not.toHaveClass(/show/);
   });
 
+  test('повторное закрытие профиля через backdrop снимает blur и освобождает клики', async ({ page }) => {
+    const panel = page.locator('#panel');
+    const overlay = page.locator('#overlay');
+    const profileButton = page.locator('#profileTopBtn');
+
+    for (let attempt = 0; attempt < 5; attempt += 1) {
+      await page.evaluate(() => window.openPanel('profile'));
+      await expect(panel).toHaveClass(/open/);
+      await expect(overlay).toHaveClass(/show/);
+
+      const backdropPoint = await overlay.evaluate(element => {
+        const candidates = [
+          { x: 4, y: Math.round(window.innerHeight / 2) },
+          { x: Math.round(window.innerWidth - 4), y: Math.round(window.innerHeight / 2) },
+          { x: Math.round(window.innerWidth / 2), y: 4 }
+        ];
+        return candidates.find(point => {
+          const hit = document.elementFromPoint(point.x, point.y);
+          return hit === element || (hit && hit.closest('#overlay'));
+        }) || null;
+      });
+      expect(backdropPoint, 'a visible backdrop area exists outside the profile drawer').toBeTruthy();
+      await page.mouse.click(backdropPoint.x, backdropPoint.y);
+
+      await expect(panel).not.toHaveClass(/open/);
+      await expect(overlay).not.toHaveClass(/show/);
+      await expect.poll(() => overlay.evaluate(element => {
+        const style = getComputedStyle(element);
+        return {
+          visibility: style.visibility,
+          pointerEvents: style.pointerEvents,
+          opacity: Number(style.opacity)
+        };
+      })).toEqual({ visibility: 'hidden', pointerEvents: 'none', opacity: 0 });
+
+      await expect(profileButton).toBeVisible();
+      await profileButton.click();
+      await expect(panel).toHaveClass(/open/);
+    }
+  });
+
   test('клик по затемнению закрывает настройки, но оставляет профиль открытым', async ({ page }) => {
     const panel = page.locator('#panel');
     const panelWasOpen = await panel.evaluate(element => element.classList.contains('open'));
