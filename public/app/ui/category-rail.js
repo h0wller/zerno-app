@@ -16,6 +16,7 @@ var RAIL_SCROLL_INPUT_RECENCY_MS = 3500;
 var railLastUserScrollInputAt = 0;
 var railUserScrollInputDirection = 0;
 var railLastTouchY = null;
+var railTouchMoved = false;
 var railCategoryAlignmentPending = false;
 var railCategoryAlignmentTimer = null;
 var railBrandChangePending = false;
@@ -266,6 +267,7 @@ function handleRailWheelInput(event) {
 function handleRailTouchStart(event) {
   var touch = event.touches && event.touches[0];
   railLastTouchY = touch ? touch.clientY : null;
+  railTouchMoved = false;
 }
 
 function handleRailTouchMove(event) {
@@ -274,13 +276,19 @@ function handleRailTouchMove(event) {
   if (railLastTouchY !== null) {
     /* Moving a finger up moves the document down, and vice versa. */
     var fingerDelta = railLastTouchY - touch.clientY;
-    if (Math.abs(fingerDelta) >= 1) rememberRailScrollInput(fingerDelta);
+    if (Math.abs(fingerDelta) >= 1) {
+      rememberRailScrollInput(fingerDelta);
+      railTouchMoved = true;
+    }
   }
   railLastTouchY = touch.clientY;
 }
 
 function handleRailTouchEnd() {
-  if (railUserScrollInputDirection) railLastUserScrollInputAt = Date.now();
+  if (railTouchMoved && railUserScrollInputDirection) {
+    railLastUserScrollInputAt = Date.now();
+  }
+  railTouchMoved = false;
   railLastTouchY = null;
 }
 
