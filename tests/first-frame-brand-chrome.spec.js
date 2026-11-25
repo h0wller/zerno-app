@@ -67,6 +67,69 @@ async function selectBrandThroughUi(page, selectedBrand) {
   await expect.poll(() => page.evaluate(() => window.brand)).toBe(selectedBrand);
 }
 
+async function measureLogoPresentation(page) {
+  return page.evaluate(() => {
+    const rect = (element) => {
+      if (!element) return null;
+      const box = element.getBoundingClientRect();
+      return {
+        x: box.x, y: box.y, width: box.width, height: box.height,
+        top: box.top, right: box.right, bottom: box.bottom, left: box.left
+      };
+    };
+    const style = (element) => {
+      if (!element) return null;
+      const computed = getComputedStyle(element);
+      return {
+        display: computed.display,
+        visibility: computed.visibility,
+        opacity: computed.opacity,
+        position: computed.position,
+        zIndex: computed.zIndex,
+        overflow: computed.overflow,
+        objectFit: computed.objectFit,
+        backgroundColor: computed.backgroundColor,
+        backgroundImage: computed.backgroundImage,
+        borderRadius: computed.borderRadius
+      };
+    };
+    const header = document.querySelector('header.topbar');
+    const mark = document.getElementById('brandMark');
+    const image = document.getElementById('brandLogoImg');
+    const title = document.getElementById('brandTitle');
+    const profile = document.getElementById('profileTopBtn');
+    const children = header ? Array.from(header.children).map((element) => ({
+      tagName: element.tagName,
+      id: element.id,
+      className: typeof element.className === 'string' ? element.className : '',
+      rect: rect(element),
+      style: style(element)
+    })) : [];
+    return {
+      viewport: { width: innerWidth, height: innerHeight },
+      documentBrand: document.documentElement.getAttribute('data-brand'),
+      header: { rect: rect(header), style: style(header), children },
+      headerBrand: {
+        rect: rect(document.getElementById('headerBrand')),
+        style: style(document.getElementById('headerBrand'))
+      },
+      mark: { rect: rect(mark), style: style(mark) },
+      logo: {
+        rect: rect(image), style: style(image),
+        src: image && image.currentSrc,
+        complete: image && image.complete,
+        naturalWidth: image && image.naturalWidth,
+        naturalHeight: image && image.naturalHeight
+      },
+      title: { rect: rect(title), style: style(title) },
+      profile: { rect: rect(profile), style: style(profile) },
+      stackAtHeaderCenter: document.elementsFromPoint(innerWidth / 2, 30).slice(0, 6).map((element) => ({
+        tagName: element.tagName, id: element.id, className: typeof element.className === 'string' ? element.className : ''
+      }))
+    };
+  });
+}
+
 async function measureHeader(page) {
   return page.evaluate(() => {
     const rect = (element) => {
@@ -166,6 +229,11 @@ for (const brand of ['coffee', 'delivery']) {
         img.complete && img.naturalWidth > 0
       ), { timeout: 12000 }).toBe(true);
       await logo.evaluate((img) => img.decode());
+      const firstFramePresentation = await measureLogoPresentation(page);
+      await testInfo.attach(`${brand}-${viewport.name}-logo-first-frame-metrics.json`, {
+        body: Buffer.from(JSON.stringify(firstFramePresentation, null, 2)),
+        contentType: 'application/json'
+      });
 
       await testInfo.attach(`${brand}-${viewport.name}-logo-before-hydration.png`, {
         body: await page.screenshot(),
