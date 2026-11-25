@@ -424,9 +424,7 @@ export function createTgRouter({ appKb }) {
           '✅ Готово, ' + escapeTelegramHtml(c.name) + '! Профиль привязан.\n\n' +
           grantSummary + benefitDetails,
           bonusKeyboard()
-        ); else {
-          await tgSend(chatId, '✅ Готово, ' + escapeTelegramHtml(c.name) + '! Профиль привязан.', welcomeKeyboard(c));
-        }
+        );
       } else if (u.message.contact) {
         await tgSend(chatId,
           'Профиль с таким номером не найден ⚠️\n\nСоздайте его в приложении — займёт 10 секунд:',
