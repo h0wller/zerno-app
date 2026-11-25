@@ -173,6 +173,8 @@
     if (modal && modal.classList.contains('show')) closeAuth();
     if (typeof window.__profileMeReady === 'function') window.__profileMeReady();
     if (typeof renderAll === 'function') renderAll();
+    if (typeof window.renderProfile === 'function') window.renderProfile();
+    if (typeof window.renderVerifyNote === 'function') window.renderVerifyNote();
 
     if (!customerIsVerified(customer)) {
       openProfileAfterAuth();
