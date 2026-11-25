@@ -39,12 +39,12 @@ function runAudit() {
   const htmlPath = path.resolve('public/index.html');
   if (fs.existsSync(htmlPath)) {
     const html = fs.readFileSync(htmlPath, 'utf8');
-    const inlineScripts = Array.from(html.matchAll(/<script\\b(?![^>]*\\bsrc=)[^>]*>([\\s\\S]*?)<\\/script>/gi));
+    const inlineScripts = Array.from(html.matchAll(/<script\b(?![^>]*\bsrc=)[^>]*>([\s\\S]*?)<\\/script>/gi));
     for (let index = 0; index < inlineScripts.length; index += 1) {
       const cleanContent = stripComments(inlineScripts[index][1]);
-      const forbiddenTargetRegex = /\\.observe\\s*\\(\\s*(document\\.(body|documentElement)|[^)]*\\|\\|\\s*document\\.body)/g;
+      const forbiddenTargetRegex = /\.observe\s*\(\s*(document\.(body|documentElement)|[^)]*\|\|\s*document\.body)/g;
       if (forbiddenTargetRegex.test(cleanContent)) errors.push(`❌ public/index.html inline script #${index + 1}: запрещённый глобальный observer target.`);
-      if (/\\bnew\\s+MutationObserver\\b/.test(cleanContent)) errors.push(`❌ public/index.html inline script #${index + 1}: MutationObserver запрещён; используйте прямую синхронизацию через владельца состояния.`);
+      if (/\bnew\s+MutationObserver\b/.test(cleanContent)) errors.push(`❌ public/index.html inline script #${index + 1}: MutationObserver запрещён; используйте прямую синхронизацию через владельца состояния.`);
     }
   }
 
