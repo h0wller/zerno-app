@@ -84,6 +84,21 @@ test('signup and QR are one shared welcome grant, not two independent rewards', 
   assert.equal(db.prepare("SELECT COUNT(*) AS n FROM promos WHERE owner=? AND kind='freeship'").get(id).n, 1);
 });
 
+test('legacy backfill evidence is ineligibility, not proof that the welcome bonus was granted', () => {
+  configureWelcome();
+  const id = makeCustomer({ stamps: 2 });
+  const marker = '2026-11-25T00:00:00.000Z';
+
+  db.prepare("INSERT INTO meta(key,value) VALUES('bonus_grants_backfilled',?)").run(marker);
+  db.prepare('INSERT INTO bonus_grants(cid,kind,ts) VALUES(?,?,?)').run(id, 'signup', marker);
+
+  const result = grantBonusDetailed(id, 'signup');
+  assert.equal(result.status, 'ineligible');
+  assert.match(formatWelcomeBonusMessage(result), /не начислен/i);
+  assert.doesNotMatch(formatWelcomeBonusMessage(result), /уже начислялся/i);
+  assert.equal(db.prepare('SELECT free FROM customers WHERE id=?').get(id).free, 0);
+});
+
 test('grantBonusDetailed reports disabled configuration without recording a grant', () => {
   configureWelcome({ signup: { coffee: 0, delivery: 0, freeFirstDelivery: 0 } });
   const id = makeCustomer();
