@@ -16,7 +16,7 @@
           (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
         if (isPwa && isIosStandalone) document.documentElement.classList.add('is-ios-standalone');
         var isTg = /Telegram/i.test(navigator.userAgent) || qs.get('src') === 'tg' || !!(window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData);
-        var isActionDeepLink = !!(qs.get('tab') || qs.get('support') || qs.get('order'));
+        var isActionDeepLink = !!(qs.get('tab') || qs.get('support') || qs.get('order') || qs.get('item'));
         var splashDone = sessionStorage.getItem('splashDone') === '1';
 
         if (urlBrand) {
@@ -32,6 +32,14 @@
         window.__brandSplashPending = !explicit;
         if (!explicit) document.documentElement.classList.add('brand-splash-pending');
         var b = urlBrand || (isAudit ? 'coffee' : stored || (localStorage.getItem('zt_onb') ? 'delivery' : 'coffee'));
+        // Start the selected brand's first-frame header image before the body is parsed.
+        window.__ztEarlyBrandLogoSrc = b === 'delivery' ? '/friday-logo.svg' : '/andCoffee.svg';
+        var brandLogoPreload = document.createElement('link');
+        brandLogoPreload.rel = 'preload';
+        brandLogoPreload.as = 'image';
+        brandLogoPreload.href = window.__ztEarlyBrandLogoSrc;
+        brandLogoPreload.fetchPriority = 'high';
+        document.head.appendChild(brandLogoPreload);
         var roleHint = localStorage.getItem('zt_role');
         if (localStorage.getItem('zt_user') && ['admin', 'cashier', 'dispatch'].indexOf(roleHint) !== -1) {
           document.documentElement.setAttribute('data-staff-role', roleHint);
@@ -780,6 +788,22 @@ body[data-brand="delivery"] .topbar .brand .mark {
   width: 100%;
   height: 100%;
   object-fit: contain;
+}
+
+/* First-frame reserve mirrors the canonical bean geometry owned by core/views.js. */
+html[data-brand="coffee"] .topbar .brand b#brandTitle .bean {
+  display: inline-block;
+  width: .8em;
+  height: .8em;
+  margin: 0 .03em;
+  vertical-align: -.04em;
+  color: #2F95F5;
+}
+html[data-brand="coffee"] .topbar .brand b#brandTitle .bean svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
 }
 
 /* ─── 5. LCP & Above-the-fold layout ─── */
@@ -1835,80 +1859,80 @@ html[data-brand="delivery"] {
   <link rel="apple-touch-icon" href="icons/apple-touch-icon-v2.png" />
   <link rel="manifest" href="manifest.webmanifest" />
   <!-- Неблокирующая загрузка слоёв CSS со 100% фолбэк-страховкой для iOS WebKit / Telegram WebView -->
-  <link rel="stylesheet" href="/app/ui/fonts.css?v=670" media="print" onload="this.media='all'" />
-  <link rel="stylesheet" href="/app/ui/theme/00-head.css?v=670" media="print" onload="this.media='all'" />
-  <link rel="stylesheet" href="/app/ui/theme/10-base.css?v=670" media="print" onload="this.media='all'" />
-  <link rel="stylesheet" href="/app/ui/theme/20-cards.css?v=670" media="print" onload="this.media='all'" />
-  <link rel="stylesheet" href="/app/ui/theme/30-utils.css?v=670" media="print" onload="this.media='all'" />
-  <link rel="stylesheet" href="/app/ui/theme/40-catalog.css?v=670" media="print" onload="this.media='all'" />
-  <link rel="stylesheet" href="/app/ui/theme/50-edit-mode.css?v=670" media="print" onload="this.media='all'" />
-  <link rel="stylesheet" href="/app/ui/theme/60-cart.css?v=670" media="print" onload="this.media='all'" />
-  <link rel="stylesheet" href="/app/ui/theme/70-ticker.css?v=670" media="print" onload="this.media='all'" />
-  <link rel="stylesheet" href="/app/ui/theme/80-splash.css?v=670" media="print" onload="this.media='all'" />
-  <link rel="stylesheet" href="/app/ui/theme/90-modals.css?v=670" media="print" onload="this.media='all'" />
-  <link rel="stylesheet" href="/app/ui/theme/100-chat.css?v=670" media="print" onload="this.media='all'" />
-  <link rel="stylesheet" href="/app/ui/theme/110-panel.css?v=670" media="print" onload="this.media='all'" />
-  <link rel="stylesheet" href="/app/ui/theme/120-cashier.css?v=670" media="print" onload="this.media='all'" />
-  <link rel="stylesheet" href="/app/ui/theme/130-service.css?v=670" media="print" onload="this.media='all'" />
-  <link rel="stylesheet" href="/app/ui/theme/140-topbar.css?v=670" media="print" onload="this.media='all'" />
-  <link rel="stylesheet" href="/app/ui/theme/150-rail.css?v=670" media="print" onload="this.media='all'" />
-  <link rel="stylesheet" href="/app/ui/theme/160-01-rail-fab-mobile.css?v=670" media="print" onload="this.media='all'" />
-  <link rel="stylesheet" href="/app/ui/theme/160-02-addr-panel-fix.css?v=670" media="print" onload="this.media='all'" />
-  <link rel="stylesheet" href="/app/ui/theme/160-03-topbar-search-panel.css?v=670" media="print" onload="this.media='all'" />
-  <link rel="stylesheet" href="/app/ui/theme/160-04-wrap-cls-sheets.css?v=670" media="print" onload="this.media='all'" />
-  <link rel="stylesheet" href="/app/ui/theme/160-05-base-components.css?v=670" media="print" onload="this.media='all'" />
-  <link rel="stylesheet" href="/app/ui/theme/160-06-delivery-header.css?v=670" media="print" onload="this.media='all'" />
-  <link rel="stylesheet" href="/app/ui/theme/160-07-orders-cards.css?v=670" media="print" onload="this.media='all'" />
-  <link rel="stylesheet" href="/app/ui/theme/160-08-cart-addons.css?v=670" media="print" onload="this.media='all'" />
-  <link rel="stylesheet" href="/app/ui/theme/160-09-preorder-subfilters.css?v=670" media="print" onload="this.media='all'" />
-  <link rel="stylesheet" href="/app/ui/theme/160-10-rail-mobile-opts.css?v=670" media="print" onload="this.media='all'" />
-  <link rel="stylesheet" href="/app/ui/theme/160-11-canonical-grid-menu.css?v=670" media="print" onload="this.media='all'" />
-  <link rel="stylesheet" href="/app/ui/theme/160-12-admin-bar-tail.css?v=670" media="print" onload="this.media='all'" />
-  <link rel="stylesheet" href="/app/ui/theme/160-13-dashboard-bento.css?v=670" media="print" onload="this.media='all'" />
-  <link rel="stylesheet" href="/app/ui/theme/160-14-auth-modal.css?v=670" media="print" onload="this.media='all'" />
-  <link rel="stylesheet" href="/app/ui/theme/160-15-mobile-support-toolbar.css?v=670" media="print" onload="this.media='all'" />
-  <link rel="stylesheet" href="/app/ui/theme/170-profile-button.css?v=670" media="print" onload="this.media='all'" />
-  <link rel="stylesheet" href="/app/ui/brand-tokens.css?v=670" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/fonts.css?v=671" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/00-head.css?v=671" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/10-base.css?v=671" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/20-cards.css?v=671" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/30-utils.css?v=671" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/40-catalog.css?v=671" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/50-edit-mode.css?v=671" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/60-cart.css?v=671" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/70-ticker.css?v=671" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/80-splash.css?v=671" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/90-modals.css?v=671" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/100-chat.css?v=671" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/110-panel.css?v=671" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/120-cashier.css?v=671" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/130-service.css?v=671" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/140-topbar.css?v=671" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/150-rail.css?v=671" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/160-01-rail-fab-mobile.css?v=671" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/160-02-addr-panel-fix.css?v=671" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/160-03-topbar-search-panel.css?v=671" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/160-04-wrap-cls-sheets.css?v=671" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/160-05-base-components.css?v=671" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/160-06-delivery-header.css?v=671" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/160-07-orders-cards.css?v=671" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/160-08-cart-addons.css?v=671" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/160-09-preorder-subfilters.css?v=671" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/160-10-rail-mobile-opts.css?v=671" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/160-11-canonical-grid-menu.css?v=671" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/160-12-admin-bar-tail.css?v=671" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/160-13-dashboard-bento.css?v=671" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/160-14-auth-modal.css?v=671" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/160-15-mobile-support-toolbar.css?v=671" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/theme/170-profile-button.css?v=671" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="/app/ui/brand-tokens.css?v=671" media="print" onload="this.media='all'" />
   <script>
     window.addEventListener('DOMContentLoaded', function () {
       document.querySelectorAll('link[media="print"]').forEach(function (l) { l.media = 'all'; });
     });
   </script>
   <noscript>
-    <link rel="stylesheet" href="/app/ui/fonts.css?v=670" />
-    <link rel="stylesheet" href="/app/ui/theme/00-head.css?v=670" />
-    <link rel="stylesheet" href="/app/ui/theme/10-base.css?v=670" />
-    <link rel="stylesheet" href="/app/ui/theme/20-cards.css?v=670" />
-    <link rel="stylesheet" href="/app/ui/theme/30-utils.css?v=670" />
-    <link rel="stylesheet" href="/app/ui/theme/40-catalog.css?v=670" />
-    <link rel="stylesheet" href="/app/ui/theme/50-edit-mode.css?v=670" />
-    <link rel="stylesheet" href="/app/ui/theme/60-cart.css?v=670" />
-    <link rel="stylesheet" href="/app/ui/theme/70-ticker.css?v=670" />
-    <link rel="stylesheet" href="/app/ui/theme/80-splash.css?v=670" />
-    <link rel="stylesheet" href="/app/ui/theme/90-modals.css?v=670" />
-    <link rel="stylesheet" href="/app/ui/theme/100-chat.css?v=670" />
-    <link rel="stylesheet" href="/app/ui/theme/110-panel.css?v=670" />
-    <link rel="stylesheet" href="/app/ui/theme/120-cashier.css?v=670" />
-    <link rel="stylesheet" href="/app/ui/theme/130-service.css?v=670" />
-    <link rel="stylesheet" href="/app/ui/theme/140-topbar.css?v=670" />
-    <link rel="stylesheet" href="/app/ui/theme/150-rail.css?v=670" />
-    <link rel="stylesheet" href="/app/ui/theme/160-01-rail-fab-mobile.css?v=670" />
-    <link rel="stylesheet" href="/app/ui/theme/160-02-addr-panel-fix.css?v=670" />
-    <link rel="stylesheet" href="/app/ui/theme/160-03-topbar-search-panel.css?v=670" />
-    <link rel="stylesheet" href="/app/ui/theme/160-04-wrap-cls-sheets.css?v=670" />
-    <link rel="stylesheet" href="/app/ui/theme/160-05-base-components.css?v=670" />
-    <link rel="stylesheet" href="/app/ui/theme/160-06-delivery-header.css?v=670" />
-    <link rel="stylesheet" href="/app/ui/theme/160-07-orders-cards.css?v=670" />
-    <link rel="stylesheet" href="/app/ui/theme/160-08-cart-addons.css?v=670" />
-    <link rel="stylesheet" href="/app/ui/theme/160-09-preorder-subfilters.css?v=670" />
-    <link rel="stylesheet" href="/app/ui/theme/160-10-rail-mobile-opts.css?v=670" />
-    <link rel="stylesheet" href="/app/ui/theme/160-11-canonical-grid-menu.css?v=670" />
-    <link rel="stylesheet" href="/app/ui/theme/160-12-admin-bar-tail.css?v=670" />
-    <link rel="stylesheet" href="/app/ui/theme/160-13-dashboard-bento.css?v=670" />
-    <link rel="stylesheet" href="/app/ui/theme/160-14-auth-modal.css?v=670" />
-  <link rel="stylesheet" href="/app/ui/theme/160-15-mobile-support-toolbar.css?v=670" />
-    <link rel="stylesheet" href="/app/ui/theme/170-profile-button.css?v=670" />
-    <link rel="stylesheet" href="/app/ui/brand-tokens.css?v=670" />
+    <link rel="stylesheet" href="/app/ui/fonts.css?v=671" />
+    <link rel="stylesheet" href="/app/ui/theme/00-head.css?v=671" />
+    <link rel="stylesheet" href="/app/ui/theme/10-base.css?v=671" />
+    <link rel="stylesheet" href="/app/ui/theme/20-cards.css?v=671" />
+    <link rel="stylesheet" href="/app/ui/theme/30-utils.css?v=671" />
+    <link rel="stylesheet" href="/app/ui/theme/40-catalog.css?v=671" />
+    <link rel="stylesheet" href="/app/ui/theme/50-edit-mode.css?v=671" />
+    <link rel="stylesheet" href="/app/ui/theme/60-cart.css?v=671" />
+    <link rel="stylesheet" href="/app/ui/theme/70-ticker.css?v=671" />
+    <link rel="stylesheet" href="/app/ui/theme/80-splash.css?v=671" />
+    <link rel="stylesheet" href="/app/ui/theme/90-modals.css?v=671" />
+    <link rel="stylesheet" href="/app/ui/theme/100-chat.css?v=671" />
+    <link rel="stylesheet" href="/app/ui/theme/110-panel.css?v=671" />
+    <link rel="stylesheet" href="/app/ui/theme/120-cashier.css?v=671" />
+    <link rel="stylesheet" href="/app/ui/theme/130-service.css?v=671" />
+    <link rel="stylesheet" href="/app/ui/theme/140-topbar.css?v=671" />
+    <link rel="stylesheet" href="/app/ui/theme/150-rail.css?v=671" />
+    <link rel="stylesheet" href="/app/ui/theme/160-01-rail-fab-mobile.css?v=671" />
+    <link rel="stylesheet" href="/app/ui/theme/160-02-addr-panel-fix.css?v=671" />
+    <link rel="stylesheet" href="/app/ui/theme/160-03-topbar-search-panel.css?v=671" />
+    <link rel="stylesheet" href="/app/ui/theme/160-04-wrap-cls-sheets.css?v=671" />
+    <link rel="stylesheet" href="/app/ui/theme/160-05-base-components.css?v=671" />
+    <link rel="stylesheet" href="/app/ui/theme/160-06-delivery-header.css?v=671" />
+    <link rel="stylesheet" href="/app/ui/theme/160-07-orders-cards.css?v=671" />
+    <link rel="stylesheet" href="/app/ui/theme/160-08-cart-addons.css?v=671" />
+    <link rel="stylesheet" href="/app/ui/theme/160-09-preorder-subfilters.css?v=671" />
+    <link rel="stylesheet" href="/app/ui/theme/160-10-rail-mobile-opts.css?v=671" />
+    <link rel="stylesheet" href="/app/ui/theme/160-11-canonical-grid-menu.css?v=671" />
+    <link rel="stylesheet" href="/app/ui/theme/160-12-admin-bar-tail.css?v=671" />
+    <link rel="stylesheet" href="/app/ui/theme/160-13-dashboard-bento.css?v=671" />
+    <link rel="stylesheet" href="/app/ui/theme/160-14-auth-modal.css?v=671" />
+  <link rel="stylesheet" href="/app/ui/theme/160-15-mobile-support-toolbar.css?v=671" />
+    <link rel="stylesheet" href="/app/ui/theme/170-profile-button.css?v=671" />
+    <link rel="stylesheet" href="/app/ui/brand-tokens.css?v=671" />
   </noscript>
   <!-- [tg-splash-menu-fix-v3] решение о сплэше в <head> = ТО ЖЕ, что в core/splash.js (один в один).
      Расхождение даёт «мигание»: сплэш рисуется в первом кадре, а затем JS его снимает (или наоборот). -->
@@ -4357,12 +4381,8 @@ html body #tickerTrack .tickerGroup > span {
     </div>
     <div class="brand" id="headerBrand">
       <div class="mark" id="brandMark">
-        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke-linecap="round">
-          <path d="M5 4h14v7a7 7 0 0 1-14 0V4z" stroke="#fff" stroke-width="1.7" />
-          <path d="M5.5 9.5c2.2-1.4 4.3-1.4 6.5 0s4.3 1.4 6.5 0" stroke="#BBD6EE" stroke-width="1.5" />
-          <path d="M6.5 12.5c1.8-1.2 3.7-1.2 5.5 0s3.7 1.2 5.5 0" stroke="#7FB2D9" stroke-width="1.5" />
-          <path d="M8.5 15.5c1.2-.8 2.3-.8 3.5 0s2.3.8 3.5 0" stroke="#4C7FC0" stroke-width="1.5" />
-        </svg>
+        <img class="brandLogo" id="brandLogoImg" alt="" width="42" height="42"
+             decoding="async" fetchpriority="high">
       </div>
       <div>
         <b id="brandTitle" aria-label="…и кофе">…и к<span class="bean" aria-hidden="true"><svg viewBox="3.5 1.5 21 24"><g transform="translate(3 3)"><g transform="rotate(-24 12 12)"><ellipse cx="12" cy="12" rx="7.7" ry="9.8" fill="#23272C"/></g></g><g transform="translate(2 2)"><g transform="rotate(-24 12 12)"><ellipse cx="12" cy="12" rx="7.7" ry="9.8" fill="#2E3238"/></g></g><g transform="translate(1 1)"><g transform="rotate(-24 12 12)"><ellipse cx="12" cy="12" rx="7.7" ry="9.8" fill="#2E3238"/></g></g><g transform="rotate(-24 12 12)"><ellipse cx="12" cy="12" rx="7.7" ry="9.8" fill="currentColor"/><path d="M12 3.6C8.4 7.8 15.6 16.2 12 20.4" fill="none" stroke="rgba(255,255,255,.9)" stroke-width="1.5" stroke-linecap="round"/><ellipse cx="9.2" cy="8.2" rx="1.6" ry="2.8" fill="rgba(255,255,255,.25)"/></g></svg></span>фе</b><small id="brandSub">кофейня на берегу моря</small>      </div>
@@ -4379,6 +4399,51 @@ html body #tickerTrack .tickerGroup > span {
       <button type="button" data-mode="admin" tabindex="-1">Админ</button>
     </div>
   </header>
+
+  <script id="zt-early-chrome-guard">
+    (function () {
+      try {
+        var b = window.brand || document.documentElement.getAttribute('data-brand') ||
+          localStorage.getItem('zt_brand') || 'coffee';
+        var isDelivery = b === 'delivery';
+        var mark = document.getElementById('brandMark') || document.querySelector('.topbar .brand .mark');
+        if (mark) {
+          mark.classList.toggle('is-delivery', isDelivery);
+          var img = mark.querySelector('#brandLogoImg') || mark.querySelector('img');
+          if (img) {
+            var logoSrc = window.__ztEarlyBrandLogoSrc ||
+              (isDelivery ? '/friday-logo.svg' : '/andCoffee.svg');
+            var logoAlt = isDelivery ? 'Пятница' : '…и кофе';
+            var logoWidth = isDelivery ? '160' : '42';
+            var logoHeight = isDelivery ? '40' : '42';
+            if (img.getAttribute('src') !== logoSrc) img.setAttribute('src', logoSrc);
+            if (img.getAttribute('alt') !== logoAlt) img.setAttribute('alt', logoAlt);
+            if (img.getAttribute('width') !== logoWidth) img.setAttribute('width', logoWidth);
+            if (img.getAttribute('height') !== logoHeight) img.setAttribute('height', logoHeight);
+          }
+        }
+        if (isDelivery) {
+          var bt = document.getElementById('brandTitle');
+          if (bt) { bt.textContent = 'Пятница'; bt.removeAttribute('aria-label'); }
+          var bs = document.getElementById('brandSub');
+          if (bs && bs.textContent !== 'доставка пиццы и роллов') bs.textContent = 'доставка пиццы и роллов';
+        }
+        window.__ztBrandLogoPrimed = true;
+      } catch (e) { }
+
+      /* Цвет полосы браузера (safe area) следует за data-brand */
+      try {
+        var syncTheme = function () {
+          var cur = document.documentElement.getAttribute('data-brand') || window.brand || localStorage.getItem('zt_brand');
+          var m = document.querySelector('meta[name="theme-color"]');
+          if (!m) { m = document.createElement('meta'); m.name = 'theme-color'; document.head.appendChild(m); }
+          m.content = cur === 'coffee' ? '#FFFFFF' : '#C99E6E';
+        };
+        syncTheme();
+        new MutationObserver(syncTheme).observe(document.documentElement, { attributes: true, attributeFilter: ['data-brand'] });
+      } catch (e) { }
+    })();
+  </script>
   <div class="ticker" role="region" aria-label="Объявления">
     <div class="tickerViewport">
       <div class="track" id="tickerTrack" aria-live="off"></div>
@@ -5318,7 +5383,7 @@ html body #tickerTrack .tickerGroup > span {
       <button class="cta" id="checkoutBtn">Оформить заказ</button>
     </div>
   </div>
-<script type="module" src="/dist/main.bundle.js?v=670"></script>
+<script type="module" src="/dist/main.bundle.js?v=671"></script>
   <div id="installBanner" hidden style="
         position: fixed;
         left: 12px;
@@ -5519,40 +5584,7 @@ html body #tickerTrack .tickerGroup > span {
   <script src="/app/core/address-autocomplete.js" defer></script>
   <script src="/app/core/address-book.js" defer></script>
   <script src="/app/core/preorder-timer.js" defer></script>
-  <script id="zt-early-chrome-guard">
-    (function () {
-      try {
-        var b = window.brand || localStorage.getItem('zt_brand');
-        if (b === 'delivery') {
-          var mark = document.getElementById('brandMark') || document.querySelector('.topbar .brand .mark');
-          if (mark) {
-            mark.classList.add('is-delivery');
-            var img = mark.querySelector('img');
-            if (img && img.getAttribute('src') !== 'friday-logo.svg') {
-              img.src = 'friday-logo.svg';
-              img.alt = 'Пятница';
-            }
-          }
-          var bt = document.getElementById('brandTitle');
-          if (bt) { bt.textContent = 'Пятница'; bt.removeAttribute('aria-label'); }
-          var bs = document.getElementById('brandSub');
-          if (bs && bs.textContent !== 'доставка пиццы и роллов') bs.textContent = 'доставка пиццы и роллов';
-        }
-      } catch (e) { }
 
-      /* Цвет полосы браузера (safe area) следует за data-brand */
-      try {
-        var syncTheme = function () {
-          var cur = document.documentElement.getAttribute('data-brand') || window.brand || localStorage.getItem('zt_brand');
-          var m = document.querySelector('meta[name="theme-color"]');
-          if (!m) { m = document.createElement('meta'); m.name = 'theme-color'; document.head.appendChild(m); }
-          m.content = cur === 'coffee' ? '#FFFFFF' : '#C99E6E';
-        };
-        syncTheme();
-        // Runtime brand changes synchronously update theme-color in core/views.js; no global observer.
-      } catch (e) { }
-    })();
-  </script>
 </body>
 
 </html>

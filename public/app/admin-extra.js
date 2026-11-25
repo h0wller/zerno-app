@@ -332,21 +332,53 @@
         h: 42,
         alt: '…и кофе'
       };
-      mark.innerHTML =
-        '<img class="brandLogo" id="brandLogoImg" src="' +
-        lg.src +
-        '" alt="' +
-        lg.alt +
-        '"' +
-        ' width="' +
-        lg.w +
-        '" height="' +
-        lg.h +
-        '"' +
-        ' decoding="async" fetchpriority="high"' +
-        ' onerror="this.outerHTML=\'<span style=&quot;font-size:26px&quot;>' +
-        (bConfig.emoji || '☕') +
-        '</span>\'">';
+      var img = mark.querySelector('#brandLogoImg') || mark.querySelector('img');
+      if (!img) {
+        img = document.createElement('img');
+        mark.appendChild(img);
+      }
+
+      // Keep the first-frame image node stable; synchronize attributes in place.
+      img.className = 'brandLogo';
+      img.id = 'brandLogoImg';
+      var logoAttributes = {
+        src: lg.src,
+        alt: lg.alt,
+        width: lg.w,
+        height: lg.h,
+        decoding: 'async',
+        fetchpriority: 'high'
+      };
+      Object.keys(logoAttributes).forEach(function (name) {
+        var value = String(logoAttributes[name]);
+        if (img.getAttribute(name) !== value) img.setAttribute(name, value);
+      });
+      img.hidden = false;
+
+      if (!img.dataset.brandLogoFallbackBound) {
+        img.dataset.brandLogoFallbackBound = 'true';
+        img.addEventListener('error', function () {
+          var fallback = mark.querySelector('.brandLogoFallback');
+          if (!fallback) {
+            fallback = document.createElement('span');
+            fallback.className = 'brandLogoFallback';
+            fallback.setAttribute('aria-hidden', 'true');
+            fallback.style.fontSize = '26px';
+            mark.appendChild(fallback);
+          }
+          fallback.textContent = img.dataset.brandLogoFallbackText || '☕';
+          fallback.hidden = false;
+          img.hidden = true;
+        });
+        img.addEventListener('load', function () {
+          img.hidden = false;
+          var fallback = mark.querySelector('.brandLogoFallback');
+          if (fallback) fallback.hidden = true;
+        });
+      }
+      img.dataset.brandLogoFallbackText = bConfig.emoji || '☕';
+      var existingFallback = mark.querySelector('.brandLogoFallback');
+      if (existingFallback) existingFallback.hidden = true;
     }
   }
 
