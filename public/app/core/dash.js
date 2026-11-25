@@ -197,47 +197,50 @@ if (window.ztBus) {
 
 async function loadSubs() {
   try {
-    const subscriptions = await api("/push/subs");
-    const grouped = {};
-    ["subs", "tg"].forEach((channelKey) => {
-      const channel = channelKey === "subs" ? "web" : "tg";
-      (subscriptions[channelKey] || []).forEach((subscription) => {
-        const key = (subscription.phone || "") + "|" + (subscription.name || "—");
-        const group = (grouped[key] = grouped[key] || {
-          name: subscription.name,
-          phone: subscription.phone,
+    const ps = await api("/push/subs");
+    const m = {};
+    ['subs', 'tg'].forEach((chKey) => {
+      const channel = chKey === 'subs' ? 'web' : 'tg';
+      (ps[chKey] || []).forEach((s) => {
+        const k = (s.phone || '') + '|' + (s.name || '—');
+        const g = (m[k] = m[k] || {
+          name: s.name,
+          phone: s.phone,
           web: 0,
           tg: 0,
           webTs: null,
           tgTs: null,
         });
-        group[channel] += 1;
-        const timestampField = channel + "Ts";
-        if (!group[timestampField]) group[timestampField] = subscription.created;
+        g[channel]++;
+        const tsField = channel + 'Ts';
+        if (!g[tsField]) g[tsField] = s.created;
       });
     });
-
-    const rows = Object.values(grouped).map((group) => {
-      const tags = [
-        group.web ? `пуш${group.web > 1 ? " ×" + group.web : ""}` : "",
-        group.tg ? "TG" : "",
-      ].filter(Boolean).join(" | ");
-      const title = [
-        group.webTs ? `пуш с ${new Date(group.webTs).toLocaleDateString("ru-RU")}` : "",
-        group.tgTs ? `TG с ${new Date(group.tgTs).toLocaleDateString("ru-RU")}` : "",
-      ].filter(Boolean).join(" · ");
-      return `<div class="hmini" title="${esc(title)}"><b>${esc(group.name || "—")}</b> · ${esc(group.phone || "")} · ${tags}</div>`;
-    }).join("");
-
+    const rows = Object.values(m)
+      .map((g) => {
+        const tags = [
+          g.web ? `🔔 пуш${g.web > 1 ? " ×" + g.web : ""}` : "",
+          g.tg ? "🤖 TG" : "",
+        ]
+          .filter(Boolean)
+          .join(" | ");
+        const ttl = [
+          g.webTs ? `пуш с ${new Date(g.webTs).toLocaleDateString("ru-RU")}` : "",
+          g.tgTs ? `TG с ${new Date(g.tgTs).toLocaleDateString("ru-RU")}` : "",
+        ]
+          .filter(Boolean)
+          .join(" · ");
+        return `<div class="hmini" title="${esc(ttl)}"><b>${esc(g.name || "—")}</b> · ${esc(g.phone || "")} · ${tags}</div>`;
+      })
+      .join("");
     $("#pushSubs").innerHTML = rows || '<div class="hmini">Пока никто не подписан</div>';
-  } catch (error) {}
+  } catch (e) {}
 }
 
 function closeDash() {
   $("#dashModal").classList.remove("show");
   syncOverlay();
 }
-
 $("#dashClose").onclick = closeDash;
 
 window.loadSubs = loadSubs;
