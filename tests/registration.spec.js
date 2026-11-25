@@ -705,135 +705,147 @@ test('P0: closing auth during the phone registration request preserves the resul
   await expect(page.locator('#authModal')).not.toHaveClass(/show/);
 });
 
-test('P0: cashier activation validates the code and reports only server-backed benefits', async ({ page }) => {
-  await page.route('**/api/orders/mine', (route) => route.fulfill({
-    status: 200,
-    contentType: 'application/json',
-    body: JSON.stringify({ orders: [] })
-  }));
-  await page.route('**/api/chat/**', (route) => route.fulfill({
-    status: 200,
-    contentType: 'application/json',
-    body: JSON.stringify({})
-  }));
-
-  let scenario = { brand: 'coffee', deliveryCode: null };
-  let activationCalls = 0;
-  await page.route('**/api/auth/activate-guest', async (route) => {
-    activationCalls += 1;
-    const body = route.request().postDataJSON() || {};
-    if (scenario.brand === 'coffee' && body.code !== '2468') {
-      await route.fulfill({
-        status: 403,
-        contentType: 'application/json',
-        body: JSON.stringify({ error: 'Неверный код' })
-      });
-      return;
-    }
-    await route.fulfill({
+test.describe('P0 cashier activation UI', () => {
+  test.use({ serviceWorkers: 'block' });
+  test('P0: cashier activation validates the code and reports only server-backed benefits', async ({ page }, testInfo) => {
+    await page.route('**/api/orders/mine', (route) => route.fulfill({
       status: 200,
       contentType: 'application/json',
-      body: JSON.stringify({
-        customer: {
-          id: 'p0-cashier-' + scenario.brand,
+      body: JSON.stringify({ orders: [] })
+    }));
+    await page.route('**/api/chat/**', (route) => route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({})
+    }));
+  
+    let scenario = { brand: 'coffee', deliveryCode: null };
+    let activationCalls = 0;
+    await page.route('**/api/auth/activate-guest', async (route) => {
+      activationCalls += 1;
+      const body = route.request().postDataJSON() || {};
+      if (scenario.brand === 'coffee' && body.code !== '2468') {
+        await route.fulfill({
+          status: 403,
+          contentType: 'application/json',
+          body: JSON.stringify({ error: 'Неверный код' })
+        });
+        return;
+      }
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          customer: {
+            id: 'p0-cashier-' + scenario.brand,
+            name: 'P0 Cashier Guest',
+            phone: '+7 900 000-00-21',
+            role: 'guest',
+            cups: 0,
+            stamps: 0,
+            free: scenario.brand === 'coffee' ? 1 : 0,
+            qr: 'Z-P0CASHIER',
+            verified: 1,
+            welcome: scenario.brand === 'coffee' ? 1 : 0,
+            tg: 1,
+            history: []
+          }
+        })
+      });
+    });
+    await page.route('**/api/me/free-delivery', (route) => route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ code: scenario.deliveryCode })
+    }));
+  
+    const cases = [
+      { brand: 'coffee', deliveryCode: null },
+      { brand: 'delivery', deliveryCode: null },
+      { brand: 'delivery', deliveryCode: 'B1234ABCD' }
+    ];
+  
+    for (const next of cases) {
+      scenario = next;
+      if (page.url().startsWith('http')) {
+        await page.evaluate(() => {
+          localStorage.removeItem('zt_user');
+          localStorage.removeItem('zt_role');
+        });
+      }
+      await page.goto('/?brand=' + scenario.brand);
+      await page.waitForFunction(() =>
+        typeof window.setUser === 'function' &&
+        typeof window.renderProfile === 'function' &&
+        typeof window.renderVerifyNote === 'function' &&
+        typeof window.__profileMeReady === 'function'
+      );
+      await page.evaluate(() => {
+        window.__profileMeReady();
+        window.setUser('p0-cashier-pending-token', {
+          id: 'p0-cashier-pending',
           name: 'P0 Cashier Guest',
           phone: '+7 900 000-00-21',
           role: 'guest',
           cups: 0,
           stamps: 0,
-          free: scenario.brand === 'coffee' ? 1 : 0,
+          free: 0,
           qr: 'Z-P0CASHIER',
-          verified: 1,
-          welcome: scenario.brand === 'coffee' ? 1 : 0,
-          tg: 1,
+          verified: 0,
+          welcome: 0,
+          tg: 0,
           history: []
-        }
-      })
-    });
-  });
-  await page.route('**/api/me/free-delivery', (route) => route.fulfill({
-    status: 200,
-    contentType: 'application/json',
-    body: JSON.stringify({ code: scenario.deliveryCode })
-  }));
-
-  const cases = [
-    { brand: 'coffee', deliveryCode: null },
-    { brand: 'delivery', deliveryCode: null },
-    { brand: 'delivery', deliveryCode: 'B1234ABCD' }
-  ];
-
-  for (const next of cases) {
-    scenario = next;
-    if (page.url().startsWith('http')) {
-      await page.evaluate(() => {
-        localStorage.removeItem('zt_user');
-        localStorage.removeItem('zt_role');
+        });
+        window.renderProfile();
+        window.renderVerifyNote();
+        window.openPanel();
       });
-    }
-    await page.goto('/?brand=' + scenario.brand);
-    await page.waitForFunction(() =>
-      typeof window.setUser === 'function' &&
-      typeof window.renderProfile === 'function' &&
-      typeof window.renderVerifyNote === 'function' &&
-      typeof window.__profileMeReady === 'function'
-    );
-    await page.evaluate(() => {
-      window.__profileMeReady();
-      window.setUser('p0-cashier-pending-token', {
-        id: 'p0-cashier-pending',
-        name: 'P0 Cashier Guest',
-        phone: '+7 900 000-00-21',
-        role: 'guest',
-        cups: 0,
-        stamps: 0,
-        free: 0,
-        qr: 'Z-P0CASHIER',
-        verified: 0,
-        welcome: 0,
-        tg: 0,
-        history: []
-      });
-      window.renderProfile();
-      window.renderVerifyNote();
-      window.openPanel();
-    });
-
-    await expect(page.locator('#actCode')).toBeVisible();
-    if (scenario.brand === 'coffee') {
-      const beforeInvalid = activationCalls;
-      await page.locator('#actCode').fill('12');
-      await page.locator('#actBtn').click();
-      await expect(page.locator('#toasts .toast').last()).toContainText('4-значный код');
-      expect(activationCalls).toBe(beforeInvalid);
-
-      await page.locator('#actCode').fill('9999');
-      await page.locator('#actBtn').click();
-      await expect(page.locator('#toasts .toast').last()).toContainText('Неверный код');
-      await expect(page.locator('#actBtn')).toBeEnabled();
-
-      await page.locator('#actCode').fill('2468');
-      await page.locator('#actBtn').click();
-      await expect(page.locator('#verifyNote .profile-loyalty-help')).toBeVisible();
-      await expect(page.locator('#actCode')).toHaveCount(0);
-      await expect(page.locator('#qrOpenProfile')).toBeVisible();
-      await expect(page.locator('#toasts .toast').last()).toContainText('на карте 1 бесплатный кофе');
-      await expect(page.locator('#toasts .toast').last()).toContainText('Покажите QR');
-    } else {
-      await page.locator('#actCode').fill('2468');
-      await page.locator('#actBtn').click();
-      await expect(page.locator('#verifyNote')).toBeHidden();
-      await expect(page.locator('#deliveryView')).toBeVisible();
-      if (scenario.deliveryCode) {
-        await expect(page.locator('#toasts .toast').last()).toContainText('Бесплатная первая доставка доступна');
-        await expect(page.locator('#toasts .toast').last()).toContainText('корзине');
+  
+      await expect(page.locator('#actCode')).toBeVisible();
+      if (scenario.brand === 'coffee') {
+        const beforeInvalid = activationCalls;
+        await page.locator('#actCode').fill('12');
+        await page.locator('#actBtn').click();
+        await expect(page.locator('#toasts .toast').last()).toContainText('4-значный код');
+        expect(activationCalls).toBe(beforeInvalid);
+  
+        await page.locator('#actCode').fill('9999');
+        await page.locator('#actBtn').click();
+        await expect(page.locator('#toasts .toast').last()).toContainText('Неверный код');
+        await expect(page.locator('#actBtn')).toBeEnabled();
+  
+        await page.locator('#actCode').fill('2468');
+        await page.locator('#actBtn').click();
+        await expect(page.locator('#verifyNote .profile-loyalty-help')).toBeVisible();
+        await expect(page.locator('#actCode')).toHaveCount(0);
+        await expect(page.locator('#qrOpenProfile')).toBeVisible();
+        await expect(page.locator('#toasts .toast').last()).toContainText('на карте 1 бесплатный кофе');
+        await expect(page.locator('#toasts .toast').last()).toContainText('Покажите QR');
+        await testInfo.attach('p0-coffee-activation-success.png', {
+          body: await page.screenshot({ fullPage: false }),
+          contentType: 'image/png'
+        });
       } else {
-        await expect(page.locator('#toasts .toast').last()).toContainText('код бесплатной первой доставки сейчас не назначен');
-        await expect(page.locator('#toasts .toast').last()).not.toContainText('первая доставка доступна');
+        await page.locator('#actCode').fill('2468');
+        await page.locator('#actBtn').click();
+        await expect(page.locator('#verifyNote')).toBeHidden();
+        await expect(page.locator('#deliveryView')).toBeVisible();
+        if (scenario.deliveryCode) {
+          await expect(page.locator('#toasts .toast').last()).toContainText('Бесплатная первая доставка доступна');
+          await expect(page.locator('#toasts .toast').last()).toContainText('корзине');
+          await testInfo.attach('p0-friday-delivery-code-available.png', {
+            body: await page.screenshot({ fullPage: false }),
+            contentType: 'image/png'
+          });
+        } else {
+          await expect(page.locator('#toasts .toast').last()).toContainText('код бесплатной первой доставки сейчас не назначен');
+          await expect(page.locator('#toasts .toast').last()).not.toContainText('первая доставка доступна');
+        }
       }
     }
-  }
-});
+    });
+  });
+  
 
 test('P0 registration baseline: capture guest, auth, Telegram waiting and both profile activation states', async ({ page }, testInfo) => {
   test.setTimeout(180000);
