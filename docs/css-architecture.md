@@ -79,6 +79,15 @@
 
 ## 4. First paint, fonts и CLS
 
+### First-frame brand header contract (PR #327)
+
+- `index.html` owns only the initial logo element, early brand selection/preload and the minimum critical `.bean` geometry needed before ESM hydration. It does not own later brand-switch rendering.
+- `core/views.js` remains the canonical owner of hydrated `.bean` geometry. The matching critical rule in `index.html` is a first-frame mirror only; keep dimensions and vertical alignment in sync with `syncBrandTitle()`.
+- `admin-extra.js` owns final logo attribute synchronization and load-error fallback on the existing `#brandLogoImg` node. It must not replace `#brandMark` contents during brand changes.
+- Keep brand assets distinct: square coffee SVG and horizontal Friday SVG (160×40). Reserve intrinsic dimensions before image decode; do not force the Friday wordmark into a square presentation.
+- Regression coverage: `tests/first-frame-brand-chrome.spec.js` checks first-frame attributes, image decode, node identity, real UI brand switching and bean geometry before/after hydration at 320×740, 390×844, 844×390 and 1440×900. This does not replace the visual acceptance gate in `PROJECT_RULES.md §10`.
+
+
 Ранний HTML/CSS должен резервировать тот же внешний размер шапки, марки, поиска, медиа карточек и фиксированных контролов, который будет после загрузки CSS/шрифтов и гидратации. Проверять:
 - first paint при throttled CSS/fonts;
 - геометрию после hydration;
