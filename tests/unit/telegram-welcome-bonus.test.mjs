@@ -87,9 +87,9 @@ test('signup and QR are one shared welcome grant, not two independent rewards', 
 test('legacy backfill evidence is ineligibility, not proof that the welcome bonus was granted', () => {
   configureWelcome();
   const id = makeCustomer({ stamps: 2 });
-  const marker = '2026-11-25T00:00:00.000Z';
+  const marker = db.prepare("SELECT value FROM meta WHERE key='bonus_grants_backfilled'").get()?.value;
+  assert.ok(marker, 'schema initialization records the backfill marker');
 
-  db.prepare("INSERT INTO meta(key,value) VALUES('bonus_grants_backfilled',?)").run(marker);
   db.prepare('INSERT INTO bonus_grants(cid,kind,ts) VALUES(?,?,?)').run(id, 'signup', marker);
 
   const result = grantBonusDetailed(id, 'signup');
@@ -102,9 +102,9 @@ test('legacy backfill evidence is ineligibility, not proof that the welcome bonu
 test('an explicit signup or QR grant takes precedence over a legacy backfill mark', () => {
   configureWelcome();
   const id = makeCustomer({ stamps: 2 });
-  const marker = '2026-11-25T00:00:00.000Z';
+  const marker = db.prepare("SELECT value FROM meta WHERE key='bonus_grants_backfilled'").get()?.value;
+  assert.ok(marker, 'schema initialization records the backfill marker');
 
-  db.prepare("INSERT INTO meta(key,value) VALUES('bonus_grants_backfilled',?)").run(marker);
   db.prepare('INSERT INTO bonus_grants(cid,kind,ts) VALUES(?,?,?)').run(id, 'signup', marker);
   db.prepare('INSERT INTO bonus_grants(cid,kind,ts) VALUES(?,?,?)').run(id, 'qr', '2026-11-25T00:01:00.000Z');
 
