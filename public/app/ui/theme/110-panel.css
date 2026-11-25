@@ -675,6 +675,7 @@
   }
 }
 
+
 @media (prefers-reduced-motion: reduce) {
   .stamp {
     transition: none;

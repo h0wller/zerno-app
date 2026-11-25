@@ -90,6 +90,16 @@ test.describe('Модуль заказов профиля', () => {
       element.nextElementSibling?.classList.contains('profile-history-section')
     )).toBe(true);
   });
+  test('визуальный снимок профиля доставки на мобильном экране', async ({ page }, testInfo) => {
+    await expect(page.locator('#profileBox')).toBeVisible();
+    await expect(page.locator('#profileOrdersSection')).toBeVisible();
+    await expect(page.locator('#myOrders .myOrderCard')).toContainText('Заказ #P-1042');
+    await testInfo.attach('delivery-profile-390x844', {
+      body: await page.screenshot({ fullPage: false, animations: 'disabled' }),
+      contentType: 'image/png'
+    });
+  });
+
   test('выводит последний заказ в профиле и список в отдельной модалке', async ({ page }) => {
     await expect(page.locator('#profileOrdersSection .profile-section-heading')).toContainText('Последний заказ');
     await expect(page.locator('#myOrders .myOrderCard')).toContainText('Заказ #P-1042');
@@ -290,6 +300,56 @@ test.describe('Модуль заказов профиля', () => {
     });
     await page.locator('#setPinClose').click();
     await expect(pin).not.toHaveClass(/show/);
+  });
+
+  test('повторное закрытие профиля через backdrop снимает blur и освобождает клики', async ({ page }, testInfo) => {
+    const panel = page.locator('#panel');
+    const overlay = page.locator('#overlay');
+    const profileButton = page.locator('#profileTopBtn');
+
+    for (let attempt = 0; attempt < 5; attempt += 1) {
+      await page.evaluate(() => window.openPanel('profile'));
+      await expect(panel).toHaveClass(/open/);
+      await expect(overlay).toHaveClass(/show/);
+      await expect(page.locator('html')).toHaveClass(/no-splash/);
+      await expect(overlay).toHaveCSS('visibility', 'visible');
+
+      const backdropPoint = await overlay.evaluate(element => {
+        const candidates = [
+          { x: 4, y: Math.round(window.innerHeight / 2) },
+          { x: Math.round(window.innerWidth - 4), y: Math.round(window.innerHeight / 2) },
+          { x: Math.round(window.innerWidth / 2), y: 4 }
+        ];
+        return candidates.find(point => {
+          const hit = document.elementFromPoint(point.x, point.y);
+          return hit === element || (hit && hit.closest('#overlay'));
+        }) || null;
+      });
+      expect(backdropPoint, 'a visible backdrop area exists outside the profile drawer').toBeTruthy();
+      await page.mouse.click(backdropPoint.x, backdropPoint.y);
+
+      await expect(panel).not.toHaveClass(/open/);
+      await expect(overlay).not.toHaveClass(/show/);
+      await expect.poll(() => overlay.evaluate(element => {
+        const style = getComputedStyle(element);
+        return {
+          visibility: style.visibility,
+          pointerEvents: style.pointerEvents,
+          opacity: Number(style.opacity)
+        };
+      })).toEqual({ visibility: 'hidden', pointerEvents: 'none', opacity: 0 });
+
+      if (attempt === 0) {
+        await testInfo.attach('delivery-profile-backdrop-dismissed-390x844', {
+          body: await page.screenshot({ fullPage: false, animations: 'disabled' }),
+          contentType: 'image/png'
+        });
+      }
+
+      await expect(profileButton).toBeVisible();
+      await profileButton.click();
+      await expect(panel).toHaveClass(/open/);
+    }
   });
 
   test('клик по затемнению закрывает настройки, но оставляет профиль открытым', async ({ page }) => {
