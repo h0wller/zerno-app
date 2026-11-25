@@ -68,7 +68,7 @@ jobs:
             workers: 2
           - group: Visual stability
             project: chromium
-            specs: tests/slow-network-layout.spec.js tests/splash-copy.spec.js tests/splash-owner.spec.js tests/splash-cls.spec.js
+            specs: tests/slow-network-layout.spec.js tests/splash-copy.spec.js tests/splash-owner.spec.js tests/splash-cls.spec.js tests/first-frame-brand-chrome.spec.js
             workers: 1
           - group: UI baseline
             project: chromium
