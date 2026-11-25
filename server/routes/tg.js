@@ -6,7 +6,8 @@ import { tgSend, escapeTelegramHtml, TG_TOKEN, TG_WEBHOOK_SECRET, APP_URL } from
 import { fmtPhone, ph10 } from '../utils/phone.js';
 import { otpStore } from '../utils/otp.js';
 import { grantWelcome } from '../domain/loyalty.js';
-import { grantBonus, QR_SOURCE } from '../domain/bonuses.js';
+import { grantBonusDetailed, QR_SOURCE } from '../domain/bonuses.js';
+import { formatWelcomeBonusMessage } from '../domain/welcome-bonus-message.js';
 import { cust, addHist, issueToken } from '../domain/helpers.js';
 import { createCustomer } from '../domain/customers.js';
 import { linkTelegram, findUniqueTelegramCustomer } from '../domain/telegram-link.js';
@@ -257,9 +258,7 @@ export function createTgRouter({ appKb }) {
         ? `С возвращением, <b>${escapeTelegramHtml(c.name)}</b>!\n\n${stampBar(c.stamps)}\nШтампов: <b>${c.stamps}/10</b>` +
           (c.free ? `\n🎁 Бесплатных кофе: <b>${c.free}</b>` : '')
         : '☕ Привет! Я бот «…и кофе» и доставки «Пятница» 🌊🍕\n\n' +
-          'Привяжите номер и заберите приветственные бонусы:\n' +
-          '☕ <b>Приветственный напиток</b> в кофейне\n' +
-          '🍕 <b>Бесплатная первая доставка</b> «Пятницы»\n\n' +
+          'Привяжите номер и создайте профиль. Возможность приветственных бонусов зависит от условий акции и настроек заведения; после подтверждения я сообщу, что действительно начислено.\n\n' +
           'Штампы, меню, заказы и чат поддержки — всё здесь 👇';
       await tgSend(chatId, hello, welcomeKeyboard(c));
       return;
@@ -306,6 +305,7 @@ export function createTgRouter({ appKb }) {
         const contactPhone = fmtPhone(u.message.contact.phone_number);
         if (contactPhone === fmtPhone(pend.phone)) {
           const targetCust = db.prepare('SELECT * FROM customers WHERE phone=?').get(contactPhone);
+          let bonusOutcome = { status: 'unknown' };
           if (targetCust) {
             const linked = linkTelegram(db, targetCust.id, String(chatId));
             if (!linked.ok) {
@@ -314,7 +314,7 @@ export function createTgRouter({ appKb }) {
             }
             db.prepare('UPDATE customers SET verified=1 WHERE id=?').run(targetCust.id);
             if (!targetCust.welcome) grantWelcome(targetCust.id, 'Telegram');
-            grantBonus(targetCust.id, targetCust.src === QR_SOURCE ? 'qr' : 'signup');
+            bonusOutcome = grantBonusDetailed(targetCust.id, targetCust.src === QR_SOURCE ? 'qr' : 'signup');
             addHist(targetCust.id, 'Вход через Telegram-подтверждение', 'Telegram');
           } else {
             const tgUserName = [u.message.from?.first_name, u.message.from?.last_name].filter(Boolean).join(' ');
@@ -329,7 +329,7 @@ export function createTgRouter({ appKb }) {
               }
               db.prepare('UPDATE customers SET verified=1, consent=? WHERE id=?').run(nowISO() + ' v1', r.customer.id);
               grantWelcome(r.customer.id, 'Telegram');
-              grantBonus(r.customer.id, 'signup');
+              bonusOutcome = grantBonusDetailed(r.customer.id, 'signup');
               addHist(r.customer.id, 'Регистрация через Telegram', 'Telegram');
             }
           }
@@ -363,9 +363,7 @@ export function createTgRouter({ appKb }) {
 
           await tgSend(chatId,
             '🎉 <b>Профиль готов, ' + escapeTelegramHtml(custObj ? custObj.name : '') + '!</b>\n\n' +
-            'Ваши приветственные бонусы активированы:\n' +
-            '☕ <b>Приветственный напиток</b> в кофейне\n' +
-            '🍕 <b>Бесплатная первая доставка</b> — применится в корзине сама\n\n' +
+            formatWelcomeBonusMessage(bonusOutcome) + '\n\n' +
             'В браузере вход выполнился автоматически. Или откройте сайт кнопкой ниже 👇',
             {
               inline_keyboard: [[
@@ -403,12 +401,10 @@ export function createTgRouter({ appKb }) {
         }
         if (!c.welcome) {
           grantWelcome(c.id, 'Telegram');
-          grantBonus(c.id, c.src === QR_SOURCE ? 'qr' : 'signup');
+          const bonusOutcome = grantBonusDetailed(c.id, c.src === QR_SOURCE ? 'qr' : 'signup');
           await tgSend(chatId,
             '✅ Готово, ' + escapeTelegramHtml(c.name) + '! Профиль привязан 🎉\n\n' +
-            '🎁 <b>Ваши приветственные бонусы:</b>\n' +
-            '☕ Приветственный напиток в кофейне (уже в вашей карте)\n' +
-            '🍕 Бесплатная первая доставка — применится в корзине сама',
+            formatWelcomeBonusMessage(bonusOutcome),
             welcomeKeyboard(c)
           );
         } else {
@@ -421,7 +417,7 @@ export function createTgRouter({ appKb }) {
         );
       } else {
         await tgSend(chatId,
-          'Профиль с номером ' + formatted + ' не найден ⚠️\n\nСоздайте его в приложении за 10 секунд — и получите приветственный напиток и бесплатную доставку 🎁',
+          'Профиль с номером ' + formatted + ' не найден ⚠️\n\nСоздайте его в приложении за 10 секунд. Возможность приветственных бонусов зависит от условий акции и настроек заведения.',
           { inline_keyboard: [[{ text: '📝 Создать профиль', web_app: { url: APP_URL + '/?src=tg&brand=coffee' } }]] }
         );
       }
