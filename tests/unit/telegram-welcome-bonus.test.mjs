@@ -67,6 +67,23 @@ test('grantBonusDetailed distinguishes a previously granted welcome bonus', () =
   assert.equal(repeated.bonus, undefined);
 });
 
+test('signup and QR are one shared welcome grant, not two independent rewards', () => {
+  configureWelcome();
+  const id = makeCustomer();
+
+  const signup = grantBonusDetailed(id, 'signup');
+  const qrRetry = grantBonusDetailed(id, 'qr');
+
+  assert.equal(signup.status, 'granted');
+  assert.equal(qrRetry.status, 'already_granted');
+  assert.equal(
+    db.prepare("SELECT COUNT(*) AS n FROM bonus_grants WHERE cid=? AND kind IN ('signup','qr')").get(id).n,
+    1
+  );
+  assert.equal(db.prepare('SELECT free FROM customers WHERE id=?').get(id).free, 1);
+  assert.equal(db.prepare("SELECT COUNT(*) AS n FROM promos WHERE owner=? AND kind='freeship'").get(id).n, 1);
+});
+
 test('grantBonusDetailed reports disabled configuration without recording a grant', () => {
   configureWelcome({ signup: { coffee: 0, delivery: 0, freeFirstDelivery: 0 } });
   const id = makeCustomer();
