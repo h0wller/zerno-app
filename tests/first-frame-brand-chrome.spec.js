@@ -77,22 +77,38 @@ async function measureLogoPresentation(page) {
         top: box.top, right: box.right, bottom: box.bottom, left: box.left
       };
     };
-    const style = (element) => {
+    const style = (element, pseudo = null) => {
       if (!element) return null;
-      const computed = getComputedStyle(element);
+      const computed = getComputedStyle(element, pseudo);
       return {
+        content: computed.content,
         display: computed.display,
         visibility: computed.visibility,
         opacity: computed.opacity,
         position: computed.position,
         zIndex: computed.zIndex,
+        top: computed.top,
+        right: computed.right,
+        bottom: computed.bottom,
+        left: computed.left,
+        width: computed.width,
+        height: computed.height,
+        transform: computed.transform,
+        filter: computed.filter,
+        clipPath: computed.clipPath,
         overflow: computed.overflow,
         objectFit: computed.objectFit,
         backgroundColor: computed.backgroundColor,
         backgroundImage: computed.backgroundImage,
-        borderRadius: computed.borderRadius
+        border: computed.border,
+        borderRadius: computed.borderRadius,
+        boxShadow: computed.boxShadow
       };
     };
+    const pseudoStyles = (element) => ({
+      before: style(element, '::before'),
+      after: style(element, '::after')
+    });
     const header = document.querySelector('header.topbar');
     const mark = document.getElementById('brandMark');
     const image = document.getElementById('brandLogoImg');
@@ -123,8 +139,24 @@ async function measureLogoPresentation(page) {
       },
       title: { rect: rect(title), style: style(title) },
       profile: { rect: rect(profile), style: style(profile) },
-      stackAtHeaderCenter: document.elementsFromPoint(innerWidth / 2, 30).slice(0, 6).map((element) => ({
-        tagName: element.tagName, id: element.id, className: typeof element.className === 'string' ? element.className : ''
+      pseudo: {
+        body: pseudoStyles(document.body),
+        header: pseudoStyles(header),
+        headerBrand: pseudoStyles(document.getElementById('headerBrand')),
+        mark: pseudoStyles(mark),
+        logo: pseudoStyles(image),
+        title: pseudoStyles(title),
+        profile: pseudoStyles(profile)
+      },
+      hitStacks: [
+        [8, 30], [innerWidth / 2, 30], [innerWidth - 8, 30],
+        [innerWidth / 2, 8], [innerWidth / 2, 52]
+      ].map(([x, y]) => ({
+        point: { x, y },
+        stack: document.elementsFromPoint(x, y).slice(0, 8).map((element) => ({
+          tagName: element.tagName, id: element.id,
+          className: typeof element.className === 'string' ? element.className : ''
+        }))
       }))
     };
   });
