@@ -90,6 +90,16 @@ test.describe('Модуль заказов профиля', () => {
       element.nextElementSibling?.classList.contains('profile-history-section')
     )).toBe(true);
   });
+  test('визуальный снимок профиля доставки на мобильном экране', async ({ page }, testInfo) => {
+    await expect(page.locator('#profileBox')).toBeVisible();
+    await expect(page.locator('#profileOrdersSection')).toBeVisible();
+    await expect(page.locator('#myOrders .myOrderCard')).toContainText('Заказ #P-1042');
+    await testInfo.attach('delivery-profile-390x844', {
+      body: await page.screenshot({ fullPage: false, animations: 'disabled' }),
+      contentType: 'image/png'
+    });
+  });
+
   test('выводит последний заказ в профиле и список в отдельной модалке', async ({ page }) => {
     await expect(page.locator('#profileOrdersSection .profile-section-heading')).toContainText('Последний заказ');
     await expect(page.locator('#myOrders .myOrderCard')).toContainText('Заказ #P-1042');
@@ -301,6 +311,8 @@ test.describe('Модуль заказов профиля', () => {
       await page.evaluate(() => window.openPanel('profile'));
       await expect(panel).toHaveClass(/open/);
       await expect(overlay).toHaveClass(/show/);
+      await expect(page.locator('html')).toHaveClass(/no-splash/);
+      await expect(overlay).toHaveCSS('visibility', 'visible');
 
       const backdropPoint = await overlay.evaluate(element => {
         const candidates = [

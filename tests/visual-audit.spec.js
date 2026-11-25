@@ -574,6 +574,41 @@ test('visual audit: delivery search states for admin at 390x844', async ({ page 
     contentType: 'application/json',
     body: JSON.stringify({ items: staffItems, updatedAt: '2026-11-24T00:00:00.000Z' })
   }));
+  await page.route('**/api/promos', (route) => route.fulfill({
+    status: 200,
+    contentType: 'application/json',
+    body: JSON.stringify({
+      promos: [{
+        id: 4321,
+        code: 'VISUAL10',
+        kind: 'percent',
+        value: 10,
+        expires: null,
+        maxuses: 100,
+        uses: 2,
+        active: true,
+        owner: null
+      }]
+    })
+  }));
+  await page.route('**/api/delivery/info', (route) => route.fulfill({
+    status: 200,
+    contentType: 'application/json',
+    body: JSON.stringify({
+      weekPromo: {
+        text: 'Каждые 2000 ₽ в чеке — подарок',
+        threshold: 2000,
+        gift: 'Пиво 0.5',
+        until: null
+      },
+      pizzaMonth: { name: 'Грибная' }
+    })
+  }));
+  await page.route('**/api/admin/bonuses', (route) => route.fulfill({
+    status: 200,
+    contentType: 'application/json',
+    body: JSON.stringify({ kinds: {}, days: 30 })
+  }));
   await page.addInitScript(() => {
     localStorage.setItem('zt_onb', '1');
     localStorage.setItem('zt_inst_hide', '1');
@@ -631,6 +666,55 @@ test('visual audit: delivery search states for admin at 390x844', async ({ page 
     path.join(OUT, 'delivery-search-admin-390x844.json'),
     JSON.stringify({ viewport, role: 'admin', runtime }, null, 2)
   );
+
+  await expect(page.locator('#promoToggle')).toBeVisible();
+  await page.locator('#promoToggle').click();
+  const promoModal = page.locator('#promoModal');
+  await expect(promoModal).toHaveClass(/show/);
+  await expect(promoModal.locator('#pmList .logrow')).toHaveCount(1);
+  await expect(promoModal.locator('#pmList')).toHaveCount(1);
+  await expect(promoModal.locator('#wpText')).toHaveValue('Каждые 2000 ₽ в чеке — подарок');
+  await expect(promoModal.locator('#pmName')).toHaveValue('Грибная');
+  await expect(promoModal.locator('#bzDays')).toHaveValue('30');
+
+  await page.screenshot({
+    path: path.join(OUT, 'DELIVERY-ADMIN-PROMO-MODAL-390x844.png'),
+    animations: 'disabled'
+  });
+  const promoRuntime = await page.evaluate(() => {
+    const modal = document.getElementById('promoModal');
+    const card = modal.querySelector('.modal-card');
+    const rect = card.getBoundingClientRect();
+    return {
+      brand: document.documentElement.dataset.brand || null,
+      staffRole: document.documentElement.getAttribute('data-staff-role'),
+      modalVisible: getComputedStyle(modal).visibility !== 'hidden',
+      card: { x: rect.x, y: rect.y, width: rect.width, height: rect.height },
+      viewport: { width: innerWidth, height: innerHeight },
+      documentWidth: document.documentElement.scrollWidth,
+      listHosts: document.querySelectorAll('#promoModal #pmList').length,
+      promoRows: document.querySelectorAll('#promoModal #pmList .logrow').length,
+      modalScrollHeight: card.scrollHeight,
+      modalClientHeight: card.clientHeight
+    };
+  });
+  expect(promoRuntime.brand).toBe('delivery');
+  expect(promoRuntime.staffRole).toBe('admin');
+  expect(promoRuntime.modalVisible).toBe(true);
+  expect(promoRuntime.listHosts).toBe(1);
+  expect(promoRuntime.promoRows).toBe(1);
+  expect(promoRuntime.documentWidth).toBeLessThanOrEqual(viewport.width);
+  expect(promoRuntime.card.x).toBeGreaterThanOrEqual(0);
+  expect(promoRuntime.card.y).toBeGreaterThanOrEqual(0);
+  expect(promoRuntime.card.x + promoRuntime.card.width).toBeLessThanOrEqual(viewport.width + 1);
+  expect(promoRuntime.card.y + promoRuntime.card.height).toBeLessThanOrEqual(viewport.height + 1);
+  fs.writeFileSync(
+    path.join(OUT, 'delivery-admin-promo-modal-390x844.json'),
+    JSON.stringify({ viewport, role: 'admin', brand: 'delivery', runtime: promoRuntime }, null, 2)
+  );
+  await page.locator('#promoClose').click();
+  await expect(promoModal).not.toHaveClass(/show/);
+  await expect(page.locator('#overlay')).toHaveCSS('visibility', 'hidden');
 });
 
 // Delivery is the ordering storefront. Only this brand is captured with a populated cart.
