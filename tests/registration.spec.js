@@ -1392,3 +1392,56 @@ test('a replacement Telegram attempt ignores the cancelled attempt response', as
   await firstPopup.close();
   await secondPopup.close();
 });
+
+
+test('explicitly cancelling Telegram polling ignores an already in-flight confirmation', async ({ page }) => {
+  let markCheckStarted;
+  let releaseCheck;
+  const checkStarted = new Promise(resolve => { markCheckStarted = resolve; });
+  const responseGate = new Promise(resolve => { releaseCheck = resolve; });
+
+  await page.route('**/api/orders/mine', route => route.fulfill({
+    status: 200, contentType: 'application/json', body: JSON.stringify({ orders: [] })
+  }));
+  await page.route('**/api/auth/request-reg-otp', route => route.fulfill({
+    status: 200, contentType: 'application/json',
+    body: JSON.stringify({ pollToken: '9'.repeat(64), tgUrl: 'https://t.me/test_bot?start=reg_cancel' })
+  }));
+  await page.route('https://t.me/**', route => route.fulfill({
+    status: 200, contentType: 'text/html', body: '<!doctype html><title>Telegram test stub</title>'
+  }));
+  await page.route('**/api/auth/check-reg', async route => {
+    markCheckStarted();
+    await responseGate;
+    await route.fulfill({
+      status: 200, contentType: 'application/json',
+      body: JSON.stringify({
+        confirmed: true, token: 'cancelled-poll-token', isNew: true,
+        customer: {
+          id: 'cancelled-poll-customer', name: 'Cancelled Poll Customer',
+          phone: '+7 900 000-00-49', role: 'guest', stamps: 0, free: 0,
+          verified: 1, history: []
+        }
+      })
+    });
+  });
+
+  await page.goto('/?brand=coffee');
+  await page.evaluate(() => window.openAuth(false));
+  await page.locator('#regName').fill('Cancelled Poll Customer');
+  await page.locator('#regPhone').fill('+7 900 000-00-49');
+  await page.locator('#consentBox').check();
+  const popupPromise = page.waitForEvent('popup');
+  await page.locator('#regTgBtn').click();
+  const popup = await popupPromise;
+  await popup.waitForLoadState('domcontentloaded');
+  await checkStarted;
+
+  await page.evaluate(() => window.__registrationTgPollFinish());
+  releaseCheck();
+
+  await expect.poll(() => page.evaluate(() => window.USER_TOKEN)).toBeNull();
+  await expect.poll(() => page.evaluate(() => window.__registrationTgPoll)).toBeNull();
+  await expect(page.locator('#regTgRow')).toContainText('Подтверждение остановлено');
+  await popup.close();
+});
