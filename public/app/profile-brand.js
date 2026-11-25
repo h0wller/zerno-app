@@ -36,15 +36,6 @@
 /* ── брендовые правила: слияние v64 profileBrandRules + R4 applyProfileBrand ── */
 function brandRules(){
   var deliv=(typeof brand!=='undefined'&&brand==='delivery');
-  var activationNote = document.getElementById('verifyNote');
-  if(activationNote && activationNote.classList.contains('profile-activation-status')){
-    var currentCustomer = window.me || (typeof me !== 'undefined' ? me : null);
-    var currentStaff = !!(currentCustomer && currentCustomer.role && currentCustomer.role !== 'guest');
-    var currentVerified = !!currentCustomer && (
-      currentCustomer.verified === true || currentCustomer.verified === 1 || Number(currentCustomer.verified) > 0
-    );
-    activationNote.hidden = !currentCustomer || currentStaff || currentVerified;
-  }
   var deliverySection=document.getElementById('profileOrdersSection');
   var coffeeSection=document.getElementById('profileCoffeeSection');
   var deliveryPrompt=document.getElementById('profileDeliveryPrompt');
@@ -110,7 +101,7 @@ window.renderVerifyNote=function(){
     n = document.createElement('section');
     n.id = 'verifyNote';
     n.className = 'profile-brand-section profile-activation-status';
-    n.setAttribute('aria-label', 'Статус активации профиля');
+    n.setAttribute('aria-label', 'Статус профиля и программы кофейни');
     n.setAttribute('role', 'status');
     n.setAttribute('aria-live', 'polite');
     profile.insertBefore(n, profile.querySelector('#profileCoffeeSection, #profileOrdersSection') || null);
@@ -124,52 +115,61 @@ window.renderVerifyNote=function(){
     Number(customer.verified) > 0
   );
 
-  if(!customer || isStaff || isVerified){
+  if(!customer || isStaff){
     n.hidden = true;
     n.innerHTML = '';
     return;
   }
 
   var isDelivery = window.brand === 'delivery';
-  var guidance = isDelivery
-    ? '<p>Пока номер не подтверждён, заказы недоступны. Назовите номер кассиру и получите 4-значный код активации, затем введите его ниже. После активации можно будет перейти в меню и оформить заказ.</p>' +
-      '<p>Если сервер назначит вам бесплатную первую доставку, корзина применит её автоматически. Результат будет виден в строке доставки и итоговой сумме.</p>'
-    : '<p>Назовите номер кассиру и получите 4-значный код активации, затем введите его ниже. До подтверждения номера преимущества ещё не активны.</p>' +
-      '<p>После активации откроется карта кофейни: за покупку начисляется 1 штамп, 10 штампов дают бесплатный кофе. QR на карте покажите кассиру.</p>';
-
-  if(!isDelivery){
-    var freeCoffees = Math.max(0, Number(customer.free) || 0);
-    n.hidden = false;
-    n.innerHTML =
-      '<details class="profile-loyalty-help">' +
+  var freeCoffees = Math.max(0, Number(customer.free) || 0);
+  var coffeeHelp = !isDelivery
+    ? '<details class="profile-loyalty-help">' +
         '<summary><span>Как работают бонусы?</span><span class="profile-loyalty-help-chevron" aria-hidden="true">⌄</span></summary>' +
         '<div class="profile-loyalty-help-content">' +
           '<p>🫘 <b>Штампы.</b> После покупки кассир сканирует ваш QR и начисляет 1 штамп. 10 штампов — бесплатный кофе.</p>' +
-          (freeCoffees > 0
-            ? '<p>🎁 <b>Ваши подарки.</b> На карте профиля уже есть ' + freeCoffees + ' бесплатных кофе.</p>'
-            : '<p>🎁 <b>Приветственный подарок.</b> Сейчас бесплатных кофе нет. Подарок появится здесь, только когда его начислит сервер.</p>') +
+          (isVerified
+            ? (freeCoffees > 0
+              ? '<p>🎁 <b>Ваши подарки.</b> На карте профиля уже есть ' + freeCoffees + ' бесплатных кофе.</p>'
+              : '<p>🎁 <b>Подарки.</b> Сейчас бесплатных кофе нет. Подарок появится на карте, только когда его начислит сервер.</p>')
+            : '<p>🎁 Преимущества карты станут доступны после подтверждения номера.</p>') +
         '</div>' +
-      '</details>' +
-      '<div class="profile-activation-copy">' +
-        '<h4>Профиль создан, но ещё не активирован</h4>' + guidance +
-      '</div>' +
-      '<div class="profile-activation-row">' +
-        '<label class="profile-activation-label" for="actCode">Код активации</label>' +
-        '<input id="actCode" inputmode="numeric" maxlength="4" placeholder="4 цифры" aria-label="Четырёхзначный код активации" autocomplete="one-time-code">' +
-        '<button class="btn fire" id="actBtn" type="button">Активировать</button>' +
-      '</div>';
-  } else {
+      '</details>'
+    : '';
+
+  if(isDelivery && isVerified){
+    n.hidden = true;
+    n.innerHTML = '';
+    return;
+  }
+
+  if(!isVerified){
+    var pendingGuidance = isDelivery
+      ? '<p>Пока номер не подтверждён, заказы недоступны. Назовите номер кассиру и получите 4-значный код активации, затем введите его ниже. После активации можно будет перейти в меню и оформить заказ.</p>' +
+        '<p>Если сервер назначит вам бесплатную первую доставку, корзина применит её автоматически. Результат будет виден в строке доставки и итоговой сумме.</p>'
+      : '<p>Назовите номер кассиру и получите 4-значный код активации, затем введите его ниже. До подтверждения номера преимущества карты не активны.</p>' +
+        '<p>После активации откроется карта кофейни: за покупку начисляется 1 штамп, 10 штампов дают бесплатный кофе. QR на карте покажите кассиру.</p>';
+
     n.hidden = false;
-    n.innerHTML =
+    n.innerHTML = coffeeHelp +
       '<div class="profile-activation-copy">' +
         '<h4>Профиль создан, но ещё не активирован</h4>' +
-        guidance +
+        pendingGuidance +
       '</div>' +
       '<div class="profile-activation-row">' +
         '<label class="profile-activation-label" for="actCode">Код активации</label>' +
         '<input id="actCode" inputmode="numeric" maxlength="4" placeholder="4 цифры" aria-label="Четырёхзначный код активации" autocomplete="one-time-code">' +
         '<button class="btn fire" id="actBtn" type="button">Активировать</button>' +
       '</div>';
+  } else if(!isDelivery){
+    // The coffee explanation remains available after activation; the stamp card
+    // and its actual free count remain the source of reward status.
+    n.hidden = false;
+    n.innerHTML = coffeeHelp;
+  } else {
+    n.hidden = true;
+    n.innerHTML = '';
+    return;
   }
 
   relink();
@@ -197,12 +197,13 @@ window.renderVerifyNote=function(){
       else window.me = r.customer;
       if(typeof window.__profileMeReady === 'function') window.__profileMeReady();
       if(typeof window.renderAll === 'function') window.renderAll();
+      if(typeof window.renderVerifyNote === 'function') window.renderVerifyNote();
 
       if(!isDelivery){
-        var freeCoffees = Math.max(0, Number(r.customer.free) || 0);
+        var activatedFreeCoffees = Math.max(0, Number(r.customer.free) || 0);
         var message = 'Профиль активирован. Карта штампов открыта: ';
-        message += freeCoffees > 0
-          ? 'на карте ' + freeCoffees + ' бесплатных кофе. '
+        message += activatedFreeCoffees > 0
+          ? 'на карте ' + activatedFreeCoffees + ' бесплатных кофе. '
           : 'сейчас бесплатных кофе: 0; за покупки начисляются штампы, 10 штампов = бесплатный кофе. ';
         message += 'Покажите QR на карте кассиру для начисления штампа или получения подарка.';
         toast(message, '☕');
