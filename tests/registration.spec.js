@@ -598,3 +598,95 @@ test.describe('Registration & Auth Suite (F3.61 - F3.63)', () => {
   });
 
 });
+
+
+test('P0 registration baseline: capture guest, auth and both profile activation states', async ({ page }, testInfo) => {
+  await page.route('**/api/orders/mine', (route) => route.fulfill({
+    status: 200,
+    contentType: 'application/json',
+    body: JSON.stringify({ orders: [] })
+  }));
+
+  const viewports = [
+    { width: 390, height: 844 },
+    { width: 844, height: 390 },
+    { width: 820, height: 1024 },
+    { width: 1440, height: 900 }
+  ];
+
+  for (const brand of ['coffee', 'delivery']) {
+    for (const viewport of viewports) {
+      await page.setViewportSize(viewport);
+      await page.goto('/?brand=' + brand);
+      await page.waitForFunction(() =>
+        typeof window.openAuth === 'function' &&
+        typeof window.renderProfile === 'function' &&
+        typeof window.renderVerifyNote === 'function'
+      );
+      await page.evaluate(() => document.fonts.ready);
+
+      const prefix = 'p0-base-' + brand + '-' + viewport.width + 'x' + viewport.height;
+      await testInfo.attach(prefix + '-guest.png', {
+        body: await page.screenshot({ fullPage: false }),
+        contentType: 'image/png'
+      });
+
+      await page.evaluate(() => window.openAuth(false));
+      await testInfo.attach(prefix + '-auth.png', {
+        body: await page.screenshot({ fullPage: false }),
+        contentType: 'image/png'
+      });
+
+      const customer = {
+        id: 'p0-baseline-' + brand,
+        name: 'P0 Baseline Guest',
+        phone: '+7 900 000-00-01',
+        role: 'guest',
+        cups: 0,
+        stamps: 0,
+        free: 0,
+        qr: 'Z-P0BASE',
+        verified: 0,
+        welcome: 0,
+        tg: 0,
+        history: []
+      };
+      await page.evaluate((value) => {
+        window.setUser('p0-baseline-session', value);
+        window.renderProfile();
+        window.renderVerifyNote();
+        window.openPanel();
+      }, customer);
+      await expect(page.locator('#profileBox')).toBeVisible();
+      await page.evaluate(() => document.fonts.ready);
+      await testInfo.attach(prefix + '-pending-profile.png', {
+        body: await page.screenshot({ fullPage: false }),
+        contentType: 'image/png'
+      });
+
+      await page.evaluate(() => {
+        window.setUser('p0-baseline-session', {
+          id: 'p0-baseline-verified',
+          name: 'P0 Baseline Guest',
+          phone: '+7 900 000-00-01',
+          role: 'guest',
+          cups: 0,
+          stamps: 0,
+          free: 1,
+          qr: 'Z-P0BASE',
+          verified: 1,
+          welcome: 1,
+          tg: 1,
+          history: []
+        });
+        window.renderProfile();
+        window.renderVerifyNote();
+      });
+      await expect(page.locator('#profileBox')).toBeVisible();
+      await testInfo.attach(prefix + '-verified-profile.png', {
+        body: await page.screenshot({ fullPage: false }),
+        contentType: 'image/png'
+      });
+    }
+  }
+});
