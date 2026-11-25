@@ -3,6 +3,7 @@ import { Router } from 'express';
 import { db } from '../db/connection.js';
 import { adminGuard } from '../middleware/auth.js';
 import { isCancelledStatus, summarizeOrderRows } from '../domain/order-stats.js';
+import { buildCoffeeMonthStats, getCoffeeMonthPeriod } from '../domain/coffee-stats.js';
 
 const statsRouter = Router();
 
@@ -35,6 +36,29 @@ statsRouter.get('/api/stats', adminGuard, (req, res) => {
 });
 
 statsRouter.get('/api/stats/redeems', adminGuard, (req, res) => {
+  if (req.query.month !== undefined) {
+    const period = getCoffeeMonthPeriod(String(req.query.month));
+    if (!period) return res.status(400).json({ error: 'month must use YYYY-MM format' });
+
+    const rows = db.prepare(`
+      SELECT a, by, ts FROM history
+      WHERE ts >= ? AND ts < ?
+        AND (a LIKE '%бесплатный кофе%' OR a LIKE 'Штамп%')
+      ORDER BY ts DESC, id DESC
+    `).all(period.start, period.end);
+    const report = buildCoffeeMonthStats(period.month, rows);
+    const redemptions = rows.filter((row) => /списан бесплатный кофе/i.test(row.a || ''));
+
+    return res.json({
+      ...report,
+      recent: redemptions.slice(0, 20).map((row) => ({
+        action: row.a,
+        by: row.by,
+        time: row.ts,
+      })),
+    });
+  }
+
   const monthAgo = new Date(Date.now() - 30 * 86400000).toISOString();
   const rows = db.prepare(`
     SELECT a, by, ts FROM history
