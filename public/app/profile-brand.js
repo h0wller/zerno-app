@@ -179,7 +179,7 @@ window.renderVerifyNote=function(){
     if(ab.disabled) return;
     var input = document.getElementById('actCode');
     var code = input ? input.value.trim() : '';
-    if(!/^\\d{4}$/.test(code)){
+    if(!/^\d{4}$/.test(code)){
       toast('Введите 4-значный код активации', '⚠️');
       if(input) input.focus();
       return;
