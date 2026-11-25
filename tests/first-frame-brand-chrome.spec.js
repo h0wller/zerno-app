@@ -43,6 +43,7 @@ async function holdBeforeBundle(page, brand, viewport) {
 
   await page.goto('/', { waitUntil: 'commit' });
   await expect(page.locator('#zt-early-chrome-guard')).toBeAttached();
+  await page.waitForFunction(() => window.__ztBrandLogoPrimed === true);
   await expect(page.locator('#brandMark')).toBeAttached();
   await expect(page.locator('#brandTitle')).toBeAttached();
   await page.evaluate(() => {
@@ -85,6 +86,7 @@ for (const viewport of VIEWPORTS) {
   test(`FP-001: coffee bean first-frame geometry is stable at ${viewport.name}`, async ({ page }, testInfo) => {
     test.setTimeout(60000);
     const resumeBundle = await holdBeforeBundle(page, 'coffee', viewport);
+    await waitForDeferredTheme(page);
     const before = await measureHeader(page);
 
     expect(before.bean).not.toBeNull();
@@ -126,6 +128,7 @@ for (const brand of ['coffee', 'delivery']) {
     test(`FP-003: ${brand} actual logo is present before hydration and sync is idempotent at ${viewport.name}`, async ({ page }, testInfo) => {
       test.setTimeout(60000);
       const resumeBundle = await holdBeforeBundle(page, brand, viewport);
+      await waitForDeferredTheme(page);
       const expected = logoFor(brand);
       const logo = page.locator('#brandLogoImg');
 
