@@ -22,7 +22,7 @@ for (const brand of BRANDS) {
       await expect(cartFab).toBeVisible();
     }
 
-    await page.evaluate(() => window.scrollTo(0, 700));
+    await page.evaluate(() => window.scrollTo({ top: 700, behavior: 'instant' }));
     await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(300);
     await expect(rail).toHaveClass(/is-scroll-fading/);
     if (brand.brand === 'delivery') await expect(cartFab).toHaveClass(/is-scroll-fading/);
@@ -80,7 +80,7 @@ for (const brand of BRANDS) {
     });
 
     const scrollTo = async (top) => {
-      await page.evaluate((nextTop) => window.scrollTo(0, nextTop), top);
+      await page.evaluate((nextTop) => window.scrollTo({ top: nextTop, behavior: 'instant' }), top);
       await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(top);
     };
 
@@ -167,7 +167,7 @@ test('brand transitions retain the scroll state and reveal the newly active rail
   const deliveryRail = page.locator('#deliveryRail');
   await expect(coffeeRail).toBeVisible({ timeout: 15000 });
 
-  await page.evaluate(() => window.scrollTo(0, 700));
+  await page.evaluate(() => window.scrollTo({ top: 700, behavior: 'instant' }));
   await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(700);
   await expect(coffeeRail).toHaveClass(/is-scroll-fading/);
 
@@ -185,7 +185,7 @@ test('brand transitions retain the scroll state and reveal the newly active rail
   await expect(page.locator('html')).toHaveAttribute('data-brand', 'coffee');
   await expect(coffeeRail).toHaveClass(/is-scroll-fading/);
 
-  await page.evaluate(() => window.scrollTo(0, 680));
+  await page.evaluate(() => window.scrollTo({ top: 680, behavior: 'instant' }));
   await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(680);
   await expect(coffeeRail).not.toHaveClass(/is-scroll-fading/);
   await expect.poll(() => coffeeRail.evaluate(el => Number.parseFloat(getComputedStyle(el).opacity)))
@@ -204,10 +204,10 @@ for (const brand of BRANDS) {
     const rail = page.locator(brand.rail);
     await expect(rail).toBeVisible({ timeout: 15000 });
 
-    await page.evaluate(() => window.scrollTo(0, 700));
+    await page.evaluate(() => window.scrollTo({ top: 700, behavior: 'instant' }));
     await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(700);
     await expect(rail).not.toHaveClass(/is-scroll-fading/);
-    await page.evaluate(() => window.scrollTo(0, 500));
+    await page.evaluate(() => window.scrollTo({ top: 500, behavior: 'instant' }));
     await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(500);
     await expect(rail).not.toHaveClass(/is-scroll-fading/);
     await expect.poll(() => page.evaluate(() =>
@@ -226,10 +226,10 @@ for (const brand of BRANDS) {
     await expect(rail).toBeVisible({ timeout: 15000 });
     await expect.poll(() => rail.evaluate(el => getComputedStyle(el).transitionDuration)).toBe('0s');
 
-    await page.evaluate(() => window.scrollTo(0, 700));
+    await page.evaluate(() => window.scrollTo({ top: 700, behavior: 'instant' }));
     await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(700);
     await expect(rail).toHaveClass(/is-scroll-fading/);
-    await page.evaluate(() => window.scrollTo(0, 680));
+    await page.evaluate(() => window.scrollTo({ top: 680, behavior: 'instant' }));
     await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(680);
     await expect(rail).not.toHaveClass(/is-scroll-fading/);
   });
@@ -302,7 +302,7 @@ for (const brand of BRANDS) {
       await expect(page.locator(brand.brand === 'coffee' ? '#grid .card' : '#deliveryGrid .card').first())
         .toBeVisible({ timeout: 15000 });
 
-      await page.evaluate(() => window.scrollTo(0, 700));
+      await page.evaluate(() => window.scrollTo({ top: 700, behavior: 'instant' }));
       await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(300);
       await page.evaluate(() => { window.__categoryScrollBehaviors = []; });
 
@@ -345,7 +345,7 @@ test('delivery subfilters remain visible while the primary category rail fades d
   const firstSubfilter = subfilters.locator('button').first();
   await expect(firstSubfilter).toBeVisible();
 
-  await page.evaluate(() => window.scrollTo(0, 500));
+  await page.evaluate(() => window.scrollTo({ top: 500, behavior: 'instant' }));
   await expect(page.locator('#deliveryRail')).toHaveCSS('opacity', '0.06');
   await expect(subfilters).toHaveCSS('opacity', '1');
   await expect(firstSubfilter).toHaveCSS('opacity', '1');
