@@ -177,9 +177,17 @@ export function grantBonusDetailed(cid, kind, options = {}) {
   }
 
   const priorGrant = kind === 'signup' || kind === 'qr'
-    ? db.prepare("SELECT 1 FROM bonus_grants WHERE cid=? AND kind IN ('signup','qr') LIMIT 1").get(cid)
-    : db.prepare('SELECT 1 FROM bonus_grants WHERE cid=? AND kind=? LIMIT 1').get(cid, kind);
-  if (priorGrant) return { status: 'already_granted' };
+    ? db.prepare("SELECT ts FROM bonus_grants WHERE cid=? AND kind IN ('signup','qr') ORDER BY ts LIMIT 1").get(cid)
+    : db.prepare('SELECT ts FROM bonus_grants WHERE cid=? AND kind=? LIMIT 1').get(cid, kind);
+  if (priorGrant) {
+    // Migration backfill records active/used profiles to prevent retroactive welcome rewards.
+    // It is eligibility evidence, not proof that this particular welcome reward was granted.
+    if (kind === 'signup' || kind === 'qr') {
+      const marker = db.prepare("SELECT value FROM meta WHERE key='bonus_grants_backfilled'").get();
+      if (marker?.value && priorGrant.ts === marker.value) return { status: 'ineligible' };
+    }
+    return { status: 'already_granted' };
+  }
 
   if ((kind === 'signup' || kind === 'qr') && profileWasUsed(cid, c)) {
     return { status: 'ineligible' };
