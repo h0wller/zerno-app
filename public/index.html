@@ -4440,7 +4440,7 @@ html body #tickerTrack .tickerGroup > span {
           m.content = cur === 'coffee' ? '#FFFFFF' : '#C99E6E';
         };
         syncTheme();
-        new MutationObserver(syncTheme).observe(document.documentElement, { attributes: true, attributeFilter: ['data-brand'] });
+        // Runtime brand changes are synchronized by core/views.js.
       } catch (e) { }
     })();
   </script>
