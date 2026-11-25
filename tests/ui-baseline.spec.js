@@ -47,6 +47,22 @@ async function assertBootTemplate(page) {
 /** Вход без UI: register (retry при 409) → activate → токен в localStorage ДО загрузки. */
 async function loginAs(page, { code } = {}) {
   const expectedRole = code ? (code === ADMIN ? 'admin' : 'cashier') : 'guest';
+  if (!code) {
+    await page.route(url => {
+      return url.pathname === '/api/me' && url.search === '';
+    }, async route => {
+      const response = await route.fetch();
+      const payload = await response.json();
+      const customer = payload && payload.customer;
+      await route.fulfill({
+        response,
+        json: {
+          ...payload,
+          customer: customer ? { ...customer, verified: 1 } : customer
+        }
+      });
+    });
+  }
   let token = null;
   let digits = '';
 
@@ -151,6 +167,7 @@ test('baseline: профиль и бонусы (зарегистрирован)'
   await expect(panel).toBeVisible({ timeout: 8000 });
 
   await expect(page.locator('#profileBox')).toBeVisible({ timeout: 10000 });
+  await expect.poll(() => page.evaluate(() => window.me && (window.me.verified === true || window.me.verified === 1 || Number(window.me.verified) > 0))).toBe(true);
   await expect(page.locator('#profileCoffeeSection .stats')).toBeHidden();
   await expect(page.locator('.profile-qr-access')).toBeVisible();
   await expect(page.locator('.profile-qr-link')).toHaveText('Показать QR');

@@ -86,18 +86,42 @@
     }
   }
 
-  function applyAuthBrand() {
+  function applyAuthBrand(login) {
     var modal = document.getElementById('authModal');
     if (!modal) return;
     adaptAuthForTelegram(modal);
-    var msub = modal.querySelector('.msub');
-    if (msub) msub.textContent = 'Бонусы за регистрацию — внутри';
+
+    var isDelivery = window.brand === 'delivery';
+    var title = document.getElementById('authTitle');
+    var subtitle = modal.querySelector('.msub');
+    var registrationHelp = modal.querySelector('#regForm .auth-help');
+
+    if (login) {
+      if (title) title.textContent = 'Вход по номеру';
+      if (subtitle) subtitle.textContent = 'Войдите по номеру телефона, чтобы вернуться к своему профилю и заказам.';
+      return;
+    }
+
+    if (title) title.textContent = isDelivery
+      ? 'Профиль «Пятницы»'
+      : 'Профиль «…и кофе»';
+
+    if (subtitle) {
+      subtitle.textContent = isDelivery
+        ? 'Профиль сохраняет ваши заказы. Первая доставка бесплатна, если сервер назначит вам персональный код: корзина применит его автоматически и покажет результат в расчёте доставки.'
+        : '1 штамп за покупку; 10 штампов — бесплатный кофе. Карта и QR будут в профиле: покажите QR кассиру. Приветственный подарок появится там только после начисления сервером.';
+    }
+
+    if (registrationHelp) {
+      registrationHelp.textContent = isDelivery
+        ? 'Нет Telegram? Создайте профиль, получите 4-значный код у кассира и введите его в профиле. До подтверждения номера заказы недоступны.'
+        : 'Нет Telegram? Создайте профиль, получите 4-значный код у кассира и введите его в профиле. После активации откроются карта штампов и QR.';
+    }
   }
 
   function openAuth(login) {
     if (typeof login === 'undefined') login = false;
     armPw();
-    applyAuthBrand();
 
     var am = document.getElementById('authModal');
     if (am && !am.classList.contains('show')) {
@@ -111,6 +135,7 @@
     if (am) am.classList.add('show');
 
     setAuthFormMode(login);
+    applyAuthBrand(login);
 
     if (typeof syncOverlay === 'function') syncOverlay();
     if (authFocusTimer) clearTimeout(authFocusTimer);
@@ -202,8 +227,8 @@
   });
 
   function authSwap(login) {
-    applyAuthBrand();
     setAuthFormMode(login);
+    applyAuthBrand(login);
     if (login) resetLoginPinState();
     var modal = document.getElementById('authModal');
     var target = document.getElementById(login ? 'logPhone' : 'regName');
@@ -362,7 +387,8 @@
             window.setUser(rOtp.token, rOtp.customer);
             closeAuth();
             if (typeof renderAll === 'function') renderAll();
-            toast('С возвращением, ' + rOtp.customer.name + '!', '🔗');
+            if (typeof window.openPanel === 'function') window.openPanel();
+            toast('С возвращением, ' + rOtp.customer.name + '! Ваш профиль открыт.', '🔗');
             if (rOtp.needPin) toast('PIN не задан. Задайте PIN в профиле — кнопка 🔐', '🔐');
           } else {
             var pinVal = (document.getElementById('logPin') || {}).value.trim();
@@ -374,7 +400,8 @@
             window.setUser(rPin.token, rPin.customer);
             closeAuth();
             if (typeof renderAll === 'function') renderAll();
-            toast('С возвращением, ' + rPin.customer.name + '!', '🔗');
+            if (typeof window.openPanel === 'function') window.openPanel();
+            toast('С возвращением, ' + rPin.customer.name + '! Ваш профиль открыт.', '🔗');
           }
         } catch (e) {
           if (e.code === 409) {

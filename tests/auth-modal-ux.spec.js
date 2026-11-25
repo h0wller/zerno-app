@@ -159,6 +159,7 @@ test('registration and login tabs stay in sync with the active form and keyboard
   await page.waitForFunction(() => typeof window.openAuth === 'function');
   await page.evaluate(() => window.openAuth(false));
 
+  const benefit = page.locator('#authModal .msub');
   const registerTab = page.locator('#toReg');
   const loginTab = page.locator('#toLogin');
   await expect(registerTab).toHaveAttribute('type', 'button');
@@ -177,6 +178,7 @@ test('registration and login tabs stay in sync with the active form and keyboard
   expect(registerStyle.color).not.toBe(loginStyle.color);
 
   await page.evaluate(() => window.openAuth(true));
+  await expect(benefit).toContainText('Войдите по номеру телефона');
   await expect(loginTab).toHaveAttribute('aria-pressed', 'true');
   await expect(registerTab).toHaveAttribute('aria-pressed', 'false');
   await expect(page.locator('#loginForm')).toBeVisible();
@@ -266,7 +268,27 @@ test('auth modal closes on backdrop click but stays open for card clicks', async
 
 
 
-test('auth modal keeps the short unified-profile registration benefit visible in both modes', async ({ page }) => {
+test('auth modal explains the coffee stamp card before registration and avoids a gift promise during login', async ({ page }) => {
+  await page.addInitScript(() => {
+    localStorage.setItem('zt_onb', '1');
+    sessionStorage.setItem('splashDone', '1');
+  });
+  await page.goto('/?brand=coffee');
+  await page.waitForFunction(() => typeof window.openAuth === 'function');
+
+  const subtitle = page.locator('#authModal .msub');
+  await page.evaluate(() => window.openAuth(false));
+  await expect(subtitle).toContainText('1 штамп за покупку');
+  await expect(subtitle).toContainText('10 штампов');
+  await expect(subtitle).toContainText('QR');
+  await expect(subtitle).toContainText('только после начисления сервером');
+
+  await page.evaluate(() => window.openAuth(true));
+  await expect(subtitle).toContainText('Войдите по номеру телефона');
+  await expect(subtitle).not.toContainText(/бесплатный кофе|приветственн|начисления сервером/i);
+});
+
+test('auth modal explains Friday delivery value in registration and avoids it in login mode', async ({ page }) => {
   await page.addInitScript(() => {
     localStorage.setItem('zt_onb', '1');
     sessionStorage.setItem('splashDone', '1');
@@ -275,22 +297,16 @@ test('auth modal keeps the short unified-profile registration benefit visible in
   await page.waitForFunction(() => typeof window.openAuth === 'function');
 
   const benefit = page.locator('#authModal .msub');
-  const expected = 'Бонусы за регистрацию — внутри';
-
   await page.evaluate(() => window.openAuth(false));
-  await expect(benefit).toHaveText(expected);
-  const benefitWidths = await benefit.evaluate((el) => {
-    const head = el.parentElement;
-    const style = getComputedStyle(head);
-    const availableWidth = head.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight);
-    return { actual: el.getBoundingClientRect().width, available: availableWidth };
-  });
-  expect(benefitWidths.actual).toBeGreaterThanOrEqual(benefitWidths.available - 1);
+  await expect(benefit).toContainText('Профиль сохраняет ваши заказы');
+  await expect(benefit).toContainText('сервер назначит вам персональный код');
+  await expect(benefit).toContainText('корзина применит его автоматически');
   await expect(benefit).toHaveCSS('max-width', '100%');
-  await page.evaluate(() => window.openAuth(true));
-  await expect(benefit).toHaveText(expected);
-});
 
+  await page.evaluate(() => window.openAuth(true));
+  await expect(benefit).toContainText('Войдите по номеру телефона');
+  await expect(benefit).not.toContainText(/бесплатн|сервер назначит|корзина/i);
+});
 test('auth fields expose mobile autofill and next/done keyboard hints', async ({ page }) => {
   await page.addInitScript(() => {
     localStorage.setItem('zt_onb', '1');
@@ -420,11 +436,6 @@ test('login completes and creates a session when the modal is closed mid-request
     localStorage.setItem('zt_onb', '1');
     sessionStorage.setItem('splashDone', '1');
   });
-  await page.route('**/api/orders/mine', (route) => route.fulfill({
-    status: 200,
-    contentType: 'application/json',
-    body: JSON.stringify({ orders: [] })
-  }));
   let markRequestStarted;
   let releaseRequest;
   const requestStarted = new Promise((resolve) => { markRequestStarted = resolve; });
@@ -712,6 +723,21 @@ test('switching to and from Telegram code entry moves focus to the active field'
 
 
 test('registration completes and creates a session when the modal is closed mid-request', async ({ page }) => {
+  await page.route('**/api/orders/mine', (route) => route.fulfill({
+    status: 200,
+    contentType: 'application/json',
+    body: JSON.stringify({ orders: [] })
+  }));
+  await page.route('**/api/chat/**', (route) => route.fulfill({
+    status: 200,
+    contentType: 'application/json',
+    body: JSON.stringify({})
+  }));
+  await page.route('**/api/me/free-delivery', (route) => route.fulfill({
+    status: 200,
+    contentType: 'application/json',
+    body: JSON.stringify({ code: null })
+  }));
   await page.addInitScript(() => {
     localStorage.setItem('zt_onb', '1');
     sessionStorage.setItem('splashDone', '1');
@@ -735,7 +761,7 @@ test('registration completes and creates a session when the modal is closed mid-
       contentType: 'application/json',
       body: JSON.stringify({
         token: 'auth-modal-register-test',
-        customer: { id: 888888, name: 'Auth Modal Test', verified: true }
+        customer: { id: 888888, name: 'Auth Modal Test', role: 'guest', verified: 0 }
       })
     });
   });
@@ -757,6 +783,7 @@ test('registration completes and creates a session when the modal is closed mid-
   await expect(page.locator('#authModal')).not.toHaveClass(/show/);
   releaseRequest();
   await expect.poll(() => page.evaluate(() => window.me && window.me.name)).toBe('Auth Modal Test');
+  await expect.poll(() => page.evaluate(() => window.me && Number(window.me.verified))).toBe(0);
   await expect(page.locator('#authModal')).not.toHaveClass(/show/);
   expect(requestCount).toBe(1);
 });

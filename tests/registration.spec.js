@@ -598,3 +598,417 @@ test.describe('Registration & Auth Suite (F3.61 - F3.63)', () => {
   });
 
 });
+
+
+test('P0: an existing customer returns to the profile without a repeated welcome offer', async ({ page }) => {
+  await page.route('**/api/auth/login', (route) => route.fulfill({
+    status: 200,
+    contentType: 'application/json',
+    body: JSON.stringify({
+      token: 'p0-existing-login-token',
+      customer: {
+        id: 'p0-existing-customer',
+        name: 'Existing Guest',
+        phone: '+7 900 000-00-06',
+        role: 'guest',
+        cups: 0,
+        stamps: 4,
+        free: 0,
+        qr: 'Z-P0EXISTING',
+        verified: 1,
+        welcome: 1,
+        tg: 1,
+        history: []
+      }
+    })
+  }));
+  await page.route('**/api/orders/mine', (route) => route.fulfill({
+    status: 200,
+    contentType: 'application/json',
+    body: JSON.stringify({ orders: [] })
+  }));
+
+  await page.goto('/?brand=coffee');
+  await page.waitForFunction(() => typeof window.openAuth === 'function');
+  await page.evaluate(() => window.openAuth(true));
+  await page.locator('#logPhone').fill('+7 900 000-00-06');
+  await page.locator('#logPin').fill('1357');
+  await page.locator('#logBtn').click();
+
+  await expect(page.locator('#profileBox')).toBeVisible();
+  await expect(page.locator('#toasts .toast').last()).toContainText('С возвращением');
+  await expect(page.locator('#toasts .toast').last()).not.toContainText(/приветствен|бонус активирован/i);
+});
+
+test('P0: closing auth during the phone registration request preserves the result', async ({ page }) => {
+  // This test uses a deliberately fake token. Keep background profile hydration
+  // deterministic instead of letting /api/orders/mine invalidate that fixture.
+  await page.route('**/api/orders/mine', (route) => route.fulfill({
+    status: 200,
+    contentType: 'application/json',
+    body: JSON.stringify({ orders: [] })
+  }));
+  let markStarted;
+  let releaseRequest;
+  const requestStarted = new Promise((resolve) => { markStarted = resolve; });
+  const responseGate = new Promise((resolve) => { releaseRequest = resolve; });
+
+  await page.route('**/api/auth/register', async (route) => {
+    markStarted();
+    await responseGate;
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        token: 'p0-closed-network-token',
+        customer: {
+          id: 'p0-closed-network',
+          name: 'P0 Closed Network',
+          phone: '+7 900 000-00-07',
+          role: 'guest',
+          cups: 0,
+          stamps: 0,
+          free: 0,
+          qr: 'Z-P0NETWORK',
+          verified: 0,
+          welcome: 0,
+          tg: 0,
+          history: []
+        }
+      })
+    });
+  });
+
+  await page.goto('/?brand=delivery');
+  await page.waitForFunction(() => typeof window.openAuth === 'function' && typeof window.__profileMeReady === 'function');
+  await page.evaluate(() => { window.__profileMeReady(); window.openAuth(false); });
+  await page.locator('#regName').fill('P0 Closed Network');
+  await page.locator('#regPhone').fill('+7 900 000-00-07');
+  await page.locator('#regPin').fill('1357');
+  await page.locator('#consentBox').check();
+
+  const registrationResponse = page.waitForResponse((response) =>
+    response.url().endsWith('/api/auth/register') && response.status() === 200
+  );
+  await page.locator('#regBtn').click();
+  await requestStarted;
+
+  await page.evaluate(() => window.closeAuth());
+  await expect(page.locator('#authModal')).not.toHaveClass(/show/);
+  releaseRequest();
+  await registrationResponse;
+
+  await expect.poll(() => page.evaluate(() => window.me && window.me.name), { timeout: 10000 })
+    .toBe('P0 Closed Network');
+  await expect(page.locator('#verifyNote')).toBeVisible();
+  await expect(page.locator('#verifyNote')).toContainText('заказы недоступны');
+  await expect(page.locator('#authModal')).not.toHaveClass(/show/);
+});
+
+test.describe('P0 cashier activation UI', () => {
+  test.use({ serviceWorkers: 'block' });
+  test('P0: cashier activation validates the code and reports only server-backed benefits', async ({ page }, testInfo) => {
+    await page.route('**/api/orders/mine', (route) => route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ orders: [] })
+    }));
+    await page.route('**/api/chat/**', (route) => route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({})
+    }));
+  
+    let scenario = { brand: 'coffee', deliveryCode: null };
+    let activationCalls = 0;
+    await page.route('**/api/auth/activate-guest', async (route) => {
+      activationCalls += 1;
+      const body = route.request().postDataJSON() || {};
+      if (scenario.brand === 'coffee' && body.code !== '2468') {
+        await route.fulfill({
+          status: 403,
+          contentType: 'application/json',
+          body: JSON.stringify({ error: 'Неверный код' })
+        });
+        return;
+      }
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          customer: {
+            id: 'p0-cashier-' + scenario.brand,
+            name: 'P0 Cashier Guest',
+            phone: '+7 900 000-00-21',
+            role: 'guest',
+            cups: 0,
+            stamps: 0,
+            free: scenario.brand === 'coffee' ? 1 : 0,
+            qr: 'Z-P0CASHIER',
+            verified: 1,
+            welcome: scenario.brand === 'coffee' ? 1 : 0,
+            tg: 1,
+            history: []
+          }
+        })
+      });
+    });
+    await page.route('**/api/me/free-delivery', (route) => route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ code: scenario.deliveryCode })
+    }));
+  
+    const cases = [
+      { brand: 'coffee', deliveryCode: null },
+      { brand: 'delivery', deliveryCode: null },
+      { brand: 'delivery', deliveryCode: 'B1234ABCD' }
+    ];
+  
+    for (const next of cases) {
+      scenario = next;
+      if (page.url().startsWith('http')) {
+        await page.evaluate(() => {
+          localStorage.removeItem('zt_user');
+          localStorage.removeItem('zt_role');
+        });
+      }
+      await page.goto('/?brand=' + scenario.brand);
+      await page.waitForFunction(() =>
+        typeof window.setUser === 'function' &&
+        typeof window.renderProfile === 'function' &&
+        typeof window.renderVerifyNote === 'function' &&
+        typeof window.__profileMeReady === 'function'
+      );
+      await page.evaluate(() => {
+        window.__profileMeReady();
+        window.setUser('p0-cashier-pending-token', {
+          id: 'p0-cashier-pending',
+          name: 'P0 Cashier Guest',
+          phone: '+7 900 000-00-21',
+          role: 'guest',
+          cups: 0,
+          stamps: 0,
+          free: 0,
+          qr: 'Z-P0CASHIER',
+          verified: 0,
+          welcome: 0,
+          tg: 0,
+          history: []
+        });
+        window.renderProfile();
+        window.renderVerifyNote();
+        window.openPanel();
+      });
+  
+      await expect(page.locator('#actCode')).toBeVisible();
+      if (scenario.brand === 'coffee') {
+        const beforeInvalid = activationCalls;
+        await page.locator('#actCode').fill('12');
+        await page.locator('#actBtn').click();
+        await expect(page.locator('#toasts .toast').last()).toContainText('4-значный код');
+        expect(activationCalls).toBe(beforeInvalid);
+  
+        await page.locator('#actCode').fill('9999');
+        await page.locator('#actBtn').click();
+        await expect(page.locator('#toasts .toast').last()).toContainText('Неверный код');
+        await expect(page.locator('#actBtn')).toBeEnabled();
+  
+        await page.locator('#actCode').fill('2468');
+        await page.locator('#actBtn').click();
+        await expect(page.locator('#verifyNote .profile-loyalty-help')).toBeVisible();
+        await expect(page.locator('#actCode')).toHaveCount(0);
+        await expect(page.locator('#qrOpenProfile')).toBeVisible();
+        await expect(page.locator('#toasts .toast').last()).toContainText('на карте 1 бесплатный кофе');
+        await expect(page.locator('#toasts .toast').last()).toContainText('Покажите QR');
+        await testInfo.attach('p0-coffee-activation-success.png', {
+          body: await page.screenshot({ fullPage: false }),
+          contentType: 'image/png'
+        });
+      } else {
+        await page.locator('#actCode').fill('2468');
+        await page.locator('#actBtn').click();
+        await expect(page.locator('#verifyNote')).toBeHidden();
+        await expect(page.locator('#deliveryView')).toBeVisible();
+        if (scenario.deliveryCode) {
+          await expect(page.locator('#toasts .toast').last()).toContainText('Бесплатная первая доставка доступна');
+          await expect(page.locator('#toasts .toast').last()).toContainText('корзине');
+          await testInfo.attach('p0-friday-delivery-code-available.png', {
+            body: await page.screenshot({ fullPage: false }),
+            contentType: 'image/png'
+          });
+        } else {
+          await expect(page.locator('#toasts .toast').last()).toContainText('код бесплатной первой доставки сейчас не назначен');
+          await expect(page.locator('#toasts .toast').last()).not.toContainText('первая доставка доступна');
+        }
+      }
+    }
+    });
+  });
+  
+
+test('P0 registration baseline: capture guest, auth, Telegram waiting and both profile activation states', async ({ page }, testInfo) => {
+  test.setTimeout(180000);
+  await page.route('**/api/orders/mine', (route) => route.fulfill({
+    status: 200,
+    contentType: 'application/json',
+    body: JSON.stringify({ orders: [] })
+  }));
+  await page.route('**/api/auth/request-reg-otp', (route) => route.fulfill({
+    status: 200,
+    contentType: 'application/json',
+    body: JSON.stringify({ pollToken: 'a'.repeat(64), tgUrl: 'https://t.me/test_bot?start=reg_p0_visual' })
+  }));
+  await page.context().route('https://t.me/**', (route) => route.fulfill({
+    status: 200,
+    contentType: 'text/html',
+    body: '<!doctype html><title>Telegram test stub</title>'
+  }));
+
+  const viewports = [
+    { width: 390, height: 844 },
+    { width: 844, height: 390 },
+    { width: 820, height: 1024 },
+    { width: 1440, height: 900 }
+  ];
+
+  for (const brand of ['coffee', 'delivery']) {
+    for (const viewport of viewports) {
+      if (page.url().startsWith('http')) {
+        await page.evaluate(() => {
+          localStorage.removeItem('zt_user');
+          localStorage.removeItem('zt_role');
+        });
+      }
+      await page.setViewportSize(viewport);
+      await page.goto('/?brand=' + brand);
+      await page.waitForFunction(() =>
+        typeof window.openAuth === 'function' &&
+        typeof window.renderProfile === 'function' &&
+        typeof window.renderVerifyNote === 'function' &&
+        typeof window.__profileMeReady === 'function'
+      );
+      await page.evaluate(() => {
+        window.__profileMeReady();
+        return document.fonts.ready;
+      });
+
+      const prefix = 'p0-base-' + brand + '-' + viewport.width + 'x' + viewport.height;
+      await testInfo.attach(prefix + '-guest.png', {
+        body: await page.screenshot({ fullPage: false }),
+        contentType: 'image/png'
+      });
+
+      await page.evaluate(() => window.openAuth(false));
+      await testInfo.attach(prefix + '-auth.png', {
+        body: await page.screenshot({ fullPage: false }),
+        contentType: 'image/png'
+      });
+
+      await page.locator('#regName').fill('P0 Baseline Guest');
+      await page.locator('#regPhone').fill('+7 900 000-00-01');
+      await page.locator('#consentBox').check();
+      const popupPromise = page.waitForEvent('popup');
+      await page.locator('#regTgBtn').click();
+      const telegramPopup = await popupPromise;
+      await telegramPopup.waitForLoadState('domcontentloaded');
+      await expect(page.locator('#regTgRow')).toContainText('Ожидаем подтверждение в Telegram');
+      await testInfo.attach(prefix + '-telegram-waiting.png', {
+        body: await page.screenshot({ fullPage: false }),
+        contentType: 'image/png'
+      });
+      await page.evaluate(() => {
+        if (typeof window.__registrationTgPollFinish === 'function') window.__registrationTgPollFinish();
+        window.closeAuth();
+      });
+      await telegramPopup.close();
+
+      const pendingCustomer = {
+        id: 'p0-baseline-' + brand,
+        name: 'P0 Baseline Guest',
+        phone: '+7 900 000-00-01',
+        role: 'guest',
+        cups: 0,
+        stamps: 0,
+        free: 0,
+        qr: 'Z-P0BASE',
+        verified: 0,
+        welcome: 0,
+        tg: 0,
+        history: []
+      };
+      await page.evaluate((value) => {
+        window.setUser('p0-baseline-session', value);
+        window.renderProfile();
+        window.renderVerifyNote();
+        window.openPanel();
+      }, pendingCustomer);
+      await expect(page.locator('#profileBox')).toBeVisible();
+      await expect(page.locator('#verifyNote')).toBeVisible();
+      await expect(page.locator('#verifyNote')).toContainText('Профиль создан, но ещё не активирован');
+      if (brand === 'delivery') {
+        await expect(page.locator('#profileOrdersSection')).toBeHidden();
+        await expect(page.locator('#profileCoffeeSection')).toBeHidden();
+        await expect(page.locator('#verifyNote')).toContainText('заказы недоступны');
+        await expect(page.locator('#actCode')).toBeVisible();
+      } else {
+        await expect(page.locator('#profileCoffeeSection')).toBeHidden();
+        await expect(page.locator('#profileOrdersSection')).toBeHidden();
+        await expect(page.locator('#verifyNote')).toContainText('10 штампов');
+        await expect(page.locator('#actCode')).toBeVisible();
+      }
+      await page.evaluate(() => document.fonts.ready);
+      await testInfo.attach(prefix + '-pending-profile.png', {
+        body: await page.screenshot({ fullPage: false }),
+        contentType: 'image/png'
+      });
+
+      // The profile remains reachable and keeps its pending status after close/reopen.
+      await page.evaluate(() => {
+        window.closePanel();
+        window.openPanel();
+        window.renderProfile();
+        window.renderVerifyNote();
+      });
+      await expect(page.locator('#profileBox')).toBeVisible();
+      await expect(page.locator('#verifyNote')).toBeVisible();
+      await expect(page.locator('#verifyNote')).toContainText('Профиль создан, но ещё не активирован');
+
+      await page.evaluate((brandName) => {
+        window.setUser('p0-baseline-session', {
+          id: 'p0-baseline-verified',
+          name: 'P0 Baseline Guest',
+          phone: '+7 900 000-00-01',
+          role: 'guest',
+          cups: 0,
+          stamps: 0,
+          free: 1,
+          qr: 'Z-P0BASE',
+          verified: 1,
+          welcome: 1,
+          tg: 1,
+          history: []
+        });
+        window.renderProfile();
+        window.renderVerifyNote();
+      }, brand);
+      await expect(page.locator('#profileBox')).toBeVisible();
+      if (brand === 'delivery') {
+        await expect(page.locator('#verifyNote')).toBeHidden();
+        await expect(page.locator('#profileOrdersSection')).toBeVisible();
+        await expect(page.locator('#profileCoffeeSection')).toBeHidden();
+      } else {
+        await expect(page.locator('#profileCoffeeSection')).toBeVisible();
+        await expect(page.locator('#profileOrdersSection')).toBeHidden();
+        await expect(page.locator('#verifyNote')).toBeVisible();
+        await expect(page.locator('#verifyNote .profile-loyalty-help')).toBeVisible();
+        await expect(page.locator('#verifyNote')).toContainText('На карте профиля уже есть 1 бесплатный кофе');
+        await expect(page.locator('#verifyNote')).not.toContainText('ещё не активирован');
+      }
+      await testInfo.attach(prefix + '-verified-profile.png', {
+        body: await page.screenshot({ fullPage: false }),
+        contentType: 'image/png'
+      });
+    }
+  }
+});
