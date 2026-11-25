@@ -436,6 +436,12 @@ test('login completes and creates a session when the modal is closed mid-request
     localStorage.setItem('zt_onb', '1');
     sessionStorage.setItem('splashDone', '1');
   });
+  // Keep the fake login session valid for the profile's follow-up orders request.
+  await page.route('**/api/orders/mine', (route) => route.fulfill({
+    status: 200,
+    contentType: 'application/json',
+    body: JSON.stringify({ orders: [] })
+  }));
   let markRequestStarted;
   let releaseRequest;
   const requestStarted = new Promise((resolve) => { markRequestStarted = resolve; });
