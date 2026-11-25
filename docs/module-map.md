@@ -141,7 +141,7 @@
 | Модуль | Владеет | Контракты |
 | --- | --- | --- |
 | `core/promo.js` | `#promoModal`: CRUD кодов, недельная акция и пицца месяца | `window.closePromo`, `window.loadWeekPromo` |
-| `core/dash.js` | `#dashModal`: вкладки брендов, статистика «…и кофе» (штампы, подписчики пушей) | `window.loadSubs`, `window.closeDash` |
+| `core/dash.js` | `#dashModal` и `#dashCoffee`: вкладки брендов, Bento-отчёт кофейни за календарный месяц (списания по напиткам и дням, кассовых начислений штампов), подписчики пушей | `window.loadSubs`, `window.closeDash` |
 | `core/dash-orders.js` | вкладка «Пятница» в `#dashModal`: Bento-плитки заказов, график 14 дней, топ-5 позиций и блок «свои» | `window.loadOrdersStats` |
 
 ## 13. CSS по слоям (подробнее — docs/css-architecture.md)
@@ -158,7 +158,7 @@
 | --- | --- |
 | `server.js` | Express application, static assets and menu routes; for `GET /` with an explicit `brand=coffee` / `brand=delivery` or deterministic `lighthouse=1` / `clean=1` audit input, emits a document-level `Link` preload for the first active image in the initial visible category (coffee / pizza); only local `/media/dishes/` assets, with responsive image parameters when available |
 | `server/routes/*` | auth, staff, promos, orders, chat, tg (webhook-бот), push, stats |
-| `server/domain/*` | customers, loyalty (штампы/подарки), helpers, валидация адреса |
+| `server/domain/*` | customers, loyalty (штампы/подарки), `coffee-stats.js` (агрегация месячных списаний по часовому поясу кофейни), helpers, валидация адреса |
 | `server/utils/session-policy.js` | Единая политика абсолютного TTL пользовательских bearer-сессий; используется выпуском токенов и миграцией SQLite | `USER_SESSION_TTL_MS` |
 | `server/utils/auth-rate-limits.js` + `server/utils/otp.js` | Persisted OTP send limits/cooldowns, rate-limit state and bounded in-memory OTP store; `server/routes/auth.js` owns request/verify endpoints | `getOtpSendState`, `recordOtpSend`, `otpStore`, `consumeOtp` |
 | `server/services/push.js` | Единый fan-out: Telegram HTML отдельно от plain text Web Push/FCM; возвращает per-channel фактический delivery status и удаляет истёкшие subscriptions | `sendPush(cid, { title, text, html }, markup?)`; legacy positional поддерживается временно |

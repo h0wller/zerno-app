@@ -1,47 +1,155 @@
-/* public/app/core/dash.js — Ф5.7: кластер "dash" из legacy-core.js. Top-level = global. */
+/* public/app/core/dash.js — дашборд владельца: кофейная статистика и вкладки брендов. */
 let dashTab = "coffee";
 let coffeeLoadedAt = 0;
+let coffeeLoadedMonth = "";
+let coffeeRequestId = 0;
 const COFFEE_REFRESH_MS = 30000;
+const coffeeMonthInput = $("#dashCoffeeMonth");
 
-async function loadCoffeeStats() {
-  coffeeLoadedAt = Date.now();
+function currentCoffeeMonth() {
+  return new Intl.DateTimeFormat("sv-SE", { timeZone: "Europe/Kaliningrad" })
+    .format(new Date())
+    .slice(0, 7);
+}
+
+function getSelectedCoffeeMonth() {
+  if (!coffeeMonthInput) return currentCoffeeMonth();
+  const current = currentCoffeeMonth();
+  coffeeMonthInput.max = current;
+  if (!coffeeMonthInput.value) coffeeMonthInput.value = current;
+  return coffeeMonthInput.value;
+}
+
+function formatCoffeeMonth(month) {
+  const [year, monthNumber] = month.split("-").map(Number);
+  return new Intl.DateTimeFormat("ru-RU", {
+    month: "long",
+    year: "numeric",
+    timeZone: "UTC"
+  }).format(new Date(Date.UTC(year, monthNumber - 1, 15)));
+}
+
+function renderCoffeeStats(s, report) {
+  const items = Array.isArray(report.items) ? report.items : [];
+  const topItem = items[0];
+  const monthLabel = formatCoffeeMonth(report.month);
+
+  $("#dashTop").innerHTML = `
+    <div class="bt btMain btSpan2">
+      <span class="btLabel">Подарочных напитков списано</span>
+      <b class="btVal">${Number(report.total) || 0}</b>
+      <span class="btOwn">${esc(monthLabel)}</span>
+    </div>
+    <div class="bt btSpan2">
+      <span class="btLabel">Кассовых штампов</span>
+      <b class="btVal">${Number(report.stamps) || 0}</b>
+      <span class="btOwn">за выбранный месяц</span>
+    </div>
+    <div class="bt">
+      <span class="btLabel">Видов списания</span>
+      <b class="btVal">${items.length}</b>
+      <span class="btOwn">по бесплатным напиткам</span>
+    </div>
+    <div class="bt">
+      <span class="btLabel">Чаще списывали</span>
+      <b class="btProductName">${topItem ? esc(topItem.name) : "—"}</b>
+      <span class="btOwn">${topItem ? `×${topItem.qty} за месяц` : "нет списаний"}</span>
+    </div>`;
+
+  const days = Array.isArray(report.days) ? report.days : [];
+  const maxRedemptions = Math.max(1, ...days.map((day) => Number(day.redemptions) || 0));
+  const chartColumns = days.map((day) => {
+    const redemptions = Number(day.redemptions) || 0;
+    const height = Math.round(6 + (96 * redemptions) / maxRedemptions);
+    const detail = (day.items || [])
+      .map((item) => `${item.name} ×${item.qty}`)
+      .join(", ");
+    const tip = `${day.label}: ${redemptions} списаний${detail ? ` · ${detail}` : ""} · кассовых штампов: ${day.stamps || 0}`;
+    return `
+      <div class="btBarCol">
+        <div class="btBar ${redemptions ? "hasData" : ""}" style="height:${height}px" title="${esc(tip)}"></div>
+        <span class="btBarLbl">${day.label.slice(0, 2)}</span>
+      </div>`;
+  }).join("");
+
+  $("#dashChart").innerHTML = `<div class="coffeeChartInner">${chartColumns}</div>`;
+
+  const byDrinkHtml = items.length
+    ? items.map((item) => `
+        <div class="btTopRow">
+          <span>${esc(item.name)}</span>
+          <b>×${Number(item.qty) || 0}</b>
+        </div>`).join("")
+    : '<div class="btOwn">За выбранный месяц бесплатные напитки не списывали</div>';
+
+  const dailyRows = days.map((day) => {
+    const details = (day.items || []).length
+      ? day.items.map((item) => `${esc(item.name)} ×${Number(item.qty) || 0}`).join(" · ")
+      : "Списаний не было";
+    const hasActivity = (day.redemptions || 0) > 0 || (day.stamps || 0) > 0;
+    return `
+      <div class="coffeeDayRow ${hasActivity ? "hasActivity" : ""}">
+        <time class="coffeeDayDate" datetime="${day.date}">${day.label}</time>
+        <div class="coffeeDayContent">
+          <span class="coffeeDayItems">${details}</span>
+          <small>Подарков: ${Number(day.redemptions) || 0} · кассовых штампов: ${Number(day.stamps) || 0}</small>
+        </div>
+      </div>`;
+  }).join("");
+
+  $("#dashMore").innerHTML = `
+    <section class="bt btSpan2">
+      <span class="btLabel">Списано по видам напитков</span>
+      <div class="btTopList">${byDrinkHtml}</div>
+    </section>
+    <section class="bt btSpan2">
+      <span class="btLabel">Лояльность</span>
+      <div class="btTopList">
+        <div class="btTopRow"><span>Гостей в базе</span><b>${Number(s.total) || 0}</b></div>
+        <div class="btTopRow"><span>Новых за 7 дней</span><b>${Number(s.newWeek) || 0}</b></div>
+        <div class="btTopRow"><span>С 2+ чашками</span><b>${Number(s.returning) || 0}</b></div>
+      </div>
+      <span class="btOwn">Это показатели базы, не продажи за выбранный месяц</span>
+    </section>
+    <section class="bt btFull">
+      <span class="btLabel">Операции по дням · ${esc(monthLabel)}</span>
+      <div class="coffeeDayList">${dailyRows}</div>
+    </section>
+    <p class="coffeeDataNote btFull">
+      Подарочные напитки считаются по выбранному виду при списании. Кассовые штампы — только записи о начислении штампа на кассе; промокоды и бонусные начисления в этот счётчик не входят. Они не содержат вид купленного напитка и не включают продажи без штампа. Расход зерна и молока по текущим данным не рассчитывается.
+    </p>`;
+}
+
+async function loadCoffeeStats(force = false) {
+  const month = getSelectedCoffeeMonth();
+  if (!force && month === coffeeLoadedMonth && Date.now() - coffeeLoadedAt < COFFEE_REFRESH_MS) return;
+
+  const requestId = ++coffeeRequestId;
   try {
-    const [s, rd] = await Promise.all([api("/stats"), api("/stats/redeems").catch(() => null)]);
-    const staffNote = s.staffCount ? `<small class="statSub">из них сотрудники: ${s.staffCount}</small>` : "";
-    $("#dashTop").innerHTML = `
-     <div class="stat"><b>${s.total}</b><span>всего гостей</span>${staffNote}</div>
-     <div class="stat"><b>${s.newWeek}</b><span>новых за 7 дн</span></div>
-     <div class="stat"><b>${s.returning}</b><span>с 2+ чашками</span></div>`;
-    const max = Math.max(1, ...s.days.map((d) => d.c));
-    $("#dashChart").innerHTML = s.days
-      .map(
-        (d) => `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;min-width:0">
-      <div style="width:100%;background:${d.c ? "var(--flame)" : "#E7ECF0"};border-radius:6px;height:${Math.round(6 + (104 * d.c) / max)}px" title="${d.label}: ${d.c}"></div>
-      <small style="font-size:9px;color:#8B98A5">${d.label}</small></div>`
-      )
-      .join("");
-    $("#dashMore").innerHTML = `
-     <div class="hmini">Штампы: сегодня <b>${s.stampsToday}</b> · за 7 дн <b>${s.stampsWeek}</b> · за 30 дн <b>${s.stampsMonth}</b></div>
-     <div class="hmini">Бесплатных кофе списано за 30 дн: <b>${s.redeemed}</b> · новых гостей за 30 дн: <b>${s.newMonth}</b></div>
-     <div class="hmini">Средняя чашек на гостя: <b>${s.avgCups}</b> · активаций промокодов: <b>${s.promoUses}</b></div>`;
-    if (rd) {
-      const items = Object.entries(rd.byItem || {}).sort((a, b) => b[1] - a[1]);
-      $("#dashMore").innerHTML += `
-     <div class="hmini" style="margin-top:8px">🎁 Списано бесплатных кофе за 30 дн: <b>${rd.total}</b>${
-        items.length ? " · " + items.map((e) => esc(e[0]) + " ×" + e[1]).join(", ") : ""
-      }</div>`;
-    }
-  } catch (e) {
-    toast(e.message, "⚠️");
+    const [stats, report] = await Promise.all([
+      api("/stats"),
+      api("/stats/redeems?month=" + encodeURIComponent(month))
+    ]);
+    if (requestId !== coffeeRequestId) return;
+    renderCoffeeStats(stats, report);
+    coffeeLoadedMonth = month;
+    coffeeLoadedAt = Date.now();
+    const status = $("#dashCoffeeStatus");
+    if (status) status.textContent = `Отчёт за ${formatCoffeeMonth(month)} · часовой пояс Янтарного`;
+  } catch (error) {
+    if (requestId !== coffeeRequestId) return;
+    const status = $("#dashCoffeeStatus");
+    if (status) status.textContent = "Не удалось загрузить месячную статистику. Обновите отчёт.";
+    toast(error.message, "⚠️");
   }
 }
 
 function setDashTab(tab) {
   dashTab = tab === "delivery" ? "delivery" : "coffee";
-  document.querySelectorAll("#dashTabs [data-dtab]").forEach((btn) => {
-    const on = btn.dataset.dtab === dashTab;
-    btn.classList.toggle("on", on);
-    btn.setAttribute("aria-selected", on ? "true" : "false");
+  document.querySelectorAll("#dashTabs [data-dtab]").forEach((button) => {
+    const active = button.dataset.dtab === dashTab;
+    button.classList.toggle("on", active);
+    button.setAttribute("aria-selected", active ? "true" : "false");
   });
   document.querySelectorAll("#dashModal [data-dpane]").forEach((pane) => {
     pane.hidden = pane.dataset.dpane !== dashTab;
@@ -55,9 +163,15 @@ function setDashTab(tab) {
 
 const tabsEl = $("#dashTabs");
 if (tabsEl) {
-  tabsEl.addEventListener("click", (e) => {
-    const b = e.target.closest("[data-dtab]");
-    if (b) setDashTab(b.dataset.dtab);
+  tabsEl.addEventListener("click", (event) => {
+    const button = event.target.closest("[data-dtab]");
+    if (button) setDashTab(button.dataset.dtab);
+  });
+}
+
+if (coffeeMonthInput) {
+  coffeeMonthInput.addEventListener("change", () => {
+    loadCoffeeStats(true);
   });
 }
 
@@ -71,8 +185,12 @@ $("#dashToggle").onclick = async () => {
 
 if (window.ztBus) {
   window.ztBus.on("dash:refresh", () => {
-    if ($("#dashModal").classList.contains("show") && dashTab === "coffee" && Date.now() - coffeeLoadedAt > COFFEE_REFRESH_MS) {
-      loadCoffeeStats();
+    if (
+      $("#dashModal").classList.contains("show") &&
+      dashTab === "coffee" &&
+      Date.now() - coffeeLoadedAt > COFFEE_REFRESH_MS
+    ) {
+      loadCoffeeStats(true);
     }
   });
 }

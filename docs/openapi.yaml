@@ -1047,10 +1047,21 @@ paths:
   /api/stats/redeems:
     get:
       tags: [Admin]
-      summary: Списания бесплатных кофе за 30 дней (по видам)
+      summary: Статистика списаний бесплатных напитков
+      description: Без month возвращает сводку за последние 30 дней. С month возвращает календарный месяц, дневную разбивку списаний по выбранным напиткам и количество кассовых записей «Штамп». Даты считаются в часовом поясе Europe/Kaliningrad; штампы не являются разбивкой оплаченных напитков.
       security: [{ BearerAuth: [] }]
+      parameters:
+        - in: query
+          name: month
+          required: false
+          description: Календарный месяц в часовом поясе кофейни
+          schema:
+            type: string
+            pattern: '^\d{4}-(0[1-9]|1[0-2])$'
+            example: '2026-11'
       responses:
-        '200': { description: OK }
+        '200': { description: Сводка за 30 дней или выбранный календарный месяц }
+        '400': { description: Некорректный формат month; ожидается YYYY-MM }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
 
