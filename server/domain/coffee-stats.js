@@ -7,17 +7,6 @@ const zonedDateFormatter = new Intl.DateTimeFormat('sv-SE', {
   day: '2-digit',
 });
 
-const zonedDateTimeFormatter = new Intl.DateTimeFormat('en-US', {
-  timeZone: COFFEE_TIME_ZONE,
-  year: 'numeric',
-  month: '2-digit',
-  day: '2-digit',
-  hour: '2-digit',
-  minute: '2-digit',
-  second: '2-digit',
-  hourCycle: 'h23',
-});
-
 function localDateKey(value) {
   const date = new Date(value);
   if (!Number.isFinite(date.getTime())) return null;
@@ -25,23 +14,7 @@ function localDateKey(value) {
 }
 
 function localMidnightUtc(year, month, day) {
-  const utcGuess = new Date(Date.UTC(year, month - 1, day));
-  const parts = Object.fromEntries(
-    zonedDateTimeFormatter.formatToParts(utcGuess)
-      .filter((part) => part.type !== 'literal')
-      .map((part) => [part.type, Number(part.value)])
-  );
-
-  const zonedWallTimeAsUtc = Date.UTC(
-    parts.year,
-    parts.month - 1,
-    parts.day,
-    parts.hour,
-    parts.minute,
-    parts.second
-  );
-  const offsetMs = zonedWallTimeAsUtc - utcGuess.getTime();
-  return new Date(utcGuess.getTime() - offsetMs).toISOString();
+  return new Date(Date.UTC(year, month - 1, day) - 2 * 60 * 60 * 1000).toISOString();
 }
 
 function currentMonthKey(now) {
