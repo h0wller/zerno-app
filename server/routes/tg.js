@@ -6,13 +6,14 @@ import { tgSend, escapeTelegramHtml, TG_TOKEN, TG_WEBHOOK_SECRET, APP_URL } from
 import { fmtPhone, ph10 } from '../utils/phone.js';
 import { otpStore } from '../utils/otp.js';
 import { grantWelcome } from '../domain/loyalty.js';
-import { grantBonusDetailed, QR_SOURCE } from '../domain/bonuses.js';
+import { grantBonusDetailed, findFreeDeliveryCode, QR_SOURCE } from '../domain/bonuses.js';
 import { formatWelcomeBonusMessage } from '../domain/welcome-bonus-message.js';
+import { formatTelegramBenefitsMessage } from '../domain/telegram-benefits-message.js';
 import { cust, addHist, issueToken } from '../domain/helpers.js';
 import { createCustomer } from '../domain/customers.js';
 import { linkTelegram, findUniqueTelegramCustomer } from '../domain/telegram-link.js';
 import { nowISO } from '../utils/id-time.js';
-import { stampBar, cupWord } from '../utils/loyalty-helpers.js';
+import { stampBar } from '../utils/loyalty-helpers.js';
 import { botIntent } from '../utils/bot-nlu.js';
 
 function getUniqueCustomerByTelegram(telegramId) {
@@ -22,6 +23,18 @@ function getUniqueCustomerByTelegram(telegramId) {
     return null;
   }
   return result.customer;
+}
+
+function telegramBenefitsMessage(customer) {
+  let freeDeliveryCode = null;
+  let deliveryStatus = 'known';
+  try {
+    freeDeliveryCode = findFreeDeliveryCode(customer.id);
+  } catch (error) {
+    deliveryStatus = 'unknown';
+    console.error('[telegram] Failed to read personal delivery benefit status:', error.message);
+  }
+  return formatTelegramBenefitsMessage({ customer, freeDeliveryCode, deliveryStatus });
 }
 
 function welcomeKeyboard(c) {
@@ -51,8 +64,9 @@ async function answerCallback(cbId) {
 
 function bonusKeyboard() {
   return { inline_keyboard: [
-    [{ text: '📱 Показать QR кассиру', web_app: { url: APP_URL + '/?src=tg&brand=coffee&tab=bonus' } }],
-    [{ text: '🔄 Обновить', callback_data: 'bonus' }],
+    [{ text: '☕ Открыть карту и QR', web_app: { url: APP_URL + '/?src=tg&brand=coffee&tab=bonus' } }],
+    [{ text: '🍕 Открыть «Пятницу»', web_app: { url: APP_URL + '/?src=tg&brand=delivery' } }],
+    [{ text: '🔄 Обновить статусы', callback_data: 'bonus' }],
   ]};
 }
 
@@ -65,12 +79,8 @@ export function createTgRouter({ appKb }) {
       await tgSend(targetChatId, 'Сначала привяжите номер — нажмите кнопку ниже 👇', appKb());
       return;
     }
-    const left = 10 - c.stamps;
-    const line = c.free
-      ? ('🎁 Бесплатных кофе: <b>' + c.free + '</b>')
-      : ('До подарка: <b>' + left + '</b> ' + cupWord(left));
     await tgSend(targetChatId,
-      '☕ <b>' + escapeTelegramHtml(c.name) + '</b>\n\n' + stampBar(c.stamps) + '\n\nШтампов: <b>' + c.stamps + '/10</b>\n' + line,
+      '🎁 <b>Ваши преимущества</b>\\n\\n' + telegramBenefitsMessage(c),
       bonusKeyboard()
     );
   }
@@ -255,11 +265,10 @@ export function createTgRouter({ appKb }) {
     if (text === '/start') {
       const c = getUniqueCustomerByTelegram(chatId);
       const hello = c
-        ? `С возвращением, <b>${escapeTelegramHtml(c.name)}</b>!\n\n${stampBar(c.stamps)}\nШтампов: <b>${c.stamps}/10</b>` +
-          (c.free ? `\n🎁 Бесплатных кофе: <b>${c.free}</b>` : '')
-        : '☕ Привет! Я бот «…и кофе» и доставки «Пятница» 🌊🍕\n\n' +
-          'Привяжите номер и создайте профиль. Возможность приветственных бонусов зависит от условий акции и настроек заведения; после подтверждения я сообщу, что действительно начислено.\n\n' +
-          'Штампы, меню, заказы и чат поддержки — всё здесь 👇';
+        ? `С возвращением, <b>${escapeTelegramHtml(c.name)}</b>!\\n\\n` + telegramBenefitsMessage(c)
+        : '☕ Привет! Я бот «…и кофе» и доставки «Пятница» 🌊🍕\\n\\n' +
+          'Привяжите номер и создайте профиль. Доступные преимущества зависят от состояния профиля и условий акций; после подтверждения я покажу, что доступно.\\n\\n' +
+          'Меню, профиль, заказы и чат поддержки — всё здесь 👇';
       await tgSend(chatId, hello, welcomeKeyboard(c));
       return;
     }
@@ -361,14 +370,18 @@ export function createTgRouter({ appKb }) {
           const baseSite = (typeof APP_URL !== 'undefined' && APP_URL) || 'https://friday.andcoffee.online';
           const authLink = sessionToken ? (baseSite + '/?auth_token=' + sessionToken) : (baseSite + '/?src=tg');
 
+          const benefitDetails = finalCust
+            ? telegramBenefitsMessage(finalCust)
+            : 'Не удалось загрузить состояние преимуществ. Откройте профиль в приложении и проверьте данные.';
           await tgSend(chatId,
-            '🎉 <b>Профиль готов, ' + escapeTelegramHtml(custObj ? custObj.name : '') + '!</b>\n\n' +
-            formatWelcomeBonusMessage(bonusOutcome) + '\n\n' +
-            'В браузере вход выполнился автоматически. Или откройте сайт кнопкой ниже 👇',
+            '🎉 <b>Профиль готов, ' + escapeTelegramHtml(custObj ? custObj.name : '') + '!</b>\\n\\n' +
+            formatWelcomeBonusMessage(bonusOutcome) + '\\n\\n' + benefitDetails +
+            '\\n\\nВ браузере вход выполнился автоматически. Кнопки ниже открывают нужный раздел 👇',
             {
-              inline_keyboard: [[
-                { text: '🚀 Открыть сайт (вход выполнен)', url: authLink }
-              ]]
+              inline_keyboard: [
+                [{ text: '☕ Открыть карту и QR', web_app: { url: APP_URL + '/?src=tg&brand=coffee&tab=bonus' } }],
+                [{ text: '🍕 Открыть «Пятницу»', web_app: { url: APP_URL + '/?auth_token=' + encodeURIComponent(sessionToken || '') + '&src=tg&brand=delivery' } }],
+              ]
             }
           );
         } else {
@@ -399,15 +412,21 @@ export function createTgRouter({ appKb }) {
           await tgSend(chatId, 'Этот Telegram уже привязан к другому профилю. Напишите администратору, чтобы безопасно разобраться с аккаунтами.');
           return;
         }
+        let grantSummary = '';
         if (!c.welcome) {
           grantWelcome(c.id, 'Telegram');
           const bonusOutcome = grantBonusDetailed(c.id, c.src === QR_SOURCE ? 'qr' : 'signup');
-          await tgSend(chatId,
-            '✅ Готово, ' + escapeTelegramHtml(c.name) + '! Профиль привязан 🎉\n\n' +
-            formatWelcomeBonusMessage(bonusOutcome),
-            welcomeKeyboard(c)
-          );
-        } else {
+          grantSummary = formatWelcomeBonusMessage(bonusOutcome) + '\\n\\n';
+        }
+        const refreshedCustomer = db.prepare('SELECT * FROM customers WHERE id=?').get(c.id);
+        const benefitDetails = refreshedCustomer
+          ? telegramBenefitsMessage(refreshedCustomer)
+          : 'Не удалось загрузить состояние преимуществ. Откройте профиль в приложении и проверьте данные.';
+        await tgSend(chatId,
+          '✅ Готово, ' + escapeTelegramHtml(c.name) + '! Профиль привязан.\\n\\n' +
+          grantSummary + benefitDetails,
+          bonusKeyboard()
+        ); else {
           await tgSend(chatId, '✅ Готово, ' + escapeTelegramHtml(c.name) + '! Профиль привязан.', welcomeKeyboard(c));
         }
       } else if (u.message.contact) {
