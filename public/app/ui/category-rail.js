@@ -254,6 +254,19 @@ function setRailScrollHidden(hidden) {
   applyScrollFadeState(hidden);
 }
 
+function finishRailBrandTransition() {
+  if (!railBrandChangePending) return;
+  if (railBrandChangeFrame) window.cancelAnimationFrame(railBrandChangeFrame);
+  railBrandChangeFrame = 0;
+  railBrandChangePending = false;
+  resetRailScrollDirection(readPageScrollY());
+}
+
+function prepareRailForUserScrollInput() {
+  finishRailCategoryAlignment();
+  finishRailBrandTransition();
+}
+
 function rememberRailScrollInput(direction) {
   if (!direction) return;
   railUserScrollInputDirection = direction > 0 ? 1 : -1;
@@ -261,7 +274,9 @@ function rememberRailScrollInput(direction) {
 }
 
 function handleRailWheelInput(event) {
-  if (event.deltaY) rememberRailScrollInput(event.deltaY);
+  if (!event.deltaY) return;
+  prepareRailForUserScrollInput();
+  rememberRailScrollInput(event.deltaY);
 }
 
 function handleRailTouchStart(event) {
@@ -277,6 +292,7 @@ function handleRailTouchMove(event) {
     /* Moving a finger up moves the document down, and vice versa. */
     var fingerDelta = railLastTouchY - touch.clientY;
     if (Math.abs(fingerDelta) >= 1) {
+      prepareRailForUserScrollInput();
       rememberRailScrollInput(fingerDelta);
       railTouchMoved = true;
     }
@@ -299,9 +315,11 @@ function handleRailKeyboardInput(event) {
 
   if (event.key === 'ArrowDown' || event.key === 'PageDown' || event.key === 'End' ||
       event.code === 'Space') {
+    prepareRailForUserScrollInput();
     rememberRailScrollInput(1);
     cancelProgrammaticScrollToTop();
   } else if (event.key === 'ArrowUp' || event.key === 'PageUp' || event.key === 'Home') {
+    prepareRailForUserScrollInput();
     rememberRailScrollInput(-1);
     cancelProgrammaticScrollToTop();
   }
