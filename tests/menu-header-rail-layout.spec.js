@@ -919,23 +919,6 @@ test('switching delivery categories scrolls content below the sticky topbar with
   await expect(tabs.nth(1)).toHaveAttribute('aria-pressed', 'true');
   await expect(page.locator('#deliveryGrid .card').first()).toBeVisible({ timeout: 15000 });
 
-  const after = await page.evaluate(() => {
-    const rail = document.querySelector('#deliveryRail').getBoundingClientRect();
-    const topbar = document.querySelector('header.topbar').getBoundingClientRect();
-    const subfilters = document.querySelector('#deliverySubFilterViewport');
-    const subfiltersVisible = !!subfilters && !subfilters.hidden &&
-      getComputedStyle(subfilters).display !== 'none' &&
-      subfilters.getBoundingClientRect().height > 0;
-    const content = subfiltersVisible ? subfilters : document.querySelector('#deliveryGrid');
-    return {
-      scrollY: window.scrollY,
-      railTop: rail.top,
-      railBottom: rail.bottom,
-      railBottomGap: window.innerHeight - rail.bottom,
-      contentTop: content.getBoundingClientRect().top,
-      viewportTop: topbar.bottom + 12,
-    };
-  });
   await expect.poll(() => page.evaluate(() => {
     const topbar = document.querySelector('header.topbar');
     const subfilters = document.querySelector('#deliverySubFilterViewport');
@@ -969,8 +952,8 @@ test('switching delivery categories scrolls content below the sticky topbar with
   });
 
   expect(Math.abs(settledAfter.railTop - before.railTop)).toBeLessThanOrEqual(1);
-  expect(after.railBottomGap).toBe(10);
-  expect(Math.abs(after.contentTop - after.viewportTop),
+  expect(settledAfter.railBottomGap).toBe(10);
+  expect(Math.abs(settledAfter.contentTop - settledAfter.viewportTop),
     'selected delivery content starts below the sticky topbar + 12px').toBeLessThanOrEqual(3);
 });
 

@@ -16,7 +16,7 @@
           (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
         if (isPwa && isIosStandalone) document.documentElement.classList.add('is-ios-standalone');
         var isTg = /Telegram/i.test(navigator.userAgent) || qs.get('src') === 'tg' || !!(window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData);
-        var isActionDeepLink = !!(qs.get('tab') || qs.get('support') || qs.get('order'));
+        var isActionDeepLink = !!(qs.get('tab') || qs.get('support') || qs.get('order') || qs.get('item'));
         var splashDone = sessionStorage.getItem('splashDone') === '1';
 
         if (urlBrand) {
