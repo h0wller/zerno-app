@@ -46,7 +46,7 @@
   }
 }
 
-#dashOrders .bt {
+#dashModal .bt {
   background: var(--card, #ffffff);
   border: 1px solid var(--line);
   border-radius: 14px;
