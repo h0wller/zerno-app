@@ -498,7 +498,7 @@
                 if (c.token && c.customer) {
                   if ((Number(window.__authSessionRevision) || 0) !== authSessionRevision) {
                     attempt.status = 'superseded';
-                    attempt.className = 'auth-tg-superseded';
+                    attempt.className = 'auth-tg-timeout';
                     attempt.message = 'Вход уже выполнен в другом профиле. Подтверждение Telegram не применено.';
                     renderRegistrationState();
                     finishPoll();
