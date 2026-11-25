@@ -1,5 +1,7 @@
 import { test, expect } from '@playwright/test';
 
+// First-frame contract coverage: see docs/css-architecture.md §4 and docs/module-map.md §0–2.
+
 test.use({ serviceWorkers: 'block' });
 
 const VIEWPORTS = [
