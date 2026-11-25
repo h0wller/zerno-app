@@ -24,5 +24,5 @@ export function formatTelegramBenefitsMessage({ customer, freeDeliveryCode, deli
     '',
     '🍕 <b>«Пятница»</b>',
     delivery,
-  ].join('\\n');
+  ].join('\n');
 }
