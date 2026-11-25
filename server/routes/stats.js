@@ -43,7 +43,7 @@ statsRouter.get('/api/stats/redeems', adminGuard, (req, res) => {
     const rows = db.prepare(`
       SELECT a, by, ts FROM history
       WHERE ts >= ? AND ts < ?
-        AND (a LIKE '%бесплатный кофе%' OR a LIKE 'Штамп%')
+        AND (a LIKE '%бесплатный кофе%' OR a LIKE 'Штамп%' OR (by = 'Кассир' AND a LIKE 'Начислено%'))
       ORDER BY ts DESC, id DESC
     `).all(period.start, period.end);
     const report = buildCoffeeMonthStats(period.month, rows);
