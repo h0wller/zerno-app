@@ -160,6 +160,55 @@ export function grantBonus(cid, kind, { notify = true } = {}) {
   return { kind, coffee: k.coffee, delivery: k.delivery, code, freeCode, message };
 }
 
+/**
+ * Подробный результат для каналов, которым нужно честно сообщить гостю исход начисления.
+ * Существующий grantBonus API сохраняет прежний контракт (объект или null).
+ *
+ * @returns {{status: 'granted', bonus: object}|{status: 'already_granted'|'disabled'|'ineligible'|'unknown'}}
+ */
+export function grantBonusDetailed(cid, kind, options = {}) {
+  if (!BONUS_KINDS.includes(kind)) return { status: 'ineligible' };
+
+  const c = db.prepare(
+    'SELECT id, role, verified, cups, stamps, free FROM customers WHERE id=?'
+  ).get(cid);
+  if (!c || !c.verified || (c.role || 'guest') !== 'guest') {
+    return { status: 'ineligible' };
+  }
+
+  const priorGrants = kind === 'signup' || kind === 'qr'
+    ? db.prepare("SELECT ts FROM bonus_grants WHERE cid=? AND kind IN ('signup','qr')").all(cid)
+    : db.prepare('SELECT ts FROM bonus_grants WHERE cid=? AND kind=?').all(cid, kind);
+  if (priorGrants.length) {
+    // Migration backfill records active/used profiles to prevent retroactive welcome rewards.
+    // It is eligibility evidence, not proof that this particular welcome reward was granted.
+    if (kind === 'signup' || kind === 'qr') {
+      const marker = db.prepare("SELECT value FROM meta WHERE key='bonus_grants_backfilled'").get();
+      const hasExplicitGrant = priorGrants.some(row => !marker?.value || row.ts !== marker.value);
+      if (!hasExplicitGrant) return { status: 'ineligible' };
+    }
+    return { status: 'already_granted' };
+  }
+
+  if ((kind === 'signup' || kind === 'qr') && profileWasUsed(cid, c)) {
+    return { status: 'ineligible' };
+  }
+
+  const configured = getBonusConfig().kinds[kind];
+  if (!configured || (configured.coffee <= 0 && configured.delivery <= 0 && !configured.freeFirstDelivery)) {
+    return { status: 'disabled' };
+  }
+
+  const bonus = grantBonus(cid, kind, options);
+  if (bonus) return { status: 'granted', bonus };
+
+  // A concurrent duplicate may win between the preflight read and the atomic grant.
+  const wonByAnotherAttempt = kind === 'signup' || kind === 'qr'
+    ? db.prepare("SELECT 1 FROM bonus_grants WHERE cid=? AND kind IN ('signup','qr') LIMIT 1").get(cid)
+    : db.prepare('SELECT 1 FROM bonus_grants WHERE cid=? AND kind=? LIMIT 1').get(cid, kind);
+  return wonByAnotherAttempt ? { status: 'already_granted' } : { status: 'unknown' };
+}
+
 // Действующий персональный код «первая доставка бесплатно» гостя (или null). Клиент применяет его в корзине сам.
 export function findFreeDeliveryCode(cid) {
   const r = db.prepare(
