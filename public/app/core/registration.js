@@ -417,13 +417,6 @@
         activeTelegramRegistration = attempt;
         renderRegistrationState();
         var pollBusy = false;
-        var statusRow = document.getElementById('regTgRow');
-        if (statusRow) {
-          statusRow.hidden = true;
-          statusRow.className = '';
-          statusRow.textContent = '✅ Номер подтверждён — завершите регистрацию';
-        }
-
         var buttonLabel = regTgBtn.querySelector('span');
         var requestAccepted = false;
         var telegramTarget = reserveTelegramRegistrationTarget();
