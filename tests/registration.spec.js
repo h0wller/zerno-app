@@ -642,36 +642,33 @@ test('P0: an existing customer returns to the profile without a repeated welcome
 
 test('P0: closing auth during the phone registration request preserves the result', async ({ page }) => {
   let markStarted;
-  let resolveRegistration;
+  let releaseRequest;
   const requestStarted = new Promise((resolve) => { markStarted = resolve; });
+  const responseGate = new Promise((resolve) => { releaseRequest = resolve; });
 
-  await page.route('**/api/auth/register', (route) => {
+  await page.route('**/api/auth/register', async (route) => {
     markStarted();
-    return new Promise((resolve) => {
-      resolveRegistration = async () => {
-        await route.fulfill({
-          status: 200,
-          contentType: 'application/json',
-          body: JSON.stringify({
-            token: 'p0-closed-network-token',
-            customer: {
-              id: 'p0-closed-network',
-              name: 'P0 Closed Network',
-              phone: '+7 900 000-00-07',
-              role: 'guest',
-              cups: 0,
-              stamps: 0,
-              free: 0,
-              qr: 'Z-P0NETWORK',
-              verified: 0,
-              welcome: 0,
-              tg: 0,
-              history: []
-            }
-          })
-        });
-        resolve();
-      };
+    await responseGate;
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        token: 'p0-closed-network-token',
+        customer: {
+          id: 'p0-closed-network',
+          name: 'P0 Closed Network',
+          phone: '+7 900 000-00-07',
+          role: 'guest',
+          cups: 0,
+          stamps: 0,
+          free: 0,
+          qr: 'Z-P0NETWORK',
+          verified: 0,
+          welcome: 0,
+          tg: 0,
+          history: []
+        }
+      })
     });
   });
 
@@ -682,14 +679,20 @@ test('P0: closing auth during the phone registration request preserves the resul
   await page.locator('#regPhone').fill('+7 900 000-00-07');
   await page.locator('#regPin').fill('1357');
   await page.locator('#consentBox').check();
+
+  const registrationResponse = page.waitForResponse((response) =>
+    response.url().endsWith('/api/auth/register') && response.status() === 200
+  );
   await page.locator('#regBtn').click();
   await requestStarted;
 
   await page.evaluate(() => window.closeAuth());
   await expect(page.locator('#authModal')).not.toHaveClass(/show/);
-  resolveRegistration();
+  releaseRequest();
+  await registrationResponse;
 
-  await expect.poll(() => page.evaluate(() => window.me && window.me.name)).toBe('P0 Closed Network');
+  await expect.poll(() => page.evaluate(() => window.me && window.me.name), { timeout: 10000 })
+    .toBe('P0 Closed Network');
   await expect(page.locator('#verifyNote')).toBeVisible();
   await expect(page.locator('#verifyNote')).toContainText('заказы недоступны');
   await expect(page.locator('#authModal')).not.toHaveClass(/show/);
