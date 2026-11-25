@@ -244,6 +244,25 @@ test('Telegram registration polling is scoped to a random one-attempt secret, no
   assert.equal(validPoll.json.confirmed, true);
   assert.ok(validPoll.json.token);
   assert.equal(validPoll.json.customer?.phone, phone);
+  const customerId = validPoll.json.customer.id;
+  assert.deepEqual(
+    inspectDb.prepare('SELECT kind FROM bonus_grants WHERE cid=?').all(customerId).map(row => row.kind),
+    ['signup']
+  );
+  assert.equal(inspectDb.prepare('SELECT free FROM customers WHERE id=?').get(customerId).free, 1);
+  assert.equal(inspectDb.prepare("SELECT COUNT(*) AS n FROM promos WHERE owner=? AND kind='freeship'").get(customerId).n, 1);
+
+  // Telegram can redeliver a contact update; the second delivery must not grant again.
+  const duplicateContact = await webhook({
+    message: {
+      chat: { id: chatId },
+      from: { id: chatId, first_name: 'Telegram Poll Guest' },
+      contact: { phone_number: phone, user_id: chatId }
+    }
+  });
+  assert.equal(duplicateContact.status, 200);
+  assert.equal(inspectDb.prepare('SELECT COUNT(*) AS n FROM bonus_grants WHERE cid=?').get(customerId).n, 1);
+  assert.equal(inspectDb.prepare("SELECT COUNT(*) AS n FROM promos WHERE owner=? AND kind='freeship'").get(customerId).n, 1);
 
   const replayedPoll = await api('/api/auth/check-reg', { pollToken: requested.json.pollToken });
   assert.equal(replayedPoll.status, 200);
