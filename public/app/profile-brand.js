@@ -36,13 +36,21 @@
 /* ── брендовые правила: слияние v64 profileBrandRules + R4 applyProfileBrand ── */
 function brandRules(){
   var deliv=(typeof brand!=='undefined'&&brand==='delivery');
+  var currentCustomer = window.me || (typeof me !== 'undefined' ? me : null);
+  var currentRole = currentCustomer && currentCustomer.role || 'guest';
+  var currentVerified = !!currentCustomer && (
+    currentCustomer.verified === true ||
+    currentCustomer.verified === 1 ||
+    Number(currentCustomer.verified) > 0
+  );
+  var pendingGuest = !!currentCustomer && currentRole === 'guest' && !currentVerified;
   var deliverySection=document.getElementById('profileOrdersSection');
   var coffeeSection=document.getElementById('profileCoffeeSection');
   var deliveryPrompt=document.getElementById('profileDeliveryPrompt');
   var coffeePrompt=document.getElementById('profileCoffeePrompt');
   var fi=document.getElementById('fridayInfo');
-  if(deliverySection)deliverySection.hidden=!deliv;
-  if(coffeeSection)coffeeSection.hidden=deliv;
+  if(deliverySection)deliverySection.hidden=!deliv || pendingGuest;
+  if(coffeeSection)coffeeSection.hidden=deliv || pendingGuest;
   if(deliveryPrompt)deliveryPrompt.hidden=!deliv;
   if(coffeePrompt)coffeePrompt.hidden=deliv;
   Array.prototype.slice.call(document.querySelectorAll('#profileBox .coffee-venue-card, #profileBox .coffee-review-card')).forEach(function(card){

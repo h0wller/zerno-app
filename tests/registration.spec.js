@@ -947,9 +947,13 @@ test('P0 registration baseline: capture guest, auth, Telegram waiting and both p
       await expect(page.locator('#verifyNote')).toBeVisible();
       await expect(page.locator('#verifyNote')).toContainText('Профиль создан, но ещё не активирован');
       if (brand === 'delivery') {
+        await expect(page.locator('#profileOrdersSection')).toBeHidden();
+        await expect(page.locator('#profileCoffeeSection')).toBeHidden();
         await expect(page.locator('#verifyNote')).toContainText('заказы недоступны');
         await expect(page.locator('#actCode')).toBeVisible();
       } else {
+        await expect(page.locator('#profileCoffeeSection')).toBeHidden();
+        await expect(page.locator('#profileOrdersSection')).toBeHidden();
         await expect(page.locator('#verifyNote')).toContainText('10 штампов');
         await expect(page.locator('#actCode')).toBeVisible();
       }
@@ -991,7 +995,11 @@ test('P0 registration baseline: capture guest, auth, Telegram waiting and both p
       await expect(page.locator('#profileBox')).toBeVisible();
       if (brand === 'delivery') {
         await expect(page.locator('#verifyNote')).toBeHidden();
+        await expect(page.locator('#profileOrdersSection')).toBeVisible();
+        await expect(page.locator('#profileCoffeeSection')).toBeHidden();
       } else {
+        await expect(page.locator('#profileCoffeeSection')).toBeVisible();
+        await expect(page.locator('#profileOrdersSection')).toBeHidden();
         await expect(page.locator('#verifyNote')).toBeVisible();
         await expect(page.locator('#verifyNote .profile-loyalty-help')).toBeVisible();
         await expect(page.locator('#verifyNote')).toContainText('На карте профиля уже есть 1 бесплатный кофе');
