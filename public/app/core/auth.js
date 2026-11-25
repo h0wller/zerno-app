@@ -136,6 +136,7 @@
 
     setAuthFormMode(login);
     applyAuthBrand(login);
+    if (typeof window.renderRegistrationState === 'function') window.renderRegistrationState();
 
     if (typeof syncOverlay === 'function') syncOverlay();
     if (authFocusTimer) clearTimeout(authFocusTimer);
