@@ -68,7 +68,7 @@ export function buildCoffeeMonthStats(monthValue, rows = []) {
     const day = daysByDate.get(date);
     if (!day) continue;
 
-    if (/^Штамп(?:\\s|$)/i.test(action)) {
+    if (row?.by === 'Кассир' && /^Штамп(?:\\s|$)/i.test(action)) {
       stamps += 1;
       day.stamps += 1;
       continue;
