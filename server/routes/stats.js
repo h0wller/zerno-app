@@ -62,12 +62,12 @@ statsRouter.get('/api/stats/redeems', adminGuard, (req, res) => {
   const monthAgo = new Date(Date.now() - 30 * 86400000).toISOString();
   const rows = db.prepare(`
     SELECT a, by, ts FROM history
-    WHERE a LIKE '%списан бесплатный кофе%' AND ts > ?
+    WHERE a LIKE '%бесплатный кофе%' AND ts > ?
     ORDER BY id DESC
   `).all(monthAgo);
   const stats = {};
   rows.forEach(r => {
-    const match = r.a.match(/списан бесплатный кофе: (.+?) \(/);
+    const match = r.a.match(/списан бесплатный кофе: (.+?) \(/i);
     const item = match ? match[1] : 'неизвестно';
     stats[item] = (stats[item] || 0) + 1;
   });
