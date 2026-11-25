@@ -133,6 +133,60 @@ test('registration without consent neither creates a usable profile nor consumes
 });
 
 
+test('cashier activation code verifies a pending profile and grants the welcome benefit once', async () => {
+  const phone = uniquePhone();
+  const pending = await api('/api/auth/register', {
+    name: 'Cashier Activation Integration',
+    phone,
+    pin: '1357',
+    consent: true
+  });
+  assert.equal(pending.status, 200, JSON.stringify(pending.json));
+  assert.ok(pending.json.token);
+  assert.equal(pending.json.customer?.verified, 0);
+
+  const pendingRow = inspectDb.prepare(
+    'SELECT actcode, verified FROM customers WHERE id=?'
+  ).get(pending.json.customer.id);
+  assert.equal(pendingRow?.verified, 0);
+  assert.match(pendingRow?.actcode || '', /^\d{4}$/);
+
+  const activation = await api(
+    '/api/auth/activate-guest',
+    { code: pendingRow.actcode },
+    pending.json.token
+  );
+  assert.equal(activation.status, 200, JSON.stringify(activation.json));
+  assert.equal(activation.json.customer?.verified, 1);
+  assert.equal(activation.json.customer?.free, 1);
+
+  const activatedRow = inspectDb.prepare(
+    'SELECT actcode, verified FROM customers WHERE id=?'
+  ).get(pending.json.customer.id);
+  assert.equal(activatedRow?.verified, 1);
+  assert.equal(activatedRow?.actcode, null);
+
+  const grants = () => inspectDb.prepare(
+    "SELECT COUNT(*) AS count FROM bonus_grants WHERE cid=? AND kind IN ('signup','qr')"
+  ).get(pending.json.customer.id).count;
+  assert.equal(grants(), 1);
+
+  const deliveryResponse = await fetch(base + '/api/me/free-delivery', {
+    headers: { authorization: 'Bearer ' + pending.json.token }
+  });
+  assert.equal(deliveryResponse.status, 200);
+  const delivery = await deliveryResponse.json();
+  assert.match(delivery.code || '', /^B[0-9A-F]{8}$/);
+
+  const duplicateActivation = await api(
+    '/api/auth/activate-guest',
+    { code: pendingRow.actcode },
+    pending.json.token
+  );
+  assert.equal(duplicateActivation.status, 409);
+  assert.equal(grants(), 1);
+});
+
 test('cashier-created guests get a PIN immediately and duplicate registration reuses the same profile', async () => {
   const adminPhone = '+7 900 000-01-10';
   await seedOtp('reg:' + adminPhone, '2468');
