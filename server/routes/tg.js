@@ -63,7 +63,7 @@ async function answerCallback(cbId) {
 
 function bonusKeyboard() {
   return { inline_keyboard: [
-    [{ text: '☕ Открыть карту и QR', web_app: { url: APP_URL + authQuery + '&brand=coffee&tab=bonus' } }],
+    [{ text: '☕ Открыть карту и QR', web_app: { url: APP_URL + '/?src=tg&brand=coffee&tab=bonus' } }],
     [{ text: '🍕 Открыть «Пятницу»', web_app: { url: APP_URL + '/?src=tg&brand=delivery' } }],
     [{ text: '🔄 Обновить статусы', callback_data: 'bonus' }],
   ]};
@@ -366,7 +366,6 @@ export function createTgRouter({ appKb }) {
           otpStore.delete('regtg:' + pend.token);
 
           await tgSend(chatId, '👍 Номер подтверждён', { remove_keyboard: true });
-          const baseSite = (typeof APP_URL !== 'undefined' && APP_URL) || 'https://friday.andcoffee.online';
           const authQuery = sessionToken ? '?auth_token=' + encodeURIComponent(sessionToken) : '?src=tg';
 
           const benefitDetails = finalCust
@@ -378,7 +377,7 @@ export function createTgRouter({ appKb }) {
             '\\n\\nВ браузере вход выполнился автоматически. Кнопки ниже открывают нужный раздел 👇',
             {
               inline_keyboard: [
-                [{ text: '☕ Открыть карту и QR', web_app: { url: APP_URL + '/?src=tg&brand=coffee&tab=bonus' } }],
+                [{ text: '☕ Открыть карту и QR', web_app: { url: APP_URL + authQuery + '&brand=coffee&tab=bonus' } }],
                 [{ text: '🍕 Открыть «Пятницу»', web_app: { url: APP_URL + authQuery + '&brand=delivery' } }],
               ]
             }
