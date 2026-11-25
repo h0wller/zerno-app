@@ -136,7 +136,7 @@ test('registration without consent neither creates a usable profile nor consumes
 test('cashier activation code verifies a pending profile and grants the welcome benefit once', async () => {
   const phone = '+7 900 000-01-16';
   const pending = await api('/api/auth/register', {
-    name: 'Cashier Activation Integration',
+    name: 'P0 Cashier Activation',
     phone,
     pin: '1357',
     consent: true
@@ -206,7 +206,7 @@ test('cashier activation does not invent a welcome gift when bonus_cfg disables 
 
     const phone = '+7 900 000-01-17';
     const pending = await api('/api/auth/register', {
-      name: 'No Welcome Benefit Integration',
+      name: 'P0 No Welcome Gift',
       phone,
       pin: '1357',
       consent: true
