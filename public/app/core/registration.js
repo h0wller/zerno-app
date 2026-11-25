@@ -188,7 +188,6 @@
     if (window.brand !== 'delivery') {
       openProfileAfterAuth();
       var freeCoffees = Math.max(0, Number(customer.free) || 0);
-      var stampCount = Math.max(0, Number(customer.stamps) || 0);
       var coffeePrefix = isNew === false
         ? 'С возвращением, ' + String(customer.name || 'гость') + '.'
         : 'Профиль кофейни активирован.';
