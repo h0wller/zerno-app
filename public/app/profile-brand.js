@@ -93,61 +93,111 @@ setTimeout(brandRules, 300);
 /* ── relink + verifyNote (было секция 6) ── */
 function relink(){document.querySelectorAll('a[href*="t.me/and_coffee_bot"]').forEach(function(a){a.href='https://t.me/'+(window.TG_USERNAME||'and_coffee_bot');});}
 window.renderVerifyNote=function(){
-  var host=document.getElementById('bonusBox');
-  if(!host) return;
+  var profile = document.getElementById('profileBox');
+  if(!profile) return;
 
-  var n=document.getElementById('verifyNote');
-  if(!n){n=document.createElement('div');n.id='verifyNote';host.insertBefore(n,host.firstChild);}
-
-  // Скрываем весь блок, если нет юзера или бренд «доставка»
-  var deliv = (typeof brand!=='undefined' && brand==='delivery');
-  if(!me || deliv){ n.hidden=true; n.innerHTML=''; return; }
-
-  // Кто ты?
-  var isStaff    = !!(me.role && me.role !== 'guest');       // admin / cashier / dispatch
-  var isVerified = (me.verified === true || me.verified === 1 || me.verified > 0);
-
-  // Какие секции показывать
-  var showInfo       = true;                                  // «Как устроены бонусы» — всегда
-  var showActivation = !isStaff && !isVerified;               // форма активации — гостям
-  var showTgBonus    = !isStaff && !me.welcome && !me.tg;     // приветствие за регистрацию — не-сотрудникам
-
-  var html = '';
-
-  // Инструкции собраны в один закрытый по умолчанию disclosure.
-  if(showInfo){
-    html += '<details class="profile-loyalty-help">' +
-      '<summary><span>Как работают бонусы?</span><span class="profile-loyalty-help-chevron" aria-hidden="true">⌄</span></summary>' +
-      '<div class="profile-loyalty-help-content">' +
-        '<p>🫘 <b>Штампы.</b> После покупки кассир сканирует ваш QR и начисляет 1 штамп. 10 штампов — бесплатный кофе.</p>' +
-        (showTgBonus
-          ? '<p>🎁 <b>Приветственный бонус.</b> При регистрации доступны приветственный кофе и бесплатная первая доставка. Чтобы получить их, откройте <a href="https://t.me/and_coffee_bot">Telegram-бота</a> и нажмите «Поделиться номером».</p>'
-          : '') +
-        (showActivation
-          ? '<p>🧾 <b>Активация профиля.</b> Введите четырёхзначный код, который назовёт кассир.</p>'
-          : '') +
-      '</div>' +
-    '</details>';
+  var n = document.getElementById('verifyNote');
+  if(!n){
+    n = document.createElement('section');
+    n.id = 'verifyNote';
+    n.className = 'profile-brand-section profile-activation-status';
+    n.setAttribute('aria-label', 'Статус активации профиля');
+    profile.insertBefore(n, profile.querySelector('#profileCoffeeSection, #profileOrdersSection') || null);
   }
 
-  // Поле активации остаётся видимым — пользователю не нужно открывать справку,
-  // чтобы завершить обязательный шаг.
-  if(showActivation){
-    html += '<div class="profile-activation-row"><label class="profile-activation-label" for="actCode">Код активации</label><input id="actCode" inputmode="numeric" maxlength="4" placeholder="4 цифры" aria-label="Четырёхзначный код активации"><button class="btn fire" id="actBtn">Активировать</button></div>';
+  var customer = window.me || (typeof me !== 'undefined' ? me : null);
+  var isStaff = !!(customer && customer.role && customer.role !== 'guest');
+  var isVerified = !!customer && (
+    customer.verified === true ||
+    customer.verified === 1 ||
+    Number(customer.verified) > 0
+  );
+
+  if(!customer || isStaff || isVerified){
+    n.hidden = true;
+    n.innerHTML = '';
+    return;
   }
+
+  var isDelivery = window.brand === 'delivery';
+  var guidance = isDelivery
+    ? '<p>Пока номер не подтверждён, заказы недоступны. Назовите номер кассиру и получите 4-значный код активации, затем введите его ниже. После активации можно будет перейти в меню и оформить заказ.</p>' +
+      '<p>Если сервер назначит вам бесплатную первую доставку, корзина применит её автоматически. Результат будет виден в строке доставки и итоговой сумме.</p>'
+    : '<p>Назовите номер кассиру и получите 4-значный код активации, затем введите его ниже. До подтверждения номера преимущества ещё не активны.</p>' +
+      '<p>После активации откроется карта кофейни: за покупку начисляется 1 штамп, 10 штампов дают бесплатный кофе. QR на карте покажите кассиру.</p>';
 
   n.hidden = false;
-  n.innerHTML = html;
-  relink();
+  n.innerHTML =
+    '<div class="profile-activation-copy">' +
+      '<h4>Профиль создан, но ещё не активирован</h4>' +
+      guidance +
+    '</div>' +
+    '<div class="profile-activation-row">' +
+      '<label class="profile-activation-label" for="actCode">Код активации</label>' +
+      '<input id="actCode" inputmode="numeric" maxlength="4" placeholder="4 цифры" aria-label="Четырёхзначный код активации" autocomplete="one-time-code">' +
+      '<button class="btn fire" id="actBtn" type="button">Активировать</button>' +
+    '</div>';
 
   var ab = document.getElementById('actBtn');
-  if(ab) ab.onclick = async function(){
+  if(!ab) return;
+  ab.onclick = async function(){
+    if(ab.disabled) return;
+    var input = document.getElementById('actCode');
+    var code = input ? input.value.trim() : '';
+    if(!/^\d{4}$/.test(code)){
+      toast('Введите 4-значный код активации', '⚠️');
+      if(input) input.focus();
+      return;
+    }
+
+    ab.disabled = true;
+    ab.setAttribute('aria-busy', 'true');
+    ab.textContent = 'Проверяем код…';
     try{
-      var r = await api('/auth/activate-guest',{method:'POST',body:{code:document.getElementById('actCode').value.trim()}});
-      me = r.customer;
-      toast('Профиль активирован! Приветственный напиток и бесплатная доставка уже ваши 🎁','');
-      renderAll();
-    }catch(e){ toast(e.message,'⚠️'); }
+      var r = await api('/auth/activate-guest',{method:'POST',body:{code:code}});
+      if(!r || !r.customer || !r.customer.verified){
+        throw new Error('Сервер не подтвердил активацию. Обновите профиль и проверьте статус.');
+      }
+      if(typeof window.setUser === 'function') window.setUser(window.USER_TOKEN, r.customer);
+      else window.me = r.customer;
+      if(typeof window.renderAll === 'function') window.renderAll();
+
+      if(!isDelivery){
+        var freeCoffees = Math.max(0, Number(r.customer.free) || 0);
+        var message = 'Профиль активирован. Карта штампов открыта: ';
+        message += freeCoffees > 0
+          ? 'на карте ' + freeCoffees + ' бесплатных кофе. '
+          : 'сейчас бесплатных кофе: 0; за покупки начисляются штампы, 10 штампов = бесплатный кофе. ';
+        message += 'Покажите QR на карте кассиру для начисления штампа или получения подарка.';
+        toast(message, '☕');
+        if(typeof window.openPanel === 'function') window.openPanel();
+        return;
+      }
+
+      var freeDelivery = null;
+      var deliveryStatusKnown = false;
+      try{
+        var deliveryResponse = await api('/me/free-delivery');
+        freeDelivery = !!(deliveryResponse && typeof deliveryResponse.code === 'string' && deliveryResponse.code.trim());
+        deliveryStatusKnown = true;
+      }catch(_){
+        deliveryStatusKnown = false;
+      }
+
+      if(typeof window.closePanel === 'function') window.closePanel();
+      if(freeDelivery){
+        toast('Профиль активирован. Бесплатная первая доставка доступна: персональный код применится автоматически в корзине, результат будет виден в строке доставки и итоговой сумме.', '🍕');
+      }else if(deliveryStatusKnown){
+        toast('Профиль активирован. Персональный код бесплатной первой доставки сейчас не назначен. Корзина не применит этот бонус.', '🍕');
+      }else{
+        toast('Профиль активирован. Статус бесплатной первой доставки пока не удалось проверить; корзина перепроверит его при открытии.', '🍕');
+      }
+    }catch(e){
+      toast(e.message || 'Не удалось активировать профиль', '⚠️');
+      ab.disabled = false;
+      ab.removeAttribute('aria-busy');
+      ab.textContent = 'Активировать';
+    }
   };
 };
 /* ── единственная обёртка renderProfile ── */

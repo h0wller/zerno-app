@@ -137,12 +137,82 @@
     button.textContent = 'Создать профиль';
   }
 
-  function completeRegistration(response, message, icon) {
+  function customerIsVerified(customer) {
+    return !!customer && (
+      customer.verified === true ||
+      customer.verified === 1 ||
+      Number(customer.verified) > 0
+    );
+  }
+
+  function openProfileAfterAuth() {
+    if (typeof window.openPanel === 'function') window.openPanel();
+  }
+
+  async function getFreeDeliveryStatus() {
+    try {
+      var response = await api('/me/free-delivery');
+      return {
+        known: true,
+        available: !!(response && typeof response.code === 'string' && response.code.trim())
+      };
+    } catch (_) {
+      return { known: false, available: false };
+    }
+  }
+
+  async function completeRegistration(response, isNew) {
+    var customer = response && response.customer;
+    if (!response || !response.token || !customer) {
+      throw new Error('Сервер не подтвердил создание профиля. Повторите попытку.');
+    }
+
     markAuthResetOnIdle();
-    window.setUser(response.token, response.customer);
-    closeAuth();
+    window.setUser(response.token, customer);
+    var modal = document.getElementById('authModal');
+    if (modal && modal.classList.contains('show')) closeAuth();
     if (typeof renderAll === 'function') renderAll();
-    toast(message, icon);
+
+    if (!customerIsVerified(customer)) {
+      openProfileAfterAuth();
+      var pendingMessage = window.brand === 'delivery'
+        ? 'Профиль создан, но номер ещё не подтверждён. Заказы станут доступны после активации: получите 4-значный код у кассира и введите его в профиле.'
+        : 'Профиль создан, но номер ещё не подтверждён. Получите 4-значный код у кассира и введите его в профиле. До активации преимущества не доступны.';
+      toast(pendingMessage, '🔒');
+      return;
+    }
+
+    if (window.brand !== 'delivery') {
+      openProfileAfterAuth();
+      var freeCoffees = Math.max(0, Number(customer.free) || 0);
+      var stampCount = Math.max(0, Number(customer.stamps) || 0);
+      var coffeePrefix = isNew === false
+        ? 'С возвращением, ' + String(customer.name || 'гость') + '.'
+        : 'Профиль кофейни активирован.';
+      var coffeeMessage = coffeePrefix + ' Карта штампов открыта в профиле. ';
+      coffeeMessage += freeCoffees > 0
+        ? 'На карте ' + freeCoffees + ' бесплатных кофе. '
+        : 'Сейчас бесплатных кофе: 0. За покупки начисляются штампы: 10 штампов = бесплатный кофе. ';
+      coffeeMessage += 'Покажите QR на карте кассиру для начисления штампа или получения подарка.';
+      toast(coffeeMessage, '☕');
+      return;
+    }
+
+    var deliveryStatus = await getFreeDeliveryStatus();
+    if (typeof window.closePanel === 'function') window.closePanel();
+
+    var deliveryPrefix = isNew === false
+      ? 'С возвращением, ' + String(customer.name || 'гость') + '.'
+      : 'Профиль «Пятницы» активирован.';
+    var deliveryMessage = deliveryPrefix + ' Ваши заказы сохраняются в профиле. ';
+    if (deliveryStatus.available) {
+      deliveryMessage += 'Бесплатная первая доставка доступна: персональный код применится автоматически в корзине, результат будет виден в строке доставки и итоговой сумме.';
+    } else if (deliveryStatus.known) {
+      deliveryMessage += 'Персональный код бесплатной первой доставки сейчас не назначен. Корзина не применит этот бонус.';
+    } else {
+      deliveryMessage += 'Статус бесплатной первой доставки пока не удалось проверить. Корзина перепроверит его при открытии — заранее обещать бонус нельзя.';
+    }
+    toast(deliveryMessage, '🍕');
   }
 
   function openExistingProfile(phone, message) {
@@ -168,7 +238,7 @@
 
       if (response && response.needBotConfirm) {
         // Номер сначала подтверждаем в боте, потом повторяем вход.
-        toast('Подтвердите номер в боте Telegram, затем нажмите «Продолжить» ещё раз', '🤖');
+        toast('Подтвердите номер в боте Telegram, затем вернитесь в приложение и продолжите регистрацию', '🤖');
         var openTelegramLink = window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.openTelegramLink;
         if (typeof openTelegramLink === 'function') openTelegramLink(response.tgUrl);
         else window.open(response.tgUrl, '_blank');
@@ -176,10 +246,7 @@
       }
 
       if (response && response.token && response.customer) {
-        var message = response.isNew
-          ? 'Профиль создан! Приветственный напиток и бесплатная доставка — ваши 🎁'
-          : 'Профиль привязан к Telegram ✅';
-        completeRegistration(response, message, '🎉');
+        await completeRegistration(response, response.isNew === true ? true : response.isNew === false ? false : undefined);
         return true;
       }
 
@@ -209,10 +276,7 @@
       });
       try { localStorage.removeItem('zt_src'); } catch (_) {}
 
-      var message = response.customer.verified
-        ? 'Профиль создан! Приветственный напиток и бесплатная доставка — ваши 🎉'
-        : 'Профиль создан! Код активации — у кассира, после него приветственный напиток и бесплатная доставка 🎁';
-      completeRegistration(response, message, '');
+      await completeRegistration(response, true);
     } catch (error) {
       if (error.code === 409) {
         openExistingProfile(form.phone, 'Этот номер уже зарегистрирован — входим');
@@ -350,7 +414,7 @@
           if (statusRow) {
             statusRow.hidden = false;
             statusRow.className = 'auth-tg-pending';
-            statusRow.textContent = 'Ожидаем подтверждение в Telegram…';
+            statusRow.textContent = 'Ожидаем подтверждение в Telegram. Вернитесь в приложение — профиль активируется автоматически.';
             if (r && r.tgUrl && !telegramOpened) {
               appendTelegramFallbackLink(statusRow, r.tgUrl);
               toast('Откройте Telegram по ссылке в окне подтверждения', '🤖');
@@ -395,12 +459,8 @@
               if (pollGeneration !== window.__regTgPollGeneration) return;
               if (c && c.confirmed) {
                 if (c.token && c.customer) {
-                  markAuthResetOnIdle();
-                  window.setUser(c.token, c.customer);
-                  closeAuth();
+                  await completeRegistration({ token: c.token, customer: c.customer }, c.isNew);
                   finishPoll();
-                  if (typeof renderAll === 'function') renderAll();
-                  toast('Добро пожаловать, ' + c.customer.name + '! Бонусы активированы 🎉', '🎁');
                   return;
                 }
                 if (statusRow) {
