@@ -600,6 +600,46 @@ test.describe('Registration & Auth Suite (F3.61 - F3.63)', () => {
 });
 
 
+test('P0: an existing customer returns to the profile without a repeated welcome offer', async ({ page }) => {
+  await page.route('**/api/auth/login', (route) => route.fulfill({
+    status: 200,
+    contentType: 'application/json',
+    body: JSON.stringify({
+      token: 'p0-existing-login-token',
+      customer: {
+        id: 'p0-existing-customer',
+        name: 'Existing Guest',
+        phone: '+7 900 000-00-06',
+        role: 'guest',
+        cups: 0,
+        stamps: 4,
+        free: 0,
+        qr: 'Z-P0EXISTING',
+        verified: 1,
+        welcome: 1,
+        tg: 1,
+        history: []
+      }
+    })
+  }));
+  await page.route('**/api/orders/mine', (route) => route.fulfill({
+    status: 200,
+    contentType: 'application/json',
+    body: JSON.stringify({ orders: [] })
+  }));
+
+  await page.goto('/?brand=coffee');
+  await page.waitForFunction(() => typeof window.openAuth === 'function');
+  await page.evaluate(() => window.openAuth(true));
+  await page.locator('#logPhone').fill('+7 900 000-00-06');
+  await page.locator('#logPin').fill('1357');
+  await page.locator('#logBtn').click();
+
+  await expect(page.locator('#profileBox')).toBeVisible();
+  await expect(page.locator('#toasts .toast').last()).toContainText('С возвращением');
+  await expect(page.locator('#toasts .toast').last()).not.toContainText(/приветствен|бонус активирован/i);
+});
+
 test('P0 registration baseline: capture guest, auth and both profile activation states', async ({ page }, testInfo) => {
   await page.route('**/api/orders/mine', (route) => route.fulfill({
     status: 200,
@@ -621,9 +661,13 @@ test('P0 registration baseline: capture guest, auth and both profile activation 
       await page.waitForFunction(() =>
         typeof window.openAuth === 'function' &&
         typeof window.renderProfile === 'function' &&
-        typeof window.renderVerifyNote === 'function'
+        typeof window.renderVerifyNote === 'function' &&
+        typeof window.__profileMeReady === 'function'
       );
-      await page.evaluate(() => document.fonts.ready);
+      await page.evaluate(() => {
+        window.__profileMeReady();
+        return document.fonts.ready;
+      });
 
       const prefix = 'p0-base-' + brand + '-' + viewport.width + 'x' + viewport.height;
       await testInfo.attach(prefix + '-guest.png', {
@@ -761,7 +805,8 @@ test('P0: phone registration creates a clearly pending profile for both brands',
     await expect(page.locator('#actCode')).toBeVisible();
     await expect(page.locator('#actBtn')).toBeVisible();
     if (brand === 'delivery') {
-      await expect(page.locator('#verifyNote')).toContainText('Заказы станут доступны после активации');
+      await expect(page.locator('#verifyNote')).toContainText('заказы недоступны');
+      await expect(page.locator('#verifyNote')).toContainText('После активации можно будет перейти в меню');
     } else {
       await expect(page.locator('#verifyNote')).toContainText('10 штампов');
     }
@@ -885,7 +930,7 @@ test('P0: Friday activation reports a free-delivery code only when the server re
 
   await expect(page.locator('#verifyNote')).toBeHidden();
   await expect(page.locator('#profileOrdersSection')).toBeVisible();
-  await expect(page.locator('#toasts .toast').last()).toContainText('персональный код бесплатной первой доставки не назначен');
+  await expect(page.locator('#toasts .toast').last()).toContainText(/персональный код бесплатной первой доставки не назначен/i);
   await expect(page.locator('#toasts .toast').last()).not.toContainText('бесплатная доставка доступна');
 });
 
@@ -930,7 +975,8 @@ test('P0: Friday welcome delivery is explained as automatically applied only wit
   await page.locator('#consentBox').check();
   await page.locator('#regBtn').click();
 
-  await expect(page.locator('#toasts .toast').last()).toContainText('бесплатная первая доставка доступна');
+  await expect(page.locator('#toasts .toast').last()).toContainText(/бесплатная первая доставка доступна/i);
   await expect(page.locator('#toasts .toast').last()).toContainText('корзина применит');
-  await expect(page.locator('#profileOrdersSection')).toBeVisible();
+  await expect(page.locator('#deliveryView')).toBeVisible();
+  await expect(page.locator('#profileOrdersSection')).toBeHidden();
 });

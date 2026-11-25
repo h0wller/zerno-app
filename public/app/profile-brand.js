@@ -102,6 +102,8 @@ window.renderVerifyNote=function(){
     n.id = 'verifyNote';
     n.className = 'profile-brand-section profile-activation-status';
     n.setAttribute('aria-label', 'Статус активации профиля');
+    n.setAttribute('role', 'status');
+    n.setAttribute('aria-live', 'polite');
     profile.insertBefore(n, profile.querySelector('#profileCoffeeSection, #profileOrdersSection') || null);
   }
 
