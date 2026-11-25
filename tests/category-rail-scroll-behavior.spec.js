@@ -89,6 +89,16 @@ for (const brand of BRANDS) {
       contentType: 'image/png',
     });
 
+    // Sub-threshold finger jitter in either direction must leave the rail visible.
+    await scrollTo(4);
+    await expect(rail).not.toHaveClass(/is-scroll-fading/);
+    await scrollTo(7);
+    await expect(rail).not.toHaveClass(/is-scroll-fading/);
+    await scrollTo(4);
+    await expect(rail).not.toHaveClass(/is-scroll-fading/);
+    await scrollTo(0);
+    await expect(rail).not.toHaveClass(/is-scroll-fading/);
+
     const documentHeight = await page.evaluate(() => document.documentElement.scrollHeight);
     await scrollTo(700);
     await expect(rail).toHaveClass(/is-scroll-fading/);
@@ -148,6 +158,63 @@ for (const brand of BRANDS) {
 }
 
 
+
+test('brand transitions retain the scroll state and reveal the newly active rail on upward scroll', async ({ page }, testInfo) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.addInitScript(() => sessionStorage.setItem('splashDone', '1'));
+  await page.goto('/?brand=coffee', { waitUntil: 'domcontentloaded' });
+  const coffeeRail = page.locator('#rail');
+  const deliveryRail = page.locator('#deliveryRail');
+  await expect(coffeeRail).toBeVisible({ timeout: 15000 });
+
+  await page.evaluate(() => window.scrollTo(0, 700));
+  await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(700);
+  await expect(coffeeRail).toHaveClass(/is-scroll-fading/);
+
+  await page.locator('#venueToggle').click();
+  await page.locator('#brandSeg [data-brand="delivery"]').click();
+  await expect(page.locator('html')).toHaveAttribute('data-brand', 'delivery');
+  await expect(deliveryRail).toHaveClass(/is-scroll-fading/);
+  await testInfo.attach('delivery-rail-hidden-after-brand-transition-390x844', {
+    body: await page.screenshot({ animations: 'disabled' }),
+    contentType: 'image/png',
+  });
+
+  await page.locator('#venueToggle').click();
+  await page.locator('#brandSeg [data-brand="coffee"]').click();
+  await expect(page.locator('html')).toHaveAttribute('data-brand', 'coffee');
+  await expect(coffeeRail).toHaveClass(/is-scroll-fading/);
+
+  await page.evaluate(() => window.scrollTo(0, 680));
+  await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(680);
+  await expect(coffeeRail).not.toHaveClass(/is-scroll-fading/);
+  await expect.poll(() => coffeeRail.evaluate(el => Number.parseFloat(getComputedStyle(el).opacity)))
+    .toBeGreaterThan(0.9);
+  await testInfo.attach('coffee-rail-visible-after-brand-roundtrip-scroll-up-390x844', {
+    body: await page.screenshot({ animations: 'disabled' }),
+    contentType: 'image/png',
+  });
+});
+
+for (const brand of BRANDS) {
+  test(`${brand.brand}: desktop sidebar remains visible in both scroll directions`, async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.addInitScript(() => sessionStorage.setItem('splashDone', '1'));
+    await page.goto('/?brand=' + brand.brand, { waitUntil: 'domcontentloaded' });
+    const rail = page.locator(brand.rail);
+    await expect(rail).toBeVisible({ timeout: 15000 });
+
+    await page.evaluate(() => window.scrollTo(0, 700));
+    await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(700);
+    await expect(rail).not.toHaveClass(/is-scroll-fading/);
+    await page.evaluate(() => window.scrollTo(0, 500));
+    await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(500);
+    await expect(rail).not.toHaveClass(/is-scroll-fading/);
+    await expect.poll(() => page.evaluate(() =>
+      document.documentElement.scrollWidth <= window.innerWidth
+    )).toBe(true);
+  });
+}
 
 for (const brand of BRANDS) {
   test(`${brand.brand}: reduced motion preserves direction behavior without rail animation`, async ({ page }) => {
