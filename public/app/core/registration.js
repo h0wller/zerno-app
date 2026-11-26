@@ -5,6 +5,16 @@ import { openTelegramLink } from './telegram-link.js';
   'use strict';
 
 
+  function getRegistrationReturnPath() {
+    if (typeof window.getAppReturnPath === 'function') return window.getAppReturnPath(window.brand);
+    var fallback = new URL(window.location.href);
+    ['auth_token', 'access_token', 'token', 'pollToken', 'ref'].forEach(function (key) {
+      fallback.searchParams.delete(key);
+    });
+    fallback.searchParams.set('brand', window.brand === 'delivery' ? 'delivery' : 'coffee');
+    return fallback.pathname + fallback.search + fallback.hash;
+  }
+
   function getRegSource() {
     try { return localStorage.getItem('zt_src') === 'qr' ? 'qr' : ''; } catch (_) { return ''; }
   }
