@@ -281,9 +281,10 @@ export function createTgRouter({ appKb }) {
       }
       otpStore.set('regchat:' + chatId, {
         token, pollToken: st.pollToken || null, phone: st.phone,
-        name: st.name || '', expires: Date.now() + 10 * 60 * 1000
+        name: st.name || '', pin: st.pin || '', returnUrl: st.returnUrl || null,
+        expires: Date.now() + 10 * 60 * 1000
       });
-      await tgSend(chatId, `Подтверждаю номер ${fmtPhone(st.phone)} — нажмите кнопку ниже 👇`, appKb());
+      await tgSend(chatId, 'Чтобы завершить регистрацию, поделитесь своим номером кнопкой ниже 👇', appKb());
       return;
     }
 
@@ -418,7 +419,7 @@ export function createTgRouter({ appKb }) {
           } else {
             const tgUserName = [u.message.from?.first_name, u.message.from?.last_name].filter(Boolean).join(' ');
             const newName = pend.name || tgUserName || 'Гость';
-            const r = createCustomer(newName, contactPhone, '');
+            const r = createCustomer(newName, contactPhone, pend.pin || '');
             if (!r.err && r.customer) {
               const linked = linkTelegram(db, r.customer.id, String(chatId));
               if (!linked.ok) {
@@ -457,7 +458,12 @@ export function createTgRouter({ appKb }) {
           otpStore.delete('regtg:' + pend.token);
 
           await tgSend(chatId, '👍 Номер подтверждён', { remove_keyboard: true });
-          const authQuery = sessionToken ? '?auth_token=' + encodeURIComponent(sessionToken) : '?src=tg';
+          // Browser registration is completed through the one-time poll; never put its session token into the return URL.
+          const authQuery = pend.pollToken ? '' : (sessionToken ? '?auth_token=' + encodeURIComponent(sessionToken) : '?src=tg');
+          const returnButton = pend.returnUrl
+            ? [[{ text: 'Вернуться в приложение', url: pend.returnUrl }]]
+            : [];
+          const appQuery = authQuery || '?src=tg';
 
           const benefitDetails = finalCust
             ? telegramBenefitsMessage(finalCust)
@@ -465,11 +471,14 @@ export function createTgRouter({ appKb }) {
           await tgSend(chatId,
             '🎉 <b>Профиль готов, ' + escapeTelegramHtml(custObj ? custObj.name : '') + '!</b>\n\n' +
             formatWelcomeBonusMessage(bonusOutcome) + '\n\n' + benefitDetails +
-            '\n\nВ браузере вход выполнился автоматически. Кнопки ниже открывают нужный раздел 👇',
+            (pend.returnUrl
+              ? '\n\nРегистрация завершена. Вернитесь в приложение по кнопке ниже.'
+              : '\n\nВ браузере вход выполнился автоматически. Кнопки ниже открывают нужный раздел 👇'),
             {
               inline_keyboard: [
-                [{ text: '☕ Открыть карту и QR', web_app: { url: APP_URL + authQuery + '&brand=coffee&tab=bonus' } }],
-                [{ text: '🍕 Открыть «Пятницу»', web_app: { url: APP_URL + authQuery + '&brand=delivery' } }],
+                ...returnButton,
+                [{ text: '☕ Открыть карту и QR', web_app: { url: APP_URL + appQuery + '&brand=coffee&tab=bonus' } }],
+                [{ text: '🍕 Открыть «Пятницу»', web_app: { url: APP_URL + appQuery + '&brand=delivery' } }],
               ]
             }
           );
