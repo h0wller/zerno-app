@@ -239,7 +239,7 @@ window.renderVerifyNote=function(){
         '<p class="profile-activation-telegram-status" id="actTgStatus" data-state="' + telegramActivationState.state + '" role="status" aria-live="polite" hidden></p>' +
       '</div>' +
       '<details class="profile-activation-details"' + (activationDetailsWasOpen ? ' open' : '') + '>' +
-        '<summary><span>Вы в заведении? Код кассира</span><span class="profile-activation-chevron" aria-hidden="true">⌄</span></summary>' +
+        '<summary><span>Активировать через кассира</span><span class="profile-activation-chevron" aria-hidden="true">⌄</span></summary>' +
         '<div class="profile-activation-details-content">' +
           '<p>Получите 4-значный код у кассира и введите его здесь.</p>' +
           '<div class="profile-activation-row">' +
