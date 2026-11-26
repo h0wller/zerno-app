@@ -230,10 +230,10 @@ export function checkAuditSentinels({ openapi, sources }) {
   const diagnostics = [];
   const findings = AUDIT_SENTINELS.map((item) => ({ ...item, status: 'known-f003-baseline' }));
   const schema = (name) => openapi.components?.schemas?.[name]?.properties?.id?.type;
-  if (!/uid\(['"]u['"]\)/.test(sources['server/domain/customers.js'] || '')) {
+  if (!(sources['server/domain/customers.js'] || '').includes("uid('u')")) {
     addSentinel(diagnostics, 'C-01', 'server/domain/customers.js', 'RESPONSE', 'Customer.id', "uid('u') prefixed string ID", 'audited ID generator not found');
   }
-  if (!/uid\(['"]p['"]\)/.test(sources['server.js'] || '')) {
+  if (!(sources['server.js'] || '').includes("uid('p')")) {
     addSentinel(diagnostics, 'C-02', 'server.js', 'RESPONSE', 'MenuItem.id', "uid('p') prefixed string ID", 'audited menu ID generator not found');
   }
   addSentinel(diagnostics, 'C-01', 'docs/openapi.yaml', 'RESPONSE', 'Customer.id', 'integer', schema('Customer'));
