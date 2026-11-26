@@ -92,7 +92,7 @@
 | `core/auth-session.js` | Установка/сброс клиентской сессии, монотонная ревизия `window.__authSessionRevision` для защиты асинхронных auth-flow от устаревших ответов, сброс `__ztAuthDead`, безопасная запись localStorage, повторная привязка сохранённого FCM token после входа | `window.setUser`; `window.__authSessionRevision`; `ztBus` event `auth:user-changed` |
 | `core/auth.js` | Единственный владелец `#authModal` (open/close/swap и сброс временного состояния), вход по PIN/OTP, `#profileTopBtn`, выход и удаление аккаунта; отдельный входной OTP не связан с регистрационным SMS UI | `window.openAuth`, `window.closeAuth`, `window.authSwap` |
 | `core/auth-pin.js` | Единственный владелец `#setPinModal`: задание PIN для старого профиля и смена PIN | `window.openSetPin`, `window.closeSetPin` |
-| `core/registration.js` | Создание профиля и согласие; web/PWA создаёт ожидающий активации профиль без SMS-кнопки/поля; Mini App сохраняет входящий signed `initData` flow; клиентская активация существующего pending-профиля находится в `profile-brand.js` | — |
+| `core/registration.js` | Создание профиля и согласие; web/PWA имеет явный вход через Telegram с one-time `check-reg` polling и возвратом на исходный бренд/профиль; обычное создание профиля оставляет pending-активацию кассиру; регистрационный SMS UI отсутствует; signed `initData` flow Mini App сохранён | — |
 | `core/staffpin.js` | `#pinModal` (код сотрудника), `tryActivate`, делегирование submit форм | `window.openPin`, `window.closePin`, `window.tryActivate` |
 
 ## 8. Персонал: кассир и сканер
