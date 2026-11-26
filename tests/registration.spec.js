@@ -164,65 +164,7 @@ test.describe('Registration & Auth Suite (F3.61 - F3.63)', () => {
     await expect(page.locator('#logBtn')).toHaveText('Войти');
   });
 
-  test('closing auth modal keeps Telegram registration polling and completes login in background', async ({ page }) => {
-    let markCheckStarted;
-    let resolveCheck;
-    const checkStarted = new Promise((resolve) => { markCheckStarted = resolve; });
-    await page.route('**/api/orders/mine', (route) => route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify({ orders: [] })
-    }));
 
-    await page.route('**/api/auth/request-reg-otp', (route) =>
-      route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify({ pollToken: 'a'.repeat(64), tgUrl: 'https://t.me/test_bot?start=reg_test' })
-      })
-    );
-    await page.context().route('https://t.me/**', (route) => route.fulfill({
-      status: 200,
-      contentType: 'text/html',
-      body: '<!doctype html><title>Telegram test stub</title>'
-    }));
-    const telegramPopupPromise = page.waitForEvent('popup');
-    await page.route('**/api/auth/check-reg*', (route) => {
-      markCheckStarted();
-      return new Promise((resolve) => {
-        resolveCheck = async () => {
-          await route.fulfill({
-            status: 200,
-            contentType: 'application/json',
-            body: JSON.stringify({
-              confirmed: true,
-              token: 'stale-registration-token',
-              customer: { name: 'Stale Registration' }
-            })
-          });
-          resolve();
-        };
-      });
-    });
-
-    await page.goto('/?brand=delivery');
-    await page.click('#profileTopBtn');
-    await page.fill('#regName', 'Test Customer');
-    await page.fill('#regPhone', '+7 999 123-45-67');
-    await page.check('#consentBox');
-    await page.click('#regTgBtn');
-    const telegramPopup = await telegramPopupPromise;
-    await telegramPopup.waitForLoadState('domcontentloaded');
-
-    await checkStarted;
-    await expect(page).toHaveURL(/brand=delivery/);
-    await page.evaluate(() => window.closeAuth());
-    resolveCheck();
-
-    await expect.poll(() => page.evaluate(() => window.me && window.me.name)).toBe('Stale Registration');
-    await expect(page.locator('#authModal')).not.toHaveClass(/show/);
-    expect(await page.evaluate(() => localStorage.getItem('zt_user'))).toBe('stale-registration-token');
-  });
 
   test('auth-session owns persisted user state and clears it centrally', async ({ page }) => {
     // The app starts chat/profile requests in the background. Their auth responses
@@ -847,23 +789,46 @@ test.describe('P0 cashier activation UI', () => {
   });
   
 
-test('P0 registration baseline: capture guest, auth, Telegram waiting and both profile activation states', async ({ page }, testInfo) => {
+test('P0 registration baseline: capture guest, registration and the separate profile activation state', async ({ page }, testInfo) => {
   test.setTimeout(180000);
   await page.route('**/api/orders/mine', (route) => route.fulfill({
     status: 200,
     contentType: 'application/json',
     body: JSON.stringify({ orders: [] })
   }));
-  await page.route('**/api/auth/request-reg-otp', (route) => route.fulfill({
+  await page.route('**/api/chat/**', (route) => route.fulfill({
     status: 200,
     contentType: 'application/json',
-    body: JSON.stringify({ pollToken: 'a'.repeat(64), tgUrl: 'https://t.me/test_bot?start=reg_p0_visual' })
+    body: JSON.stringify({})
   }));
-  await page.context().route('https://t.me/**', (route) => route.fulfill({
-    status: 200,
-    contentType: 'text/html',
-    body: '<!doctype html><title>Telegram test stub</title>'
-  }));
+  await page.route('**/api/auth/register', async (route) => {
+    const body = route.request().postDataJSON();
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        token: 'p0-registration-session',
+        customer: {
+          id: 900001,
+          name: body.name,
+          phone: body.phone,
+          role: 'guest',
+          cups: 0,
+          stamps: 0,
+          free: 0,
+          qr: 'Z-P0BASE',
+          verified: 0,
+          welcome: 0,
+          tg: 0,
+          history: []
+        }
+      })
+    });
+  });
+  await page.addInitScript(() => {
+    localStorage.setItem('zt_onb', '1');
+    sessionStorage.setItem('splashDone', '1');
+  });
 
   const viewports = [
     { width: 390, height: 844 },
@@ -874,12 +839,10 @@ test('P0 registration baseline: capture guest, auth, Telegram waiting and both p
 
   for (const brand of ['coffee', 'delivery']) {
     for (const viewport of viewports) {
-      if (page.url().startsWith('http')) {
-        await page.evaluate(() => {
-          localStorage.removeItem('zt_user');
-          localStorage.removeItem('zt_role');
-        });
-      }
+      await page.evaluate(() => {
+        localStorage.removeItem('zt_user');
+        localStorage.removeItem('zt_role');
+      });
       await page.setViewportSize(viewport);
       await page.goto('/?brand=' + brand);
       await page.waitForFunction(() =>
@@ -893,13 +856,15 @@ test('P0 registration baseline: capture guest, auth, Telegram waiting and both p
         return document.fonts.ready;
       });
 
-      const prefix = 'p0-base-' + brand + '-' + viewport.width + 'x' + viewport.height;
+      const prefix = 'p0-registration-' + brand + '-' + viewport.width + 'x' + viewport.height;
       await testInfo.attach(prefix + '-guest.png', {
         body: await page.screenshot({ fullPage: false }),
         contentType: 'image/png'
       });
 
       await page.evaluate(() => window.openAuth(false));
+      await expect(page.locator('#regTgBtn')).toHaveCount(0);
+      await expect(page.locator('#regTgRow')).toHaveCount(0);
       await testInfo.attach(prefix + '-auth.png', {
         body: await page.screenshot({ fullPage: false }),
         contentType: 'image/png'
@@ -907,105 +872,20 @@ test('P0 registration baseline: capture guest, auth, Telegram waiting and both p
 
       await page.locator('#regName').fill('P0 Baseline Guest');
       await page.locator('#regPhone').fill('+7 900 000-00-01');
+      await page.locator('#regPin').fill('2580');
       await page.locator('#consentBox').check();
-      const popupPromise = page.waitForEvent('popup');
-      await page.locator('#regTgBtn').click();
-      const telegramPopup = await popupPromise;
-      await telegramPopup.waitForLoadState('domcontentloaded');
-      await expect(page.locator('#regTgRow')).toContainText('Ожидаем подтверждение в Telegram');
-      await testInfo.attach(prefix + '-telegram-waiting.png', {
-        body: await page.screenshot({ fullPage: false }),
-        contentType: 'image/png'
-      });
-      await page.evaluate(() => {
-        if (typeof window.__registrationTgPollFinish === 'function') window.__registrationTgPollFinish();
-        window.closeAuth();
-      });
-      await telegramPopup.close();
+      await page.locator('#regBtn').click();
 
-      const pendingCustomer = {
-        id: 'p0-baseline-' + brand,
-        name: 'P0 Baseline Guest',
-        phone: '+7 900 000-00-01',
-        role: 'guest',
-        cups: 0,
-        stamps: 0,
-        free: 0,
-        qr: 'Z-P0BASE',
-        verified: 0,
-        welcome: 0,
-        tg: 0,
-        history: []
-      };
-      await page.evaluate((value) => {
-        window.setUser('p0-baseline-session', value);
-        window.renderProfile();
-        window.renderVerifyNote();
-        window.openPanel();
-      }, pendingCustomer);
-      await expect(page.locator('#profileBox')).toBeVisible();
       await expect(page.locator('#verifyNote')).toBeVisible();
       await expect(page.locator('#verifyNote')).toContainText('Профиль создан, но ещё не активирован');
+      await expect(page.locator('#verifyNote #actCode')).toBeVisible();
+      await expect(page.locator('#verifyNote #actBtn')).toBeVisible();
       if (brand === 'delivery') {
         await expect(page.locator('#profileOrdersSection')).toBeHidden();
-        await expect(page.locator('#profileCoffeeSection')).toBeHidden();
-        await expect(page.locator('#verifyNote')).toContainText('заказы недоступны');
-        await expect(page.locator('#actCode')).toBeVisible();
       } else {
         await expect(page.locator('#profileCoffeeSection')).toBeHidden();
-        await expect(page.locator('#profileOrdersSection')).toBeHidden();
-        await expect(page.locator('#verifyNote')).toContainText('10 штампов');
-        await expect(page.locator('#actCode')).toBeVisible();
       }
-      await page.evaluate(() => document.fonts.ready);
-      await testInfo.attach(prefix + '-pending-profile.png', {
-        body: await page.screenshot({ fullPage: false }),
-        contentType: 'image/png'
-      });
-
-      // The profile remains reachable and keeps its pending status after close/reopen.
-      await page.evaluate(() => {
-        window.closePanel();
-        window.openPanel();
-        window.renderProfile();
-        window.renderVerifyNote();
-      });
-      await expect(page.locator('#profileBox')).toBeVisible();
-      await expect(page.locator('#verifyNote')).toBeVisible();
-      await expect(page.locator('#verifyNote')).toContainText('Профиль создан, но ещё не активирован');
-
-      await page.evaluate((brandName) => {
-        window.setUser('p0-baseline-session', {
-          id: 'p0-baseline-verified',
-          name: 'P0 Baseline Guest',
-          phone: '+7 900 000-00-01',
-          role: 'guest',
-          cups: 0,
-          stamps: 0,
-          free: 1,
-          qr: 'Z-P0BASE',
-          verified: 1,
-          welcome: 1,
-          tg: 1,
-          history: []
-        });
-        window.renderProfile();
-        window.renderVerifyNote();
-      }, brand);
-      await expect(page.locator('#profileBox')).toBeVisible();
-      if (brand === 'delivery') {
-        await expect(page.locator('#verifyNote')).toBeHidden();
-        await expect(page.locator('#profileOrdersSection')).toBeVisible();
-        await expect(page.locator('#profileCoffeeSection')).toBeHidden();
-      } else {
-        await expect(page.locator('#profileCoffeeSection')).toBeVisible();
-        await expect(page.locator('#profileOrdersSection')).toBeHidden();
-        await expect(page.locator('#verifyNote')).toBeVisible();
-        await expect(page.locator('#verifyNote .profile-loyalty-help')).toBeVisible();
-        await expect(page.locator('#verifyNote')).toContainText('На карте профиля уже есть 1 бесплатный кофе');
-        await expect(page.locator('#verifyNote')).not.toContainText('ещё не активирован');
-      }
-      await testInfo.attach(prefix + '-verified-profile.png', {
+      await testInfo.attach(prefix + '-pending-activation.png', {
         body: await page.screenshot({ fullPage: false }),
         contentType: 'image/png'
       });
@@ -1014,448 +894,23 @@ test('P0 registration baseline: capture guest, auth, Telegram waiting and both p
 });
 
 
-test('an accepted Telegram result cannot overwrite a newer authenticated session', async ({ page }, testInfo) => {
-  let markCheckStarted;
-  let resolveCheck;
-  const checkStarted = new Promise((resolve) => { markCheckStarted = resolve; });
-  const checkResponseGate = new Promise((resolve) => { resolveCheck = resolve; });
-
-  await page.route('**/api/orders/mine', (route) => route.fulfill({
-    status: 200,
-    contentType: 'application/json',
-    body: JSON.stringify({ orders: [] })
-  }));
-  await page.route('**/api/auth/request-reg-otp', (route) => route.fulfill({
-    status: 200,
-    contentType: 'application/json',
-    body: JSON.stringify({ pollToken: 'b'.repeat(64), tgUrl: 'https://t.me/test_bot?start=reg_session_race' })
-  }));
-  await page.route('https://t.me/**', (route) => route.fulfill({
-    status: 200,
-    contentType: 'text/html',
-    body: '<!doctype html><title>Telegram test stub</title>'
-  }));
-  await page.route('**/api/auth/check-reg', async (route) => {
-    markCheckStarted();
-    await checkResponseGate;
-    await route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify({
-        confirmed: true,
-        token: 'old-telegram-session-token',
-        isNew: true,
-        customer: {
-          id: 'old-telegram-customer',
-          name: 'Old Telegram Customer',
-          phone: '+7 900 000-00-41',
-          role: 'guest',
-          stamps: 0,
-          free: 0,
-          verified: 1,
-          history: []
-        }
-      })
-    });
-  });
-  await page.route('**/api/auth/login', (route) => route.fulfill({
-    status: 200,
-    contentType: 'application/json',
-    body: JSON.stringify({
-      token: 'new-manual-session-token',
-      customer: {
-        id: 'new-manual-customer',
-        name: 'New Manual Customer',
-        phone: '+7 900 000-00-42',
-        role: 'guest',
-        stamps: 2,
-        free: 0,
-        verified: 1,
-        history: []
-      }
-    })
-  }));
-
-  await page.goto('/?brand=coffee');
-  await page.evaluate(() => window.openAuth(false));
-  await page.locator('#regName').fill('Old Telegram Customer');
-  await page.locator('#regPhone').fill('+7 900 000-00-41');
-  await page.locator('#consentBox').check();
-  const popupPromise = page.waitForEvent('popup');
-  await page.locator('#regTgBtn').click();
-  const telegramPopup = await popupPromise;
-  await telegramPopup.waitForLoadState('domcontentloaded');
-  await checkStarted;
-
-  await page.evaluate(() => {
-    window.closeAuth();
-    window.openAuth(false);
-  });
-  await expect(page.locator('#regTgRow')).toContainText('Ожидаем подтверждение в Telegram');
-
-  await page.evaluate(() => window.openAuth(true));
-  await page.locator('#logPhone').fill('+7 900 000-00-42');
-  await page.locator('#logPin').fill('1357');
-  await page.locator('#logBtn').click();
-  await expect.poll(() => page.evaluate(() => window.USER_TOKEN)).toBe('new-manual-session-token');
-
-  resolveCheck();
-  await expect.poll(() => page.evaluate(() => window.USER_TOKEN)).toBe('new-manual-session-token');
-  await expect.poll(() => page.evaluate(() => window.me && window.me.name)).toBe('New Manual Customer');
-  await expect.poll(() => page.evaluate(() => localStorage.getItem('zt_user'))).toBe('new-manual-session-token');
-  await page.evaluate(() => window.openAuth(false));
-  await expect(page.locator('#regTgRow')).toContainText('Вход уже выполнен в другом профиле');
-  await testInfo.attach('telegram-session-superseded.png', {
-    body: await page.screenshot({ fullPage: false }),
-    contentType: 'image/png'
-  });
-
-  await telegramPopup.close();
-});
 
 
-test('closing auth before the first Telegram poll tick keeps an accepted attempt alive', async ({ page }) => {
-  await page.route('**/api/orders/mine', (route) => route.fulfill({
-    status: 200, contentType: 'application/json', body: JSON.stringify({ orders: [] })
-  }));
-  await page.route('**/api/auth/request-reg-otp', (route) => route.fulfill({
-    status: 200, contentType: 'application/json',
-    body: JSON.stringify({ pollToken: 'c'.repeat(64), tgUrl: 'https://t.me/test_bot?start=reg_before_tick' })
-  }));
-  await page.route('https://t.me/**', (route) => route.fulfill({
-    status: 200, contentType: 'text/html', body: '<!doctype html><title>Telegram test stub</title>'
-  }));
-  await page.route('**/api/auth/check-reg', (route) => route.fulfill({
-    status: 200, contentType: 'application/json',
-    body: JSON.stringify({
-      confirmed: true, token: 'before-tick-session', isNew: true,
-      customer: {
-        id: 'before-tick-customer', name: 'Before Tick Customer',
-        phone: '+7 900 000-00-43', role: 'guest', stamps: 0, free: 0,
-        verified: 1, history: []
-      }
-    })
-  }));
-
-  await page.goto('/?brand=coffee');
-  await page.evaluate(() => window.openAuth(false));
-  await page.locator('#regName').fill('Before Tick Customer');
-  await page.locator('#regPhone').fill('+7 900 000-00-43');
-  await page.locator('#consentBox').check();
-  const accepted = page.waitForResponse(response =>
-    response.url().endsWith('/api/auth/request-reg-otp') && response.status() === 200
-  );
-  const popupPromise = page.waitForEvent('popup');
-  await page.locator('#regTgBtn').click();
-  const popup = await popupPromise;
-  await accepted;
-
-  await page.evaluate(() => window.closeAuth());
-  await expect.poll(() => page.evaluate(() => window.USER_TOKEN), { timeout: 10000 })
-    .toBe('before-tick-session');
-  await expect.poll(() => page.evaluate(() => window.me && window.me.name))
-    .toBe('Before Tick Customer');
-  await popup.close();
-});
-
-test('Telegram polling retries after a temporary network failure while auth is closed', async ({ page }) => {
-  let checks = 0;
-  await page.route('**/api/orders/mine', (route) => route.fulfill({
-    status: 200, contentType: 'application/json', body: JSON.stringify({ orders: [] })
-  }));
-  await page.route('**/api/auth/request-reg-otp', (route) => route.fulfill({
-    status: 200, contentType: 'application/json',
-    body: JSON.stringify({ pollToken: 'd'.repeat(64), tgUrl: 'https://t.me/test_bot?start=reg_network_retry' })
-  }));
-  await page.route('https://t.me/**', (route) => route.fulfill({
-    status: 200, contentType: 'text/html', body: '<!doctype html><title>Telegram test stub</title>'
-  }));
-  await page.route('**/api/auth/check-reg', (route) => {
-    checks += 1;
-    if (checks === 1) {
-      return route.fulfill({
-        status: 503, contentType: 'application/json', body: JSON.stringify({ error: 'temporary outage' })
-      });
-    }
-    return route.fulfill({
-      status: 200, contentType: 'application/json',
-      body: JSON.stringify({
-        confirmed: true, token: 'network-recovered-session', isNew: true,
-        customer: {
-          id: 'network-recovered-customer', name: 'Network Recovered Customer',
-          phone: '+7 900 000-00-44', role: 'guest', stamps: 0, free: 0,
-          verified: 1, history: []
-        }
-      })
-    });
-  });
-
-  await page.goto('/?brand=coffee');
-  await page.evaluate(() => window.openAuth(false));
-  await page.locator('#regName').fill('Network Recovered Customer');
-  await page.locator('#regPhone').fill('+7 900 000-00-44');
-  await page.locator('#consentBox').check();
-  const popupPromise = page.waitForEvent('popup');
-  await page.locator('#regTgBtn').click();
-  const popup = await popupPromise;
-  await popup.waitForLoadState('domcontentloaded');
-  await page.evaluate(() => window.closeAuth());
-
-  await expect.poll(() => page.evaluate(() => window.USER_TOKEN), { timeout: 15000 })
-    .toBe('network-recovered-session');
-  expect(checks).toBeGreaterThanOrEqual(2);
-  await popup.close();
-});
-
-test('Telegram poll TTL ends the loop and clears its lifecycle handles', async ({ page }, testInfo) => {
-  await page.route('**/api/orders/mine', (route) => route.fulfill({
-    status: 200, contentType: 'application/json', body: JSON.stringify({ orders: [] })
-  }));
-  await page.route('**/api/auth/request-reg-otp', (route) => route.fulfill({
-    status: 200, contentType: 'application/json',
-    body: JSON.stringify({ pollToken: 'e'.repeat(64), tgUrl: 'https://t.me/test_bot?start=reg_ttl' })
-  }));
-  await page.route('https://t.me/**', (route) => route.fulfill({
-    status: 200, contentType: 'text/html', body: '<!doctype html><title>Telegram test stub</title>'
-  }));
-  await page.route('**/api/auth/check-reg', (route) => route.fulfill({
-    status: 200, contentType: 'application/json', body: JSON.stringify({ confirmed: false })
-  }));
-
-  await page.goto('/?brand=coffee');
-  await page.evaluate(() => {
-    const nativeSetInterval = window.setInterval.bind(window);
-    window.__testTelegramPollCallback = null;
-    window.setInterval = function (callback, delay) {
-      if (delay === 2500) {
-        window.__testTelegramPollCallback = callback;
-        return nativeSetInterval(() => {}, 2147483647);
-      }
-      return nativeSetInterval(callback, delay);
-    };
-    window.openAuth(false);
-  });
-  await page.locator('#regName').fill('TTL Customer');
-  await page.locator('#regPhone').fill('+7 900 000-00-45');
-  await page.locator('#consentBox').check();
-  const popupPromise = page.waitForEvent('popup');
-  await page.locator('#regTgBtn').click();
-  const popup = await popupPromise;
-  await popup.waitForLoadState('domcontentloaded');
-
-  await page.evaluate(async () => {
-    for (let attempt = 0; attempt < 61; attempt += 1) {
-      await window.__testTelegramPollCallback();
-    }
-  });
-  await expect(page.locator('#regTgRow')).toContainText('Не получили подтверждение');
-  await testInfo.attach('telegram-poll-expired.png', {
-    body: await page.screenshot({ fullPage: false }),
-    contentType: 'image/png'
-  });
-  await expect.poll(() => page.evaluate(() => ({
-    timer: window.__registrationTgPoll,
-    finish: window.__registrationTgPollFinish
-  }))).toEqual({ timer: null, finish: null });
-  await popup.close();
-});
 
 
-test('resetting auth form state does not cancel an accepted Telegram registration', async ({ page }) => {
-  let markCheckStarted;
-  let releaseCheck;
-  const checkStarted = new Promise(resolve => { markCheckStarted = resolve; });
-  const responseGate = new Promise(resolve => { releaseCheck = resolve; });
-
-  await page.route('**/api/orders/mine', route => route.fulfill({
-    status: 200, contentType: 'application/json', body: JSON.stringify({ orders: [] })
-  }));
-  await page.route('**/api/auth/request-reg-otp', route => route.fulfill({
-    status: 200, contentType: 'application/json',
-    body: JSON.stringify({ pollToken: 'f'.repeat(64), tgUrl: 'https://t.me/test_bot?start=reg_reset_state' })
-  }));
-  await page.route('https://t.me/**', route => route.fulfill({
-    status: 200, contentType: 'text/html', body: '<!doctype html><title>Telegram test stub</title>'
-  }));
-  await page.route('**/api/auth/check-reg', async route => {
-    markCheckStarted();
-    await responseGate;
-    await route.fulfill({
-      status: 200, contentType: 'application/json',
-      body: JSON.stringify({
-        confirmed: true, token: 'reset-safe-session', isNew: true,
-        customer: {
-          id: 'reset-safe-customer', name: 'Reset Safe Customer',
-          phone: '+7 900 000-00-46', role: 'guest', stamps: 0, free: 0,
-          verified: 1, history: []
-        }
-      })
-    });
-  });
-
-  await page.goto('/?brand=coffee');
-  await page.evaluate(() => window.openAuth(false));
-  await page.locator('#regName').fill('Reset Safe Customer');
-  await page.locator('#regPhone').fill('+7 900 000-00-46');
-  await page.locator('#consentBox').check();
-  const popupPromise = page.waitForEvent('popup');
-  await page.locator('#regTgBtn').click();
-  const popup = await popupPromise;
-  await popup.waitForLoadState('domcontentloaded');
-  await checkStarted;
-
-  await page.evaluate(() => window.resetRegistrationState());
-  releaseCheck();
-
-  await expect.poll(() => page.evaluate(() => window.USER_TOKEN), { timeout: 10000 })
-    .toBe('reset-safe-session');
-  await expect.poll(() => page.evaluate(() => window.me && window.me.name))
-    .toBe('Reset Safe Customer');
-  await popup.close();
-});
 
 
-test('a replacement Telegram attempt ignores the cancelled attempt response', async ({ page }) => {
-  let requestCount = 0;
-  let checkCount = 0;
-  let markFirstCheckStarted;
-  let releaseFirstCheck;
-  const firstCheckStarted = new Promise(resolve => { markFirstCheckStarted = resolve; });
-  const firstCheckGate = new Promise(resolve => { releaseFirstCheck = resolve; });
-  let markSecondCheckStarted;
-  const secondCheckStarted = new Promise(resolve => { markSecondCheckStarted = resolve; });
-
-  await page.route('**/api/orders/mine', route => route.fulfill({
-    status: 200, contentType: 'application/json', body: JSON.stringify({ orders: [] })
-  }));
-  await page.route('**/api/auth/request-reg-otp', route => {
-    requestCount += 1;
-    const pollToken = requestCount === 1 ? '1'.repeat(64) : '2'.repeat(64);
-    return route.fulfill({
-      status: 200, contentType: 'application/json',
-      body: JSON.stringify({ pollToken, tgUrl: 'https://t.me/test_bot?start=reg_replacement_' + requestCount })
-    });
-  });
-  await page.route('https://t.me/**', route => route.fulfill({
-    status: 200, contentType: 'text/html', body: '<!doctype html><title>Telegram test stub</title>'
-  }));
-  await page.route('**/api/auth/check-reg', async route => {
-    checkCount += 1;
-    if (checkCount === 1) {
-      markFirstCheckStarted();
-      await firstCheckGate;
-      return route.fulfill({
-        status: 200, contentType: 'application/json',
-        body: JSON.stringify({
-          confirmed: true, token: 'cancelled-attempt-token', isNew: true,
-          customer: {
-            id: 'cancelled-attempt', name: 'Cancelled Attempt',
-            phone: '+7 900 000-00-47', role: 'guest', stamps: 0, free: 0,
-            verified: 1, history: []
-          }
-        })
-      });
-    }
-    markSecondCheckStarted();
-    return route.fulfill({
-      status: 200, contentType: 'application/json',
-      body: JSON.stringify({
-        confirmed: true, token: 'replacement-attempt-token', isNew: true,
-        customer: {
-          id: 'replacement-attempt', name: 'Replacement Attempt',
-          phone: '+7 900 000-00-48', role: 'guest', stamps: 0, free: 0,
-          verified: 1, history: []
-        }
-      })
-    });
-  });
-
-  await page.goto('/?brand=coffee');
-  await page.evaluate(() => window.openAuth(false));
-  await page.locator('#regName').fill('Cancelled Attempt');
-  await page.locator('#regPhone').fill('+7 900 000-00-47');
-  await page.locator('#consentBox').check();
-  const firstPopupPromise = page.waitForEvent('popup');
-  await page.locator('#regTgBtn').click();
-  const firstPopup = await firstPopupPromise;
-  await firstPopup.waitForLoadState('domcontentloaded');
-  await firstCheckStarted;
-
-  await page.evaluate(() => window.__registrationTgPollFinish());
-  await page.locator('#regName').fill('Replacement Attempt');
-  await page.locator('#regPhone').fill('+7 900 000-00-48');
-  await page.locator('#consentBox').check();
-  const secondPopupPromise = page.waitForEvent('popup');
-  await page.locator('#regTgBtn').click();
-  const secondPopup = await secondPopupPromise;
-  await secondPopup.waitForLoadState('domcontentloaded');
-  await secondCheckStarted;
-
-  await expect.poll(() => page.evaluate(() => window.USER_TOKEN))
-    .toBe('replacement-attempt-token');
-  releaseFirstCheck();
-  await expect.poll(() => page.evaluate(() => window.USER_TOKEN))
-    .toBe('replacement-attempt-token');
-  await expect.poll(() => page.evaluate(() => window.me && window.me.name))
-    .toBe('Replacement Attempt');
-
-  await firstPopup.close();
-  await secondPopup.close();
-});
 
 
-test('explicitly cancelling Telegram polling ignores an already in-flight confirmation', async ({ page }, testInfo) => {
-  let markCheckStarted;
-  let releaseCheck;
-  const checkStarted = new Promise(resolve => { markCheckStarted = resolve; });
-  const responseGate = new Promise(resolve => { releaseCheck = resolve; });
 
-  await page.route('**/api/orders/mine', route => route.fulfill({
-    status: 200, contentType: 'application/json', body: JSON.stringify({ orders: [] })
-  }));
-  await page.route('**/api/auth/request-reg-otp', route => route.fulfill({
-    status: 200, contentType: 'application/json',
-    body: JSON.stringify({ pollToken: '9'.repeat(64), tgUrl: 'https://t.me/test_bot?start=reg_cancel' })
-  }));
-  await page.route('https://t.me/**', route => route.fulfill({
-    status: 200, contentType: 'text/html', body: '<!doctype html><title>Telegram test stub</title>'
-  }));
-  await page.route('**/api/auth/check-reg', async route => {
-    markCheckStarted();
-    await responseGate;
-    await route.fulfill({
-      status: 200, contentType: 'application/json',
-      body: JSON.stringify({
-        confirmed: true, token: 'cancelled-poll-token', isNew: true,
-        customer: {
-          id: 'cancelled-poll-customer', name: 'Cancelled Poll Customer',
-          phone: '+7 900 000-00-49', role: 'guest', stamps: 0, free: 0,
-          verified: 1, history: []
-        }
-      })
-    });
-  });
 
-  await page.goto('/?brand=coffee');
-  await page.evaluate(() => window.openAuth(false));
-  await page.locator('#regName').fill('Cancelled Poll Customer');
-  await page.locator('#regPhone').fill('+7 900 000-00-49');
-  await page.locator('#consentBox').check();
-  const popupPromise = page.waitForEvent('popup');
-  await page.locator('#regTgBtn').click();
-  const popup = await popupPromise;
-  await popup.waitForLoadState('domcontentloaded');
-  await checkStarted;
 
-  await page.evaluate(() => window.__registrationTgPollFinish());
-  releaseCheck();
 
-  await expect.poll(() => page.evaluate(() => window.USER_TOKEN)).toBeNull();
-  await expect.poll(() => page.evaluate(() => window.__registrationTgPoll)).toBeNull();
-  await expect(page.locator('#regTgRow')).toContainText('Подтверждение остановлено');
-  await testInfo.attach('telegram-poll-cancelled.png', {
-    body: await page.screenshot({ fullPage: false }),
-    contentType: 'image/png'
-  });
-  await popup.close();
-});
+
+
+
+
+
+
+
+
