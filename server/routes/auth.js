@@ -160,7 +160,14 @@ authRouter.post('/api/auth/tg-link', (req, res) => {
 });
 
 authRouter.post('/api/auth/request-reg-otp', async (req, res) => {
+  if (req.body.consent !== 1 && req.body.consent !== true) {
+    return res.status(400).json({ error: 'Нужно согласие с политикой конфиденциальности' });
+  }
   const p = fmtPhone(req.body.phone || '');
+  const reqPin = String(req.body.pin || '').trim();
+  if (reqPin && !/^\\d{4}$/.test(reqPin)) return res.status(400).json({ error: 'PIN — ровно 4 цифры' });
+  const returnUrl = req.body.returnTo ? normalizeAppReturnUrl(req.body.returnTo) : null;
+  if (req.body.returnTo && !returnUrl) return res.status(400).json({ error: 'Некорректный адрес возврата в приложение' });
   const via = req.body.via === 'sms' ? 'sms' : 'tg';
   if (ph10(p).length < 10) return res.status(400).json({ error: 'Введите номер полностью' });
   if (via === 'sms' && !SMS_AUTH_ENABLED) {
@@ -181,7 +188,7 @@ authRouter.post('/api/auth/request-reg-otp', async (req, res) => {
     const pollToken = crypto.randomBytes(32).toString('hex');
     const reqName = String(req.body.name || '').trim();
     otpStore.set('regtg:' + token, {
-      phone: p, name: reqName, pollToken, expires: Date.now() + 10 * 60 * 1000
+      phone: p, name: reqName, pin: reqPin, returnUrl, pollToken, expires: Date.now() + 10 * 60 * 1000
     });
     otpStore.set('reg:' + p, { code: null, confirmed: false, expires: now + 10 * 60 * 1000 });
     recordOtpSend('register', p, now);
@@ -279,7 +286,7 @@ authRouter.post('/api/auth/register', validate(RegisterSchema), (req, res) => {
   if (okSms) grantBonus(r.customer.id, req.body.src === QR_SOURCE ? 'qr' : 'signup');
   res.json({ token: issueToken(r.customer.id), customer: cust(db.prepare('SELECT * FROM customers WHERE id=?').get(r.customer.id)) });
 });
-function normalizeTelegramActivationReturnUrl(value) {
+function normalizeAppReturnUrl(value) {
   const raw = String(value || '').trim();
   if (!raw || !raw.startsWith('/') || raw.startsWith('//') || raw.includes('\\') || /[\u0000-\u001f]/.test(raw)) {
     return null;
@@ -307,7 +314,7 @@ authRouter.post('/api/auth/tg-link/request', userGuard, (req, res) => {
     return res.status(409).json({ error: 'У профиля нет номера телефона для подтверждения' });
   }
 
-  const returnUrl = normalizeTelegramActivationReturnUrl(req.body?.returnTo);
+  const returnUrl = normalizeAppReturnUrl(req.body?.returnTo);
   if (!returnUrl) {
     return res.status(400).json({ error: 'Не удалось определить безопасный адрес возврата в приложение' });
   }
