@@ -567,8 +567,10 @@
   border: 0;
 }
 .profile-activation-row input {
+  box-sizing: border-box;
   min-width: 0;
   width: 100%;
+  min-height: 44px;
 }
 .profile-activation-row button {
   min-height: 40px;
