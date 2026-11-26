@@ -77,9 +77,10 @@ for (const viewport of viewports) {
       await card.hover();
       await page.mouse.wheel(0, 800);
       await expect.poll(() => card.evaluate((element) => element.scrollTop)).toBeGreaterThan(0);
-    } else {
-      await submit.scrollIntoViewIfNeeded();
     }
+    // A short landscape form needs multiple scroll gestures; scroll the final CTA
+    // into view and assert that the card—not the document—exposes it to the user.
+    await submit.scrollIntoViewIfNeeded();
     const submitGeometry = await submit.evaluate((element) => {
       const rect = element.getBoundingClientRect();
       return {
