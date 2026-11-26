@@ -137,7 +137,7 @@ test('audit sentinels pin known F-003 baseline observations without fixing them'
 
 test('audit sentinel drift reports file, method/path, expected and actual values', () => {
   const result = checkAuditSentinels({
-    openapi: { components: { schemas: { Customer: { properties: { id: { type: 'string' } } } }, paths: {} },
+    openapi: { components: { schemas: { Customer: { properties: { id: { type: 'string' } } } } }, paths: {} },
     sources: {},
   });
   const message = formatDiagnostic(result.diagnostics[0]);
