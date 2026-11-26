@@ -376,6 +376,7 @@ test('Telegram Mini App registration subtitle explains native confirmation witho
   const modal = page.locator('#authModal');
   const subtitle = modal.locator('.msub');
   await expect(modal).toHaveClass(/tg-mode/);
+  await expect(page.locator('#regTgBtn')).toBeHidden();
   await expect(subtitle).toContainText('Создайте профиль — подтвердим номер через Telegram');
   await expect(subtitle).not.toContainText(/кассир/i);
 });
