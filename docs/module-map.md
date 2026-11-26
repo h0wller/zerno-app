@@ -92,7 +92,7 @@
 | `core/auth-session.js` | Установка/сброс клиентской сессии, монотонная ревизия `window.__authSessionRevision` для защиты асинхронных auth-flow от устаревших ответов, сброс `__ztAuthDead`, безопасная запись localStorage, повторная привязка сохранённого FCM token после входа | `window.setUser`; `window.__authSessionRevision`; `ztBus` event `auth:user-changed` |
 | `core/auth.js` | Единственный владелец `#authModal` (open/close/swap и сброс временного состояния), вход по PIN/OTP, `#profileTopBtn`, выход и удаление аккаунта | `window.openAuth`, `window.closeAuth`, `window.authSwap` |
 | `core/auth-pin.js` | Единственный владелец `#setPinModal`: задание PIN для старого профиля и смена PIN | `window.openSetPin`, `window.closeSetPin` |
-| `core/registration.js` | Регистрация, согласие, OTP Telegram и поллинг подтверждения; принятая Telegram-попытка хранит собственный lifecycle независимо от auth-модалки; единственный владелец `#regTgRow` и динамической видимости `#regOtpBtn`/`#regOtpRow` по `window.SMS_AUTH_ENABLED` | `window.resetRegistrationState`, `window.renderRegistrationState` |
+| `core/registration.js` | Создание профиля и согласие; web/PWA создаёт ожидающий активации профиль, а подтверждение номера выполняется отдельным шагом из `profile-brand.js`; нативная регистрация в Telegram Mini App использует подписанный `initData`; владеет необязательными SMS-полями `#regOtpBtn`/`#regOtpRow` по `window.SMS_AUTH_ENABLED` | — |
 | `core/staffpin.js` | `#pinModal` (код сотрудника), `tryActivate`, делегирование submit форм | `window.openPin`, `window.closePin`, `window.tryActivate` |
 
 ## 8. Персонал: кассир и сканер
