@@ -279,7 +279,7 @@ test('auth modal explains the coffee stamp card before registration and avoids a
   const subtitle = page.locator('#authModal .msub');
   await page.evaluate(() => window.openAuth(false));
   await expect(subtitle).toContainText('Сначала создайте профиль');
-  await expect(subtitle).toContainText('после подтверждения номера');
+  await expect(subtitle).toContainText('После подтверждения номера');
   await expect(subtitle).toContainText('10 штампов дают 1 бесплатный кофе');
   await expect(subtitle).toContainText('QR');
 
@@ -299,7 +299,7 @@ test('auth modal explains Friday delivery value in registration and avoids it in
   const benefit = page.locator('#authModal .msub');
   await page.evaluate(() => window.openAuth(false));
   await expect(benefit).toContainText('Сначала создайте профиль');
-  await expect(benefit).toContainText('после подтверждения номера');
+  await expect(benefit).toContainText('После подтверждения номера');
   await expect(benefit).toContainText('персональный бонус доставки');
   await expect(benefit).toHaveCSS('max-width', '100%');
 
@@ -364,6 +364,24 @@ test('consent checkbox and its full row show a visible keyboard focus indicator'
 
 
 
+test('Telegram Mini App registration subtitle explains native confirmation without cashier instructions', async ({ page }) => {
+  await page.addInitScript(() => {
+    localStorage.setItem('zt_onb', '1');
+    sessionStorage.setItem('splashDone', '1');
+    window.__isTgMiniApp = true;
+    window.__tgInitData = 'signed-mini-app-test-data';
+  });
+  await page.goto('/?src=tg&brand=delivery');
+  await page.waitForFunction(() => typeof window.openAuth === 'function');
+  await page.evaluate(() => window.openAuth(false));
+
+  const modal = page.locator('#authModal');
+  const subtitle = modal.locator('.msub');
+  await expect(modal).toHaveClass(/tg-mode/);
+  await expect(subtitle).toContainText('Создайте профиль — подтвердим номер через Telegram');
+  await expect(subtitle).not.toContainText(/кассир/i);
+});
+
 test('registration uses brand action tokens and a compact consent row without a separate Telegram CTA', async ({ page }, testInfo) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.addInitScript(() => {
@@ -391,8 +409,8 @@ test('registration uses brand action tokens and a compact consent row without a 
       height: element.getBoundingClientRect().height,
       text: element.innerText,
     }));
-    expect(consentMetrics.fontSize).toBeLessThanOrEqual(11.5);
-    expect(consentMetrics.height).toBeLessThanOrEqual(64);
+    expect(consentMetrics.fontSize).toBeGreaterThanOrEqual(12);
+    expect(consentMetrics.height).toBeGreaterThanOrEqual(44);
     expect(consentMetrics.text).toContain('политике конфиденциальности');
 
     const registrationTokens = await page.evaluate(() => {
