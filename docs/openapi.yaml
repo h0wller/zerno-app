@@ -202,6 +202,9 @@ paths:
     post:
       tags: [Auth]
       summary: Начать регистрацию через Telegram-бота (SMS не отображается в интерфейсе)
+      description: >-
+        При PWA-запросе с returnTo обязательны согласие и PIN. Legacy Telegram callers
+        without returnTo retain their previous request shape. SMS is not offered by the PWA UI.
       requestBody:
         required: true
         content:
@@ -212,47 +215,26 @@ paths:
               properties:
                 phone: { type: string }
                 name: { type: string, maxLength: 24 }
-                pin: { type: string, pattern: '^\d{4}
-                consent: { type: boolean, enum: [true], description: 'Required for PWA registration when returnTo is supplied' }
-                returnTo: { type: string, pattern: '^/', description: 'Безопасный относительный адрес возврата в исходный бренд/вкладку' }
-                via: { type: string, enum: [tg], default: tg }
-                src: { type: string, enum: [qr], description: 'Необязательный источник QR-регистрации' }
+                pin: { type: string, minLength: 4, maxLength: 4, pattern: '^[0-9]{4}$', description: Required for PWA requests with returnTo }
+                consent: { type: boolean, enum: [true], description: Required for PWA requests with returnTo }
+                returnTo: { type: string, pattern: '^/', description: Safe relative return path on the originating app origin }
+                via: { type: string, enum: [tg, sms], default: tg, description: SMS is retained only as a separately gated legacy server path }
+                src: { type: string, enum: [qr], description: Optional QR registration source }
       responses:
         '200':
-          description: OK
+          description: Telegram deep link and one-time browser poll credential
           content:
             application/json:
               schema:
                 type: object
                 properties:
-                  ok:        { type: boolean }
-                  tgUrl:     { type: string }
-                  pollToken: { type: string, description: "Одноразовый случайный секрет этой попытки; передавать только в POST /api/auth/check-reg" }
+                  ok: { type: boolean }
+                  tgUrl: { type: string, format: uri }
+                  pollToken: { type: string, description: One-time secret used only with POST /api/auth/check-reg }
                   expiresAt: { type: string, format: date-time }
-        '400': { description: Неверный номер, согласие или PIN }
-        '409': { description: Номер уже зарегистрирован }
-        '429': { description: Слишком частые запросы }
-, description: 'Required for PWA Telegram registration when returnTo is supplied' }
-                consent: { type: boolean, enum: [true] }
-                returnTo: { type: string, pattern: '^/', description: 'Безопасный относительный адрес возврата в исходный бренд/вкладку' }
-                via: { type: string, enum: [tg], default: tg }
-                src: { type: string, enum: [qr], description: 'Необязательный источник QR-регистрации' }
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  ok:        { type: boolean }
-                  tgUrl:     { type: string }
-                  pollToken: { type: string, description: "Одноразовый случайный секрет этой попытки; передавать только в POST /api/auth/check-reg" }
-                  expiresAt: { type: string, format: date-time }
-        '400': { description: Неверный номер, согласие или PIN }
-        '409': { description: Номер уже зарегистрирован }
-        '429': { description: Слишком частые запросы }
-
+        '400': { description: Invalid phone, consent, PIN, or return path }
+        '409': { description: Phone already registered }
+        '429': { description: Request rate limit reached }
   /api/auth/check-reg:
     post:
       tags: [Auth]
