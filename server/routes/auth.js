@@ -196,7 +196,8 @@ authRouter.post('/api/auth/request-reg-otp', async (req, res) => {
     return res.json({
       ok: true,
       pollToken,
-      tgUrl: `https://t.me/${TG_BOT_USERNAME}?start=reg_${token}`
+      tgUrl: `https://t.me/${TG_BOT_USERNAME}?start=reg_${token}`,
+      expiresAt: new Date(now + 10 * 60 * 1000).toISOString()
     });
   }
 
