@@ -979,7 +979,7 @@ test('P0 registration baseline: capture guest, registration and the separate pro
       });
 
       await activationDetails.locator('summary').click();
-      await expect(page.locator('#verifyNote #actTgBtn')).toHaveText('Войти через Telegram');
+      await expect(page.locator('#verifyNote #actTgBtn')).toHaveText('Активировать через Telegram');
       await expect(page.locator('#verifyNote #showCashierCodeBtn')).toHaveText('Ввести код кассира');
       await expect(page.locator('#verifyNote .profile-activation-details-content')).toContainText('Подтвердите свой номер');
       await testInfo.attach(prefix + '-pending-activation-expanded.png', {
@@ -1063,6 +1063,10 @@ test('pending profile opens Telegram and preserves the delivery profile return r
     body: '<title>Telegram test route</title>'
   }));
 
+  await page.addInitScript(() => {
+    localStorage.setItem('zt_user', 'pending-profile-test-session');
+    sessionStorage.setItem('splashDone', '1');
+  });
   await page.goto('/?brand=delivery');
   await page.waitForFunction(() =>
     typeof window.setUser === 'function' &&
