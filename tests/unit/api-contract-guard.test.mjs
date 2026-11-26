@@ -77,6 +77,27 @@ test('route parity reports missing operations with actionable diagnostics', () =
   assert.match(message, /actual.*missing/i);
 });
 
+
+test('route parity rejects extra OpenAPI operations and duplicate server registrations', () => {
+  const extra = compareRouteInventories(
+    [],
+    [{ file: 'docs/openapi.yaml', method: 'POST', path: '/api/not-real' }],
+  );
+  assert.equal(extra.length, 1);
+  assert.equal(extra[0].code, 'EXTRA_OPENAPI_OPERATION');
+  assert.match(formatDiagnostic(extra[0]), /expected.*production Express route/i);
+  assert.match(formatDiagnostic(extra[0]), /actual.*no production route/i);
+
+  const duplicate = compareRouteInventories(
+    [
+      { file: 'server/routes/a.js', line: 10, method: 'GET', path: '/api/repeated' },
+      { file: 'server/routes/a.js', line: 20, method: 'GET', path: '/api/repeated' },
+    ],
+    [{ method: 'GET', path: '/api/repeated', file: 'docs/openapi.yaml' }],
+  );
+  assert.ok(duplicate.some((item) => item.code === 'DUPLICATE_SERVER_ROUTE'));
+});
+
 test('strict YAML parsing rejects duplicate path keys and duplicate operation keys', () => {
   const duplicatePath = 'openapi: 3.0.3\npaths:\n  /api/x:\n    get: {}\n  /api/x:\n    post: {}\n';
   const duplicateMethod = 'openapi: 3.0.3\npaths:\n  /api/x:\n    get: {}\n    get: {}\n';
