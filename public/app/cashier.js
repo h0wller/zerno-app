@@ -246,6 +246,8 @@ showCust=(function(_sc){return function(u,last){window.__foundId=u&&u.id;return 
       return false;
     }
     if (!latest) return false;
+    // Пока выполнялся lookup, кассир мог выбрать другого гостя.
+    if (returnFocus === redeemButton && (!found || found.id !== customer.id)) return false;
 
     redeemOnSuccess = typeof onCustomerUpdate === 'function' ? onCustomerUpdate : null;
     if (redeemOnSuccess) {
