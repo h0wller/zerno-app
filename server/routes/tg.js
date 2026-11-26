@@ -459,12 +459,16 @@ export function createTgRouter({ appKb }) {
           otpStore.delete('regtg:' + pend.token);
 
           await tgSend(chatId, '👍 Номер подтверждён', { remove_keyboard: true });
-          // Browser registration is completed through the one-time poll; never put its session token into the return URL.
-          const authQuery = pend.pollToken ? '' : (sessionToken ? '?auth_token=' + encodeURIComponent(sessionToken) : '?src=tg');
-          const returnButton = pend.returnUrl
+          // Browser registration completes through the one-time poll; never put the session token into its return URL.
+          const authQuery = pend.returnUrl
+            ? ''
+            : (sessionToken ? '?auth_token=' + encodeURIComponent(sessionToken) : '?src=tg');
+          const returnKeyboard = pend.returnUrl
             ? [[{ text: 'Вернуться в приложение', url: pend.returnUrl }]]
-            : [];
-          const appQuery = authQuery || '?src=tg';
+            : [
+                [{ text: '☕ Открыть карту и QR', web_app: { url: APP_URL + authQuery + '&brand=coffee&tab=bonus' } }],
+                [{ text: '🍕 Открыть «Пятницу»', web_app: { url: APP_URL + authQuery + '&brand=delivery' } }],
+              ];
 
           const benefitDetails = finalCust
             ? telegramBenefitsMessage(finalCust)
@@ -475,13 +479,7 @@ export function createTgRouter({ appKb }) {
             (pend.returnUrl
               ? '\n\nРегистрация завершена. Вернитесь в приложение по кнопке ниже.'
               : '\n\nВ браузере вход выполнился автоматически. Кнопки ниже открывают нужный раздел 👇'),
-            {
-              inline_keyboard: [
-                ...returnButton,
-                [{ text: '☕ Открыть карту и QR', web_app: { url: APP_URL + appQuery + '&brand=coffee&tab=bonus' } }],
-                [{ text: '🍕 Открыть «Пятницу»', web_app: { url: APP_URL + appQuery + '&brand=delivery' } }],
-              ]
-            }
+            { inline_keyboard: returnKeyboard }
           );
         } else {
           await tgSend(chatId, 'Номер не совпадает с указанным в приложении ⚠️ Нажмите кнопку ещё раз.');
