@@ -20,7 +20,7 @@ No production data, secrets, live customer sessions, or deployment configuration
 - **Priority:** P2 (measurement/verification gap; not a demonstrated runtime regression).
 - **Evidence:** check run `45877938249` on exact baseline SHA has `Lighthouse / Mobile LCP comparison = skipped`.
 - **Location:** `.github/workflows/ci.yml` Lighthouse job condition; job check `140110030937`.
-- **Actual:** normal quality/E2E run provides no LCP/FCP/CLS/TBT/TBT comparison for this commit.
+- **Actual:** normal quality/E2E run provides no LCP/FCP/CLS/TBT comparison for this commit.
 - **Expected:** a reproducible mobile performance result against a matched base/head build when performance is in scope.
 - **Impact:** changes to initial load cannot be accepted/rejected from exact-head performance evidence alone.
 - **Disposition:** keep a dedicated matched Lighthouse workflow/job; do not infer a performance win from older PR #300/#308 snapshots.
@@ -89,7 +89,7 @@ No production data, secrets, live customer sessions, or deployment configuration
 
 ## Baseline CI evidence — run 45877938249, SHA 9e0007a
 
-### Passed (12 jobs)
+### Passed (13 jobs)
 - Code Quality & Guardrails
 - E2E / Mobile Chrome responsive
 - E2E / Visual UX capture
