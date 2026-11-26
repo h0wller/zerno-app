@@ -10,9 +10,7 @@ import {
 } from '../../scripts/api-contract-guard.mjs';
 
 const minimalOpenApi = (paths) => ({ openapi: '3.0.3', paths });
-const jsonBody = (schema) => ({
-  requestBody: { content: { 'application/json': { schema } } },
-});
+const jsonBody = (schema) => ({ requestBody: { content: { 'application/json': { schema } } } });
 
 test('extracts Express routes and normalizes :params to OpenAPI braces', () => {
   const routes = extractExpressRoutes({
@@ -30,49 +28,40 @@ test('excludes test-only routes from production inventory', () => {
     file: 'server/routes/auth.js',
     source: "router.post('/__test/otp', handler);\nrouter.post('/api/auth/login', handler);",
   });
-  assert.deepEqual(routes.map(({ method, path }) => [method, path]), [
-    ['POST', '/api/auth/login'],
-  ]);
+  assert.deepEqual(routes.map(({ method, path }) => [method, path]), [['POST', '/api/auth/login']]);
 });
 
-test('reports dynamic API route registration instead of silently skipping it', () => {
+test('reports unresolved route paths rather than silently skipping them', () => {
   const routes = extractExpressRoutes({
     file: 'server/routes/dynamic.js',
     source: 'router.get(resolvePath(), handler);',
   });
   assert.equal(routes.length, 0);
-  assert.match(formatDiagnostic(routes.diagnostics[0]), /server\/routes\/dynamic\.js/);
-  assert.match(formatDiagnostic(routes.diagnostics[0]), /GET/);
-  assert.match(formatDiagnostic(routes.diagnostics[0]), /dynamic|static/i);
+  const message = formatDiagnostic(routes.diagnostics[0]);
+  assert.match(message, /server\/routes\/dynamic\.js/);
+  assert.match(message, /GET/);
+  assert.match(message, /dynamic|static/i);
 });
 
-
-test('resolves literal route constants without creating a second route registry', () => {
+test('resolves literal route constants', () => {
   const routes = extractExpressRoutes({
     file: 'server/routes/constants.js',
     source: "const endpoint = '/api/orders/:id'; router.get(endpoint, handler);",
   });
-  assert.deepEqual(routes.map(({ method, path }) => [method, path]), [
-    ['GET', '/api/orders/{id}'],
-  ]);
-});
-
-test('strict YAML parsing rejects duplicate operation keys under one path', () => {
-  assert.throws(
-    () => parseOpenApiStrict('openapi: 3.0.3\npaths:\n  /api/x:\n    get: {}\n    get: {}\n'),
-    /duplicate|unique/i,
-  );
+  assert.deepEqual(routes.map(({ method, path }) => [method, path]), [['GET', '/api/orders/{id}']]);
 });
 
 test('route parity accepts matching methods and parameter names', () => {
-  const diagnostics = compareRouteInventories(
-    [{ file: 'server/routes/orders.js', line: 10, method: 'GET', path: '/api/orders/{id}' }],
-    [{ method: 'GET', path: '/api/orders/{id}', file: 'docs/openapi.yaml' }],
+  assert.deepEqual(
+    compareRouteInventories(
+      [{ file: 'server/routes/orders.js', line: 10, method: 'GET', path: '/api/orders/{id}' }],
+      [{ method: 'GET', path: '/api/orders/{id}', file: 'docs/openapi.yaml' }],
+    ),
+    [],
   );
-  assert.deepEqual(diagnostics, []);
 });
 
-test('route parity reports missing and extra operations with expected and actual values', () => {
+test('route parity reports missing operations with actionable diagnostics', () => {
   const diagnostics = compareRouteInventories(
     [
       { file: 'server/routes/orders.js', line: 10, method: 'GET', path: '/api/orders/{id}' },
@@ -88,14 +77,14 @@ test('route parity reports missing and extra operations with expected and actual
   assert.match(message, /actual.*missing/i);
 });
 
-test('strict YAML parsing rejects duplicate mapping keys', () => {
-  assert.throws(
-    () => parseOpenApiStrict('openapi: 3.0.3\npaths:\n  /api/x:\n    get: {}\n  /api/x:\n    post: {}\n', 'docs/openapi.yaml'),
-    /duplicate|unique|docs\/openapi\.yaml/i,
-  );
+test('strict YAML parsing rejects duplicate path keys and duplicate operation keys', () => {
+  const duplicatePath = 'openapi: 3.0.3\npaths:\n  /api/x:\n    get: {}\n  /api/x:\n    post: {}\n';
+  const duplicateMethod = 'openapi: 3.0.3\npaths:\n  /api/x:\n    get: {}\n    get: {}\n';
+  assert.throws(() => parseOpenApiStrict(duplicatePath), /duplicate|unique/i);
+  assert.throws(() => parseOpenApiStrict(duplicateMethod), /duplicate|unique/i);
 });
 
-test('OpenAPI operation inventory contains one operation per method/path pair', () => {
+test('OpenAPI operation inventory includes each declared HTTP method/path pair', () => {
   const openapi = minimalOpenApi({
     '/api/x': { get: {}, post: {} },
     '/api/y': { get: {} },
@@ -106,33 +95,31 @@ test('OpenAPI operation inventory contains one operation per method/path pair', 
   );
 });
 
-test('audit sentinels describe known F-003 gaps without fixing them', () => {
-  const openapi = {
-    components: {
-      schemas: {
-        Customer: { properties: { id: { type: 'integer' } } },
-        MenuItem: { properties: { id: { type: 'integer' } } },
-      },
-    },
-    paths: {
-      '/api/auth/register': { post: jsonBody({ properties: { consent: { type: 'integer', enum: [0, 1] } } }) },
-      '/api/auth/request-reg-otp': {
-        post: { responses: { '200': { content: { 'application/json': { schema: { required: ['tgUrl', 'pollToken'] } } } } } },
-      },
-      '/api/staff/scan': { post: jsonBody({ properties: { code: { minLength: 16, maxLength: 64 } } }) },
-      '/api/orders/{id}/status': {
-        post: { security: [{ BearerAuth: [] }], ...jsonBody({ properties: { status: { type: 'string' } } }) },
-      },
-      '/api/orders/{id}/delay': { post: jsonBody({ properties: { min: { minimum: 0 } } }) },
-      '/api/promo/info': { get: { responses: { '404': {} } } },
-      '/api/promos': { post: { security: [{ BearerAuth: [] }] } },
-      '/api/chat/botlog': { post: { responses: { '409': {} } } },
-      '/api/push/subscribe': {
-        post: jsonBody({ properties: { sub: { type: 'object', properties: { endpoint: { type: 'string' } } } } }),
-      },
-      '/api/stats': { get: { security: [{ BearerAuth: [] }] } },
+test('audit sentinels pin known F-003 baseline observations without fixing them', () => {
+  const openapi = minimalOpenApi({});
+  openapi.components = {
+    schemas: {
+      Customer: { properties: { id: { type: 'integer' } } },
+      MenuItem: { properties: { id: { type: 'integer' } } },
     },
   };
+  const paths = openapi.paths;
+  paths['/api/auth/register'] = { post: jsonBody({ properties: { consent: { type: 'integer', enum: [0, 1] } } }) };
+  paths['/api/auth/request-reg-otp'] = {
+    post: { responses: { '200': { content: { 'application/json': { schema: { required: ['tgUrl', 'pollToken'] } } } } },
+  };
+  paths['/api/staff/scan'] = { post: jsonBody({ properties: { code: { minLength: 16, maxLength: 64 } } }) };
+  paths['/api/orders/{id}/status'] = {
+    post: { security: [{ BearerAuth: [] }], ...jsonBody({ properties: { status: { type: 'string' } } }) },
+  };
+  paths['/api/orders/{id}/delay'] = { post: jsonBody({ properties: { min: { minimum: 0 } } }) };
+  paths['/api/promo/info'] = { get: { responses: { '404': {} } } };
+  paths['/api/promos'] = { post: { security: [{ BearerAuth: [] }] } };
+  paths['/api/chat/botlog'] = { post: { responses: { '409': {} } } };
+  const pushSub = { type: 'object', properties: { endpoint: { type: 'string' } } };
+  paths['/api/push/subscribe'] = { post: jsonBody({ properties: { sub: pushSub } }) };
+  paths['/api/stats'] = { get: { security: [{ BearerAuth: [] }] } };
+
   const sources = {
     'server/domain/customers.js': "uid('u'); randomBytes(3).toString('hex').toUpperCase()",
     'server.js': "uid('p')",
@@ -148,7 +135,7 @@ test('audit sentinels describe known F-003 gaps without fixing them', () => {
   assert.deepEqual(result.diagnostics, []);
 });
 
-test('audit sentinel drift has a file, method, expected and actual diagnostic', () => {
+test('audit sentinel drift reports file, method/path, expected and actual values', () => {
   const result = checkAuditSentinels({
     openapi: { components: { schemas: { Customer: { properties: { id: { type: 'string' } } } }, paths: {} },
     sources: {},
