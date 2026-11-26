@@ -4986,29 +4986,19 @@ html body #tickerTrack .tickerGroup > span {
             placeholder="Как к вам обращаться?" /></label>
         <label for="regPhone">Телефон<input id="regPhone" name="regPhone" type="tel" inputmode="tel" maxlength="16" placeholder="+7 900 000-00-00"
             autocomplete="tel" enterkeyhint="next" /></label>
-        <label class="chk regConsent" id="consentRow" for="consentBox">
-          <input type="checkbox" id="consentBox" name="consent" required />
-          <span>Согласен с <a href="/privacy.html" target="_blank" rel="noopener" style="color: #1F4E8C">политикой конфиденциальности</a> и обработкой персональных данных</span>
-        </label>
-        <button type="button" class="btn fire" id="regTgBtn">
-          <svg class="auth-telegram-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-            <circle cx="12" cy="12" r="12" fill="#229ED9" />
-            <path d="M5.15 11.56 18.2 6.53c.61-.22 1.14.15.94.99l-2.23 10.52c-.16.75-.61.94-1.21.57l-3.39-2.5-1.66 1.59c-.18.18-.33.33-.67.33l.24-3.48 6.35-5.74c.27-.25-.06-.39-.42-.14l-7.85 4.94-3.39-1.06c-.74-.23-.75-.74.15-1.1z" fill="#FFFFFF" />
-          </svg>
-          <span>Подтвердить в Telegram · бесплатно</span>
-        </button>
-        <div id="regTgRow" role="status" aria-live="polite" hidden>
-          ✅ Номер подтверждён — завершите регистрацию
-        </div>
-        <small class="auth-help">Нет Telegram? Создайте профиль и получите код активации у кассира.</small>
-        <button type="button" class="btn ghost" id="regOtpBtn" style="width: 100%; margin-top: 8px" hidden>
+        <button type="button" class="btn ghost" id="regOtpBtn" style="width: 100%; margin-top: 2px" hidden>
           📨 Получить код по SMS
         </button>
         <label for="regOtp" id="regOtpRow" hidden>Код подтверждения по SMS<input id="regOtp" name="regOtp" inputmode="numeric"
             maxlength="4" placeholder="4 цифры" autocomplete="one-time-code" /></label>
         <label for="regPin" id="regPinRow">PIN-код (4 цифры)<input id="regPin" name="regPin" type="text"
             inputmode="numeric" maxlength="4" placeholder="Например 2580" autocomplete="new-password" enterkeyhint="done" /></label>
-        <small class="auth-help">Используйте PIN для следующих входов в профиль.</small>
+        <small class="auth-help">PIN понадобится для следующих входов в профиль.</small>
+        <small class="auth-help auth-registration-help">После создания профиля получите 4-значный код у кассира и введите его в профиле, чтобы открыть заказы и преимущества.</small>
+        <label class="chk regConsent" id="consentRow" for="consentBox">
+          <input type="checkbox" id="consentBox" name="consent" required />
+          <span>Согласен на обработку персональных данных по <a href="/privacy.html" target="_blank" rel="noopener noreferrer">политике конфиденциальности</a></span>
+        </label>
         <button type="button" class="cta" id="regBtn">Создать профиль</button>
       </form>
       <form id="loginForm" style="display: none; flex-direction: column; gap: 11px">
