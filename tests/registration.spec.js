@@ -870,7 +870,8 @@ test('P0 registration baseline: capture guest, registration and the separate pro
       });
 
       await page.evaluate(() => window.openAuth(false));
-      await expect(page.locator('#regTgBtn')).toHaveCount(0);
+      await expect(page.locator('#regTgBtn')).toBeVisible();
+      await expect(page.locator('#regTgBtn')).toHaveText('Войти через Telegram');
       await expect(page.locator('#regTgRow')).toHaveCount(0);
       await expect(page.locator('#regOtpBtn')).toHaveCount(0);
       await expect(page.locator('#regOtpRow')).toHaveCount(0);
@@ -1090,4 +1091,81 @@ test('pending profile opens Telegram and preserves the delivery profile return r
   expect(activationRequest).toEqual({
     returnTo: '/?brand=delivery&tab=profile'
   });
+});
+
+
+test('registration Telegram CTA completes the signup and returns to the originating brand profile', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  let registrationRequest = null;
+  let polls = 0;
+  await page.route('**/api/auth/request-reg-otp', async (route) => {
+    registrationRequest = route.request().postDataJSON();
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        ok: true,
+        pollToken: 'b'.repeat(64),
+        tgUrl: 'https://t.me/test_bot?start=reg_' + 'c'.repeat(32),
+        expiresAt: new Date(Date.now() + 600000).toISOString()
+      })
+    });
+  });
+  await page.route('**/api/auth/check-reg', async (route) => {
+    polls += 1;
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify(polls === 1
+        ? { confirmed: false }
+        : {
+            confirmed: true,
+            token: 'telegram-registration-session',
+            customer: {
+              id: 'telegram-registration-customer',
+              name: 'Telegram Guest',
+              phone: '+7 900 000-00-03',
+              role: 'guest',
+              verified: 1,
+              pin: 'configured',
+              stamps: 0,
+              free: 0,
+              cups: 0,
+              welcome: 0,
+              tg: '900003',
+              qr: 'Z-TG-REGISTER'
+            }
+          })
+    });
+  });
+  await page.route('https://t.me/**', (route) => route.fulfill({
+    status: 200,
+    contentType: 'text/html',
+    body: '<title>Telegram registration test</title>'
+  }));
+
+  await page.goto('/?brand=delivery');
+  await page.waitForFunction(() => typeof window.openAuth === 'function');
+  await page.evaluate(() => window.openAuth(false));
+  await page.locator('#regName').fill('Telegram Guest');
+  await page.locator('#regPhone').fill('+7 900 000-00-03');
+  await page.locator('#regPin').fill('2468');
+  await page.locator('#consentBox').check();
+
+  const popupPromise = page.waitForEvent('popup');
+  await page.locator('#regTgBtn').click();
+  const popup = await popupPromise;
+  await expect(popup).toHaveURL(/https:\/\/t\.me\/test_bot\?start=reg_[a-f0-9]{32}$/);
+  await expect.poll(() => page.evaluate(() => localStorage.getItem('zt_user')), { timeout: 10000 })
+    .toBe('telegram-registration-session');
+
+  expect(registrationRequest).toMatchObject({
+    name: 'Telegram Guest',
+    phone: '+7 900 000-00-03',
+    pin: '2468',
+    consent: 1,
+    via: 'tg',
+    returnTo: '/?brand=delivery&tab=profile'
+  });
+  expect(registrationRequest.returnTo).not.toContain('auth_token');
 });
