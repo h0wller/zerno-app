@@ -392,4 +392,26 @@ test.describe('PWA Responsive Layout Audit', () => {
     await expect.poll(() => page.evaluate(() => localStorage.getItem('zt_ios_hide'))).toBe('1');
   });
 
+  for (const brand of ['coffee', 'delivery']) {
+    test(`iOS install hint stays hidden inside Telegram Mini App (${brand})`, async ({ page }) => {
+      const cdp = await page.context().newCDPSession(page);
+      await cdp.send('Network.setUserAgentOverride', {
+        userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.7 Mobile/15E148 Safari/604.1',
+        platform: 'iPhone',
+        acceptLanguage: 'ru-RU,ru;q=0.9,en;q=0.8'
+      });
+      await page.addInitScript(() => {
+        localStorage.clear();
+        sessionStorage.clear();
+        window.Telegram = { WebApp: { initData: 'query_id=test-mini-app', isStub: false } };
+      });
+
+      await page.setViewportSize({ width: 390, height: 844 });
+      await page.goto(`/?brand=${brand}`, { waitUntil: 'domcontentloaded' });
+      await expect.poll(() => page.evaluate(() => window.__isTgMiniApp)).toBe(true);
+      await page.waitForTimeout(1000);
+      await expect(page.locator('#iosHint')).toBeHidden();
+    });
+  }
+
 });
