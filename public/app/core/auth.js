@@ -74,6 +74,8 @@
     modal.classList.add('tg-mode');
     var hint = modal.querySelector('.mhint, .subhint, #regForm .hint');
     if (hint) hint.style.display = 'none';
+    var registrationHelp = modal.querySelector('.auth-registration-help');
+    if (registrationHelp) registrationHelp.hidden = true;
 
     // Согласие рендерится в authModal и проверяется обработчиком регистрации независимо от среды.
 
@@ -91,7 +93,7 @@
     var isDelivery = window.brand === 'delivery';
     var title = document.getElementById('authTitle');
     var subtitle = modal.querySelector('.msub');
-    var registrationHelp = modal.querySelector('#regForm .auth-help');
+    var registrationHelp = modal.querySelector('#regForm .auth-registration-help');
 
     if (login) {
       if (title) title.textContent = 'Вход по номеру';
