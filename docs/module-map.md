@@ -36,7 +36,7 @@
 | `admin-extra.js` | `applyBrandChrome()`: содержимое `#tickerTrack`, измерение и дублирование `.tickerGroup` для непрерывного цикла на любой ширине, невидимые click/keyboard pause-play и reduced-motion state; final synchronization of attributes on the existing `#brandLogoImg` and load-error fallback without replacing the `#brandMark` subtree; `.mark` (official SVG/img; F5.39: Friday — horizontal SVG 160×40 without webp raster); `loadPromos` (модалка админа); guard'ы кофейного меню до загрузки MENU | `window.applyBrandChrome`, `window.loadPromos` |
 | `core/catalog.js` | `loadMenu`, `renderModes`; обработчик переключателя режима делегирует вызов `window.setMode` (реализация находится в `core/views.js`) | `window.loadMenu`, `window.renderModes` |
 | `core/splash.js` | Динамический сплэш `#brandSplash`, выбор бренда `finish()` | — |
-| `profile-brand.js` | Брендовые правила профиля (fridayInfo, myOrders, placebox), `renderVerifyNote`, relink; единственная обёртка renderProfile | `window.applyProfileBrand`, `window.renderVerifyNote` |
+| `profile-brand.js` | Брендовые правила профиля (fridayInfo, myOrders, placebox), `renderVerifyNote`, relink; ожидающий профиль, свёрнутая инструкция и действия активации через Telegram/кассира | `window.applyProfileBrand`, `window.renderVerifyNote` |
 | `core/auth.js` | `applyAuthBrand` — логотип и подзаголовок модалки авторизации | `window.applyAuthBrand` |
 | `brands/registry.js` | — манифест (window.BRANDS, brandConfig()); | `ui/brand-tokens.css` | — токены брендов
 
@@ -90,9 +90,9 @@
 | Модуль | Владеет | Контракты |
 | --- | --- | --- |
 | `core/auth-session.js` | Установка/сброс клиентской сессии, монотонная ревизия `window.__authSessionRevision` для защиты асинхронных auth-flow от устаревших ответов, сброс `__ztAuthDead`, безопасная запись localStorage, повторная привязка сохранённого FCM token после входа | `window.setUser`; `window.__authSessionRevision`; `ztBus` event `auth:user-changed` |
-| `core/auth.js` | Единственный владелец `#authModal` (open/close/swap и сброс временного состояния), вход по PIN/OTP, `#profileTopBtn`, выход и удаление аккаунта | `window.openAuth`, `window.closeAuth`, `window.authSwap` |
+| `core/auth.js` | Единственный владелец `#authModal` (open/close/swap и сброс временного состояния), вход по PIN/OTP, `#profileTopBtn`, выход и удаление аккаунта; отдельный входной OTP не связан с регистрационным SMS UI | `window.openAuth`, `window.closeAuth`, `window.authSwap` |
 | `core/auth-pin.js` | Единственный владелец `#setPinModal`: задание PIN для старого профиля и смена PIN | `window.openSetPin`, `window.closeSetPin` |
-| `core/registration.js` | Создание профиля и согласие; web/PWA создаёт ожидающий активации профиль, а подтверждение номера выполняется отдельным шагом из `profile-brand.js`; нативная регистрация в Telegram Mini App использует подписанный `initData`; владеет необязательными SMS-полями `#regOtpBtn`/`#regOtpRow` по `window.SMS_AUTH_ENABLED` | — |
+| `core/registration.js` | Создание профиля и согласие; web/PWA создаёт ожидающий активации профиль без SMS-кнопки/поля; Mini App сохраняет входящий signed `initData` flow; клиентская активация существующего pending-профиля находится в `profile-brand.js` | — |
 | `core/staffpin.js` | `#pinModal` (код сотрудника), `tryActivate`, делегирование submit форм | `window.openPin`, `window.closePin`, `window.tryActivate` |
 
 ## 8. Персонал: кассир и сканер
