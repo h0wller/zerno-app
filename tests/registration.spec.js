@@ -279,6 +279,7 @@ test.describe('Registration & Auth Suite (F3.61 - F3.63)', () => {
     await page.click('#profileTopBtn');
     await expect(page.locator('#authModal')).toHaveClass(/tg-mode/);
     await expect(page.locator('#consentBox')).toBeVisible();
+    await expect(page.locator('.auth-registration-help')).toBeHidden();
   });
 
   test('F3.63: TMA chain needPhone → needBotConfirm → token', async ({ page }) => {
