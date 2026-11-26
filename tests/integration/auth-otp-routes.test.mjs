@@ -859,3 +859,36 @@ test('cashier exact-customer lookup returns current gift state and redemption is
   });
   assert.equal(missing.status, 404);
 });
+
+
+test('cashier customer lookup matches full Russian phone in formatted and canonical forms', async () => {
+  const admin = await api('/api/auth/register', {
+    name: 'Phone Search Admin',
+    phone: '+7 900 000-02-20',
+    pin: '1357',
+    consent: true
+  });
+  assert.equal(admin.status, 200, JSON.stringify(admin.json));
+  const activated = await api('/api/auth/activate', {
+    code: 'integration-test-admin'
+  }, admin.json.token);
+  assert.equal(activated.status, 200, JSON.stringify(activated.json));
+
+  const guest = await api('/api/auth/register', {
+    name: 'Phone Search Anna',
+    phone: '+7 911 854-30-45',
+    pin: '2468',
+    consent: true
+  });
+  assert.equal(guest.status, 200, JSON.stringify(guest.json));
+  const id = guest.json.customer.id;
+
+  for (const query of ['9118543045', '+7 911 854-30-45', '8 911 854-30-45']) {
+    const response = await fetch(base + '/api/staff/customers?search=' + encodeURIComponent(query), {
+      headers: { authorization: 'Bearer ' + admin.json.token }
+    });
+    assert.equal(response.status, 200, query);
+    const result = await response.json();
+    assert.deepEqual(result.customers.map(customer => customer.id), [id], query);
+  }
+});
