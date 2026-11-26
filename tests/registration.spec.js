@@ -1189,3 +1189,484 @@ test('registration Telegram CTA completes the signup and returns to the originat
   });
   expect(registrationRequest.returnTo).not.toContain('auth_token');
 });
+
+test('P0 profile Telegram activation exposes all states, both brands and portrait/landscape compact viewports', async ({ page }) => {
+  test.setTimeout(120000);
+  await page.addInitScript(() => {
+    localStorage.setItem('zt_onb', '1');
+    localStorage.setItem('zt_user', 'p0-profile-activation-session');
+    sessionStorage.setItem('splashDone', '1');
+  });
+
+  for (const brand of ['coffee', 'delivery']) {
+    for (const viewport of [{ width: 320, height: 640 }, { width: 844, height: 390 }]) {
+      await page.unrouteAll();
+      await page.setViewportSize(viewport);
+      let requestNo = 0;
+      let verified = false;
+
+      await page.route('**/api/me', async (route) => {
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            customer: {
+              id: 'p0-profile-activation-customer',
+              name: 'P0 Activation Guest',
+              phone: '+7 900 000-00-41',
+              role: 'guest',
+              verified: verified ? 1 : 0,
+              cups: 0,
+              stamps: 0,
+              free: 0,
+              welcome: 0,
+              tg: null,
+              notify_tg: 0,
+              notify_web: 0,
+              history: [],
+              qr: 'Z-P0-ACTIVATION'
+            }
+          })
+        });
+      });
+      await page.route('**/api/auth/tg-link/request', async (route) => {
+        const index = requestNo++;
+        if (index === 0) await new Promise((resolve) => setTimeout(resolve, 300));
+        if (index === 1) {
+          await route.fulfill({
+            status: 503,
+            contentType: 'application/json',
+            body: JSON.stringify({ error: 'Telegram пока недоступен' })
+          });
+          return;
+        }
+        const expiresAt = index === 2
+          ? new Date(Date.now() - 1000).toISOString()
+          : new Date(Date.now() + 15000).toISOString();
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            ok: true,
+            tgUrl: 'https://t.me/test_bot?start=activate_' + String(index + 1).repeat(48),
+            expiresAt
+          })
+        });
+      });
+      await page.route('https://t.me/**', (route) => route.fulfill({
+        status: 200,
+        contentType: 'text/html',
+        body: '<title>Telegram activation fixture</title>'
+      }));
+
+      await page.goto('/?brand=' + brand);
+      await page.waitForFunction(() =>
+        window.me && window.me.role === 'guest' &&
+        typeof window.renderVerifyNote === 'function' &&
+        typeof window.openPanel === 'function'
+      );
+      await page.evaluate(() => {
+        window.renderProfile();
+        window.renderVerifyNote();
+        window.openPanel('profile');
+        window.open = () => null;
+      });
+
+      const note = page.locator('#verifyNote');
+      const telegram = page.locator('#actTgBtn');
+      const status = page.locator('#actTgStatus');
+      const cashier = note.locator('.profile-activation-details');
+      await expect(note).toContainText('Профиль не активирован');
+      await expect(telegram).toBeVisible();
+      await expect(telegram).toHaveText('Подтвердить через Telegram');
+      await expect(telegram).toBeEnabled();
+      await expect(telegram.locator('xpath=ancestor::details')).toHaveCount(0);
+      await expect(status).toBeHidden();
+      await expect(cashier).not.toHaveAttribute('open', '');
+      await expect(cashier.locator('summary')).toContainText('Вы в заведении? Код кассира');
+      await expect(note.locator('#actCode')).toBeHidden();
+      await expect(note.locator('#actBtn')).toBeHidden();
+
+      const telegramGeometry = await telegram.evaluate((element) => {
+        const rect = element.getBoundingClientRect();
+        return { width: rect.width, height: rect.height };
+      });
+      expect(telegramGeometry.width).toBeGreaterThanOrEqual(44);
+      expect(telegramGeometry.height).toBeGreaterThanOrEqual(44);
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+
+      await telegram.click();
+      await expect(status).toHaveAttribute('data-state', 'requesting');
+      await expect(status).toContainText('Подготавливаем ссылку Telegram');
+      await expect(status).toHaveAttribute('data-state', 'waiting');
+      await expect(status).toContainText('Откройте бота и поделитесь своим номером.');
+      await expect(status.getByRole('link', { name: 'Открыть Telegram' })).toBeVisible();
+      await expect(telegram).toBeEnabled();
+
+      await telegram.click();
+      await expect(status).toHaveAttribute('data-state', 'error');
+      await expect(status).toContainText('Telegram пока недоступен');
+      await expect(telegram).toBeEnabled();
+
+      await telegram.click();
+      await expect(status).toHaveAttribute('data-state', 'expired');
+      await expect(status).toContainText('Срок ссылки истёк');
+      await expect(telegram).toBeEnabled();
+
+      await telegram.click();
+      await expect(status).toHaveAttribute('data-state', 'waiting');
+      await expect(telegram).toBeEnabled();
+
+      verified = true;
+      await page.evaluate(() => window.dispatchEvent(new Event('focus')));
+      await expect(page.locator('#actTgBtn')).toHaveCount(0, { timeout: 6000 });
+      await expect(page.locator('#verifyNote #actCode')).toHaveCount(0);
+      await expect(page.locator('#verifyNote #actBtn')).toHaveCount(0);
+    }
+  }
+});
+
+test('P0 Telegram Mini App uses WebApp.openTelegramLink and hides the browser registration action', async ({ page }) => {
+  await page.addInitScript(() => {
+    localStorage.setItem('zt_onb', '1');
+    localStorage.setItem('zt_user', 'p0-mini-app-profile-session');
+    sessionStorage.setItem('splashDone', '1');
+    const noop = () => {};
+    window.__tgInitData = 'signed-mini-app-test-init-data';
+    window.Telegram = {
+      WebApp: {
+        isStub: false,
+        initData: 'signed-mini-app-test-init-data',
+        initDataUnsafe: { user: { id: 90041, first_name: 'Mini App Guest' } },
+        platform: 'ios',
+        version: '8.0',
+        ready: noop,
+        expand: noop,
+        close: noop,
+        openTelegramLink(url) { window.__openedTelegramUrl = url; },
+        setHeaderColor: noop,
+        setBackgroundColor: noop,
+        onEvent: noop,
+        offEvent: noop,
+        MainButton: { show: noop, hide: noop, enable: noop, disable: noop, setText: noop, setParams: noop, onClick: noop, offClick: noop },
+        BackButton: { show: noop, hide: noop, onClick: noop, offClick: noop },
+        HapticFeedback: { impactOccurred: noop, notificationOccurred: noop, selectionChanged: noop }
+      }
+    };
+  });
+  await page.route('**/api/me', (route) => route.fulfill({
+    status: 200,
+    contentType: 'application/json',
+    body: JSON.stringify({
+      customer: {
+        id: 'p0-mini-app-profile', name: 'Mini App Guest', phone: '+7 900 000-00-42',
+        role: 'guest', verified: 0, cups: 0, stamps: 0, free: 0, welcome: 0,
+        tg: null, notify_tg: 0, notify_web: 0, history: [], qr: 'Z-MINI-APP'
+      }
+    })
+  }));
+  await page.route('**/api/auth/tg-link/request', (route) => route.fulfill({
+    status: 200,
+    contentType: 'application/json',
+    body: JSON.stringify({
+      ok: true,
+      tgUrl: 'https://t.me/test_bot?start=activate_' + 'd'.repeat(48),
+      expiresAt: new Date(Date.now() + 60000).toISOString()
+    })
+  }));
+
+  await page.goto('/?brand=delivery');
+  await page.waitForFunction(() => typeof window.openAuth === 'function' && window.me);
+  await page.evaluate(() => window.openAuth(false));
+  await expect(page.locator('#authModal')).toHaveClass(/tg-mode/);
+  await expect(page.locator('#regTgBtn')).toBeHidden();
+
+  await page.evaluate(() => {
+    window.closeAuth();
+    window.renderProfile();
+    window.renderVerifyNote();
+    window.openPanel('profile');
+  });
+  const telegram = page.locator('#actTgBtn');
+  await expect(telegram).toBeVisible();
+  await telegram.click();
+  await expect.poll(() => page.evaluate(() => window.__openedTelegramUrl))
+    .toMatch(/^https:\/\/t\.me\/test_bot\?start=activate_[a-f0-9]{48}$/);
+  await expect(page).not.toHaveURL(/t\.me/);
+});
+
+test('P0 registration Telegram popup blocked falls back to an actionable status link', async ({ page }) => {
+  await page.route('**/api/auth/request-reg-otp', (route) => route.fulfill({
+    status: 200,
+    contentType: 'application/json',
+    body: JSON.stringify({
+      ok: true,
+      pollToken: 'e'.repeat(64),
+      tgUrl: 'https://t.me/test_bot?start=reg_' + 'f'.repeat(32),
+      expiresAt: new Date(Date.now() + 60000).toISOString()
+    })
+  }));
+  await page.route('**/api/auth/check-reg', (route) => route.fulfill({
+    status: 200,
+    contentType: 'application/json',
+    body: JSON.stringify({ confirmed: false })
+  }));
+  await page.goto('/?brand=coffee');
+  await page.waitForFunction(() => typeof window.openAuth === 'function');
+  await page.evaluate(() => {
+    window.openAuth(false);
+    window.open = () => null;
+  });
+  await page.locator('#regName').fill('Popup Blocked Guest');
+  await page.locator('#regPhone').fill('+7 900 000-00-43');
+  await page.locator('#regPin').fill('2468');
+  await page.locator('#consentBox').check();
+  await page.locator('#regTgBtn').click();
+  await expect(page.locator('#regTgStatus')).toHaveAttribute('data-state', 'waiting');
+  await expect(page.locator('#regTgStatus')).toContainText('Откройте бота и поделитесь своим номером.');
+  await expect(page.locator('#regTgStatus a', { hasText: 'Открыть Telegram' })).toHaveAttribute(
+    'href', 'https://t.me/test_bot?start=reg_' + 'f'.repeat(32)
+  );
+  await expect(page.locator('#regTgBtn')).toBeEnabled();
+});
+
+test('P0 superseded Telegram registration attempt cannot replace the newer poll token', async ({ page }) => {
+  let requests = 0;
+  const pollTokens = [];
+  await page.route('**/api/auth/request-reg-otp', async (route) => {
+    requests += 1;
+    const index = requests;
+    if (index === 1) await new Promise((resolve) => setTimeout(resolve, 350));
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        ok: true,
+        pollToken: (index === 1 ? 'a' : 'b').repeat(64),
+        tgUrl: 'https://t.me/test_bot?start=reg_' + (index === 1 ? '1' : '2').repeat(32),
+        expiresAt: new Date(Date.now() + 60000).toISOString()
+      })
+    });
+  });
+  await page.route('**/api/auth/check-reg', async (route) => {
+    const body = route.request().postDataJSON();
+    pollTokens.push(body.pollToken);
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ confirmed: false })
+    });
+  });
+  await page.goto('/?brand=delivery');
+  await page.waitForFunction(() => typeof window.openAuth === 'function');
+  await page.evaluate(() => window.openAuth(false));
+  await page.locator('#regName').fill('Replacement Guest');
+  await page.locator('#regPhone').fill('+7 900 000-00-44');
+  await page.locator('#regPin').fill('2468');
+  await page.locator('#consentBox').check();
+
+  const popupOne = page.waitForEvent('popup');
+  await page.locator('#regTgBtn').click();
+  await popupOne;
+  const popupTwo = page.waitForEvent('popup');
+  await page.locator('#regTgBtn').click();
+  await popupTwo;
+
+  await expect.poll(() => page.evaluate(() => JSON.parse(localStorage.getItem('zt_tg_registration') || 'null')?.pollToken))
+    .toBe('b'.repeat(64));
+  await expect.poll(() => pollTokens.includes('b'.repeat(64))).toBe(true);
+  expect(pollTokens).not.toContain('a'.repeat(64));
+});
+
+test('P0 session revision change discards a confirmed Telegram registration result', async ({ page }) => {
+  let releaseConfirmation;
+  let checkStartedResolve;
+  const checkStarted = new Promise((resolve) => { checkStartedResolve = resolve; });
+  const confirmation = new Promise((resolve) => { releaseConfirmation = resolve; });
+  await page.route('**/api/auth/request-reg-otp', (route) => route.fulfill({
+    status: 200,
+    contentType: 'application/json',
+    body: JSON.stringify({
+      ok: true,
+      pollToken: 'c'.repeat(64),
+      tgUrl: 'https://t.me/test_bot?start=reg_' + '3'.repeat(32),
+      expiresAt: new Date(Date.now() + 60000).toISOString()
+    })
+  }));
+  await page.route('**/api/auth/check-reg', async (route) => {
+    checkStartedResolve();
+    await confirmation;
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        confirmed: true,
+        token: 'stale-confirmed-registration-token',
+        customer: { id: 'stale-registration', name: 'Stale', role: 'guest', verified: 1 }
+      })
+    });
+  });
+  await page.goto('/?brand=coffee');
+  await page.waitForFunction(() => typeof window.openAuth === 'function');
+  await page.evaluate(() => window.openAuth(false));
+  await page.locator('#regName').fill('Session Change Guest');
+  await page.locator('#regPhone').fill('+7 900 000-00-45');
+  await page.locator('#regPin').fill('2468');
+  await page.locator('#consentBox').check();
+  const popupPromise = page.waitForEvent('popup');
+  await page.locator('#regTgBtn').click();
+  await popupPromise;
+  await checkStarted;
+  await page.evaluate(() => window.setUser('newer-user-session', {
+    id: 'newer-session-customer', name: 'Existing Session', role: 'guest', verified: 0
+  }));
+  releaseConfirmation();
+  await expect(page.locator('#toasts .toast', { hasText: 'Сессия изменилась' })).toBeVisible();
+  await expect.poll(() => page.evaluate(() => localStorage.getItem('zt_user'))).toBe('newer-user-session');
+  await expect.poll(() => page.evaluate(() => localStorage.getItem('zt_tg_registration'))).toBeNull();
+  expect(await page.evaluate(() => localStorage.getItem('zt_user'))).not.toBe('stale-confirmed-registration-token');
+});
+
+test('P0 invalid Telegram poll token clears the attempt and exposes an expired state', async ({ page }) => {
+  await page.route('**/api/auth/request-reg-otp', (route) => route.fulfill({
+    status: 200,
+    contentType: 'application/json',
+    body: JSON.stringify({
+      ok: true,
+      pollToken: 'd'.repeat(64),
+      tgUrl: 'https://t.me/test_bot?start=reg_' + '4'.repeat(32),
+      expiresAt: new Date(Date.now() + 60000).toISOString()
+    })
+  }));
+  await page.route('**/api/auth/check-reg', (route) => route.fulfill({
+    status: 400,
+    contentType: 'application/json',
+    body: JSON.stringify({ error: 'Invalid pollToken' })
+  }));
+  await page.goto('/?brand=delivery');
+  await page.waitForFunction(() => typeof window.openAuth === 'function');
+  await page.evaluate(() => window.openAuth(false));
+  await page.locator('#regName').fill('Invalid Token Guest');
+  await page.locator('#regPhone').fill('+7 900 000-00-46');
+  await page.locator('#regPin').fill('2468');
+  await page.locator('#consentBox').check();
+  const popupPromise = page.waitForEvent('popup');
+  await page.locator('#regTgBtn').click();
+  await popupPromise;
+  await expect(page.locator('#regTgStatus')).toHaveAttribute('data-state', 'expired');
+  await expect.poll(() => page.evaluate(() => localStorage.getItem('zt_tg_registration'))).toBeNull();
+  await expect(page.locator('#regTgBtn')).toBeEnabled();
+});
+
+test('P0 Telegram poll retries network failure without losing the attempt', async ({ page }) => {
+  let polls = 0;
+  await page.route('**/api/auth/request-reg-otp', (route) => route.fulfill({
+    status: 200,
+    contentType: 'application/json',
+    body: JSON.stringify({
+      ok: true,
+      pollToken: 'e'.repeat(64),
+      tgUrl: 'https://t.me/test_bot?start=reg_' + '5'.repeat(32),
+      expiresAt: new Date(Date.now() + 60000).toISOString()
+    })
+  }));
+  await page.route('**/api/auth/check-reg', async (route) => {
+    polls += 1;
+    if (polls === 1) {
+      await route.abort('failed');
+      return;
+    }
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify(polls < 3
+        ? { confirmed: false }
+        : {
+            confirmed: true,
+            token: 'network-retry-registration-token',
+            customer: {
+              id: 'network-retry-customer', name: 'Network Retry', role: 'guest',
+              verified: 1, phone: '+7 900 000-00-47', stamps: 0, free: 0,
+              cups: 0, welcome: 0, tg: '90047', qr: 'Z-RETRY'
+            }
+          })
+    });
+  });
+  await page.goto('/?brand=coffee');
+  await page.waitForFunction(() => typeof window.openAuth === 'function');
+  await page.evaluate(() => window.openAuth(false));
+  await page.locator('#regName').fill('Network Retry Guest');
+  await page.locator('#regPhone').fill('+7 900 000-00-47');
+  await page.locator('#regPin').fill('2468');
+  await page.locator('#consentBox').check();
+  const popupPromise = page.waitForEvent('popup');
+  await page.locator('#regTgBtn').click();
+  await popupPromise;
+  await expect.poll(() => polls, { timeout: 10000 }).toBeGreaterThanOrEqual(3);
+  await expect.poll(() => page.evaluate(() => localStorage.getItem('zt_user')), { timeout: 10000 })
+    .toBe('network-retry-registration-token');
+  await expect.poll(() => page.evaluate(() => localStorage.getItem('zt_tg_registration'))).toBeNull();
+});
+
+test('P0 Telegram registration resumes its saved one-time poll after reload', async ({ page }) => {
+  await page.route('**/api/auth/check-reg', async (route) => route.fulfill({
+    status: 200,
+    contentType: 'application/json',
+    body: JSON.stringify({
+      confirmed: true,
+      token: 'resumed-registration-token',
+      customer: {
+        id: 'resumed-registration-customer', name: 'Resumed Guest', role: 'guest',
+        verified: 1, phone: '+7 900 000-00-48', stamps: 0, free: 0,
+        cups: 0, welcome: 0, tg: '90048', qr: 'Z-RESUMED'
+      }
+    })
+  }));
+  await page.goto('/?brand=delivery');
+  await page.waitForFunction(() => typeof window.setUser === 'function');
+  const revision = await page.evaluate(() => Number(window.__authSessionRevision) || 0);
+  await page.evaluate((authSessionRevision) => {
+    localStorage.setItem('zt_tg_registration', JSON.stringify({
+      pollToken: 'f'.repeat(64),
+      expiresAt: Date.now() + 60000,
+      authSessionRevision,
+      sessionToken: null
+    }));
+  }, revision);
+  await page.reload();
+  await expect.poll(() => page.evaluate(() => localStorage.getItem('zt_user')), { timeout: 10000 })
+    .toBe('resumed-registration-token');
+  await expect.poll(() => page.evaluate(() => localStorage.getItem('zt_tg_registration'))).toBeNull();
+});
+
+test('P0 Telegram registration attempt expires at its server TTL', async ({ page }) => {
+  await page.route('**/api/auth/request-reg-otp', (route) => route.fulfill({
+    status: 200,
+    contentType: 'application/json',
+    body: JSON.stringify({
+      ok: true,
+      pollToken: '9'.repeat(64),
+      tgUrl: 'https://t.me/test_bot?start=reg_' + '6'.repeat(32),
+      expiresAt: new Date(Date.now() + 500).toISOString()
+    })
+  }));
+  await page.route('**/api/auth/check-reg', (route) => route.fulfill({
+    status: 200,
+    contentType: 'application/json',
+    body: JSON.stringify({ confirmed: false })
+  }));
+  await page.goto('/?brand=delivery');
+  await page.waitForFunction(() => typeof window.openAuth === 'function');
+  await page.evaluate(() => window.openAuth(false));
+  await page.locator('#regName').fill('TTL Guest');
+  await page.locator('#regPhone').fill('+7 900 000-00-49');
+  await page.locator('#regPin').fill('2468');
+  await page.locator('#consentBox').check();
+  const popupPromise = page.waitForEvent('popup');
+  await page.locator('#regTgBtn').click();
+  await popupPromise;
+  await expect(page.locator('#regTgStatus')).toHaveAttribute('data-state', 'waiting');
+  await expect(page.locator('#regTgStatus')).toHaveAttribute('data-state', 'expired', { timeout: 4000 });
+  await expect.poll(() => page.evaluate(() => localStorage.getItem('zt_tg_registration'))).toBeNull();
+});
+
