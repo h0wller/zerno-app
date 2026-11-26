@@ -1063,10 +1063,6 @@ test('pending profile opens Telegram and preserves the delivery profile return r
     body: '<title>Telegram test route</title>'
   }));
 
-  await page.addInitScript(() => {
-    localStorage.setItem('zt_user', 'pending-profile-test-session');
-    sessionStorage.setItem('splashDone', '1');
-  });
   await page.goto('/?brand=delivery');
   await page.waitForFunction(() =>
     typeof window.setUser === 'function' &&
@@ -1076,6 +1072,7 @@ test('pending profile opens Telegram and preserves the delivery profile return r
     typeof window.openPanel === 'function'
   );
   await page.evaluate(() => {
+    window.__profileMeReady();
     window.setUser('pending-profile-test-session', {
       id: 987654,
       role: 'guest',
@@ -1089,7 +1086,6 @@ test('pending profile opens Telegram and preserves the delivery profile return r
       qr: 'Z-PENDING-PROFILE',
       history: []
     });
-    window.__profileMeReady();
     window.renderProfile();
     window.renderVerifyNote();
     window.openPanel('profile');
