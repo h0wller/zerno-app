@@ -865,3 +865,9 @@ html body:has(#cartPanel.open) #cartFab {
     transform: translateX(-50%);
   }
 }
+
+
+/* Telegram Mini App keeps its signed initData registration flow; hide the browser bot CTA. */
+#authModal.tg-mode #regTgBtn {
+  display: none !important;
+}
