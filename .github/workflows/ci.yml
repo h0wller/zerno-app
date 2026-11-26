@@ -109,7 +109,16 @@ jobs:
         run: |
           echo "ZERNO_TEST_NOW=$(TZ=Europe/Kaliningrad date +'%Y-%m-%dT16:00:00%:z')" >> "$GITHUB_ENV"
       - name: Run isolated regression group
+        if: matrix.group != 'Auth'
         run: npx playwright test ${{ matrix.specs }} --project="${{ matrix.project }}" --workers=${{ matrix.workers }}
+        env:
+          PORT: 3000
+          ADMIN_CODE: '3364'
+          CASHIER_CODE: '2468'
+          DISPATCH_CODE: '5719'
+      - name: Run requested auth modal and registration suite
+        if: matrix.group == 'Auth'
+        run: npx playwright test tests/auth-modal-ux.spec.js tests/registration.spec.js
         env:
           PORT: 3000
           ADMIN_CODE: '3364'
