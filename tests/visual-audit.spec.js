@@ -779,3 +779,164 @@ for (const viewport of REVIEW_VIEWPORTS) {
     );
   });
 }
+
+
+// PR #345: exact registration → pending profile → cashier-code capture matrix.
+// Additional evidence only; ui:baseline snapshots are not changed.
+const REGISTRATION_ACTIVATION_VIEWPORTS = [
+  { id: '320x640', width: 320, height: 640 },
+  { id: '360x640', width: 360, height: 640 },
+  { id: '390x844', width: 390, height: 844 },
+  { id: '844x390', width: 844, height: 390 },
+  { id: '820x1024', width: 820, height: 1024 },
+  { id: '1440x900', width: 1440, height: 900 },
+];
+
+for (const brand of ['coffee', 'delivery']) {
+  for (const viewport of REGISTRATION_ACTIVATION_VIEWPORTS) {
+    test(`visual audit: ${brand} registration and pending activation ${viewport.id}`, async ({ page }) => {
+      test.setTimeout(120000);
+      await page.setViewportSize({ width: viewport.width, height: viewport.height });
+      await page.addInitScript((selectedBrand) => {
+        localStorage.clear();
+        sessionStorage.clear();
+        localStorage.setItem('zt_onb', '1');
+        localStorage.setItem('zt_brand', selectedBrand);
+        sessionStorage.setItem('splashDone', '1');
+      }, brand);
+
+      const pendingCustomer = {
+        id: 'visual-pending-' + brand,
+        name: 'Visual Pending Guest',
+        phone: '+7 900 000-00-77',
+        role: 'guest',
+        verified: 0,
+        cups: 0,
+        stamps: 0,
+        free: 0,
+        welcome: 0,
+        tg: null,
+        notify_tg: 0,
+        notify_web: 0,
+        history: [],
+        qr: 'Z-VISUAL-PENDING-' + brand.toUpperCase()
+      };
+
+      await page.route('**/api/me', (route) => route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ customer: pendingCustomer })
+      }));
+      await page.route('**/api/orders/mine', (route) => route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ orders: [] })
+      }));
+
+      await page.goto(`${BASE}/?brand=${brand}`, { waitUntil: 'domcontentloaded' });
+      await page.waitForFunction(() =>
+        document.documentElement.getAttribute('data-staff-ready') === '1' &&
+        typeof window.openAuth === 'function' &&
+        typeof window.closeAuth === 'function' &&
+        typeof window.setUser === 'function' &&
+        typeof window.renderProfile === 'function' &&
+        typeof window.renderVerifyNote === 'function' &&
+        typeof window.openPanel === 'function'
+      );
+      await page.evaluate(async () => {
+        if (document.fonts?.ready) await document.fonts.ready;
+        window.openAuth(false);
+      });
+
+      const authModal = page.locator('#authModal');
+      await expect(authModal).toBeVisible();
+      await expect(authModal).toHaveClass(/show/);
+      await expect(page.locator('#regForm')).toBeVisible();
+      await expect(page.locator('#regName')).toBeVisible();
+      const registrationFrame = await capture(page, {
+        brand, viewport, state: 'registration',
+      });
+
+      await page.evaluate((customer) => {
+        window.closeAuth();
+        window.setUser('visual-pending-session-' + customer.id, customer);
+        if (typeof window.__profileMeReady === 'function') window.__profileMeReady();
+        window.renderProfile();
+        window.renderVerifyNote();
+        window.openPanel('profile');
+      }, pendingCustomer);
+
+      const profilePanel = page.locator('#panel');
+      await expect(profilePanel).toBeVisible();
+      await expect(page.locator('#pvProfile')).toBeVisible();
+      await expect(page.locator('#profileBox')).toBeVisible();
+      await expect(page.locator('#verifyNote')).toContainText('Профиль не активирован');
+
+      const telegram = page.locator('#verifyNote #actTgBtn');
+      await expect(telegram).toBeVisible();
+      await expect(telegram).toHaveText('Подтвердить через Telegram');
+      const telegramGeometry = await telegram.evaluate((element) => {
+        const rect = element.getBoundingClientRect();
+        return { width: rect.width, height: rect.height };
+      });
+      expect(telegramGeometry.width).toBeGreaterThanOrEqual(44);
+      expect(telegramGeometry.height).toBeGreaterThanOrEqual(44);
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+
+      await page.evaluate(async () => {
+        if (document.fonts?.ready) await document.fonts.ready;
+      });
+      const pendingFrame = await capture(page, {
+        brand, viewport, state: 'pending-activation-telegram',
+      });
+
+      const cashierDetails = page.locator('#verifyNote .profile-activation-details');
+      await expect(cashierDetails.locator('summary')).toContainText('Активировать через кассира');
+      await cashierDetails.scrollIntoViewIfNeeded();
+      await cashierDetails.locator('summary').click();
+      await expect(cashierDetails).toHaveAttribute('open', '');
+      const cashierCode = page.locator('#verifyNote #actCode');
+      const cashierSubmit = page.locator('#verifyNote #actBtn');
+      await expect(cashierCode).toBeVisible();
+      await expect(cashierSubmit).toBeVisible();
+      const cashierGeometry = await Promise.all([
+        cashierCode.evaluate((element) => {
+          const rect = element.getBoundingClientRect();
+          return { width: rect.width, height: rect.height };
+        }),
+        cashierSubmit.evaluate((element) => {
+          const rect = element.getBoundingClientRect();
+          return { width: rect.width, height: rect.height };
+        })
+      ]);
+      for (const target of cashierGeometry) {
+        expect(target.width).toBeGreaterThanOrEqual(44);
+        expect(target.height).toBeGreaterThanOrEqual(44);
+      }
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+
+      const cashierExpandedFrame = await capture(page, {
+        brand, viewport, state: 'pending-activation-cashier-expanded',
+      });
+      fs.writeFileSync(
+        path.join(OUT, `registration-activation-${brand}-${viewport.id}.json`),
+        JSON.stringify({
+          commit: process.env.GITHUB_SHA || null,
+          brand,
+          role: 'guest-pending-activation',
+          viewport,
+          frames: {
+            registration: registrationFrame,
+            pendingActivationTelegram: pendingFrame,
+            cashierCodeExpanded: cashierExpandedFrame
+          },
+          runtime: {
+            telegramTarget: telegramGeometry,
+            cashierTargets: cashierGeometry,
+            documentWidth: await page.evaluate(() => document.documentElement.scrollWidth)
+          }
+        }, null, 2)
+      );
+    });
+  }
+}

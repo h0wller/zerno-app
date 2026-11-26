@@ -37,7 +37,7 @@ async function refreshProfileLive(){
   try{
     var r=await api('/me'); /* ← ЗДЕСЬ БЫЛО /window.me, исправлено на /me */
     if(!r||!r.customer)return;
-    var sig=r.customer.stamps+':'+r.customer.free+':'+r.customer.welcome+':'+r.customer.tg+':'+r.customer.notify_tg+':'+r.customer.notify_web;
+    var sig=r.customer.verified+':'+r.customer.stamps+':'+r.customer.free+':'+r.customer.welcome+':'+r.customer.tg+':'+r.customer.notify_tg+':'+r.customer.notify_web;
     if(sig!==lastProfileSig){
       lastProfileSig=sig;
       window.me=r.customer;

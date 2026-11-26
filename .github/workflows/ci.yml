@@ -109,7 +109,16 @@ jobs:
         run: |
           echo "ZERNO_TEST_NOW=$(TZ=Europe/Kaliningrad date +'%Y-%m-%dT16:00:00%:z')" >> "$GITHUB_ENV"
       - name: Run isolated regression group
+        if: matrix.group != 'Auth'
         run: npx playwright test ${{ matrix.specs }} --project="${{ matrix.project }}" --workers=${{ matrix.workers }}
+        env:
+          PORT: 3000
+          ADMIN_CODE: '3364'
+          CASHIER_CODE: '2468'
+          DISPATCH_CODE: '5719'
+      - name: Run requested auth modal and registration suite
+        if: matrix.group == 'Auth'
+        run: npx playwright test tests/auth-modal-ux.spec.js tests/registration.spec.js
         env:
           PORT: 3000
           ADMIN_CODE: '3364'
@@ -126,6 +135,142 @@ jobs:
             artifacts/visual-audit/
           if-no-files-found: ignore
           retention-days: 7
+
+  auth-registration-before:
+    name: E2E / Auth registration baseline (pizza 7330120)
+    if: github.event_name == 'pull_request' && github.event.pull_request.number == 345
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout the unchanged pre-PR baseline
+        uses: actions/checkout@v7
+        with:
+          ref: 7330120947944ab68393e9f041d3a3fbd224cf25
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: 'npm'
+      - name: Normalize dependency lockfile
+        run: npm install --package-lock-only --ignore-scripts --no-audit --no-fund
+      - name: Install dependencies
+        run: npm ci
+      - name: Install Playwright Chromium
+        run: npx playwright install chromium
+      - name: Create an isolated visual capture spec (temporary CI checkout only)
+        run: |
+          mkdir -p artifacts/auth-registration-before
+          cat > tests/__auth-registration-before-baseline.spec.js <<'SPEC'
+          import { test, expect } from '@playwright/test';
+          import { mkdirSync } from 'node:fs';
+          import { join } from 'node:path';
+
+          const brands = ['coffee', 'delivery'];
+          const viewports = [
+            { width: 320, height: 640 },
+            { width: 360, height: 640 },
+            { width: 390, height: 844 },
+            { width: 844, height: 390 },
+            { width: 820, height: 1024 },
+            { width: 1440, height: 900 }
+          ];
+
+          for (const brand of brands) {
+            for (const viewport of viewports) {
+              test('pizza 7330120 baseline ' + brand + ' ' + viewport.width + 'x' + viewport.height, async ({ page }, testInfo) => {
+                await page.setViewportSize(viewport);
+                await page.route('**/api/orders/mine', (route) => route.fulfill({
+                  status: 200,
+                  contentType: 'application/json',
+                  body: JSON.stringify({ orders: [] })
+                }));
+
+                await page.goto('/?brand=' + brand);
+                await page.evaluate(() => {
+                  localStorage.removeItem('zt_user');
+                  localStorage.removeItem('zt_role');
+                  localStorage.setItem('zt_onb', '1');
+                  sessionStorage.setItem('splashDone', '1');
+                });
+                await page.reload();
+                await page.waitForFunction(() =>
+                  typeof window.openAuth === 'function' &&
+                  typeof window.setUser === 'function' &&
+                  typeof window.renderProfile === 'function' &&
+                  typeof window.renderVerifyNote === 'function' &&
+                  typeof window.__profileMeReady === 'function'
+                );
+                await page.evaluate(() => {
+                  window.__profileMeReady();
+                  return document.fonts.ready;
+                });
+
+                await page.evaluate(() => window.openAuth(false));
+                await expect(page.locator('#authModal')).toHaveClass(/show/);
+                await expect(page.locator('#regForm')).toBeVisible();
+                const prefix = brand + '-' + viewport.width + 'x' + viewport.height;
+                const registrationPath = join('artifacts/auth-registration-before', prefix + '-registration.png');
+                mkdirSync('artifacts/auth-registration-before', { recursive: true });
+                await page.screenshot({ path: registrationPath, fullPage: false });
+                await testInfo.attach(prefix + '-registration-before.png', {
+                  path: registrationPath,
+                  contentType: 'image/png'
+                });
+
+                await page.evaluate((customer) => {
+                  window.closeAuth();
+                  window.setUser('pizza-7330120-baseline-session', customer);
+                  window.__profileMeReady();
+                  window.renderProfile();
+                  window.renderVerifyNote();
+                  window.openPanel();
+                }, {
+                  id: 'before-' + brand + '-' + viewport.width,
+                  name: 'Baseline Guest',
+                  phone: '+7 900 000-00-01',
+                  role: 'guest',
+                  cups: 0,
+                  stamps: 0,
+                  free: 0,
+                  qr: 'Z-BEFORE',
+                  verified: 0,
+                  welcome: 0,
+                  tg: 0,
+                  history: []
+                });
+                await expect(page.locator('#profileBox')).toBeVisible();
+                if (brand === 'coffee') {
+                  await expect(page.locator('#verifyNote')).toBeVisible();
+                  await expect(page.locator('#actCode')).toBeVisible();
+                } else {
+                  // pizza/7330120 intentionally hides the pending activation note for delivery guests.
+                  await expect(page.locator('#verifyNote')).toBeHidden();
+                  await expect(page.locator('#actCode')).toHaveCount(0);
+                }
+                await page.evaluate(() => document.fonts.ready);
+                const pendingPath = join('artifacts/auth-registration-before', prefix + '-pending-activation.png');
+                await page.screenshot({ path: pendingPath, fullPage: false });
+                await testInfo.attach(prefix + '-pending-activation-before.png', {
+                  path: pendingPath,
+                  contentType: 'image/png'
+                });
+              });
+            }
+          }
+          SPEC
+      - name: Capture pre-PR registration and pending-activation frames
+        run: npx playwright test tests/__auth-registration-before-baseline.spec.js --project=chromium --workers=1 --retries=0
+        env:
+          PORT: 3000
+      - name: Upload pre-PR baseline frames
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: auth-registration-before-pizza-7330120-${{ github.run_id }}
+          path: |
+            playwright-report/
+            test-results/
+          if-no-files-found: error
+          retention-days: 30
 
   visual-audit-capture:
     name: E2E / Visual UX capture

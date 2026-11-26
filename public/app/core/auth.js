@@ -34,7 +34,7 @@
     var at = document.getElementById('authTitle');
     if (rf) rf.style.display = login ? 'none' : 'flex';
     if (lf) lf.style.display = login ? 'flex' : 'none';
-    if (at) at.textContent = login ? 'Вход по номеру' : 'Создайте профиль';
+    if (at) at.textContent = login ? 'Вход по номеру' : 'Создание профиля';
     var regTab = document.getElementById('toReg');
     var loginTab = document.getElementById('toLogin');
     if (regTab) regTab.setAttribute('aria-pressed', String(!login));
@@ -68,16 +68,20 @@
   }
 
   function adaptAuthForTelegram(modal) {
-    var isTg = !!(window.__isTgMiniApp || window.__tgInitData || (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData));
-    if (!isTg || !modal) return;
-
-    modal.classList.add('tg-mode');
-    var tgBtn = document.getElementById('regTgBtn');
-    if (tgBtn) tgBtn.style.display = 'none';
+    if (!modal) return;
+    var webApp = window.Telegram && window.Telegram.WebApp;
+    var isTg = !!(
+      window.__isTgMiniApp ||
+      window.__tgInitData ||
+      (webApp && typeof webApp.initData === 'string' && webApp.initData.length > 0)
+    );
+    modal.classList.toggle('tg-mode', isTg);
+    var telegramEntry = document.getElementById('regTgBtn');
+    if (telegramEntry) telegramEntry.hidden = isTg;
+    if (!isTg) return;
 
     var hint = modal.querySelector('.mhint, .subhint, #regForm .hint');
     if (hint) hint.style.display = 'none';
-
     // Согласие рендерится в authModal и проверяется обработчиком регистрации независимо от среды.
 
     if (window.__tgUser && window.__tgUser.name) {
@@ -91,31 +95,21 @@
     if (!modal) return;
     adaptAuthForTelegram(modal);
 
-    var isDelivery = window.brand === 'delivery';
     var title = document.getElementById('authTitle');
     var subtitle = modal.querySelector('.msub');
-    var registrationHelp = modal.querySelector('#regForm .auth-help');
-
     if (login) {
       if (title) title.textContent = 'Вход по номеру';
-      if (subtitle) subtitle.textContent = 'Войдите по номеру телефона, чтобы вернуться к своему профилю и заказам.';
+      if (subtitle) {
+        subtitle.textContent = 'Войдите по номеру телефона, чтобы вернуться к своему профилю и заказам.';
+        subtitle.hidden = false;
+      }
       return;
     }
 
-    if (title) title.textContent = isDelivery
-      ? 'Профиль «Пятницы»'
-      : 'Профиль «…и кофе»';
-
+    if (title) title.textContent = 'Создание профиля';
     if (subtitle) {
-      subtitle.textContent = isDelivery
-        ? 'Профиль сохраняет ваши заказы. Первая доставка бесплатна, если сервер назначит вам персональный код: корзина применит его автоматически и покажет результат в расчёте доставки.'
-        : '1 штамп за покупку; 10 штампов — бесплатный кофе. Карта и QR будут в профиле: покажите QR кассиру. Приветственный подарок появится там только после начисления сервером.';
-    }
-
-    if (registrationHelp) {
-      registrationHelp.textContent = isDelivery
-        ? 'Нет Telegram? Создайте профиль, получите 4-значный код у кассира и введите его в профиле. До подтверждения номера заказы недоступны.'
-        : 'Нет Telegram? Создайте профиль, получите 4-значный код у кассира и введите его в профиле. После активации откроются карта штампов и QR.';
+      subtitle.textContent = '';
+      subtitle.hidden = true;
     }
   }
 
@@ -136,8 +130,6 @@
 
     setAuthFormMode(login);
     applyAuthBrand(login);
-    if (typeof window.renderRegistrationState === 'function') window.renderRegistrationState();
-
     if (typeof syncOverlay === 'function') syncOverlay();
     if (authFocusTimer) clearTimeout(authFocusTimer);
     authFocusTimer = setTimeout(function () {
@@ -152,7 +144,6 @@
 
   function resetAuthTransientState() {
     // Временные состояния не должны переживать закрытие модалки.
-    if (typeof window.resetRegistrationState === 'function') window.resetRegistrationState();
     loginMode = 'pin';
 
     var consent = document.getElementById('consentBox');
@@ -312,8 +303,6 @@
           window.__tgUser = r.tgUser;
           var rn = document.getElementById('regName');
           if (rn && !rn.value && r.tgUser && r.tgUser.name) rn.value = r.tgUser.name;
-          var rtb = document.getElementById('regTgBtn');
-          if (rtb) rtb.style.display = 'none';
         }
       } catch (_) {}
     }

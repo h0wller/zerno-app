@@ -22,7 +22,7 @@
 
 | Модуль | Владеет | Контракты |
 | --- | --- | --- |
-| `core/state.js` | window-глобалы: USER_TOKEN, onboarded, MENU, meta, me, mode, editMode, brand; CATS/TINT; iOS gesture-guard; детект TG Mini App | `window.CATS`, `window.TINT`, `window.__isTgMiniApp` |
+| `core/state.js` | window-глобалы: USER_TOKEN, onboarded, MENU, meta, me, mode, editMode, brand; CATS/TINT; сохраняет исходные pathname/search/hash до очистки диплинка; iOS gesture-guard; детект TG Mini App | `window.CATS`, `window.TINT`, `window.__isTgMiniApp`, `window.__initialPathname`, `window.__initialSearch`, `window.__initialHash` |
 | `core/utils.js` | Чистые утилиты форматирования/DOM | `$`, `clone`, `esc`, `fmt`, `fmtTs`, `ph10`, `fmtPhone`, `bindMask`, `fmtMulti` |
 | `core/api.js` | Определяет базовый URL API для app-origin и локальных frontend-серверов | `window.API_BASE` |
 | `core/ui.js` | `api()` с обработкой 401 и 20-секундным timeout; дедуп только безопасных GET без caller AbortSignal; ARIA live toasts с адаптивной длительностью | `window.api`, `window.toast`, `window.renderUpd` |
@@ -36,7 +36,7 @@
 | `admin-extra.js` | `applyBrandChrome()`: содержимое `#tickerTrack`, измерение и дублирование `.tickerGroup` для непрерывного цикла на любой ширине, невидимые click/keyboard pause-play и reduced-motion state; final synchronization of attributes on the existing `#brandLogoImg` and load-error fallback without replacing the `#brandMark` subtree; `.mark` (official SVG/img; F5.39: Friday — horizontal SVG 160×40 without webp raster); `loadPromos` (модалка админа); guard'ы кофейного меню до загрузки MENU | `window.applyBrandChrome`, `window.loadPromos` |
 | `core/catalog.js` | `loadMenu`, `renderModes`; обработчик переключателя режима делегирует вызов `window.setMode` (реализация находится в `core/views.js`) | `window.loadMenu`, `window.renderModes` |
 | `core/splash.js` | Динамический сплэш `#brandSplash`, выбор бренда `finish()` | — |
-| `profile-brand.js` | Брендовые правила профиля (fridayInfo, myOrders, placebox), `renderVerifyNote`, relink; единственная обёртка renderProfile | `window.applyProfileBrand`, `window.renderVerifyNote` |
+| `profile-brand.js` | Брендовые правила профиля (fridayInfo, myOrders, placebox), `renderVerifyNote`, relink; module-state pending activation status (`idle/requesting/waiting/confirmed/error/expired`), видимый Telegram CTA и единственная disclosure для кода кассира | `window.applyProfileBrand`, `window.renderVerifyNote` |
 | `core/auth.js` | `applyAuthBrand` — логотип и подзаголовок модалки авторизации | `window.applyAuthBrand` |
 | `brands/registry.js` | — манифест (window.BRANDS, brandConfig()); | `ui/brand-tokens.css` | — токены брендов
 
@@ -79,7 +79,7 @@
 | --- | --- | --- |
 | `profile.js` | Готовность `me`, единый рендер карточки лояльности внутри `#profileCoffeeSection`, `updateMbonusBadge`, `renderProfile`, редактирование имени и раскрытие истории | `window.renderBonus`, `window.renderProfile` |
 | `profile-orders.js` | Последний заказ и полный список заказов; общий кэш/запрос для карточки и модалки; обработка «Отследить» | `window.loadMyOrders`, `window.renderOrdersModal`, `window.updateMyOrdersCache`, `window.invalidateMyOrders` |
-| `profile-brand.js` | Включение брендовых секций профиля, блок «Пятница», единый `renderVerifyNote` | `window.applyProfileBrand`, `window.renderVerifyNote` |
+| `profile-brand.js` | Включение брендовых секций профиля, блок «Пятница», единый `renderVerifyNote`; module-state Telegram activation (`idle/requesting/waiting/confirmed/error/expired`) persists through rerender; visible Telegram CTA, cashier-code-only disclosure | `window.applyProfileBrand`, `window.renderVerifyNote` |
 | `core/qr.js` | `drawQR`, единственная полноэкранная QR-модалка `#qrModal`, открытие QR из профиля, wake lock | `window.drawQR`, `window.openQRFull`, `window.closeQRFull` |
 | `core/review.js` | `#reviewBtn`, `maybeAskReview` | `window.maybeAskReview` |
 | `core/preorder-timer.js` | Таймеры «Предзаказ» в карточках заказов профиля | `window.PreorderTimer` |
@@ -90,9 +90,10 @@
 | Модуль | Владеет | Контракты |
 | --- | --- | --- |
 | `core/auth-session.js` | Установка/сброс клиентской сессии, монотонная ревизия `window.__authSessionRevision` для защиты асинхронных auth-flow от устаревших ответов, сброс `__ztAuthDead`, безопасная запись localStorage, повторная привязка сохранённого FCM token после входа | `window.setUser`; `window.__authSessionRevision`; `ztBus` event `auth:user-changed` |
-| `core/auth.js` | Единственный владелец `#authModal` (open/close/swap и сброс временного состояния), вход по PIN/OTP, `#profileTopBtn`, выход и удаление аккаунта | `window.openAuth`, `window.closeAuth`, `window.authSwap` |
+| `core/auth.js` | Единственный владелец `#authModal` (open/close/swap и сброс временного состояния), вход по PIN/OTP, `#profileTopBtn`, выход и удаление аккаунта; отдельный входной OTP не связан с регистрационным SMS UI | `window.openAuth`, `window.closeAuth`, `window.authSwap` |
 | `core/auth-pin.js` | Единственный владелец `#setPinModal`: задание PIN для старого профиля и смена PIN | `window.openSetPin`, `window.closeSetPin` |
-| `core/registration.js` | Регистрация, согласие, OTP Telegram и поллинг подтверждения; принятая Telegram-попытка хранит собственный lifecycle независимо от auth-модалки; единственный владелец `#regTgRow` и динамической видимости `#regOtpBtn`/`#regOtpRow` по `window.SMS_AUTH_ENABLED` | `window.resetRegistrationState`, `window.renderRegistrationState` |
+| `core/telegram-link.js` | Общий helper внешних Telegram deep links: синхронный popup в обычном браузере, нативный `openTelegramLink` только в Mini App, blocked-popup fallback возвращается вызывающему модулю; DOM status принадлежат registration/profile owners | `isTelegramMiniApp`, `openTelegramLink` |
+| `core/registration.js` | Создание профиля и согласие; web/PWA имеет «Зарегистрироваться через Telegram» с одноразовым `check-reg` polling, TTL, resume, отменой предыдущей попытки и защитой `__authSessionRevision`; обычное «Создать профиль» оставляет pending-активацию; регистрацию и профиль обслуживает общий helper `core/telegram-link.js`; регистрационный SMS UI отсутствует | — |
 | `core/staffpin.js` | `#pinModal` (код сотрудника), `tryActivate`, делегирование submit форм | `window.openPin`, `window.closePin`, `window.tryActivate` |
 
 ## 8. Персонал: кассир и сканер
@@ -133,7 +134,7 @@
 | `ui/settings.js` | `#settingsModal` (PIN, каналы уведомлений, выход, typed-confirmation удаления); шестерёнка и управление фокусом | `window.openProfileSettings`, `window.closeProfileSettings` |
 | `core/fx.js` | Канвас конфетти `#fx` | `window.confetti` |
 | `core/a11y.js` | loading=lazy для небрендовых изображений; общий алгоритм удержания Tab-фокуса в границах модалки без владения самими модалками | `window.trapModalFocus` |
-| `core/deeplink.js` | Диплинки: brand/tab/no/reorder/auth_token; legacy `staff_chat` делегирует в `chat.js` | — |
+| `core/deeplink.js` | Диплинки: brand/tab/no/reorder/auth_token; формирует безопасный относительный URL возврата на исходный экран из сохранённых entry pathname/search/hash без auth/poll/Telegram launch secrets и QR-trigger; legacy `staff_chat` делегирует в `chat.js` | `window.getAppReturnPath` |
 | `ui/styles.js` | Глобальные инжекции СЛОЯ 3: z-index, body.panel-open, пульсы чата, футер, cartPanel ≥900px, бар подсказок | — |
 
 ## 12. Промокоды и дашборд владельца

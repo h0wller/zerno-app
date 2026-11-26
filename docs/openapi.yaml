@@ -201,7 +201,11 @@ paths:
   /api/auth/request-reg-otp:
     post:
       tags: [Auth]
-      summary: Подтверждение регистрации через Telegram (SMS — отдельная опция)
+      summary: Начать регистрацию через Telegram-бота
+      description: >-
+        Создаёт Telegram deep link для проверки собственного номера телефона.
+        Для PWA returnTo обязателен; PIN и consent обязательны. SMS не показывается
+        в PWA; legacy SMS-вариант остаётся отдельно управляемой серверной интеграцией.
       requestBody:
         required: true
         content:
@@ -211,22 +215,27 @@ paths:
               required: [phone]
               properties:
                 phone: { type: string }
-                name:  { type: string }
-                via:   { type: string, enum: [tg, sms], default: tg, description: 'SMS доступна только при SMS_AUTH_ENABLED=true' }
+                name: { type: string, maxLength: 24 }
+                pin: { type: string, minLength: 4, maxLength: 4, pattern: '^[0-9]{4}$', description: 'Required for PWA requests with returnTo' }
+                consent: { type: boolean, enum: [true], description: 'Required for PWA requests with returnTo' }
+                returnTo: { type: string, minLength: 2, maxLength: 2048, pattern: '^/', description: 'Safe relative path on the originating app origin' }
+                via: { type: string, enum: [tg, sms], default: tg, description: 'SMS is separately gated; it is not offered by the PWA' }
       responses:
         '200':
-          description: OK
+          description: Telegram deep link and one-time browser polling credential
           content:
             application/json:
               schema:
                 type: object
+                required: [ok, tgUrl, pollToken, expiresAt]
                 properties:
-                  ok:        { type: boolean }
-                  tgUrl:     { type: string }
-                  pollToken: { type: string, description: "Случайный секрет этой попытки; передавать только в POST /api/auth/check-reg" }
-        '400': { description: Неверный номер }
-        '409': { description: Номер уже зарегистрирован }
-        '429': { description: Слишком частые запросы }
+                  ok: { type: boolean }
+                  tgUrl: { type: string, format: uri }
+                  pollToken: { type: string, pattern: '^[a-f0-9]{64}$', description: 'One-time attempt secret used only by POST /api/auth/check-reg' }
+                  expiresAt: { type: string, format: date-time }
+        '400': { description: Invalid phone, PIN, consent or returnTo }
+        '409': { description: Phone already registered }
+        '429': { description: Telegram registration rate limit reached }
 
   /api/auth/check-reg:
     post:
@@ -321,6 +330,42 @@ paths:
         '403': { description: Неверный код активации }
         '409': { description: Профиль уже активирован }
         '429': { description: Превышен лимит неверных кодов; Retry-After содержит время ожидания }
+
+  /api/auth/tg-link/request:
+    post:
+      tags: [Auth]
+      summary: Запросить активацию ожидающего гостевого профиля через Telegram
+      description: >-
+        Требует BearerAuth текущего гостя с verified=0. Выдаёт одноразовую ссылку
+        сроком до 10 минут. Бот проверяет собственный контакт пользователя и
+        совпадение телефона. Session token не передаётся в URL Telegram.
+      security: [{ BearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [returnTo]
+              properties:
+                returnTo: { type: string, minLength: 2, maxLength: 2048, pattern: '^/' }
+      responses:
+        '200':
+          description: Одноразовая ссылка Telegram и срок её действия
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, tgUrl, expiresAt]
+                properties:
+                  ok: { type: boolean, enum: [true] }
+                  tgUrl: { type: string, format: uri }
+                  expiresAt: { type: string, format: date-time }
+        '400': { description: Unsafe or invalid returnTo }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { description: Current customer is not a guest profile }
+        '409': { description: Profile is already activated or has no phone number }
+        '503': { description: Telegram bot is not configured }
 
   /api/auth/tg-link:
     post:

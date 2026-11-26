@@ -12,7 +12,7 @@ import { lockedSeconds, registerFail, clearLock, getOtpSendState, getOtpSendBloc
 import { otpStore, isOtpLive, consumeOtp } from '../utils/otp.js';
 import { nowISO } from '../utils/id-time.js';
 import { sendSms } from '../services/sms.js';
-import { tgSend, TG_TOKEN } from '../services/telegram.js';
+import { tgSend, TG_TOKEN, APP_URL } from '../services/telegram.js';
 import { sendPush } from '../services/push.js';
 import { userGuard, pendingGuard, adminGuard, getBearerToken } from '../middleware/auth.js';
 import { grantBonus, getBonusConfig, setBonusConfig, QR_SOURCE } from '../domain/bonuses.js';
@@ -57,6 +57,22 @@ if (process.env.NODE_ENV === 'test') {
     }
     otpStore.set(key, { code, expires: Date.now() + expiresInMs });
     return res.json({ ok: true });
+  });
+
+  authRouter.post('/__test/otp/inspect', (req, res) => {
+    const key = String(req.body?.key || '');
+    if (!/^(?:tgactivate:[a-f0-9]{48}|tgactivate-chat:[0-9]+)$/.test(key)) {
+      return res.status(400).json({ error: 'Invalid test OTP inspection key' });
+    }
+    const entry = otpStore.get(key);
+    if (!entry) return res.json({ exists: false });
+    return res.json({
+      exists: true,
+      customerId: entry.customerId || null,
+      phone: entry.phone || null,
+      token: entry.token || null,
+      expires: entry.expires || null
+    });
   });
 }
 
@@ -161,6 +177,15 @@ authRouter.post('/api/auth/tg-link', (req, res) => {
 
 authRouter.post('/api/auth/request-reg-otp', async (req, res) => {
   const p = fmtPhone(req.body.phone || '');
+  const reqPin = String(req.body.pin || '').trim();
+  const reqSource = req.body.src === QR_SOURCE ? QR_SOURCE : '';
+  if ((req.body.returnTo || req.body.pin) && req.body.consent !== 1 && req.body.consent !== true) {
+    return res.status(400).json({ error: 'Нужно согласие с политикой конфиденциальности' });
+  }
+  if (reqPin && !/^\d{4}$/.test(reqPin)) return res.status(400).json({ error: 'PIN — ровно 4 цифры' });
+  const returnUrl = req.body.returnTo ? normalizeAppReturnUrl(req.body.returnTo) : null;
+  if (req.body.returnTo && !returnUrl) return res.status(400).json({ error: 'Некорректный адрес возврата в приложение' });
+  if (returnUrl && !/^\d{4}$/.test(reqPin)) return res.status(400).json({ error: 'Для регистрации через Telegram задайте PIN из четырёх цифр' });
   const via = req.body.via === 'sms' ? 'sms' : 'tg';
   if (ph10(p).length < 10) return res.status(400).json({ error: 'Введите номер полностью' });
   if (via === 'sms' && !SMS_AUTH_ENABLED) {
@@ -181,7 +206,7 @@ authRouter.post('/api/auth/request-reg-otp', async (req, res) => {
     const pollToken = crypto.randomBytes(32).toString('hex');
     const reqName = String(req.body.name || '').trim();
     otpStore.set('regtg:' + token, {
-      phone: p, name: reqName, pollToken, expires: Date.now() + 10 * 60 * 1000
+      phone: p, name: reqName, pin: reqPin, src: reqSource, returnUrl, pollToken, expires: Date.now() + 10 * 60 * 1000
     });
     otpStore.set('reg:' + p, { code: null, confirmed: false, expires: now + 10 * 60 * 1000 });
     recordOtpSend('register', p, now);
@@ -189,7 +214,8 @@ authRouter.post('/api/auth/request-reg-otp', async (req, res) => {
     return res.json({
       ok: true,
       pollToken,
-      tgUrl: `https://t.me/${TG_BOT_USERNAME}?start=reg_${token}`
+      tgUrl: `https://t.me/${TG_BOT_USERNAME}?start=reg_${token}`,
+      expiresAt: new Date(now + 10 * 60 * 1000).toISOString()
     });
   }
 
@@ -279,6 +305,64 @@ authRouter.post('/api/auth/register', validate(RegisterSchema), (req, res) => {
   if (okSms) grantBonus(r.customer.id, req.body.src === QR_SOURCE ? 'qr' : 'signup');
   res.json({ token: issueToken(r.customer.id), customer: cust(db.prepare('SELECT * FROM customers WHERE id=?').get(r.customer.id)) });
 });
+function normalizeAppReturnUrl(value) {
+  const raw = String(value || '').trim();
+  if (!raw || !raw.startsWith('/') || raw.startsWith('//') || raw.includes('\\')) {
+    return null;
+  }
+  for (let index = 0; index < raw.length; index += 1) {
+    const code = raw.charCodeAt(index);
+    if (code <= 0x1f || code === 0x7f) return null;
+  }
+  try {
+    const target = new URL(raw, APP_URL);
+    if (target.origin !== new URL(APP_URL).origin) return null;
+    ['auth_token', 'access_token', 'token', 'pollToken'].forEach(key => target.searchParams.delete(key));
+    return target.toString();
+  } catch (_) {
+    return null;
+  }
+}
+
+authRouter.post('/api/auth/tg-link/request', userGuard, (req, res) => {
+  const customerId = String(req.user.id || '');
+  const customer = db.prepare('SELECT * FROM customers WHERE id=?').get(customerId);
+  if (!customer || customer.role !== 'guest') {
+    return res.status(403).json({ error: 'Подтверждение Telegram доступно только гостевому профилю' });
+  }
+  if (Number(customer.verified) > 0) {
+    return res.status(409).json({ error: 'Профиль уже активирован' });
+  }
+  if (!customer.phone) {
+    return res.status(409).json({ error: 'У профиля нет номера телефона для подтверждения' });
+  }
+
+  const returnUrl = normalizeAppReturnUrl(req.body?.returnTo);
+  if (!returnUrl) {
+    return res.status(400).json({ error: 'Не удалось определить безопасный адрес возврата в приложение' });
+  }
+  if (!/^[A-Za-z0-9_]{5,32}$/.test(String(TG_BOT_USERNAME || ''))) {
+    return res.status(503).json({ error: 'Telegram-бот пока не настроен' });
+  }
+
+  const userKey = 'tgactivate-user:' + customerId;
+  const previous = otpStore.get(userKey);
+  if (previous?.token) otpStore.delete('tgactivate:' + previous.token);
+
+  const token = crypto.randomBytes(24).toString('hex');
+  const expires = Date.now() + 10 * 60 * 1000;
+  otpStore.set('tgactivate:' + token, {
+    customerId,
+    phone: fmtPhone(customer.phone),
+    returnUrl,
+    expires
+  });
+  otpStore.set(userKey, { token, expires });
+
+  const tgUrl = 'https://t.me/' + TG_BOT_USERNAME + '?start=activate_' + token;
+  return res.json({ ok: true, tgUrl, expiresAt: new Date(expires).toISOString() });
+});
+
 authRouter.post('/api/auth/activate-guest', userGuard,(req, res) => {
   const wait = lockedSeconds(req, 'act', req.user.id);
   if (wait > 0) {

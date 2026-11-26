@@ -4,6 +4,34 @@ import { restoreOrderItems } from './order-reorder.js';
 'use strict';
 
 var QS = new URLSearchParams(location.search);
+
+function buildAppReturnPath(brandOverride) {
+  var pathname = window.__initialPathname || location.pathname || '/';
+  var search = typeof window.__initialSearch === 'string' ? window.__initialSearch : location.search;
+  var hash = typeof window.__initialHash === 'string' ? window.__initialHash : location.hash;
+  var target = new URL(pathname + search + hash, location.origin);
+
+  [
+    'auth_token', 'access_token', 'token', 'pollToken', 'ref',
+    'tgWebAppData', 'tgWebAppPlatform', 'tgWebAppVersion', 'tgWebAppBotId'
+  ].forEach(function (key) {
+    target.searchParams.delete(key);
+  });
+
+  if (brandOverride === 'coffee' || brandOverride === 'delivery') {
+    target.searchParams.set('brand', brandOverride);
+  }
+
+  // Older Telegram clients may place signed launch data inside the URL hash.
+  if (/tgWebApp(?:Data|Platform|Version|BotId)=/i.test(target.hash)) {
+    target.hash = '';
+  }
+
+  return target.pathname + target.search + target.hash;
+}
+window.getAppReturnPath = buildAppReturnPath;
+
+
 // A one-time Telegram auth token must not remain in browser history/referrers.
 if (QS.has('auth_token')) {
   var safeQuery = new URLSearchParams(location.search);

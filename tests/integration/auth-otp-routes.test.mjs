@@ -88,6 +88,7 @@ before(async () => {
       TELEGRAM_BOT_TOKEN: '',
       PUBLIC_URL: '',
       TG_WEBHOOK_SECRET: 'integration-test-secret',
+      TG_BOT_USERNAME: 'test_bot',
       ADMIN_CODE: 'integration-test-admin',
       CASHIER_CODE: '',
       DISPATCH_CODE: '',
@@ -250,6 +251,158 @@ test('cashier activation does not invent a welcome gift when bonus_cfg disables 
   }
 });
 
+test('pending guest activates through a one-time Telegram pairing link using their own matching contact', async () => {
+  const bonusKey = "SELECT value FROM meta WHERE key='bonus_cfg'";
+  const previousConfig = inspectDb.prepare(bonusKey).get();
+  const enabledConfig = {
+    days: 30,
+    kinds: {
+      signup: { coffee: 10, delivery: 0, freeFirstDelivery: 0 },
+      qr: { coffee: 10, delivery: 0, freeFirstDelivery: 0 },
+      install: { coffee: 0, delivery: 0, freeFirstDelivery: 0 }
+    }
+  };
+  inspectDb.prepare(
+    "INSERT INTO meta(key,value) VALUES('bonus_cfg',?) ON CONFLICT(key) DO UPDATE SET value=excluded.value"
+  ).run(JSON.stringify(enabledConfig));
+  try {
+  const phone = '+7 900 000-01-31';
+  const pending = await api('/api/auth/register', {
+    name: 'TG Activation Guest',
+    phone,
+    pin: '2468',
+    consent: true
+  });
+  assert.equal(pending.status, 200, JSON.stringify(pending.json));
+  assert.equal(pending.json.customer?.verified, 0);
+
+  const returnTo = '/?brand=delivery&tab=profile#profile';
+  const anonymous = await api('/api/auth/tg-link/request', { returnTo });
+  assert.equal(anonymous.status, 401);
+
+  const unsafeReturn = await api('/api/auth/tg-link/request', {
+    returnTo: 'https://evil.example/collect'
+  }, pending.json.token);
+  assert.equal(unsafeReturn.status, 400);
+
+  const requested = await api('/api/auth/tg-link/request', { returnTo }, pending.json.token);
+  assert.equal(requested.status, 200, JSON.stringify(requested.json));
+  assert.equal(requested.json.ok, true);
+  const telegramUrl = new URL(requested.json.tgUrl);
+  assert.equal(telegramUrl.hostname, 't.me');
+  assert.equal(telegramUrl.pathname, '/test_bot');
+  const startPayload = telegramUrl.searchParams.get('start') || '';
+  assert.match(startPayload, /^activate_[a-f0-9]{48}$/);
+  const activationToken = startPayload.slice('activate_'.length);
+  const challengeState = await api('/__test/otp/inspect', { key: 'tgactivate:' + activationToken });
+  assert.equal(challengeState.status, 200, JSON.stringify(challengeState.json));
+  assert.equal(challengeState.json.exists, true);
+  assert.equal(challengeState.json.customerId, String(pending.json.customer.id));
+  assert.equal(challengeState.json.phone, phone);
+  assert.equal(telegramUrl.searchParams.has('auth_token'), false);
+  assert.equal(telegramUrl.searchParams.has('token'), false);
+
+  const chatId = 900000131;
+  const start = await webhook({
+    message: {
+      chat: { id: chatId, type: 'private' },
+      from: { id: chatId, first_name: 'TG Activation Guest' },
+      text: '/start ' + startPayload
+    }
+  });
+  assert.equal(start.status, 200);
+  const chatState = await api('/__test/otp/inspect', { key: 'tgactivate-chat:' + chatId });
+  assert.equal(chatState.status, 200, JSON.stringify(chatState.json));
+  assert.equal(chatState.json.exists, true);
+  assert.equal(chatState.json.token, activationToken);
+  assert.equal(chatState.json.customerId, String(pending.json.customer.id));
+
+  const foreignContact = await webhook({
+    message: {
+      chat: { id: chatId, type: 'private' },
+      from: { id: chatId },
+      contact: { phone_number: phone, user_id: chatId + 1 }
+    }
+  });
+  assert.equal(foreignContact.status, 200);
+  const afterForeignContact = inspectDb.prepare(
+    'SELECT verified, tg FROM customers WHERE id=?'
+  ).get(pending.json.customer.id);
+  assert.equal(afterForeignContact?.verified, 0);
+  assert.equal(afterForeignContact?.tg, null);
+
+  const wrongPhone = await webhook({
+    message: {
+      chat: { id: chatId, type: 'private' },
+      from: { id: chatId },
+      contact: { phone_number: '+7 900 000-01-32', user_id: chatId }
+    }
+  });
+  assert.equal(wrongPhone.status, 200);
+  assert.equal(
+    inspectDb.prepare('SELECT verified FROM customers WHERE id=?').get(pending.json.customer.id)?.verified,
+    0
+  );
+
+  const confirmed = await webhook({
+    message: {
+      chat: { id: chatId, type: 'private' },
+      from: { id: chatId, first_name: 'TG Activation Guest' },
+      contact: { phone_number: phone, user_id: chatId }
+    }
+  });
+  assert.equal(confirmed.status, 200);
+  const activationStateAfterContact = await api('/__test/otp/inspect', {
+    key: 'tgactivate:' + activationToken
+  });
+  const chatStateAfterContact = await api('/__test/otp/inspect', {
+    key: 'tgactivate-chat:' + chatId
+  });
+  assert.equal(activationStateAfterContact.json.exists, false, JSON.stringify(activationStateAfterContact.json));
+  assert.equal(chatStateAfterContact.json.exists, false, JSON.stringify(chatStateAfterContact.json));
+  const activated = inspectDb.prepare(
+    'SELECT verified, tg, actcode, role, phone FROM customers WHERE id=?'
+  ).get(pending.json.customer.id);
+  const telegramOwners = inspectDb.prepare(
+    'SELECT id, phone, role FROM customers WHERE tg=?'
+  ).all(String(chatId));
+  assert.equal(activated?.verified, 1, JSON.stringify({
+    activated,
+    activationStateAfterContact: activationStateAfterContact.json,
+    chatStateAfterContact: chatStateAfterContact.json,
+    telegramOwners,
+    serverOutput: output
+  }));
+  assert.equal(String(activated?.tg), String(chatId));
+  assert.equal(activated?.actcode, null);
+  const bonusGrants = () => inspectDb.prepare(
+    "SELECT COUNT(*) AS count FROM bonus_grants WHERE cid=? AND kind IN ('signup','qr')"
+  ).get(pending.json.customer.id).count;
+  assert.equal(bonusGrants(), 1);
+  const grantsAfterFirstActivation = bonusGrants();
+
+  const replay = await webhook({
+    message: {
+      chat: { id: chatId, type: 'private' },
+      from: { id: chatId, first_name: 'TG Activation Guest' },
+      text: '/start ' + startPayload
+    }
+  });
+  assert.equal(replay.status, 200);
+  assert.equal(
+    inspectDb.prepare('SELECT verified FROM customers WHERE id=?').get(pending.json.customer.id)?.verified,
+    1
+  );
+  assert.equal(bonusGrants(), grantsAfterFirstActivation);
+  } finally {
+    if (previousConfig) {
+      inspectDb.prepare("UPDATE meta SET value=? WHERE key='bonus_cfg'").run(previousConfig.value);
+    } else {
+      inspectDb.prepare("DELETE FROM meta WHERE key='bonus_cfg'").run();
+    }
+  }
+});
+
 test('cashier-created guests get a PIN immediately and duplicate registration reuses the same profile', async () => {
   const adminPhone = '+7 900 000-01-10';
   await seedOtp('reg:' + adminPhone, '2468');
@@ -318,14 +471,30 @@ test('cashier-created guests get a PIN immediately and duplicate registration re
 
 test('Telegram registration polling is scoped to a random one-attempt secret, not the phone number', async () => {
   const phone = '+7 900 000-01-12';
+  const returnTo = '/?brand=coffee&tab=profile';
+  const missingConsent = await api('/api/auth/request-reg-otp', {
+    name: 'Telegram Poll Guest', phone, pin: '1357', returnTo, via: 'tg'
+  });
+  assert.equal(missingConsent.status, 400);
+  const missingPin = await api('/api/auth/request-reg-otp', {
+    name: 'Telegram Poll Guest', phone, consent: true, returnTo, via: 'tg'
+  });
+  assert.equal(missingPin.status, 400);
+  const unsafeReturn = await api('/api/auth/request-reg-otp', {
+    name: 'Telegram Poll Guest', phone, pin: '1357', consent: true,
+    returnTo: 'https://evil.example/collect', via: 'tg'
+  });
+  assert.equal(unsafeReturn.status, 400);
   const requested = await api('/api/auth/request-reg-otp', {
-    name: 'Telegram Poll Guest', phone, via: 'tg'
+    name: 'Telegram Poll Guest', phone, pin: '1357', consent: true, returnTo, src: 'qr', via: 'tg'
   });
   assert.equal(requested.status, 200, JSON.stringify(requested.json));
   assert.match(requested.json.pollToken || '', /^[a-f0-9]{64}$/);
+  assert.match(requested.json.tgUrl || '', /^https:\/\/t\.me\/test_bot\?start=reg_[a-f0-9]{32}$/);
+  assert.ok(requested.json.expiresAt);
 
   const throttled = await api('/api/auth/request-reg-otp', {
-    name: 'Telegram Poll Guest', phone, via: 'tg'
+    name: 'Telegram Poll Guest', phone, pin: '1357', consent: true, returnTo, via: 'tg'
   });
   assert.equal(throttled.status, 429);
 
@@ -334,13 +503,13 @@ test('Telegram registration polling is scoped to a random one-attempt secret, no
 
   const chatId = 900000112;
   const started = await webhook({
-    message: { chat: { id: chatId }, from: { id: chatId }, text: '/start reg_' + botToken }
+    message: { chat: { id: chatId, type: 'private' }, from: { id: chatId }, text: '/start reg_' + botToken }
   });
   assert.equal(started.status, 200, JSON.stringify(started.json));
 
   const confirmed = await webhook({
     message: {
-      chat: { id: chatId },
+      chat: { id: chatId, type: 'private' },
       from: { id: chatId, first_name: 'Telegram Poll Guest' },
       contact: { phone_number: phone, user_id: chatId }
     }
@@ -361,10 +530,14 @@ test('Telegram registration polling is scoped to a random one-attempt secret, no
   assert.equal(validPoll.json.confirmed, true);
   assert.ok(validPoll.json.token);
   assert.equal(validPoll.json.customer?.phone, phone);
+  assert.equal(validPoll.json.customer?.verified, 1);
+  const completedRow = inspectDb.prepare('SELECT pin, src FROM customers WHERE phone=?').get(phone);
+  assert.ok(completedRow?.pin);
+  assert.equal(completedRow?.src, 'qr');
   const customerId = validPoll.json.customer.id;
   assert.deepEqual(
     inspectDb.prepare('SELECT kind FROM bonus_grants WHERE cid=?').all(customerId).map(row => row.kind),
-    ['signup']
+    ['qr']
   );
   assert.equal(inspectDb.prepare('SELECT free FROM customers WHERE id=?').get(customerId).free, 1);
   assert.equal(inspectDb.prepare("SELECT COUNT(*) AS n FROM promos WHERE owner=? AND kind='freeship'").get(customerId).n, 1);
@@ -372,7 +545,7 @@ test('Telegram registration polling is scoped to a random one-attempt secret, no
   // Telegram can redeliver a contact update; the second delivery must not grant again.
   const duplicateContact = await webhook({
     message: {
-      chat: { id: chatId },
+      chat: { id: chatId, type: 'private' },
       from: { id: chatId, first_name: 'Telegram Poll Guest' },
       contact: { phone_number: phone, user_id: chatId }
     }

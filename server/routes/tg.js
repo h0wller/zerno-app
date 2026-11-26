@@ -4,9 +4,9 @@ import { Router } from 'express';
 import { db } from '../db/connection.js';
 import { tgSend, escapeTelegramHtml, TG_TOKEN, TG_WEBHOOK_SECRET, APP_URL } from '../services/telegram.js';
 import { fmtPhone, ph10 } from '../utils/phone.js';
-import { otpStore } from '../utils/otp.js';
+import { otpStore, consumeOtp } from '../utils/otp.js';
 import { grantWelcome } from '../domain/loyalty.js';
-import { grantBonusDetailed, findFreeDeliveryCode, QR_SOURCE } from '../domain/bonuses.js';
+import { grantBonus, grantBonusDetailed, findFreeDeliveryCode, QR_SOURCE } from '../domain/bonuses.js';
 import { formatWelcomeBonusMessage } from '../domain/welcome-bonus-message.js';
 import { formatTelegramBenefitsMessage } from '../domain/telegram-benefits-message.js';
 import { cust, addHist, issueToken } from '../domain/helpers.js';
@@ -246,18 +246,49 @@ export function createTgRouter({ appKb }) {
       }
     }
 
+    if (text.startsWith('/start activate_')) {
+      const token = text.slice(16).trim();
+      const senderId = String(u.message.from?.id || '');
+      const chatType = String(u.message.chat?.type || '');
+      const challenge = otpStore.get('tgactivate:' + token);
+      if (chatType !== 'private' || !senderId || senderId !== chatId) {
+        await tgSend(chatId, 'Ссылку активации можно открыть только в личном чате с ботом.');
+        return;
+      }
+      if (!challenge || !/^[a-f0-9]{48}$/.test(token)) {
+        await tgSend(chatId, 'Ссылка активации устарела. Вернитесь в приложение и запросите новую.');
+        return;
+      }
+      otpStore.set('tgactivate-chat:' + chatId, {
+        token,
+        customerId: String(challenge.customerId),
+        phone: challenge.phone,
+        expires: challenge.expires
+      });
+      await tgSend(chatId,
+        'Чтобы активировать профиль, поделитесь своим номером кнопкой ниже. Он должен совпадать с номером, указанным в приложении.',
+        appKb()
+      );
+      return;
+    }
+
     if (text.startsWith('/start reg_')) {
       const token = text.slice(11).trim();
+      if (String(u.message.chat?.type || '') !== 'private' || chatId !== String(u.message.from?.id || '')) {
+        await tgSend(chatId, 'Регистрацию можно завершить только в личном чате с ботом.');
+        return;
+      }
       const st = otpStore.get('regtg:' + token);
       if (!st || Date.now() > st.expires) {
-        tgSend(chatId, 'Ссылка для подтверждения устарела ⏳\nНажми «Подтвердить в Telegram» в приложении ещё раз.');
+        tgSend(chatId, 'Ссылка для подтверждения устарела ⏳\nНажмите «Зарегистрироваться через Telegram» в приложении ещё раз.');
         return;
       }
       otpStore.set('regchat:' + chatId, {
         token, pollToken: st.pollToken || null, phone: st.phone,
-        name: st.name || '', expires: Date.now() + 10 * 60 * 1000
+        name: st.name || '', pin: st.pin || '', src: st.src || '', returnUrl: st.returnUrl || null,
+        expires: st.expires
       });
-      await tgSend(chatId, `Подтверждаю номер ${fmtPhone(st.phone)} — нажмите кнопку ниже 👇`, appKb());
+      await tgSend(chatId, 'Чтобы завершить регистрацию, поделитесь своим номером кнопкой ниже 👇', appKb());
       return;
     }
 
@@ -306,10 +337,75 @@ export function createTgRouter({ appKb }) {
     }
 
     if (u.message.contact) {
+      const activation = otpStore.get('tgactivate-chat:' + chatId);
+      if (activation) {
+        const senderId = String(u.message.from?.id || '');
+        const ownContact = !!senderId &&
+          senderId === chatId &&
+          String(u.message.contact.user_id || '') === senderId;
+        if (!ownContact) {
+          await tgSend(chatId, 'Нужно поделиться именно своим контактом через кнопку ниже.');
+          return;
+        }
+
+        const contactPhone = fmtPhone(u.message.contact.phone_number);
+        if (contactPhone !== fmtPhone(activation.phone)) {
+          await tgSend(chatId, 'Номер не совпадает с номером профиля. Проверьте контакт и отправьте свой номер ещё раз.');
+          return;
+        }
+
+        const challenge = consumeOtp(
+          'tgactivate:' + activation.token,
+          entry => String(entry.customerId) === String(activation.customerId) &&
+            fmtPhone(entry.phone) === contactPhone
+        );
+        if (!challenge) {
+          otpStore.delete('tgactivate-chat:' + chatId);
+          await tgSend(chatId, 'Ссылка активации устарела. Вернитесь в приложение и запросите новую.');
+          return;
+        }
+
+        const targetCust = db.prepare('SELECT * FROM customers WHERE id=?').get(challenge.customerId);
+        if (!targetCust || targetCust.role !== 'guest' || fmtPhone(targetCust.phone) !== contactPhone) {
+          otpStore.delete('tgactivate-chat:' + chatId);
+          await tgSend(chatId, 'Не удалось найти ожидающий профиль. Запросите новую ссылку в приложении или обратитесь к кассиру.');
+          return;
+        }
+
+        const linked = linkTelegram(db, targetCust.id, chatId);
+        if (!linked.ok) {
+          otpStore.delete('tgactivate-chat:' + chatId);
+          await tgSend(chatId, 'Этот Telegram уже привязан к другому профилю или профиль связан с другим Telegram. Обратитесь к кассиру.');
+          return;
+        }
+
+        const activationResult = db.prepare(
+          'UPDATE customers SET verified=1, actcode=NULL WHERE id=? AND verified=0'
+        ).run(targetCust.id);
+        if (activationResult.changes > 0) {
+          // Повторяем точные бизнес-правила активации кассиром; повторная активация бонус не начисляет.
+          grantBonus(targetCust.id, targetCust.src === QR_SOURCE ? 'qr' : 'signup');
+          addHist(targetCust.id, '✅ Профиль активирован через Telegram', 'Telegram');
+        }
+
+        otpStore.delete('tgactivate-chat:' + chatId);
+        const userKey = 'tgactivate-user:' + String(targetCust.id);
+        const userRequest = otpStore.get(userKey);
+        if (userRequest?.token === activation.token) otpStore.delete(userKey);
+
+        await tgSend(chatId, '✅ Номер подтверждён, профиль активирован.', { remove_keyboard: true });
+        await tgSend(chatId, 'Вернитесь в приложение — вы вернётесь в свой профиль:', {
+          inline_keyboard: [[
+            { text: 'Вернуться в приложение', url: challenge.returnUrl }
+          ]]
+        });
+        return;
+      }
+
       const pend = otpStore.get('regchat:' + chatId);
       // Подтверждать номер может только тот, кто прислал СВОЙ контакт (user_id совпадает с отправителем).
       const ownContact = String(u.message.contact.user_id || '') === String(u.message.from?.id || '') && !!u.message.from?.id;
-      if (pend && Date.now() < pend.expires && ownContact) {
+      if (pend && Date.now() < pend.expires && ownContact && String(u.message.chat?.type || '') === 'private' && chatId === String(u.message.from?.id || '')) {
         const contactPhone = fmtPhone(u.message.contact.phone_number);
         if (contactPhone === fmtPhone(pend.phone)) {
           const targetCust = db.prepare('SELECT * FROM customers WHERE phone=?').get(contactPhone);
@@ -327,8 +423,9 @@ export function createTgRouter({ appKb }) {
           } else {
             const tgUserName = [u.message.from?.first_name, u.message.from?.last_name].filter(Boolean).join(' ');
             const newName = pend.name || tgUserName || 'Гость';
-            const r = createCustomer(newName, contactPhone, '');
+            const r = createCustomer(newName, contactPhone, pend.pin || '');
             if (!r.err && r.customer) {
+              if (pend.src === QR_SOURCE) db.prepare('UPDATE customers SET src=? WHERE id=?').run(QR_SOURCE, r.customer.id);
               const linked = linkTelegram(db, r.customer.id, String(chatId));
               if (!linked.ok) {
                 db.prepare('DELETE FROM customers WHERE id=?').run(r.customer.id);
@@ -337,7 +434,7 @@ export function createTgRouter({ appKb }) {
               }
               db.prepare('UPDATE customers SET verified=1, consent=? WHERE id=?').run(nowISO() + ' v1', r.customer.id);
               grantWelcome(r.customer.id, 'Telegram');
-              bonusOutcome = grantBonusDetailed(r.customer.id, 'signup');
+              bonusOutcome = grantBonusDetailed(r.customer.id, pend.src === QR_SOURCE ? 'qr' : 'signup');
               addHist(r.customer.id, 'Регистрация через Telegram', 'Telegram');
             }
           }
@@ -366,7 +463,16 @@ export function createTgRouter({ appKb }) {
           otpStore.delete('regtg:' + pend.token);
 
           await tgSend(chatId, '👍 Номер подтверждён', { remove_keyboard: true });
-          const authQuery = sessionToken ? '?auth_token=' + encodeURIComponent(sessionToken) : '?src=tg';
+          // Browser registration completes through the one-time poll; never put the session token into its return URL.
+          const authQuery = pend.returnUrl
+            ? ''
+            : (sessionToken ? '?auth_token=' + encodeURIComponent(sessionToken) : '?src=tg');
+          const returnKeyboard = pend.returnUrl
+            ? [[{ text: 'Вернуться в приложение', url: pend.returnUrl }]]
+            : [
+                [{ text: '☕ Открыть карту и QR', web_app: { url: APP_URL + authQuery + '&brand=coffee&tab=bonus' } }],
+                [{ text: '🍕 Открыть «Пятницу»', web_app: { url: APP_URL + authQuery + '&brand=delivery' } }],
+              ];
 
           const benefitDetails = finalCust
             ? telegramBenefitsMessage(finalCust)
@@ -374,13 +480,10 @@ export function createTgRouter({ appKb }) {
           await tgSend(chatId,
             '🎉 <b>Профиль готов, ' + escapeTelegramHtml(custObj ? custObj.name : '') + '!</b>\n\n' +
             formatWelcomeBonusMessage(bonusOutcome) + '\n\n' + benefitDetails +
-            '\n\nВ браузере вход выполнился автоматически. Кнопки ниже открывают нужный раздел 👇',
-            {
-              inline_keyboard: [
-                [{ text: '☕ Открыть карту и QR', web_app: { url: APP_URL + authQuery + '&brand=coffee&tab=bonus' } }],
-                [{ text: '🍕 Открыть «Пятницу»', web_app: { url: APP_URL + authQuery + '&brand=delivery' } }],
-              ]
-            }
+            (pend.returnUrl
+              ? '\n\nРегистрация завершена. Вернитесь в приложение по кнопке ниже.'
+              : '\n\nВ браузере вход выполнился автоматически. Кнопки ниже открывают нужный раздел 👇'),
+            { inline_keyboard: returnKeyboard }
           );
         } else {
           await tgSend(chatId, 'Номер не совпадает с указанным в приложении ⚠️ Нажмите кнопку ещё раз.');
