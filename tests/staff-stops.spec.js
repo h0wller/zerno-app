@@ -456,8 +456,10 @@ test.describe('Cashier guest PIN and reward picker', () => {
       a: 'Событие истории ' + index,
       by: 'Система'
     }));
+    const guestWithHistory = { ...cashierGuest, history };
     await mockCashierSession(page, () => {}, {
-      getCustomer: () => ({ ...cashierGuest, history })
+      searchCustomers: () => [guestWithHistory],
+      getCustomer: () => guestWithHistory
     });
     await enterCashierMode(page);
 
