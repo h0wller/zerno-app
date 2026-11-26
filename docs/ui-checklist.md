@@ -15,10 +15,10 @@
 - [ ] Профиль, бонусы, штампы, QR, чат и мои заказы.
 - [ ] Keyboard focus, labels, contrast и target size.
 
-## 1A. Registration and activation
-- [ ] Web/PWA: create the profile first; the auth modal does not offer a separate Telegram pre-registration action.
-- [ ] After web/PWA registration, the profile shows a separate pending-activation state with the 4-digit cashier code entry; orders and loyalty benefits remain unavailable until the server confirms activation.
-- [ ] Telegram Mini App keeps its native signed `initData` registration path; it does not show cashier activation guidance.
+## 1A. Регистрация и активация
+- [ ] Web/PWA: сначала создаётся профиль; отдельного предрегистрационного действия через Telegram в окне авторизации нет.
+- [ ] После регистрации Web/PWA профиль показывает отдельное состояние ожидания активации и поле для 4-значного кода кассира. Заказы и преимущества недоступны до подтверждения активации сервером.
+- [ ] В Telegram Mini App сохраняется нативный путь регистрации через подписанный `initData`; подсказка о коде кассира там не отображается.
 
 ## 2. Guest — delivery brand
 - [ ] Cold open с `?brand=delivery`, правильный цвет, логотип, ticker, меню доставки.
