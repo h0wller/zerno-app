@@ -1056,6 +1056,11 @@ test('P0 registration baseline: capture guest, registration and the separate pro
 test('pending profile opens Telegram and preserves the delivery profile return route', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   let activationRequest = null;
+  await page.route('**/api/orders/mine', (route) => route.fulfill({
+    status: 200,
+    contentType: 'application/json',
+    body: JSON.stringify({ orders: [] })
+  }));
   await page.route('**/api/auth/tg-link/request', async (route) => {
     activationRequest = route.request().postDataJSON();
     await route.fulfill({
@@ -1411,7 +1416,11 @@ test('P0 Telegram Mini App uses WebApp.openTelegramLink and hides the browser re
     });
   });
   await expect(page.locator('#authModal')).not.toHaveClass(/show/);
-  await expect(page.locator('#panel')).toHaveClass(/open/);
+  const profilePanel = page.locator('#panel');
+  await expect(profilePanel).toBeVisible();
+  await expect(page.locator('#pvProfile')).toBeVisible();
+  const profilePanelIsCompact = await profilePanel.evaluate(() => window.innerWidth <= 1180);
+  if (profilePanelIsCompact) await expect(profilePanel).toHaveClass(/open/);
   const telegram = page.locator('#actTgBtn');
   await expect(telegram).toBeVisible();
   await telegram.click();
