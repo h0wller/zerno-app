@@ -4,10 +4,10 @@ import { parse } from 'acorn';
 import { parseDocument } from 'yaml';
 
 const HTTP_METHODS = new Set(['get', 'post', 'put', 'patch', 'delete', 'options', 'head']);
-const ROUTER_RECEIVER = /^(?:app|router|[A-Za-z_$][\\w$]*Router)$/;
+const ROUTER_RECEIVER = /^(?:app|router|[A-Za-z_$][\w$]*Router)$/;
 
 export function normalizeExpressPath(path) {
-  return path.replace(/:([A-Za-z_$][\\w$]*)/g, '{$1}');
+  return path.replace(/:([A-Za-z_$][\w$]*)/g, '{$1}');
 }
 
 function staticString(node, constants) {
@@ -60,7 +60,7 @@ export function extractExpressRoutes({ file, source }) {
     if (!resolved.dynamic && resolved.value !== null) {
       const path = resolved.value;
       if (!path.startsWith('/api/') && !path.startsWith('/__test/')) return;
-      if (path.startsWith('/__test/')) continue;
+      if (path.startsWith('/__test/')) return;
       routes.push({
         file,
         line: node.loc.start.line,
@@ -195,10 +195,6 @@ export function compareRouteInventories(serverRoutes, openApiOperations) {
   return diagnostics;
 }
 
-function getAt(object, path) {
-  return path.split('.').reduce((value, key) => value?.[key], object);
-}
-
 function addSentinel(diagnostics, id, file, method, path, expected, actual) {
   if (JSON.stringify(expected) === JSON.stringify(actual)) return;
   diagnostics.push({
@@ -234,44 +230,50 @@ export function checkAuditSentinels({ openapi, sources }) {
   const diagnostics = [];
   const findings = AUDIT_SENTINELS.map((item) => ({ ...item, status: 'known-f003-baseline' }));
   const schema = (name) => openapi.components?.schemas?.[name]?.properties?.id?.type;
+  if (!/uid\\(['\"]u['\"]\\)/.test(sources['server/domain/customers.js'] || '')) {
+    addSentinel(diagnostics, 'C-01', 'server/domain/customers.js', 'RESPONSE', 'Customer.id', "uid('u') prefixed string ID", 'audited ID generator not found');
+  }
+  if (!/uid\\(['\"]p['\"]\\)/.test(sources['server.js'] || '')) {
+    addSentinel(diagnostics, 'C-02', 'server.js', 'RESPONSE', 'MenuItem.id', "uid('p') prefixed string ID", 'audited menu ID generator not found');
+  }
   addSentinel(diagnostics, 'C-01', 'docs/openapi.yaml', 'RESPONSE', 'Customer.id', 'integer', schema('Customer'));
   addSentinel(diagnostics, 'C-02', 'docs/openapi.yaml', 'RESPONSE', 'MenuItem.id', 'integer', schema('MenuItem'));
 
   const register = openapi.paths?.['/api/auth/register']?.post?.requestBody?.content?.['application/json']?.schema?.properties?.consent;
   addSentinel(diagnostics, 'C-03', 'docs/openapi.yaml', 'POST', '/api/auth/register', { type: 'integer', enum: [0, 1] }, register);
   const authSource = sources['server/routes/auth.js'] || '';
-  if (!/consent\\s*!==\\s*1\\s*&&\\s*consent\\s*!==\\s*true/.test(authSource)) {
+  if (!/consent\s*!==\s*1\s*&&\s*consent\s*!==\s*true/.test(authSource)) {
     addSentinel(diagnostics, 'C-03', 'server/routes/auth.js', 'POST', '/api/auth/register', 'handler accepts only 1 or true', 'audited consent predicate not found');
   }
 
   const regResponse = openapi.paths?.['/api/auth/request-reg-otp']?.post?.responses?.['200']?.content?.['application/json']?.schema;
   addSentinel(diagnostics, 'C-04', 'docs/openapi.yaml', 'POST', '/api/auth/request-reg-otp', true, Boolean(regResponse?.required?.includes('tgUrl') && regResponse?.required?.includes('pollToken')));
-  if (!/via\\s*===\\s*['"]sms['"]/.test(authSource) || !/via:\\s*['"]sms['"]/.test(authSource)) {
+  if (!/via\s*===\s*['"]sms['"]/.test(authSource) || !/via:\s*['"]sms['"]/.test(authSource)) {
     addSentinel(diagnostics, 'C-04', 'server/routes/auth.js', 'POST', '/api/auth/request-reg-otp', 'SMS branch returns via=sms', 'audited SMS response branch not found');
   }
 
   const qrSchema = openapi.paths?.['/api/staff/scan']?.post?.requestBody?.content?.['application/json']?.schema?.properties?.code;
   addSentinel(diagnostics, 'C-08', 'docs/openapi.yaml', 'POST', '/api/staff/scan', { minLength: 16, maxLength: 64 }, { minLength: qrSchema?.minLength, maxLength: qrSchema?.maxLength });
-  if (!/randomBytes\\(3\\).*toString\\(['"]hex['"]\\).*toUpperCase\\(\\)/s.test(sources['server/domain/customers.js'] || '')) {
+  if (!/randomBytes\(3\).*toString\(['"]hex['"]\).*toUpperCase\(\)/s.test(sources['server/domain/customers.js'] || '')) {
     addSentinel(diagnostics, 'C-08', 'server/domain/customers.js', 'POST', '/api/staff/scan', 'QR generated from 3 random bytes as uppercase hex', 'audited QR generator not found');
   }
 
   const statusSchema = openapi.paths?.['/api/orders/{id}/status']?.post?.requestBody?.content?.['application/json']?.schema?.properties?.status;
   addSentinel(diagnostics, 'C-10', 'docs/openapi.yaml', 'POST', '/api/orders/{id}/status', { type: 'string', enum: undefined }, { type: statusSchema?.type, enum: statusSchema?.enum });
   const orderSource = sources['server/routes/orders.js'] || '';
-  if (!/min\\s*<\\s*1\\s*\\|\\|\\s*min\\s*>\\s*180/.test(orderSource)) {
+  if (!/min\s*<\s*1\s*\|\|\s*min\s*>\s*180/.test(orderSource)) {
     addSentinel(diagnostics, 'C-09', 'server/routes/orders.js', 'POST', '/api/orders/{id}/delay', 'delay range 1..180', 'audited delay bounds not found');
   }
   const delaySchema = openapi.paths?.['/api/orders/{id}/delay']?.post?.requestBody?.content?.['application/json']?.schema?.properties?.min;
   addSentinel(diagnostics, 'C-09', 'docs/openapi.yaml', 'POST', '/api/orders/{id}/delay', { minimum: 0, maximum: undefined }, { minimum: delaySchema?.minimum, maximum: delaySchema?.maximum });
 
   const promoSource = sources['server/routes/promos.js'] || '';
-  if (!/res\\.json\\(\\{\\s*ok:\\s*false,\\s*error\\s*\\}\\)/.test(promoSource)) {
+  if (!/res\.json\(\{\s*ok:\s*false,\s*error\s*\}\)/.test(promoSource)) {
     addSentinel(diagnostics, 'C-11', 'server/routes/promos.js', 'GET', '/api/promo/info', 'invalid/missing code returns HTTP 200 {ok:false,error}', 'audited response branch not found');
   }
   addSentinel(diagnostics, 'C-11', 'docs/openapi.yaml', 'GET', '/api/promo/info', true, Boolean(openapi.paths?.['/api/promo/info']?.get?.responses?.['404']));
 
-  if (!/promosRouter\\.post\\(['"]\\/api\\/promos['"]/.test(promoSource) || !/req\\.body\\.code/.test(promoSource)) {
+  if (!/promosRouter\.post\(['"]\/api\/promos['"]/.test(promoSource) || !/req\.body\.code/.test(promoSource)) {
     addSentinel(diagnostics, 'C-12', 'server/routes/promos.js', 'POST', '/api/promos', 'handler reads request body code', 'audited promo creation handler not found');
   }
   addSentinel(diagnostics, 'C-12', 'docs/openapi.yaml', 'POST', '/api/promos', undefined, openapi.paths?.['/api/promos']?.post?.requestBody);
@@ -284,7 +286,7 @@ export function checkAuditSentinels({ openapi, sources }) {
 
   const pushSchema = openapi.paths?.['/api/push/subscribe']?.post?.requestBody?.content?.['application/json']?.schema?.properties?.sub;
   addSentinel(diagnostics, 'C-14', 'docs/openapi.yaml', 'POST', '/api/push/subscribe', false, Boolean(pushSchema?.required?.includes('endpoint')));
-  if (!/!sub\\s*\\|\\|\\s*!sub\\.endpoint/.test(sources['server/routes/push.js'] || '')) {
+  if (!/!sub\s*\|\|\s*!sub\.endpoint/.test(sources['server/routes/push.js'] || '')) {
     addSentinel(diagnostics, 'C-14', 'server/routes/push.js', 'POST', '/api/push/subscribe', 'handler requires sub.endpoint', 'audited endpoint validation not found');
   }
 
@@ -310,6 +312,7 @@ export function formatDiagnostic(diagnostic) {
 export function runApiContractAudit(root = process.cwd()) {
   const files = [
     'server.js',
+    'server/domain/customers.js',
     ...readdirSync(join(root, 'server/routes'))
       .filter((name) => name.endsWith('.js'))
       .sort()
@@ -321,8 +324,8 @@ export function runApiContractAudit(root = process.cwd()) {
 
   for (const relativePath of files) {
     const source = readFileSync(join(root, relativePath), 'utf8');
-    sources[relativePath.replaceAll('\\\\', '/')] = source;
-    const routes = extractExpressRoutes({ file: relativePath.replaceAll('\\\\', '/'), source });
+    sources[relativePath.replaceAll('\\', '/')] = source;
+    const routes = extractExpressRoutes({ file: relativePath.replaceAll('\\', '/'), source });
     serverRoutes.push(...routes);
     diagnostics.push(...routes.diagnostics);
   }
