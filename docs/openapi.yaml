@@ -212,7 +212,7 @@ paths:
               properties:
                 phone: { type: string }
                 name: { type: string, maxLength: 24 }
-                pin: { type: string, pattern: '^\d{4}
+                pin: { type: string, pattern: '^\d{4}$' }
                 consent: { type: boolean, enum: [true] }
                 returnTo: { type: string, pattern: '^/', description: 'Безопасный относительный адрес возврата в исходный бренд/вкладку' }
                 via: { type: string, enum: [tg], default: tg }
