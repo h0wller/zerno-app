@@ -435,7 +435,7 @@ test('registration uses brand action tokens and a compact consent row without a 
 
     const consentContrast = await page.locator('#consentRow a').evaluate((link) => {
       const parseRgb = (value) => {
-        const match = value.match(/[\\d.]+/g);
+        const match = value.match(/[\d.]+/g);
         if (!match || match.length < 3) throw new Error('Unsupported computed color: ' + value);
         return match.slice(0, 3).map(Number);
       };
