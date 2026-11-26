@@ -1256,6 +1256,22 @@ paths:
                   description: Четырёхзначный PIN; хранится только в виде хеша. Повторный запрос не заменяет уже установленный PIN.
       responses: { '200': { description: 'Возвращает customer' } }
 
+  /api/staff/customers/{id}:
+    get:
+      tags: [Staff]
+      summary: Получить актуальную карточку гостя по ID
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: Актуальная карточка гостя, включая историю лояльности }
+        '401': { description: Требуется авторизация сотрудника }
+        '403': { description: Недостаточно прав }
+        '404': { description: Гость не найден }
+
   /api/staff/log:
     get:
       tags: [Staff]
