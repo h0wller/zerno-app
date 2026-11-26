@@ -165,6 +165,7 @@ authRouter.post('/api/auth/request-reg-otp', async (req, res) => {
   }
   const p = fmtPhone(req.body.phone || '');
   const reqPin = String(req.body.pin || '').trim();
+  const reqSource = req.body.src === QR_SOURCE ? QR_SOURCE : '';
   if (reqPin && !/^\\d{4}$/.test(reqPin)) return res.status(400).json({ error: 'PIN — ровно 4 цифры' });
   const returnUrl = req.body.returnTo ? normalizeAppReturnUrl(req.body.returnTo) : null;
   if (req.body.returnTo && !returnUrl) return res.status(400).json({ error: 'Некорректный адрес возврата в приложение' });
@@ -188,7 +189,7 @@ authRouter.post('/api/auth/request-reg-otp', async (req, res) => {
     const pollToken = crypto.randomBytes(32).toString('hex');
     const reqName = String(req.body.name || '').trim();
     otpStore.set('regtg:' + token, {
-      phone: p, name: reqName, pin: reqPin, returnUrl, pollToken, expires: Date.now() + 10 * 60 * 1000
+      phone: p, name: reqName, pin: reqPin, src: reqSource, returnUrl, pollToken, expires: Date.now() + 10 * 60 * 1000
     });
     otpStore.set('reg:' + p, { code: null, confirmed: false, expires: now + 10 * 60 * 1000 });
     recordOtpSend('register', p, now);
