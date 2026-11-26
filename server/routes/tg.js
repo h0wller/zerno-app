@@ -280,7 +280,7 @@ export function createTgRouter({ appKb }) {
       }
       const st = otpStore.get('regtg:' + token);
       if (!st || Date.now() > st.expires) {
-        tgSend(chatId, 'Ссылка для подтверждения устарела ⏳\nНажмите «Войти через Telegram» в приложении ещё раз.');
+        tgSend(chatId, 'Ссылка для подтверждения устарела ⏳\nНажмите «Зарегистрироваться через Telegram» в приложении ещё раз.');
         return;
       }
       otpStore.set('regchat:' + chatId, {

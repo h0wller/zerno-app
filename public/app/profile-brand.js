@@ -12,7 +12,8 @@ var telegramActivationState = {
   message: '',
   url: '',
   expiresAt: 0,
-  expiryTimer: null
+  expiryTimer: null,
+  confirmationToastShown: false
 };
 
 function resetTelegramActivationState(customerId) {
@@ -24,7 +25,8 @@ function resetTelegramActivationState(customerId) {
     message: '',
     url: '',
     expiresAt: 0,
-    expiryTimer: null
+    expiryTimer: null,
+    confirmationToastShown: false
   };
 }
 
@@ -183,6 +185,12 @@ window.renderVerifyNote=function(){
     resetTelegramActivationState(customer.id);
   }
   if (isVerified && telegramActivationState.state !== 'idle') {
+    var wasWaitingForTelegram = telegramActivationState.state === 'waiting' ||
+      telegramActivationState.state === 'requesting';
+    if (wasWaitingForTelegram && !telegramActivationState.confirmationToastShown) {
+      telegramActivationState.confirmationToastShown = true;
+      toast('Номер подтверждён', '✅');
+    }
     if (telegramActivationState.expiryTimer) clearTimeout(telegramActivationState.expiryTimer);
     telegramActivationState.expiryTimer = null;
     telegramActivationState.state = 'confirmed';
@@ -295,7 +303,7 @@ window.renderVerifyNote=function(){
           }
           var expiresAt = response && response.expiresAt ? Date.parse(response.expiresAt) : NaN;
           if (!response || !response.tgUrl || !Number.isFinite(expiresAt) || expiresAt <= Date.now()) {
-            throw new Error('Срок ссылки Telegram истёк. Запросите новую.');
+            throw new Error('Срок ссылки истёк. Запросите новую.');
           }
           telegramActivationState.expiresAt = expiresAt;
           return response.tgUrl;

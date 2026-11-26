@@ -1202,6 +1202,11 @@ test('P0 profile Telegram activation exposes all states, both brands and portrai
     for (const viewport of [{ width: 320, height: 640 }, { width: 844, height: 390 }]) {
       await page.unrouteAll();
       await page.setViewportSize(viewport);
+      await page.route('**/api/orders/mine', (route) => route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ orders: [] })
+      }));
       let requestNo = 0;
       let verified = false;
 
@@ -1322,6 +1327,13 @@ test('P0 profile Telegram activation exposes all states, both brands and portrai
       await expect(page.locator('#actTgBtn')).toHaveCount(0, { timeout: 6000 });
       await expect(page.locator('#verifyNote #actCode')).toHaveCount(0);
       await expect(page.locator('#verifyNote #actBtn')).toHaveCount(0);
+      const confirmationToast = page.locator('#toasts .toast', { hasText: 'Номер подтверждён' });
+      await expect(confirmationToast).toHaveCount(1);
+      await page.evaluate(() => {
+        window.renderVerifyNote();
+        window.renderVerifyNote();
+      });
+      await expect(confirmationToast).toHaveCount(1);
     }
   }
 });
@@ -1354,6 +1366,11 @@ test('P0 Telegram Mini App uses WebApp.openTelegramLink and hides the browser re
       }
     };
   });
+  await page.route('**/api/orders/mine', (route) => route.fulfill({
+    status: 200,
+    contentType: 'application/json',
+    body: JSON.stringify({ orders: [] })
+  }));
   await page.route('**/api/me', (route) => route.fulfill({
     status: 200,
     contentType: 'application/json',
@@ -1608,31 +1625,75 @@ test('P0 Telegram poll retries network failure without losing the attempt', asyn
   await expect.poll(() => page.evaluate(() => localStorage.getItem('zt_tg_registration'))).toBeNull();
 });
 
-test('P0 Telegram registration resumes its saved one-time poll after reload', async ({ page }) => {
-  await page.route('**/api/auth/check-reg', async (route) => route.fulfill({
+test('P0 Telegram registration resumes after login and logout in the same page, then reload', async ({ page }) => {
+  let confirmed = false;
+  let pollCount = 0;
+
+  await page.route('**/api/orders/mine', (route) => route.fulfill({
+    status: 200,
+    contentType: 'application/json',
+    body: JSON.stringify({ orders: [] })
+  }));
+  await page.route('**/api/auth/request-reg-otp', (route) => route.fulfill({
     status: 200,
     contentType: 'application/json',
     body: JSON.stringify({
-      confirmed: true,
-      token: 'resumed-registration-token',
-      customer: {
-        id: 'resumed-registration-customer', name: 'Resumed Guest', role: 'guest',
-        verified: 1, phone: '+7 900 000-00-48', stamps: 0, free: 0,
-        cups: 0, welcome: 0, tg: '90048', qr: 'Z-RESUMED'
-      }
+      ok: true,
+      pollToken: 'f'.repeat(64),
+      tgUrl: 'https://t.me/test_bot?start=reg_' + '7'.repeat(32),
+      expiresAt: new Date(Date.now() + 60000).toISOString()
     })
   }));
+  await page.route('**/api/auth/check-reg', async (route) => {
+    pollCount += 1;
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify(confirmed
+        ? {
+            confirmed: true,
+            token: 'resumed-registration-token',
+            customer: {
+              id: 'resumed-registration-customer', name: 'Resumed Guest', role: 'guest',
+              verified: 1, phone: '+7 900 000-00-48', stamps: 0, free: 0,
+              cups: 0, welcome: 0, tg: '90048', qr: 'Z-RESUMED'
+            }
+          }
+        : { confirmed: false })
+    });
+  });
+
   await page.goto('/?brand=delivery');
-  await page.waitForFunction(() => typeof window.setUser === 'function');
-  const revision = await page.evaluate(() => Number(window.__authSessionRevision) || 0);
-  await page.evaluate((authSessionRevision) => {
-    localStorage.setItem('zt_tg_registration', JSON.stringify({
-      pollToken: 'f'.repeat(64),
-      expiresAt: Date.now() + 60000,
-      authSessionRevision,
-      sessionToken: null
-    }));
-  }, revision);
+  await page.waitForFunction(() => typeof window.setUser === 'function' && typeof window.openAuth === 'function');
+  await page.evaluate(() => {
+    window.setUser('prior-login-session-token', {
+      id: 'prior-login-customer', name: 'Prior Login', phone: '+7 900 000-00-48',
+      role: 'guest', verified: 0, cups: 0, stamps: 0, free: 0, welcome: 0,
+      tg: null, notify_tg: 0, notify_web: 0, history: [], qr: 'Z-LOGIN'
+    });
+    window.setUser(null, null);
+  });
+  await expect.poll(() => page.evaluate(() => window.USER_TOKEN)).toBeNull();
+  const pageRevision = await page.evaluate(() => Number(window.__authSessionRevision) || 0);
+  expect(pageRevision).toBeGreaterThan(0);
+
+  await page.evaluate(() => window.openAuth(false));
+  await page.locator('#regName').fill('Resumed Guest');
+  await page.locator('#regPhone').fill('+7 900 000-00-48');
+  await page.locator('#regPin').fill('2468');
+  await page.locator('#consentBox').check();
+
+  const popup = page.waitForEvent('popup');
+  await page.locator('#regTgBtn').click();
+  await popup;
+  await expect.poll(() => page.evaluate(() => JSON.parse(localStorage.getItem('zt_tg_registration') || 'null')?.pollToken))
+    .toBe('f'.repeat(64));
+  await expect.poll(() => pollCount).toBeGreaterThan(0);
+  const savedAttempt = await page.evaluate(() => JSON.parse(localStorage.getItem('zt_tg_registration') || 'null'));
+  expect(savedAttempt.sessionToken).toBeNull();
+  expect(savedAttempt.authSessionRevision).toBe(pageRevision);
+
+  confirmed = true;
   await page.reload();
   await expect.poll(() => page.evaluate(() => localStorage.getItem('zt_user')), { timeout: 10000 })
     .toBe('resumed-registration-token');

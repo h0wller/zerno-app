@@ -117,7 +117,7 @@ import { openTelegramLink } from './telegram-link.js';
 
     if (!customerIsVerified(customer)) {
       openProfileAfterAuth();
-      var pendingMessage = 'Профиль создан, но пока не активирован. В профиле откройте «Инструкция по активации» и выберите Telegram или код кассира.';
+      var pendingMessage = 'Профиль создан, но пока не активирован. В профиле нажмите «Подтвердить через Telegram» или введите код кассира.';
       toast(pendingMessage, '🔒');
       return;
     }
@@ -358,8 +358,7 @@ import { openTelegramLink } from './telegram-link.js';
       setRegistrationTelegramState('expired', 'Ссылка Telegram устарела. Запросите новую.');
       return;
     }
-    if (Number(saved.authSessionRevision) !== authSessionRevision() ||
-        (saved.sessionToken || null) !== (window.USER_TOKEN || null)) {
+    if ((saved.sessionToken || null) !== (window.USER_TOKEN || null)) {
       clearSavedTelegramAttempt(saved.pollToken);
       setRegistrationTelegramState('error', 'Сессия изменилась. Начните регистрацию через Telegram заново.');
       toast('Сессия изменилась — ожидающая регистрация отменена.', '⚠️');
@@ -370,7 +369,7 @@ import { openTelegramLink } from './telegram-link.js';
     var attempt = {
       pollToken: saved.pollToken,
       expiresAt: Number(saved.expiresAt),
-      authSessionRevision: Number(saved.authSessionRevision) || 0,
+      authSessionRevision: authSessionRevision(),
       sessionToken: saved.sessionToken || null,
       generation: telegramRegistrationGeneration
     };
