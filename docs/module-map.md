@@ -79,7 +79,7 @@
 | --- | --- | --- |
 | `profile.js` | Готовность `me`, единый рендер карточки лояльности внутри `#profileCoffeeSection`, `updateMbonusBadge`, `renderProfile`, редактирование имени и раскрытие истории | `window.renderBonus`, `window.renderProfile` |
 | `profile-orders.js` | Последний заказ и полный список заказов; общий кэш/запрос для карточки и модалки; обработка «Отследить» | `window.loadMyOrders`, `window.renderOrdersModal`, `window.updateMyOrdersCache`, `window.invalidateMyOrders` |
-| `profile-brand.js` | Включение брендовых секций профиля, блок «Пятница», единый `renderVerifyNote`; pending activation disclosure and Telegram/cashier actions | `window.applyProfileBrand`, `window.renderVerifyNote` |
+| `profile-brand.js` | Включение брендовых секций профиля, блок «Пятница», единый `renderVerifyNote`; module-state Telegram activation (`idle/requesting/waiting/confirmed/error/expired`) persists through rerender; visible Telegram CTA, cashier-code-only disclosure | `window.applyProfileBrand`, `window.renderVerifyNote` |
 | `core/qr.js` | `drawQR`, единственная полноэкранная QR-модалка `#qrModal`, открытие QR из профиля, wake lock | `window.drawQR`, `window.openQRFull`, `window.closeQRFull` |
 | `core/review.js` | `#reviewBtn`, `maybeAskReview` | `window.maybeAskReview` |
 | `core/preorder-timer.js` | Таймеры «Предзаказ» в карточках заказов профиля | `window.PreorderTimer` |
@@ -93,7 +93,7 @@
 | `core/auth.js` | Единственный владелец `#authModal` (open/close/swap и сброс временного состояния), вход по PIN/OTP, `#profileTopBtn`, выход и удаление аккаунта; отдельный входной OTP не связан с регистрационным SMS UI | `window.openAuth`, `window.closeAuth`, `window.authSwap` |
 | `core/auth-pin.js` | Единственный владелец `#setPinModal`: задание PIN для старого профиля и смена PIN | `window.openSetPin`, `window.closeSetPin` |
 | `core/telegram-link.js` | Общий helper внешних Telegram deep links: синхронный popup в обычном браузере, нативный `openTelegramLink` только в Mini App, blocked-popup fallback возвращается вызывающему модулю; DOM status принадлежат registration/profile owners | `isTelegramMiniApp`, `openTelegramLink` |
-| `core/registration.js` | Создание профиля и согласие; web/PWA имеет «Войти через Telegram» с одноразовым `check-reg` polling, TTL, resume, отменой предыдущей попытки и безопасным возвратом через `window.getAppReturnPath`; `openTelegramLink` используется только в Mini App с подписанным `initData`; обычное «Создать профиль» оставляет pending-активацию; регистрационный SMS UI отсутствует | — |
+| `core/registration.js` | Создание профиля и согласие; web/PWA имеет «Зарегистрироваться через Telegram» с одноразовым `check-reg` polling, TTL, resume, отменой предыдущей попытки и защитой `__authSessionRevision`; обычное «Создать профиль» оставляет pending-активацию; регистрацию и профиль обслуживает общий helper `core/telegram-link.js`; регистрационный SMS UI отсутствует | — |
 | `core/staffpin.js` | `#pinModal` (код сотрудника), `tryActivate`, делегирование submit форм | `window.openPin`, `window.closePin`, `window.tryActivate` |
 
 ## 8. Персонал: кассир и сканер
