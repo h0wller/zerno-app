@@ -88,6 +88,7 @@ before(async () => {
       TELEGRAM_BOT_TOKEN: '',
       PUBLIC_URL: '',
       TG_WEBHOOK_SECRET: 'integration-test-secret',
+      TG_BOT_USERNAME: 'test_bot',
       ADMIN_CODE: 'integration-test-admin',
       CASHIER_CODE: '',
       DISPATCH_CODE: '',
