@@ -183,6 +183,124 @@
     }
   }
 
+  var TELEGRAM_REGISTRATION_SESSION_KEY = 'zt_tg_registration';
+
+  function wait(ms) {
+    return new Promise(function(resolve){ setTimeout(resolve, ms); });
+  }
+
+  function getRegistrationReturnPath() {
+    var target = new URL(window.location.href);
+    target.searchParams.set('brand', window.brand === 'delivery' ? 'delivery' : 'coffee');
+    target.searchParams.set('tab', 'profile');
+    target.searchParams.delete('auth_token');
+    target.searchParams.delete('token');
+    target.searchParams.delete('pollToken');
+    return target.pathname + target.search + target.hash;
+  }
+
+  async function pollTelegramRegistration(pollToken, expiresAt) {
+    var deadline = Number(expiresAt) || (Date.now() + 10 * 60 * 1000);
+    while (Date.now() < deadline) {
+      try {
+        var result = await api('/auth/check-reg', {
+          method: 'POST',
+          body: { pollToken: pollToken }
+        });
+        if (result && result.confirmed && result.token && result.customer) {
+          try { sessionStorage.removeItem(TELEGRAM_REGISTRATION_SESSION_KEY); } catch (_) {}
+          try { localStorage.removeItem('zt_src'); } catch (_) {}
+          await completeRegistration({ token: result.token, customer: result.customer }, true);
+          return;
+        }
+      } catch (error) {
+        if (error && error.code === 400) {
+          try { sessionStorage.removeItem(TELEGRAM_REGISTRATION_SESSION_KEY); } catch (_) {}
+          toast(error.message || 'Ссылка подтверждения регистрации устарела. Начните ещё раз.', '⚠️');
+          return;
+        }
+      }
+      await wait(document.visibilityState === 'visible' ? 1400 : 4000);
+    }
+    try { sessionStorage.removeItem(TELEGRAM_REGISTRATION_SESSION_KEY); } catch (_) {}
+    toast('Срок ссылки Telegram истёк. Откройте регистрацию и запросите новую.', '⏳');
+  }
+
+  function resumeTelegramRegistration() {
+    try {
+      var saved = JSON.parse(sessionStorage.getItem(TELEGRAM_REGISTRATION_SESSION_KEY) || 'null');
+      if (saved && /^[a-f0-9]{64}$/.test(String(saved.pollToken || '')) &&
+          Number(saved.expiresAt) > Date.now()) {
+        pollTelegramRegistration(saved.pollToken, saved.expiresAt);
+      } else if (saved) {
+        sessionStorage.removeItem(TELEGRAM_REGISTRATION_SESSION_KEY);
+      }
+    } catch (_) {}
+  }
+
+  async function startTelegramRegistration(button) {
+    if (!button || button.disabled) return;
+    var form = readRegistrationForm();
+    if (!validateRegistrationForm(form)) return;
+
+    var webApp = window.Telegram && window.Telegram.WebApp;
+    var telegramPopup = null;
+    if (!webApp || typeof webApp.openTelegramLink !== 'function') {
+      try { telegramPopup = window.open('about:blank', '_blank'); } catch (_) {}
+    }
+
+    beginAuthOperation();
+    button.disabled = true;
+    button.setAttribute('aria-busy', 'true');
+    button.textContent = 'Открываем Telegram…';
+    try {
+      var response = await api('/auth/request-reg-otp', {
+        method: 'POST',
+        body: {
+          name: form.name,
+          phone: form.phone,
+          pin: form.pin,
+          consent: 1,
+          via: 'tg',
+          returnTo: getRegistrationReturnPath()
+        }
+      });
+      if (!response || !response.tgUrl || !/^[a-f0-9]{64}$/.test(String(response.pollToken || ''))) {
+        throw new Error('Сервер не подготовил безопасную ссылку Telegram. Повторите попытку.');
+      }
+
+      var expiry = response.expiresAt ? Date.parse(response.expiresAt) : Date.now() + 10 * 60 * 1000;
+      try {
+        sessionStorage.setItem(TELEGRAM_REGISTRATION_SESSION_KEY, JSON.stringify({
+          pollToken: response.pollToken,
+          expiresAt: expiry
+        }));
+      } catch (_) {}
+
+      if (webApp && typeof webApp.openTelegramLink === 'function') {
+        webApp.openTelegramLink(response.tgUrl);
+        if (telegramPopup && !telegramPopup.closed) telegramPopup.close();
+      } else if (telegramPopup && !telegramPopup.closed) {
+        telegramPopup.location.replace(response.tgUrl);
+      } else {
+        window.location.assign(response.tgUrl);
+      }
+      pollTelegramRegistration(response.pollToken, expiry);
+    } catch (error) {
+      if (telegramPopup && !telegramPopup.closed) telegramPopup.close();
+      if (error && error.code === 409) {
+        openExistingProfile(form.phone, 'Номер уже зарегистрирован — войдите в профиль');
+      } else {
+        toast(error.message || 'Не удалось открыть Telegram. Попробуйте ещё раз.', '⚠️');
+      }
+    } finally {
+      button.disabled = false;
+      button.removeAttribute('aria-busy');
+      button.textContent = 'Войти через Telegram';
+      endAuthOperation();
+    }
+  }
+
   async function registerByPhone(form) {
     try {
       var response = await api('/auth/register', {
@@ -227,6 +345,14 @@
   }
 
   document.addEventListener('DOMContentLoaded', function () {
+    resumeTelegramRegistration();
+    var telegramButton = document.getElementById('regTgBtn');
+    if (telegramButton) {
+      telegramButton.onclick = function () {
+        return startTelegramRegistration(telegramButton);
+      };
+    }
+
     var regBtn = document.getElementById('regBtn');
     if (regBtn) {
       regBtn.onclick = function () {
