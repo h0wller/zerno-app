@@ -269,7 +269,7 @@ test('auth modal closes on backdrop click but stays open for card clicks', async
   await expect(trigger).toBeFocused();
 });
 
-test('auth modal explains the coffee stamp card before registration and avoids a gift promise during login', async ({ page }) => {
+test('auth modal keeps registration heading concise and retains login guidance', async ({ page }) => {
   await page.addInitScript(() => {
     localStorage.setItem('zt_onb', '1');
     sessionStorage.setItem('splashDone', '1');
@@ -277,19 +277,21 @@ test('auth modal explains the coffee stamp card before registration and avoids a
   await page.goto('/?brand=coffee');
   await page.waitForFunction(() => typeof window.openAuth === 'function');
 
+  const title = page.locator('#authModal #authTitle');
   const subtitle = page.locator('#authModal .msub');
   await page.evaluate(() => window.openAuth(false));
-  await expect(subtitle).toContainText('Сначала создайте профиль');
-  await expect(subtitle).toContainText('После подтверждения номера');
-  await expect(subtitle).toContainText('10 штампов дают 1 бесплатный кофе');
-  await expect(subtitle).toContainText('QR');
+  await expect(title).toHaveText('Создание профиля');
+  await expect(subtitle).toBeHidden();
+  await expect(subtitle).not.toContainText(/сервер|после подтверждения|штампов|бонус/i);
 
   await page.evaluate(() => window.openAuth(true));
+  await expect(title).toHaveText('Вход по номеру');
+  await expect(subtitle).toBeVisible();
   await expect(subtitle).toContainText('Войдите по номеру телефона');
   await expect(subtitle).not.toContainText(/бесплатный кофе|приветственн|начисления сервером/i);
 });
 
-test('auth modal explains Friday delivery value in registration and avoids it in login mode', async ({ page }) => {
+test('delivery registration has no server-related intro copy', async ({ page }) => {
   await page.addInitScript(() => {
     localStorage.setItem('zt_onb', '1');
     sessionStorage.setItem('splashDone', '1');
@@ -297,14 +299,16 @@ test('auth modal explains Friday delivery value in registration and avoids it in
   await page.goto('/?brand=delivery');
   await page.waitForFunction(() => typeof window.openAuth === 'function');
 
+  const title = page.locator('#authModal #authTitle');
   const benefit = page.locator('#authModal .msub');
   await page.evaluate(() => window.openAuth(false));
-  await expect(benefit).toContainText('Сначала создайте профиль');
-  await expect(benefit).toContainText('После подтверждения номера');
-  await expect(benefit).toContainText('персональный бонус доставки');
-  await expect(benefit).toHaveCSS('max-width', '100%');
+  await expect(title).toHaveText('Создание профиля');
+  await expect(benefit).toBeHidden();
+  await expect(benefit).not.toContainText(/сервер|бонус доставки|после подтверждения/i);
 
   await page.evaluate(() => window.openAuth(true));
+  await expect(title).toHaveText('Вход по номеру');
+  await expect(benefit).toBeVisible();
   await expect(benefit).toContainText('Войдите по номеру телефона');
   await expect(benefit).not.toContainText(/бесплатн|сервер назначит|корзина/i);
 });
@@ -362,7 +366,7 @@ test('consent checkbox and its full row show a visible keyboard focus indicator'
   expect(focusStyles.boxShadow).not.toBe('none');
 });
 
-test('Telegram Mini App registration subtitle explains native confirmation without cashier instructions', async ({ page }) => {
+test('Telegram Mini App registration keeps the same concise heading', async ({ page }) => {
   await page.addInitScript(() => {
     localStorage.setItem('zt_onb', '1');
     sessionStorage.setItem('splashDone', '1');
@@ -374,11 +378,12 @@ test('Telegram Mini App registration subtitle explains native confirmation witho
   await page.evaluate(() => window.openAuth(false));
 
   const modal = page.locator('#authModal');
+  const title = modal.locator('#authTitle');
   const subtitle = modal.locator('.msub');
   await expect(modal).toHaveClass(/tg-mode/);
   await expect(page.locator('#regTgBtn')).toBeHidden();
-  await expect(subtitle).toContainText('Создайте профиль — подтвердим номер через Telegram');
-  await expect(subtitle).not.toContainText(/кассир/i);
+  await expect(title).toHaveText('Создание профиля');
+  await expect(subtitle).toBeHidden();
 });
 
 test('registration offers Telegram and keeps consent compact without SMS controls', async ({ page }, testInfo) => {
@@ -413,11 +418,17 @@ test('registration offers Telegram and keeps consent compact without SMS control
       right: element.getBoundingClientRect().right,
       viewportWidth: window.innerWidth,
       text: element.innerText,
+      formWidth: document.getElementById('regForm').clientWidth,
+      maxWidth: getComputedStyle(element).maxWidth,
+      alignSelf: getComputedStyle(element).alignSelf,
     }));
     expect(consentMetrics.fontSize).toBeGreaterThanOrEqual(12);
-    expect(consentMetrics.width).toBeLessThanOrEqual(300);
+    expect(Math.abs(consentMetrics.width - consentMetrics.formWidth)).toBeLessThanOrEqual(1);
+    expect(consentMetrics.maxWidth).toBe('none');
+    expect(consentMetrics.alignSelf).toBe('stretch');
     expect(consentMetrics.right).toBeLessThanOrEqual(consentMetrics.viewportWidth);
     expect(consentMetrics.height).toBeGreaterThanOrEqual(44);
+    expect(consentMetrics.height).toBeLessThanOrEqual(88);
     expect(consentMetrics.text).toContain('персональных данных');
     expect(consentMetrics.text).toContain('Политика конфиденциальности');
 
