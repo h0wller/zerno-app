@@ -295,7 +295,7 @@ window.renderVerifyNote=function(){
           }
           var expiresAt = response && response.expiresAt ? Date.parse(response.expiresAt) : NaN;
           if (!response || !response.tgUrl || !Number.isFinite(expiresAt) || expiresAt <= Date.now()) {
-            throw new Error('Сервер не подготовил действующую ссылку Telegram.');
+            throw new Error('Срок ссылки Telegram истёк. Запросите новую.');
           }
           telegramActivationState.expiresAt = expiresAt;
           return response.tgUrl;
