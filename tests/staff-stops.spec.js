@@ -154,7 +154,7 @@ test.describe('Cashier guest PIN and reward picker', () => {
     qr: 'cashier-pin-e2e-guest'
   };
 
-  async function mockCashierSession(page, onRequest = () => {}) {
+  async function mockCashierSession(page, onRequest = () => {}, options = {}) {
     await page.addInitScript(() => {
       localStorage.setItem('zt_onb', '1');
       localStorage.setItem('zt_inst_hide', '1');
@@ -170,7 +170,19 @@ test.describe('Cashier guest PIN and reward picker', () => {
       let body = { ok: true, items: [], orders: [], pending: [], customers: [], threads: [], msgs: [], promos: [], log: [] };
 
       if (path === '/api/me') body = { customer: cashierStaff };
-      if (path === '/api/staff/customers' && method === 'GET') body = { customers: [cashierGuest] };
+      if (path === '/api/staff/customers' && method === 'GET') {
+        const customers = typeof options.searchCustomers === 'function'
+          ? options.searchCustomers(request)
+          : [cashierGuest];
+        body = { customers };
+      }
+      const customerMatch = path.match(/^\\/api\\/staff\\/customers\\/([^/]+)$/);
+      if (customerMatch && method === 'GET') {
+        const customer = typeof options.getCustomer === 'function'
+          ? options.getCustomer(decodeURIComponent(customerMatch[1]))
+          : cashierGuest;
+        body = { customer };
+      }
       if (path === '/api/staff/scan' && method === 'POST') body = { customer: cashierGuest };
       if (path === '/api/staff/customers' && method === 'POST') {
         onRequest('create', request.postDataJSON());
@@ -376,6 +388,66 @@ test.describe('Cashier guest PIN and reward picker', () => {
     });
     await expect(page.locator('#gcStamps')).toContainText('Бесплатных: 0');
     await expect(page.locator('#gcRedeem')).toBeDisabled();
+  });
+
+  test('ambiguous cashier name lookup does not silently open the first profile', async ({ page }) => {
+    const annaOne = { ...cashierGuest, id: 'anna-one', name: 'Анна', phone: '+7 911 111-11-11', free: 1 };
+    const annaTwo = { ...cashierGuest, id: 'anna-two', name: 'Анна', phone: '+7 911 222-22-22', free: 0 };
+    await mockCashierSession(page, () => {}, {
+      searchCustomers: () => [annaOne, annaTwo]
+    });
+    await enterCashierMode(page);
+
+    await page.locator('#findInput').fill('Анна');
+    await page.locator('#findBtn').click();
+
+    await expect(page.locator('#custCard')).not.toHaveClass(/show/);
+    await expect(page.locator('#redeemBtn')).toBeHidden();
+  });
+
+  test('cashier card refreshes the selected guest after a redemption elsewhere', async ({ page }) => {
+    let currentCustomer = { ...cashierGuest };
+    await mockCashierSession(page, () => {}, {
+      getCustomer: () => currentCustomer
+    });
+    await enterCashierMode(page);
+
+    await page.locator('#findInput').fill('Guest E2E');
+    await page.locator('#findBtn').click();
+    await expect(page.locator('#redeemBtn')).toBeVisible();
+
+    currentCustomer = {
+      ...currentCustomer,
+      free: 0,
+      history: [{ ts: '2026-11-26', a: '🎁 Списан бесплатный кофе: Латте', by: 'Кассир' }]
+    };
+    await page.evaluate(() => window.dispatchEvent(new Event('focus')));
+
+    await expect(page.locator('#redeemBtn')).toBeHidden();
+    await expect(page.locator('#custFree')).toBeHidden();
+    await expect(page.locator('#custHist')).toContainText('Списан бесплатный кофе: Латте');
+  });
+
+  test('stale cashier reward cannot open the picker or send a redemption request', async ({ page }) => {
+    let currentCustomer = { ...cashierGuest };
+    const redemptions = [];
+    await mockCashierSession(page, (type, payload) => {
+      if (type === 'redeem') redemptions.push(payload);
+    }, {
+      getCustomer: () => currentCustomer
+    });
+    await enterCashierMode(page);
+
+    await page.locator('#findInput').fill('Guest E2E');
+    await page.locator('#findBtn').click();
+    await expect(page.locator('#redeemBtn')).toBeVisible();
+
+    currentCustomer = { ...currentCustomer, free: 0 };
+    await page.locator('#redeemBtn').click();
+
+    await expect(page.locator('#redeemPick')).not.toHaveClass(/show/);
+    await expect(page.locator('#redeemBtn')).toBeHidden();
+    expect(redemptions).toHaveLength(0);
   });
 
 });
