@@ -106,7 +106,7 @@ test('audit sentinels pin known F-003 baseline observations without fixing them'
   const paths = openapi.paths;
   paths['/api/auth/register'] = { post: jsonBody({ properties: { consent: { type: 'integer', enum: [0, 1] } } }) };
   paths['/api/auth/request-reg-otp'] = {
-    post: { responses: { '200': { content: { 'application/json': { schema: { required: ['tgUrl', 'pollToken'] } } } } },
+    post: { responses: { '200': { content: { 'application/json': { schema: { required: ['tgUrl', 'pollToken'] } } } } } },
   };
   paths['/api/staff/scan'] = { post: jsonBody({ properties: { code: { minLength: 16, maxLength: 64 } } }) };
   paths['/api/orders/{id}/status'] = {
