@@ -34,7 +34,7 @@
     var at = document.getElementById('authTitle');
     if (rf) rf.style.display = login ? 'none' : 'flex';
     if (lf) lf.style.display = login ? 'flex' : 'none';
-    if (at) at.textContent = login ? 'Вход по номеру' : 'Создайте профиль';
+    if (at) at.textContent = login ? 'Вход по номеру' : 'Создание профиля';
     var regTab = document.getElementById('toReg');
     var loginTab = document.getElementById('toLogin');
     if (regTab) regTab.setAttribute('aria-pressed', String(!login));
@@ -95,25 +95,21 @@
     if (!modal) return;
     adaptAuthForTelegram(modal);
 
-    var isDelivery = window.brand === 'delivery';
     var title = document.getElementById('authTitle');
     var subtitle = modal.querySelector('.msub');
     if (login) {
       if (title) title.textContent = 'Вход по номеру';
-      if (subtitle) subtitle.textContent = 'Войдите по номеру телефона, чтобы вернуться к своему профилю и заказам.';
+      if (subtitle) {
+        subtitle.textContent = 'Войдите по номеру телефона, чтобы вернуться к своему профилю и заказам.';
+        subtitle.hidden = false;
+      }
       return;
     }
 
-    if (title) title.textContent = isDelivery
-      ? 'Профиль «Пятницы»'
-      : 'Профиль «…и кофе»';
-
+    if (title) title.textContent = 'Создание профиля';
     if (subtitle) {
-      subtitle.textContent = modal.classList.contains('tg-mode')
-        ? 'Создайте профиль — подтвердим номер через Telegram.'
-        : isDelivery
-          ? 'Сначала создайте профиль. После подтверждения номера у кассира откроются заказы; персональный бонус доставки появится, только если его назначит сервер.'
-          : 'Сначала создайте профиль. После подтверждения номера у кассира откроются карта штампов и QR: 10 штампов дают 1 бесплатный кофе.';
+      subtitle.textContent = '';
+      subtitle.hidden = true;
     }
   }
 
