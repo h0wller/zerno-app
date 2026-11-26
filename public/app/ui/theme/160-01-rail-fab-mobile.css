@@ -326,7 +326,6 @@ html body .auth-badge-confirmed.auth-badge-confirmed{
   }
 }
 /* Упрощённый вид формы внутри Telegram Mini App */
-html body #authModal.tg-mode #regTgBtn,
 html body #authModal.tg-mode .mhint{
   display: none;
 }
