@@ -362,21 +362,77 @@ test('consent checkbox and its full row show a visible keyboard focus indicator'
   expect(focusStyles.boxShadow).not.toBe('none');
 });
 
-test('Telegram registration action uses its own icon instead of the robot emoji', async ({ page }) => {
+
+
+test('registration uses brand action tokens and a compact consent row without a separate Telegram CTA', async ({ page }, testInfo) => {
+  await page.setViewportSize({ width: 390, height: 844 });
   await page.addInitScript(() => {
     localStorage.setItem('zt_onb', '1');
     sessionStorage.setItem('splashDone', '1');
   });
-  await page.goto('/?brand=delivery');
-  await page.waitForFunction(() => typeof window.openAuth === 'function');
-  await page.evaluate(() => window.openAuth(false));
 
-  const button = page.locator('#regTgBtn');
-  const icon = button.locator('.auth-telegram-icon');
-  await expect(icon).toHaveAttribute('viewBox', '0 0 24 24');
-  await expect(icon).toHaveAttribute('aria-hidden', 'true');
-  await expect(button).toContainText('Подтвердить в Telegram · бесплатно');
-  expect(await button.innerText()).not.toContain('🤖');
+  for (const brand of ['coffee', 'delivery']) {
+    await page.goto('/?brand=' + brand);
+    await page.waitForFunction(() => typeof window.openAuth === 'function');
+    await page.waitForFunction(() => {
+      const link = Array.from(document.querySelectorAll('link[rel="stylesheet"]'))
+        .find((item) => item.href.includes('160-14-auth-modal.css'));
+      return link && link.media === 'all' && Array.from(document.styleSheets)
+        .some((sheet) => sheet.href === link.href);
+    });
+    await page.evaluate(() => window.openAuth(false));
+
+    await expect(page.locator('#regTgBtn')).toHaveCount(0);
+    await expect(page.locator('#regTgRow')).toHaveCount(0);
+    await expect(page.locator('#consentBox')).not.toBeChecked();
+
+    const consentMetrics = await page.locator('#consentRow').evaluate((element) => ({
+      fontSize: Number.parseFloat(getComputedStyle(element).fontSize),
+      height: element.getBoundingClientRect().height,
+      text: element.innerText,
+    }));
+    expect(consentMetrics.fontSize).toBeLessThanOrEqual(11.5);
+    expect(consentMetrics.height).toBeLessThanOrEqual(64);
+    expect(consentMetrics.text).toContain('политике конфиденциальности');
+
+    const registrationTokens = await page.evaluate(() => {
+      const tabStyle = getComputedStyle(document.getElementById('toReg'));
+      const ctaStyle = getComputedStyle(document.getElementById('regBtn'));
+      return {
+        tabBackground: tabStyle.backgroundColor,
+        ctaBackground: ctaStyle.backgroundColor,
+        tabBorder: tabStyle.border,
+        ctaBorder: ctaStyle.border,
+        tabShadow: tabStyle.boxShadow,
+        ctaShadow: ctaStyle.boxShadow,
+      };
+    });
+    expect(registrationTokens.tabBackground).toBe(registrationTokens.ctaBackground);
+    expect(registrationTokens.tabBorder).toBe(registrationTokens.ctaBorder);
+    expect(registrationTokens.tabShadow).toBe(registrationTokens.ctaShadow);
+
+    await testInfo.attach('auth-registration-' + brand + '-390x844.png', {
+      body: await page.screenshot({ fullPage: false }),
+      contentType: 'image/png',
+    });
+
+    await page.locator('#toLogin').click();
+    const loginTokens = await page.evaluate(() => {
+      const tabStyle = getComputedStyle(document.getElementById('toLogin'));
+      const ctaStyle = getComputedStyle(document.getElementById('logBtn'));
+      return {
+        tabBackground: tabStyle.backgroundColor,
+        ctaBackground: ctaStyle.backgroundColor,
+        tabBorder: tabStyle.border,
+        ctaBorder: ctaStyle.border,
+        tabShadow: tabStyle.boxShadow,
+        ctaShadow: ctaStyle.boxShadow,
+      };
+    });
+    expect(loginTokens.tabBackground).toBe(loginTokens.ctaBackground);
+    expect(loginTokens.tabBorder).toBe(loginTokens.ctaBorder);
+    expect(loginTokens.tabShadow).toBe(loginTokens.ctaShadow);
+  }
 });
 
 test('desktop auth modal scrolls without displaying scrollbar tracks', async ({ browser }) => {
@@ -507,118 +563,9 @@ test('Telegram login code request completes after the auth modal is closed', asy
   await expect(page.locator('#otpBtn')).toBeEnabled();
 });
 
-test('Telegram registration request continues after closing the auth modal', async ({ page }) => {
-  await page.addInitScript(() => {
-    localStorage.setItem('zt_onb', '1');
-    sessionStorage.setItem('splashDone', '1');
-  });
 
-  let markRequestStarted;
-  let releaseRequest;
-  const requestStarted = new Promise((resolve) => { markRequestStarted = resolve; });
-  const responseGate = new Promise((resolve) => { releaseRequest = resolve; });
-  await page.context().route('https://t.me/**', (route) => route.fulfill({
-    status: 200,
-    contentType: 'text/html',
-    body: '<!doctype html><title>Telegram test stub</title>'
-  }));
-  await page.route('**/api/auth/request-reg-otp', async (route) => {
-    markRequestStarted();
-    await responseGate;
-    await route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify({
-        ok: true,
-        pollToken: 'a'.repeat(64),
-        tgUrl: 'https://t.me/test_bot?start=reg_test'
-      }),
-    });
-  });
 
-  await page.goto('/?brand=delivery');
-  await page.waitForFunction(() => typeof window.openAuth === 'function');
-  await page.evaluate(() => window.openAuth(false));
-  await page.locator('#regName').fill('Test Customer');
-  await page.locator('#regPhone').fill('+7 999 123-45-67');
-  await page.locator('#consentBox').check();
 
-  const button = page.locator('#regTgBtn');
-  const label = button.locator('span');
-  const status = page.locator('#regTgRow');
-  await button.click();
-  await requestStarted;
-
-  await expect(button).toBeDisabled();
-  await expect(button).toHaveAttribute('aria-busy', 'true');
-  await expect(label).toHaveText('Отправляем запрос…');
-
-  await page.evaluate(() => window.closeAuth());
-  await expect(page.locator('#authModal')).not.toHaveClass(/show/);
-  releaseRequest();
-  await expect(button).toBeEnabled();
-  await expect(button).not.toHaveAttribute('aria-busy', 'true');
-  await expect(label).toHaveText('Отправить повторно в Telegram');
-  await expect(status).toHaveClass('auth-tg-pending');
-  await expect(status).toHaveText('Ожидаем подтверждение в Telegram…');
-
-  await page.evaluate(() => window.openAuth(false));
-  await expect(status).toBeVisible();
-  await expect(status).toHaveAttribute('role', 'status');
-  await expect(status).toHaveAttribute('aria-live', 'polite');
-  await expect(status).toHaveClass('auth-tg-pending');
-  await expect(button).toBeEnabled();
-  await expect(button).not.toHaveAttribute('aria-busy', 'true');
-  await expect(label).toHaveText('Отправить повторно в Telegram');
-});
-
-test('registration consent is placed before Telegram verification and gates its request', async ({ page }) => {
-  await page.addInitScript(() => {
-    localStorage.setItem('zt_onb', '1');
-    sessionStorage.setItem('splashDone', '1');
-  });
-
-  let requestCount = 0;
-  await page.route('**/api/auth/request-reg-otp', async (route) => {
-    requestCount += 1;
-    await route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify({ ok: true }),
-    });
-  });
-
-  await page.goto('/?brand=delivery');
-  await page.waitForFunction(() => typeof window.openAuth === 'function');
-  await page.evaluate(() => window.openAuth(false));
-
-  const consentRow = page.locator('#consentRow');
-  const consent = page.locator('#consentBox');
-  const telegramButton = page.locator('#regTgBtn');
-  await page.locator('#regName').fill('Test Customer');
-  await page.locator('#regPhone').fill('+7 999 123-45-67');
-  const consentTop = await consentRow.evaluate((el) => el.getBoundingClientRect().top);
-  const telegramTop = await telegramButton.evaluate((el) => el.getBoundingClientRect().top);
-  expect(consentTop).toBeLessThan(telegramTop);
-
-  await telegramButton.click();
-  await expect(page.locator('.toast', { hasText: 'Сначала подтвердите согласие' })).toBeVisible();
-  expect(requestCount).toBe(0);
-
-  await consent.check();
-  const request = page.waitForRequest((item) =>
-    item.url().includes('/api/auth/request-reg-otp')
-  );
-  await telegramButton.click();
-  const sent = await request;
-  expect(sent.postDataJSON()).toMatchObject({
-    phone: '+7 999 123-45-67',
-    name: 'Test Customer',
-    via: 'tg',
-  });
-  expect(requestCount).toBe(1);
-  await page.evaluate(() => window.closeAuth());
-});
 
 test('guest menu action is available from registration and login', async ({ page }) => {
   await page.addInitScript(() => {
@@ -1202,51 +1149,4 @@ test('ambient service hints stop pulsing and entering under reduced motion', asy
 });
 
 
-test('Telegram confirmation badge is immediate under reduced motion for both brands', async ({ page }, testInfo) => {
-  await page.setViewportSize({ width: 390, height: 844 });
-  await page.addInitScript(() => {
-    localStorage.setItem('zt_onb', '1');
-    sessionStorage.setItem('splashDone', '1');
-  });
 
-  for (const brand of ['coffee', 'delivery']) {
-    await page.emulateMedia({ reducedMotion: 'no-preference' });
-    await page.goto('/?brand=' + brand);
-    await page.waitForFunction(() => {
-      const link = Array.from(document.querySelectorAll('link[rel="stylesheet"]'))
-        .find((item) => item.href.includes('160-01-rail-fab-mobile.css'));
-      return link && link.media === 'all' && Array.from(document.styleSheets)
-        .some((sheet) => sheet.href === link.href);
-    });
-
-    // Open the actual registration modal and expose its owned Telegram status row.
-    await page.evaluate(() => window.openAuth(false));
-    const modal = page.locator('#authModal');
-    await expect(modal).toHaveClass(/show/);
-
-    const badge = page.locator('#regTgRow');
-    await badge.evaluate((element) => {
-      element.hidden = false;
-      // registration.js assigns this class when Telegram verification succeeds.
-      element.className = 'auth-badge-confirmed';
-      element.textContent = '✅ Номер подтверждён — завершите регистрацию';
-    });
-    await expect(badge).toBeVisible();
-    await badge.scrollIntoViewIfNeeded();
-    await expect(badge).toHaveCSS('animation-name', 'badgeSlideIn');
-    await expect(badge).toHaveCSS('animation-duration', '0.35s');
-    await testInfo.attach('telegram-verification-badge-' + brand + '-normal-390x844.png', {
-      body: await page.screenshot({ fullPage: false }),
-      contentType: 'image/png',
-    });
-
-    await page.emulateMedia({ reducedMotion: 'reduce' });
-    await expect(badge).toHaveCSS('animation-name', 'none');
-    await expect(badge).toBeVisible();
-    await expect(badge).toContainText('Номер подтверждён — завершите регистрацию');
-    await testInfo.attach('telegram-verification-badge-' + brand + '-reduced-390x844.png', {
-      body: await page.screenshot({ fullPage: false }),
-      contentType: 'image/png',
-    });
-  }
-});
