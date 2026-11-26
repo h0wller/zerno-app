@@ -422,11 +422,14 @@ test('cashier-created guests get a PIN immediately and duplicate registration re
 
 test('Telegram registration polling is scoped to a random one-attempt secret, not the phone number', async () => {
   const phone = '+7 900 000-01-12';
+  const returnTo = '/?brand=coffee&tab=profile';
   const requested = await api('/api/auth/request-reg-otp', {
-    name: 'Telegram Poll Guest', phone, via: 'tg'
+    name: 'Telegram Poll Guest', phone, pin: '1357', consent: true, returnTo, via: 'tg'
   });
   assert.equal(requested.status, 200, JSON.stringify(requested.json));
   assert.match(requested.json.pollToken || '', /^[a-f0-9]{64}$/);
+  assert.match(requested.json.tgUrl || '', /^https:\/\/t\.me\/test_bot\?start=reg_[a-f0-9]{32}$/);
+  assert.ok(requested.json.expiresAt);
 
   const throttled = await api('/api/auth/request-reg-otp', {
     name: 'Telegram Poll Guest', phone, via: 'tg'
@@ -450,6 +453,13 @@ test('Telegram registration polling is scoped to a random one-attempt secret, no
     }
   });
   assert.equal(confirmed.status, 200, JSON.stringify(confirmed.json));
+
+  const completed = await api('/api/auth/check-reg', { pollToken: requested.json.pollToken });
+  assert.equal(completed.status, 200, JSON.stringify(completed.json));
+  assert.equal(completed.json.confirmed, true);
+  assert.equal(completed.json.customer?.verified, 1);
+  assert.equal(completed.json.customer?.id, inspectDb.prepare('SELECT id FROM customers WHERE phone=?').get(phone).id);
+  assert.ok(inspectDb.prepare('SELECT pin FROM customers WHERE phone=?').get(phone)?.pin);
 
   const phoneLookup = await api('/api/auth/check-reg', { phone });
   assert.equal(phoneLookup.status, 400);
