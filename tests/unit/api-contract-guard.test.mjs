@@ -123,7 +123,7 @@ test('audit sentinels pin known F-003 baseline observations without fixing them'
   const sources = {
     'server/domain/customers.js': "uid('u'); randomBytes(3).toString('hex').toUpperCase()",
     'server.js': "uid('p')",
-    'server/routes/auth.js': "consent !== 1 && consent !== true; via === 'sms'; res.json({ ok: true, via: 'sms' })",
+    'server/routes/auth.js': "req.body.consent !== 1 && req.body.consent !== true; via === 'sms'; res.json({ ok: true, via: 'sms' })",
     'server/routes/orders.js': "dispatchGuard; const ORDER_STATUS = { new: 1, accept: 1, cook: 1, way: 1, done: 1, cancel: 1 }; Number.isInteger(minutes) && minutes >= 1 && minutes <= 180",
     'server/routes/promos.js': "adminGuard; res.json({ ok: false, error: 'bad' }); promosRouter.post('/api/promos', handler); req.body.code",
     'server/routes/stats.js': 'adminGuard',
