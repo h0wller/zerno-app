@@ -134,16 +134,15 @@
     }
   };
 
-  $('#gcRedeem').onclick = () => {
-    if (!curGuest || !(Number(curGuest.free) > 0)) return;
+  $('#gcRedeem').onclick = async () => {
+    if (!curGuest) return;
     if (typeof window.openRedeemPicker !== 'function') {
       return toast('Не удалось открыть выбор напитка', '⚠️');
     }
-    const opened = window.openRedeemPicker(curGuest, updatedCustomer => {
+    await window.openRedeemPicker(curGuest, updatedCustomer => {
       curGuest = updatedCustomer;
       renderGuest();
     }, $('#gcRedeem'));
-    if (!opened) toast('Нет доступных подарков', '⚠️');
   };
 
   $('#gcClose').onclick = () => {
