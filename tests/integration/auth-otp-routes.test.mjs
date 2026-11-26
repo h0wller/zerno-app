@@ -293,6 +293,12 @@ test('pending guest activates through a one-time Telegram pairing link using the
   assert.equal(telegramUrl.pathname, '/test_bot');
   const startPayload = telegramUrl.searchParams.get('start') || '';
   assert.match(startPayload, /^activate_[a-f0-9]{48}$/);
+  const activationToken = startPayload.slice('activate_'.length);
+  const challengeState = await api('/__test/otp/inspect', { key: 'tgactivate:' + activationToken });
+  assert.equal(challengeState.status, 200, JSON.stringify(challengeState.json));
+  assert.equal(challengeState.json.exists, true);
+  assert.equal(challengeState.json.customerId, String(pending.json.customer.id));
+  assert.equal(challengeState.json.phone, phone);
   assert.equal(telegramUrl.searchParams.has('auth_token'), false);
   assert.equal(telegramUrl.searchParams.has('token'), false);
 
@@ -305,6 +311,11 @@ test('pending guest activates through a one-time Telegram pairing link using the
     }
   });
   assert.equal(start.status, 200);
+  const chatState = await api('/__test/otp/inspect', { key: 'tgactivate-chat:' + chatId });
+  assert.equal(chatState.status, 200, JSON.stringify(chatState.json));
+  assert.equal(chatState.json.exists, true);
+  assert.equal(chatState.json.token, activationToken);
+  assert.equal(chatState.json.customerId, String(pending.json.customer.id));
 
   const foreignContact = await webhook({
     message: {
@@ -344,9 +355,13 @@ test('pending guest activates through a one-time Telegram pairing link using the
   const activated = inspectDb.prepare(
     'SELECT verified, tg, actcode FROM customers WHERE id=?'
   ).get(pending.json.customer.id);
-  assert.equal(activated?.verified, 1);
+  assert.equal(activated?.verified, 1, output);
   assert.equal(String(activated?.tg), String(chatId));
   assert.equal(activated?.actcode, null);
+  const consumedChallenge = await api('/__test/otp/inspect', { key: 'tgactivate:' + activationToken });
+  const consumedChat = await api('/__test/otp/inspect', { key: 'tgactivate-chat:' + chatId });
+  assert.equal(consumedChallenge.json.exists, false);
+  assert.equal(consumedChat.json.exists, false);
 
   const bonusGrants = () => inspectDb.prepare(
     "SELECT COUNT(*) AS count FROM bonus_grants WHERE cid=? AND kind IN ('signup','qr')"
