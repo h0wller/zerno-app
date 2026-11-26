@@ -129,6 +129,11 @@ window.renderVerifyNote=function(){
   }
 
   var isDelivery = window.brand === 'delivery';
+  var existingActivationDetails = n.querySelector('.profile-activation-details');
+  var activationDetailsWasOpen = !!(existingActivationDetails && existingActivationDetails.open);
+  var existingCashierFields = n.querySelector('#cashierActivationFields');
+  var cashierFieldsWereOpen = !!(existingCashierFields && !existingCashierFields.hidden);
+  var previousActivationCode = (n.querySelector('#actCode') || {}).value || '';
   var freeCoffees = Math.max(0, Number(customer.free) || 0);
   var coffeeHelp = !isDelivery
     ? '<details class="profile-loyalty-help">' +
@@ -152,23 +157,37 @@ window.renderVerifyNote=function(){
   }
 
   if(!isVerified){
-    var pendingGuidance = isDelivery
-      ? '<p>Пока номер не подтверждён, заказы недоступны. Назовите номер кассиру и получите 4-значный код активации, затем введите его ниже. После активации можно будет перейти в меню и оформить заказ.</p>' +
-        '<p>Если сервер назначит вам бесплатную первую доставку, корзина применит её автоматически. Результат будет виден в строке доставки и итоговой сумме.</p>'
-      : '<p>Назовите номер кассиру и получите 4-значный код активации, затем введите его ниже. До подтверждения номера преимущества карты не активны.</p>' +
-        '<p>После активации откроется карта кофейни: за покупку начисляется 1 штамп, 10 штампов дают бесплатный кофе. QR на карте покажите кассиру.</p>';
-
+    var activatedHint = isDelivery
+      ? 'После активации станут доступны заказы.'
+      : 'После активации станет доступна карта штампов.';
     n.hidden = false;
-    n.innerHTML = coffeeHelp +
+    n.innerHTML =
       '<div class="profile-activation-copy">' +
-        '<h4>Профиль создан, но ещё не активирован</h4>' +
-        pendingGuidance +
+        '<h4>Профиль не активирован</h4>' +
+        '<p>' + activatedHint + '</p>' +
       '</div>' +
-      '<div class="profile-activation-row">' +
-        '<label class="profile-activation-label" for="actCode">Код активации</label>' +
-        '<input id="actCode" inputmode="numeric" maxlength="4" placeholder="4 цифры" aria-label="Четырёхзначный код активации" autocomplete="one-time-code">' +
-        '<button class="btn fire" id="actBtn" type="button">Активировать</button>' +
-      '</div>';
+      '<details class="profile-activation-details"' + (activationDetailsWasOpen ? ' open' : '') + '>' +
+        '<summary><span>Инструкция по активации</span><span class="profile-activation-chevron" aria-hidden="true">⌄</span></summary>' +
+        '<div class="profile-activation-details-content">' +
+          '<p>Подтвердите свой номер одним из двух способов:</p>' +
+          '<div class="profile-activation-actions">' +
+            '<button class="btn fire" id="actTgBtn" type="button">Войти через Telegram</button>' +
+            '<button class="btn ghost" id="showCashierCodeBtn" type="button" aria-controls="cashierActivationFields" aria-expanded="' + (cashierFieldsWereOpen ? 'true' : 'false') + '">' +
+              (cashierFieldsWereOpen ? 'Скрыть поле кода' : 'Ввести код кассира') +
+            '</button>' +
+          '</div>' +
+          '<div class="profile-activation-code" id="cashierActivationFields"' + (cashierFieldsWereOpen ? '' : ' hidden') + '>' +
+            '<p>Получите 4-значный код у кассира и введите его здесь.</p>' +
+            '<div class="profile-activation-row">' +
+              '<label class="profile-activation-label" for="actCode">Код кассира</label>' +
+              '<input id="actCode" inputmode="numeric" maxlength="4" placeholder="4 цифры" aria-label="Четырёхзначный код кассира" autocomplete="one-time-code">' +
+              '<button class="btn fire" id="actBtn" type="button">Активировать</button>' +
+            '</div>' +
+          '</div>' +
+        '</div>' +
+      '</details>';
+    var codeInput = document.getElementById('actCode');
+    if(codeInput) codeInput.value = previousActivationCode;
   } else if(!isDelivery){
     // The coffee explanation remains available after activation; the stamp card
     // and its actual free count remain the source of reward status.
@@ -181,6 +200,57 @@ window.renderVerifyNote=function(){
   }
 
   relink();
+  var telegramActivationButton = document.getElementById('actTgBtn');
+  if(telegramActivationButton){
+    telegramActivationButton.onclick = async function(){
+      if(telegramActivationButton.disabled) return;
+      telegramActivationButton.disabled = true;
+      telegramActivationButton.setAttribute('aria-busy', 'true');
+      telegramActivationButton.textContent = 'Открываем Telegram…';
+      try{
+        var returnUrl = new URL(window.location.href);
+        returnUrl.searchParams.set('tab', 'profile');
+        returnUrl.searchParams.delete('auth_token');
+        var returnTo = returnUrl.pathname + returnUrl.search + returnUrl.hash;
+        var response = await api('/auth/tg-link/request', {
+          method: 'POST',
+          body: { returnTo: returnTo }
+        });
+        var telegramUrl = new URL(response && response.tgUrl || '');
+        if(telegramUrl.protocol !== 'https:' || telegramUrl.hostname !== 't.me'){
+          throw new Error('Сервер вернул некорректную ссылку Telegram');
+        }
+        var miniApp = window.Telegram && window.Telegram.WebApp;
+        if(miniApp && typeof miniApp.openTelegramLink === 'function'){
+          miniApp.openTelegramLink(telegramUrl.toString());
+        }else{
+          window.location.assign(telegramUrl.toString());
+        }
+      }catch(error){
+        toast(error.message || 'Не удалось открыть Telegram. Попробуйте ещё раз.', '⚠️');
+        telegramActivationButton.disabled = false;
+        telegramActivationButton.removeAttribute('aria-busy');
+        telegramActivationButton.textContent = 'Войти через Telegram';
+      }
+    };
+  }
+
+  var cashierToggleButton = document.getElementById('showCashierCodeBtn');
+  if(cashierToggleButton){
+    cashierToggleButton.onclick = function(){
+      var fields = document.getElementById('cashierActivationFields');
+      if(!fields) return;
+      var open = fields.hidden;
+      fields.hidden = !open;
+      cashierToggleButton.setAttribute('aria-expanded', open ? 'true' : 'false');
+      cashierToggleButton.textContent = open ? 'Скрыть поле кода' : 'Ввести код кассира';
+      if(open){
+        var codeField = document.getElementById('actCode');
+        if(codeField) codeField.focus();
+      }
+    };
+  }
+
   var ab = document.getElementById('actBtn');
   if(!ab) return;
   ab.onclick = async function(){
