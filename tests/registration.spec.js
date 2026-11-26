@@ -1063,7 +1063,7 @@ test('pending profile opens Telegram and preserves the delivery profile return r
     body: '<title>Telegram test route</title>'
   }));
 
-  await page.goto('/?brand=delivery');
+  await page.goto('/?brand=delivery&campaign=activation-test#profile-panel');
   await page.waitForFunction(() =>
     typeof window.setUser === 'function' &&
     typeof window.__profileMeReady === 'function' &&
@@ -1095,7 +1095,7 @@ test('pending profile opens Telegram and preserves the delivery profile return r
   await page.locator('#actTgBtn').click();
   await expect(page).toHaveURL(/https:\/\/t\.me\/test_bot\?start=activate_[a-f0-9]{48}$/);
   expect(activationRequest).toEqual({
-    returnTo: '/?brand=delivery&tab=profile'
+    returnTo: '/?brand=delivery&campaign=activation-test&tab=profile#profile-panel'
   });
 });
 
