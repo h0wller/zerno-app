@@ -1145,7 +1145,7 @@ test('registration Telegram CTA completes the signup and returns to the originat
     body: '<title>Telegram registration test</title>'
   }));
 
-  await page.goto('/?brand=delivery');
+  await page.goto('/?brand=delivery&campaign=registration-test#menu');
   await page.waitForFunction(() => typeof window.openAuth === 'function');
   await page.evaluate(() => window.openAuth(false));
   await page.locator('#regName').fill('Telegram Guest');
@@ -1159,6 +1159,7 @@ test('registration Telegram CTA completes the signup and returns to the originat
   await expect(popup).toHaveURL(/https:\/\/t\.me\/test_bot\?start=reg_[a-f0-9]{32}$/);
   await expect.poll(() => page.evaluate(() => localStorage.getItem('zt_user')), { timeout: 10000 })
     .toBe('telegram-registration-session');
+  await expect(page.locator('#panel')).not.toHaveClass(/open/);
 
   expect(registrationRequest).toMatchObject({
     name: 'Telegram Guest',
@@ -1166,7 +1167,7 @@ test('registration Telegram CTA completes the signup and returns to the originat
     pin: '2468',
     consent: 1,
     via: 'tg',
-    returnTo: '/?brand=delivery&tab=profile'
+    returnTo: '/?brand=delivery&campaign=registration-test#menu'
   });
   expect(registrationRequest.returnTo).not.toContain('auth_token');
 });
