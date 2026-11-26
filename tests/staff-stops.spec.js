@@ -176,7 +176,7 @@ test.describe('Cashier guest PIN and reward picker', () => {
           : [cashierGuest];
         body = { customers };
       }
-      const customerMatch = path.match(/^\\/api\\/staff\\/customers\\/([^/]+)$/);
+      const customerMatch = path.match(/^\/api\/staff\/customers\/([^/]+)$/);
       if (customerMatch && method === 'GET') {
         const customer = typeof options.getCustomer === 'function'
           ? options.getCustomer(decodeURIComponent(customerMatch[1]))
