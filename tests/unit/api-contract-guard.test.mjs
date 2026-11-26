@@ -59,7 +59,7 @@ test('resolves literal route constants without creating a second route registry'
 
 test('strict YAML parsing rejects duplicate operation keys under one path', () => {
   assert.throws(
-    () => parseOpenApiStrict('openapi: 3.0.3\\npaths:\\n  /api/x:\\n    get: {}\\n    get: {}\\n'),
+    () => parseOpenApiStrict('openapi: 3.0.3\npaths:\n  /api/x:\n    get: {}\n    get: {}\n'),
     /duplicate|unique/i,
   );
 });
