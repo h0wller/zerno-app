@@ -10,6 +10,9 @@ import {
 } from '../../scripts/api-contract-guard.mjs';
 
 const minimalOpenApi = (paths) => ({ openapi: '3.0.3', paths });
+const jsonBody = (schema) => ({
+  requestBody: { content: { 'application/json': { schema } } },
+});
 
 test('extracts Express routes and normalizes :params to OpenAPI braces', () => {
   const routes = extractExpressRoutes({
@@ -35,7 +38,7 @@ test('excludes test-only routes from production inventory', () => {
 test('reports dynamic API route registration instead of silently skipping it', () => {
   const routes = extractExpressRoutes({
     file: 'server/routes/dynamic.js',
-    source: "router.get(resolvePath(), handler);",
+    source: 'router.get(resolvePath(), handler);',
   });
   assert.equal(routes.length, 0);
   assert.match(formatDiagnostic(routes.diagnostics[0]), /server\/routes\/dynamic\.js/);
@@ -87,31 +90,39 @@ test('OpenAPI operation inventory contains one operation per method/path pair', 
 
 test('audit sentinels describe known F-003 gaps without fixing them', () => {
   const openapi = {
-    components: { schemas: {
-      Customer: { properties: { id: { type: 'integer' } } },
-      MenuItem: { properties: { id: { type: 'integer' } } },
-    } },
+    components: {
+      schemas: {
+        Customer: { properties: { id: { type: 'integer' } } },
+        MenuItem: { properties: { id: { type: 'integer' } } },
+      },
+    },
     paths: {
-      '/api/auth/register': { post: { requestBody: { content: { 'application/json': { schema: { properties: { consent: { type: 'integer', enum: [0, 1] } } } } } } },
-      '/api/auth/request-reg-otp': { post: { responses: { '200': { content: { 'application/json': { schema: { required: ['tgUrl', 'pollToken'] } } } } } },
-      '/api/staff/scan': { post: { requestBody: { content: { 'application/json': { schema: { properties: { code: { minLength: 16, maxLength: 64 } } } } } } },
-      '/api/orders/{id}/status': { post: { security: [{ BearerAuth: [] }], requestBody: { content: { 'application/json': { schema: { properties: { status: { type: 'string' } } } } } } },
-      '/api/orders/{id}/delay': { post: { requestBody: { content: { 'application/json': { schema: { properties: { min: { minimum: 0 } } } } } } },
+      '/api/auth/register': { post: jsonBody({ properties: { consent: { type: 'integer', enum: [0, 1] } } }) },
+      '/api/auth/request-reg-otp': {
+        post: { responses: { '200': { content: { 'application/json': { schema: { required: ['tgUrl', 'pollToken'] } } } } } },
+      },
+      '/api/staff/scan': { post: jsonBody({ properties: { code: { minLength: 16, maxLength: 64 } } }) },
+      '/api/orders/{id}/status': {
+        post: { security: [{ BearerAuth: [] }], ...jsonBody({ properties: { status: { type: 'string' } } }) },
+      },
+      '/api/orders/{id}/delay': { post: jsonBody({ properties: { min: { minimum: 0 } } }) },
       '/api/promo/info': { get: { responses: { '404': {} } } },
       '/api/promos': { post: { security: [{ BearerAuth: [] }] } },
       '/api/chat/botlog': { post: { responses: { '409': {} } } },
-      '/api/push/subscribe': { post: { requestBody: { content: { 'application/json': { schema: { properties: { sub: { type: 'object', properties: { endpoint: { type: 'string' } } } } } } } } },
+      '/api/push/subscribe': {
+        post: jsonBody({ properties: { sub: { type: 'object', properties: { endpoint: { type: 'string' } } } } }),
+      },
+      '/api/stats': { get: { security: [{ BearerAuth: [] }] } },
     },
   };
   const sources = {
     'server/domain/customers.js': "uid('u'); randomBytes(3).toString('hex').toUpperCase()",
     'server.js': "uid('p')",
     'server/routes/auth.js': "consent !== 1 && consent !== true; via === 'sms'; res.json({ ok: true, via: 'sms' })",
-    'server/routes/staff.js': "randomBytes(3).toString('hex').toUpperCase()",
     'server/routes/orders.js': "const ORDER_STATUS = { new: 1, accept: 1, cook: 1, way: 1, done: 1, cancel: 1 }; min < 1 || min > 180",
-    'server/routes/promos.js': "res.json({ ok: false, error: 'bad' }); promosRouter.post('/api/promos'",
-    'server/routes/chat.js': "INSERT INTO chat_meta; botlog",
-    'server/routes/push.js': "if (!sub || !sub.endpoint)",
+    'server/routes/promos.js': "res.json({ ok: false, error: 'bad' }); promosRouter.post('/api/promos', handler); req.body.code",
+    'server/routes/chat.js': 'INSERT INTO chat_meta; botlog',
+    'server/routes/push.js': 'if (!sub || !sub.endpoint)',
   };
   const result = checkAuditSentinels({ openapi, sources });
   assert.equal(result.findings.length, 12);
