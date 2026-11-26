@@ -230,10 +230,10 @@ export function checkAuditSentinels({ openapi, sources }) {
   const diagnostics = [];
   const findings = AUDIT_SENTINELS.map((item) => ({ ...item, status: 'known-f003-baseline' }));
   const schema = (name) => openapi.components?.schemas?.[name]?.properties?.id?.type;
-  if (!/uid\\(['\"]u['\"]\\)/.test(sources['server/domain/customers.js'] || '')) {
+  if (!/uid\(['"]u['"]\)/.test(sources['server/domain/customers.js'] || '')) {
     addSentinel(diagnostics, 'C-01', 'server/domain/customers.js', 'RESPONSE', 'Customer.id', "uid('u') prefixed string ID", 'audited ID generator not found');
   }
-  if (!/uid\\(['\"]p['\"]\\)/.test(sources['server.js'] || '')) {
+  if (!/uid\(['"]p['"]\)/.test(sources['server.js'] || '')) {
     addSentinel(diagnostics, 'C-02', 'server.js', 'RESPONSE', 'MenuItem.id', "uid('p') prefixed string ID", 'audited menu ID generator not found');
   }
   addSentinel(diagnostics, 'C-01', 'docs/openapi.yaml', 'RESPONSE', 'Customer.id', 'integer', schema('Customer'));
@@ -268,7 +268,7 @@ export function checkAuditSentinels({ openapi, sources }) {
   addSentinel(diagnostics, 'C-09', 'docs/openapi.yaml', 'POST', '/api/orders/{id}/delay', { minimum: 0, maximum: undefined }, { minimum: delaySchema?.minimum, maximum: delaySchema?.maximum });
 
   const promoSource = sources['server/routes/promos.js'] || '';
-  if (!/res\.json\(\{\s*ok:\s*false,\s*error\s*\}\)/.test(promoSource)) {
+  if (!/res\.json\(\{\s*ok:\s*false,\s*error:/.test(promoSource)) {
     addSentinel(diagnostics, 'C-11', 'server/routes/promos.js', 'GET', '/api/promo/info', 'invalid/missing code returns HTTP 200 {ok:false,error}', 'audited response branch not found');
   }
   addSentinel(diagnostics, 'C-11', 'docs/openapi.yaml', 'GET', '/api/promo/info', true, Boolean(openapi.paths?.['/api/promo/info']?.get?.responses?.['404']));
