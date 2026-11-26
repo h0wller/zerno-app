@@ -263,11 +263,6 @@ test('auth modal closes on backdrop click but stays open for card clicks', async
   await expect(trigger).toBeFocused();
 });
 
-
-
-
-
-
 test('auth modal explains the coffee stamp card before registration and avoids a gift promise during login', async ({ page }) => {
   await page.addInitScript(() => {
     localStorage.setItem('zt_onb', '1');
@@ -334,7 +329,6 @@ test('auth fields expose mobile autofill and next/done keyboard hints', async ({
   await expect(page.locator('#logOtp')).toHaveAttribute('enterkeyhint', 'done');
 });
 
-
 test('consent checkbox and its full row show a visible keyboard focus indicator', async ({ page }) => {
   await page.addInitScript(() => {
     localStorage.setItem('zt_onb', '1');
@@ -361,8 +355,6 @@ test('consent checkbox and its full row show a visible keyboard focus indicator'
   expect(focusStyles.outlineWidth).toBe('3px');
   expect(focusStyles.boxShadow).not.toBe('none');
 });
-
-
 
 test('Telegram Mini App registration subtitle explains native confirmation without cashier instructions', async ({ page }) => {
   await page.addInitScript(() => {
@@ -517,8 +509,6 @@ test('desktop auth modal scrolls without displaying scrollbar tracks', async ({ 
   }
 });
 
-
-
 test('login completes and creates a session when the modal is closed mid-request', async ({ page }) => {
   await page.addInitScript(() => {
     localStorage.setItem('zt_onb', '1');
@@ -564,7 +554,6 @@ test('login completes and creates a session when the modal is closed mid-request
   expect(requestCount).toBe(1);
 });
 
-
 test('Telegram login code request completes after the auth modal is closed', async ({ page }) => {
   await page.addInitScript(() => {
     localStorage.setItem('zt_onb', '1');
@@ -595,10 +584,6 @@ test('Telegram login code request completes after the auth modal is closed', asy
   await expect(page.locator('#otpBtn')).toBeEnabled();
 });
 
-
-
-
-
 test('guest menu action is available from registration and login', async ({ page }) => {
   await page.addInitScript(() => {
     localStorage.setItem('zt_onb', '1');
@@ -623,7 +608,6 @@ test('guest menu action is available from registration and login', async ({ page
   await expect(modal).not.toHaveClass(/show/);
   await expect.poll(() => page.evaluate(() => localStorage.getItem('zt_onb'))).toBe('1');
 });
-
 
 test('Enter skips the consent checkbox while Tab and Space keep it keyboard-accessible', async ({ page }) => {
   await page.addInitScript(() => {
@@ -713,7 +697,6 @@ test('switching to and from Telegram code entry moves focus to the active field'
   await expect(page.locator('#logPin')).toBeFocused();
 });
 
-
 test('registration completes and creates a session when the modal is closed mid-request', async ({ page }) => {
   await page.route('**/api/orders/mine', (route) => route.fulfill({
     status: 200,
@@ -779,7 +762,6 @@ test('registration completes and creates a session when the modal is closed mid-
   await expect(page.locator('#authModal')).not.toHaveClass(/show/);
   expect(requestCount).toBe(1);
 });
-
 
 test('registration hides the paid SMS control while SMS auth is disabled', async ({ page }, testInfo) => {
   // iPhone 16e reference viewport. smsAuthEnabled=false is returned by the public config bootstrap.
@@ -933,7 +915,6 @@ test('reduced motion removes auth overlay travel without changing focus or layou
   }
 });
 
-
 test('PIN error feedback and fullscreen QR are static under reduced motion', async ({ page }, testInfo) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.emulateMedia({ reducedMotion: 'reduce' });
@@ -974,7 +955,6 @@ test('PIN error feedback and fullscreen QR are static under reduced motion', asy
   await page.evaluate(() => window.closeQRFull());
 });
 
-
 test('generic modal and shared overlay are immediate under reduced motion', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.addInitScript(() => {
@@ -1006,7 +986,6 @@ test('generic modal and shared overlay are immediate under reduced motion', asyn
   await expect(overlay).toHaveCSS('pointer-events', 'none');
 });
 
-
 test('confetti does not start or keep running under reduced motion', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.addInitScript(() => {
@@ -1029,7 +1008,6 @@ test('confetti does not start or keep running under reduced motion', async ({ pa
 
   await expect.poll(() => page.evaluate(() => window.__confettiContextCalls)).toBe(0);
 });
-
 
 test('active confetti loop stops on a live switch to reduced motion', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'no-preference' });
@@ -1055,7 +1033,6 @@ test('active confetti loop stops on a live switch to reduced motion', async ({ p
   await page.evaluate(() => window.__motionRafCallback());
   expect(await page.evaluate(() => window.__motionRafCalls)).toBe(1);
 });
-
 
 test('confetti cancels its active frame and clears the canvas while the document is hidden', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'no-preference' });
@@ -1130,7 +1107,6 @@ test('confetti cancels its active frame and clears the canvas while the document
   expect(framesAfterExplicitRestart.filter((id) => !framesBeforeExplicitRestart.includes(id))).toHaveLength(1);
 });
 
-
 test('ambient service hints stop pulsing and entering under reduced motion', async ({ page }) => {
   await page.addInitScript(() => {
     localStorage.setItem('zt_onb', '1');
@@ -1186,6 +1162,4 @@ test('ambient service hints stop pulsing and entering under reduced motion', asy
   })).toEqual(['none', 'none', 'none', 'none', 'none']);
   await expect(page.locator('#motionAmbientFixtures .mbonus')).toHaveCSS('transition-duration', '0s');
 });
-
-
 
