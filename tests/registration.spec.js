@@ -741,8 +741,9 @@ test.describe('P0 cashier activation UI', () => {
         window.openPanel();
       });
   
+      await expect(page.locator('#verifyNote #actTgBtn')).toBeVisible();
+      await expect(page.locator('#verifyNote .profile-activation-details summary')).toContainText('Вы в заведении? Код кассира');
       await page.locator('#verifyNote .profile-activation-details summary').click();
-      await page.locator('#showCashierCodeBtn').click();
       await expect(page.locator('#actCode')).toBeVisible();
       if (scenario.brand === 'coffee') {
         const beforeInvalid = activationCalls;
@@ -871,7 +872,7 @@ test('P0 registration baseline: capture guest, registration and the separate pro
 
       await page.evaluate(() => window.openAuth(false));
       await expect(page.locator('#regTgBtn')).toBeVisible();
-      await expect(page.locator('#regTgBtn')).toHaveText('Войти через Telegram');
+      await expect(page.locator('#regTgBtn')).toHaveText('Зарегистрироваться через Telegram');
       await expect(page.locator('#regTgRow')).toHaveCount(0);
       await expect(page.locator('#regOtpBtn')).toHaveCount(0);
       await expect(page.locator('#regOtpRow')).toHaveCount(0);
