@@ -281,7 +281,7 @@ export function createTgRouter({ appKb }) {
       }
       otpStore.set('regchat:' + chatId, {
         token, pollToken: st.pollToken || null, phone: st.phone,
-        name: st.name || '', pin: st.pin || '', returnUrl: st.returnUrl || null,
+        name: st.name || '', pin: st.pin || '', src: st.src || '', returnUrl: st.returnUrl || null,
         expires: Date.now() + 10 * 60 * 1000
       });
       await tgSend(chatId, 'Чтобы завершить регистрацию, поделитесь своим номером кнопкой ниже 👇', appKb());
@@ -421,6 +421,7 @@ export function createTgRouter({ appKb }) {
             const newName = pend.name || tgUserName || 'Гость';
             const r = createCustomer(newName, contactPhone, pend.pin || '');
             if (!r.err && r.customer) {
+              if (pend.src === QR_SOURCE) db.prepare('UPDATE customers SET src=? WHERE id=?').run(QR_SOURCE, r.customer.id);
               const linked = linkTelegram(db, r.customer.id, String(chatId));
               if (!linked.ok) {
                 db.prepare('DELETE FROM customers WHERE id=?').run(r.customer.id);
