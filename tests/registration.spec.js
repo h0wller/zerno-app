@@ -1185,7 +1185,7 @@ test('registration Telegram CTA completes the signup and returns to the originat
     pin: '2468',
     consent: 1,
     via: 'tg',
-    returnTo: '/?brand=delivery'
+    returnTo: '/?brand=delivery&campaign=registration-test#menu'
   });
   expect(registrationRequest.returnTo).not.toContain('auth_token');
 });
