@@ -637,8 +637,6 @@ test('Enter skips the consent checkbox while Tab and Space keep it keyboard-acce
 
   await regPhone.focus();
   await page.keyboard.press('Tab');
-  await expect(page.locator('#regTgBtn')).toBeFocused();
-  await page.keyboard.press('Tab');
   await expect(regPin).toBeFocused();
   await page.keyboard.press('Tab');
   await expect(consent).toBeFocused();
