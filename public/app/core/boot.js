@@ -592,7 +592,8 @@ function initIosHint() {
     window.navigator.standalone === true ||
     matchMedia('(display-mode: standalone)').matches;
   const inApp = /(Telegram|Instagram|FBAN|FBAV|VK|WhatsApp|Twitter)/.test(ua);
-  if (!isIOS || standalone || localStorage.getItem('zt_ios_hide')) return;
+  const isTelegramMiniApp = window.__isTgMiniApp === true;
+  if (!isIOS || standalone || isTelegramMiniApp || localStorage.getItem('zt_ios_hide')) return;
 
   setTimeout(function () {
     const t = document.getElementById('iosHintText');
