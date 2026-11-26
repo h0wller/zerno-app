@@ -742,7 +742,7 @@ test.describe('P0 cashier activation UI', () => {
       });
   
       await expect(page.locator('#verifyNote #actTgBtn')).toBeVisible();
-      await expect(page.locator('#verifyNote .profile-activation-details summary')).toContainText('Вы в заведении? Код кассира');
+      await expect(page.locator('#verifyNote .profile-activation-details summary')).toContainText('Активировать через кассира');
       await page.locator('#verifyNote .profile-activation-details summary').click();
       await expect(page.locator('#actCode')).toBeVisible();
       if (scenario.brand === 'coffee') {
@@ -975,7 +975,7 @@ test('P0 registration baseline: capture guest, registration and the separate pro
       const telegramActivation = page.locator('#verifyNote #actTgBtn');
       await expect(activationDetails).toBeVisible();
       await expect(activationDetails).not.toHaveAttribute('open', '');
-      await expect(activationDetails.locator('summary')).toContainText('Вы в заведении? Код кассира');
+      await expect(activationDetails.locator('summary')).toContainText('Активировать через кассира');
       await expect(telegramActivation).toBeVisible();
       await expect(telegramActivation).toHaveText('Подтвердить через Telegram');
       await expect(telegramActivation).not.toBeDisabled();
@@ -1296,7 +1296,7 @@ test('P0 profile Telegram activation exposes all states, both brands and portrai
       await expect(telegram.locator('xpath=ancestor::details')).toHaveCount(0);
       await expect(status).toBeHidden();
       await expect(cashier).not.toHaveAttribute('open', '');
-      await expect(cashier.locator('summary')).toContainText('Вы в заведении? Код кассира');
+      await expect(cashier.locator('summary')).toContainText('Активировать через кассира');
       await expect(note.locator('#actCode')).toBeHidden();
       await expect(note.locator('#actBtn')).toBeHidden();
 
