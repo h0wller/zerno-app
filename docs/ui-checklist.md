@@ -15,6 +15,11 @@
 - [ ] Профиль, бонусы, штампы, QR, чат и мои заказы.
 - [ ] Keyboard focus, labels, contrast и target size.
 
+## 1A. Registration and activation
+- [ ] Web/PWA: create the profile first; the auth modal does not offer a separate Telegram pre-registration action.
+- [ ] After web/PWA registration, the profile shows a separate pending-activation state with the 4-digit cashier code entry; orders and loyalty benefits remain unavailable until the server confirms activation.
+- [ ] Telegram Mini App keeps its native signed `initData` registration path; it does not show cashier activation guidance.
+
 ## 2. Guest — delivery brand
 - [ ] Cold open с `?brand=delivery`, правильный цвет, логотип, ticker, меню доставки.
 - [ ] После reload с ненулевой прокруткой mobile rail сразу отображается как fixed floating capsule у нижнего края viewport с учётом safe-area; scroll не переводит его в sticky/pinned-состояние.
