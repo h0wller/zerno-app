@@ -58,6 +58,22 @@ if (process.env.NODE_ENV === 'test') {
     otpStore.set(key, { code, expires: Date.now() + expiresInMs });
     return res.json({ ok: true });
   });
+
+  authRouter.post('/__test/otp/inspect', (req, res) => {
+    const key = String(req.body?.key || '');
+    if (!/^(?:tgactivate:[a-f0-9]{48}|tgactivate-chat:\\d+)$/.test(key)) {
+      return res.status(400).json({ error: 'Invalid test OTP inspection key' });
+    }
+    const entry = otpStore.get(key);
+    if (!entry) return res.json({ exists: false });
+    return res.json({
+      exists: true,
+      customerId: entry.customerId || null,
+      phone: entry.phone || null,
+      token: entry.token || null,
+      expires: entry.expires || null
+    });
+  });
 }
 
 // [tg-link-auth-endpoint-v1]
