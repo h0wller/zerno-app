@@ -446,6 +446,10 @@ test('Telegram registration polling is scoped to a random one-attempt secret, no
     name: 'Telegram Poll Guest', phone, pin: '1357', returnTo, via: 'tg'
   });
   assert.equal(missingConsent.status, 400);
+  const missingPin = await api('/api/auth/request-reg-otp', {
+    name: 'Telegram Poll Guest', phone, consent: true, returnTo, via: 'tg'
+  });
+  assert.equal(missingPin.status, 400);
   const unsafeReturn = await api('/api/auth/request-reg-otp', {
     name: 'Telegram Poll Guest', phone, pin: '1357', consent: true,
     returnTo: 'https://evil.example/collect', via: 'tg'
@@ -469,13 +473,13 @@ test('Telegram registration polling is scoped to a random one-attempt secret, no
 
   const chatId = 900000112;
   const started = await webhook({
-    message: { chat: { id: chatId }, from: { id: chatId }, text: '/start reg_' + botToken }
+    message: { chat: { id: chatId, type: 'private' }, from: { id: chatId }, text: '/start reg_' + botToken }
   });
   assert.equal(started.status, 200, JSON.stringify(started.json));
 
   const confirmed = await webhook({
     message: {
-      chat: { id: chatId },
+      chat: { id: chatId, type: 'private' },
       from: { id: chatId, first_name: 'Telegram Poll Guest' },
       contact: { phone_number: phone, user_id: chatId }
     }
@@ -511,7 +515,7 @@ test('Telegram registration polling is scoped to a random one-attempt secret, no
   // Telegram can redeliver a contact update; the second delivery must not grant again.
   const duplicateContact = await webhook({
     message: {
-      chat: { id: chatId },
+      chat: { id: chatId, type: 'private' },
       from: { id: chatId, first_name: 'Telegram Poll Guest' },
       contact: { phone_number: phone, user_id: chatId }
     }
