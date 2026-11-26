@@ -242,7 +242,7 @@ export function checkAuditSentinels({ openapi, sources }) {
   const register = openapi.paths?.['/api/auth/register']?.post?.requestBody?.content?.['application/json']?.schema?.properties?.consent;
   addSentinel(diagnostics, 'C-03', 'docs/openapi.yaml', 'POST', '/api/auth/register', { type: 'integer', enum: [0, 1] }, register);
   const authSource = sources['server/routes/auth.js'] || '';
-  if (!/consent\s*!==\s*1\s*&&\s*consent\s*!==\s*true/.test(authSource)) {
+  if (!authSource.includes('req.body.consent !== 1 && req.body.consent !== true')) {
     addSentinel(diagnostics, 'C-03', 'server/routes/auth.js', 'POST', '/api/auth/register', 'handler accepts only 1 or true', 'audited consent predicate not found');
   }
 
