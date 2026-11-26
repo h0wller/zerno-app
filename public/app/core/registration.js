@@ -370,7 +370,7 @@ import { openTelegramLink } from './telegram-link.js';
   }
 
   async function startTelegramRegistration(button) {
-    if (!button || registrationTelegramUi.state === 'requesting') return;
+    if (!button) return;
     var form = readRegistrationForm();
     if (!validateRegistrationForm(form)) return;
 
