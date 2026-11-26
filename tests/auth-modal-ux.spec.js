@@ -374,7 +374,7 @@ test('Telegram Mini App registration subtitle explains native confirmation witho
   await expect(subtitle).not.toContainText(/кассир/i);
 });
 
-test('registration uses brand action tokens and a compact consent row without a separate Telegram CTA', async ({ page }, testInfo) => {
+test('registration keeps consent compact and exposes no SMS or standalone Telegram CTA', async ({ page }, testInfo) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.addInitScript(() => {
     localStorage.setItem('zt_onb', '1');
@@ -394,15 +394,23 @@ test('registration uses brand action tokens and a compact consent row without a 
 
     await expect(page.locator('#regTgBtn')).toHaveCount(0);
     await expect(page.locator('#regTgRow')).toHaveCount(0);
+    await expect(page.locator('#regOtpBtn')).toHaveCount(0);
+    await expect(page.locator('#regOtpRow')).toHaveCount(0);
     await expect(page.locator('#consentBox')).not.toBeChecked();
 
     const consentMetrics = await page.locator('#consentRow').evaluate((element) => ({
       fontSize: Number.parseFloat(getComputedStyle(element).fontSize),
+      width: element.getBoundingClientRect().width,
       height: element.getBoundingClientRect().height,
+      right: element.getBoundingClientRect().right,
+      viewportWidth: window.innerWidth,
       text: element.innerText,
     }));
     expect(consentMetrics.fontSize).toBeGreaterThanOrEqual(12);
+    expect(consentMetrics.width).toBeLessThanOrEqual(320);
+    expect(consentMetrics.right).toBeLessThanOrEqual(consentMetrics.viewportWidth);
     expect(consentMetrics.height).toBeGreaterThanOrEqual(44);
+    expect(consentMetrics.text).toContain('персональных данных');
     expect(consentMetrics.text).toContain('политике конфиденциальности');
 
     const readRegistrationTokens = () => page.evaluate(() => {
@@ -628,11 +636,6 @@ test('Enter skips the consent checkbox while Tab and Space keep it keyboard-acce
 
   await regPhone.focus();
   await page.keyboard.press('Tab');
-  const smsRegistrationButton = page.locator('#regOtpBtn');
-  if (await smsRegistrationButton.isVisible()) {
-    await expect(smsRegistrationButton).toBeFocused();
-    await page.keyboard.press('Tab');
-  }
   await expect(regPin).toBeFocused();
   await page.keyboard.press('Tab');
   await expect(consent).toBeFocused();
@@ -763,75 +766,48 @@ test('registration completes and creates a session when the modal is closed mid-
   expect(requestCount).toBe(1);
 });
 
-test('registration hides the paid SMS control while SMS auth is disabled', async ({ page }, testInfo) => {
-  // iPhone 16e reference viewport. smsAuthEnabled=false is returned by the public config bootstrap.
+test('registration never exposes SMS controls even when the server opts in', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.route('**/api/config', (route) => route.fulfill({
-    status: 200,
-    contentType: 'application/json',
-    body: JSON.stringify({ tgUsername: 'test_bot', smsAuthEnabled: false }),
-  }));
-  await page.addInitScript(() => {
-    localStorage.setItem('zt_onb', '1');
-    sessionStorage.setItem('splashDone', '1');
-  });
-  const configLoaded = page.waitForResponse('**/api/config');
-  await page.goto('/?brand=coffee');
-  await configLoaded;
-  await page.waitForFunction(() => window.SMS_AUTH_ENABLED === false);
-  await page.evaluate(() => window.openAuth(false));
-
-  const smsButton = page.locator('#regOtpBtn');
-  const smsCodeRow = page.locator('#regOtpRow');
-  await expect(smsButton).toBeHidden();
-  await expect(smsCodeRow).toBeHidden();
-  expect(await smsButton.boundingBox()).toBeNull();
-  expect(await smsCodeRow.boundingBox()).toBeNull();
-
-  await testInfo.attach('registration-sms-disabled-390x844.png', {
-    body: await page.screenshot({ fullPage: false }),
-    contentType: 'image/png',
-  });
-
-  await page.locator('#toLogin').click();
-  await expect(page.locator('#otpBtn')).toContainText('получить код');
-  await expect(page.locator('#otpBtn')).not.toContainText('SMS');
-  await expect(page.locator('#logOtp')).toHaveAttribute('aria-describedby', 'logOtpHint');
-});
-
-test('registration exposes the SMS control only after the server opts in', async ({ page }, testInfo) => {
+  let registrationSmsRequests = 0;
   await page.route('**/api/config', (route) => route.fulfill({
     status: 200,
     contentType: 'application/json',
     body: JSON.stringify({ tgUsername: 'test_bot', smsAuthEnabled: true }),
   }));
-  // Capture the UI state only: do not call the SMS provider from this test.
-  await page.route('**/api/auth/request-reg-otp', (route) => route.fulfill({
+  await page.route('**/api/auth/request-reg-otp', async (route) => {
+    registrationSmsRequests += 1;
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ ok: true, via: 'sms' }),
+    });
+  });
+  await page.route('**/api/auth/request-otp', (route) => route.fulfill({
     status: 200,
     contentType: 'application/json',
-    body: JSON.stringify({ ok: true, via: 'sms' }),
+    body: JSON.stringify({ ok: true }),
   }));
   await page.addInitScript(() => {
     localStorage.setItem('zt_onb', '1');
     sessionStorage.setItem('splashDone', '1');
   });
+
   await page.goto('/?brand=coffee');
   await page.waitForFunction(() => window.SMS_AUTH_ENABLED === true);
   await page.evaluate(() => window.openAuth(false));
-  await expect(page.locator('#regOtpBtn')).toBeVisible();
-  await expect(page.locator('#regOtpRow')).toBeHidden();
 
-  await page.locator('#regName').fill('Тест');
-  await page.locator('#regPhone').fill('+7 900 000-00-01');
-  await page.locator('#regOtpBtn').click();
-  await expect(page.locator('#regOtpRow')).toBeVisible();
-  await expect(page.locator('#regOtp')).toBeVisible();
-  await expect(page.locator('#regOtpBtn')).toContainText('Отправить код по SMS повторно');
+  await expect(page.locator('#regOtpBtn')).toHaveCount(0);
+  await expect(page.locator('#regOtpRow')).toHaveCount(0);
+  await expect(page.locator('#regOtp')).toHaveCount(0);
+  await page.locator('#toLogin').click();
+  await expect(page.locator('#otpBtn')).toContainText('получить код');
+  await expect(page.locator('#otpBtn')).not.toContainText('SMS');
+  await expect(page.locator('#logOtp')).toHaveAttribute('aria-describedby', 'logOtpHint');
 
-  await testInfo.attach('registration-sms-opt-in.png', {
-    body: await page.screenshot({ fullPage: false }),
-    contentType: 'image/png',
-  });
+  await page.locator('#logPhone').fill('+7 999 123-45-67');
+  await page.locator('#otpBtn').click();
+  await expect(page.locator('#logOtp')).toBeVisible();
+  expect(registrationSmsRequests).toBe(0);
 });
 
 test('reduced motion removes auth overlay travel without changing focus or layout', async ({ page }, testInfo) => {
