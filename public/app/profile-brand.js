@@ -177,7 +177,7 @@ window.renderVerifyNote=function(){
         '<div class="profile-activation-details-content">' +
           '<p>Подтвердите свой номер одним из двух способов:</p>' +
           '<div class="profile-activation-actions">' +
-            '<button class="btn fire" id="actTgBtn" type="button">Войти через Telegram</button>' +
+            '<button class="btn fire" id="actTgBtn" type="button">Активировать через Telegram</button>' +
             '<button class="btn ghost" id="showCashierCodeBtn" type="button" aria-controls="cashierActivationFields" aria-expanded="' + (cashierFieldsWereOpen ? 'true' : 'false') + '">' +
               (cashierFieldsWereOpen ? 'Скрыть поле кода' : 'Ввести код кассира') +
             '</button>' +
@@ -236,7 +236,7 @@ window.renderVerifyNote=function(){
         toast(error.message || 'Не удалось открыть Telegram. Попробуйте ещё раз.', '⚠️');
         telegramActivationButton.disabled = false;
         telegramActivationButton.removeAttribute('aria-busy');
-        telegramActivationButton.textContent = 'Войти через Telegram';
+        telegramActivationButton.textContent = 'Активировать через Telegram';
       }
     };
   }
