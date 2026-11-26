@@ -169,6 +169,7 @@ authRouter.post('/api/auth/request-reg-otp', async (req, res) => {
   if (reqPin && !/^\d{4}$/.test(reqPin)) return res.status(400).json({ error: 'PIN — ровно 4 цифры' });
   const returnUrl = req.body.returnTo ? normalizeAppReturnUrl(req.body.returnTo) : null;
   if (req.body.returnTo && !returnUrl) return res.status(400).json({ error: 'Некорректный адрес возврата в приложение' });
+  if (returnUrl && !/^\d{4}$/.test(reqPin)) return res.status(400).json({ error: 'Для регистрации через Telegram задайте PIN из четырёх цифр' });
   const via = req.body.via === 'sms' ? 'sms' : 'tg';
   if (ph10(p).length < 10) return res.status(400).json({ error: 'Введите номер полностью' });
   if (via === 'sms' && !SMS_AUTH_ENABLED) {
