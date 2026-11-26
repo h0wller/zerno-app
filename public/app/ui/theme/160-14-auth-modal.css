@@ -145,6 +145,31 @@
   outline-offset: 3px;
 }
 
+
+#authModal .auth-telegram-status {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 8px;
+  margin: -5px 2px 0;
+  color: var(--soft);
+  font-size: 12px;
+  line-height: 1.4;
+}
+#authModal .auth-telegram-status[hidden] {
+  display: none;
+}
+#authModal .auth-telegram-status a {
+  color: var(--flame);
+  font-weight: 800;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+#authModal .auth-telegram-status[data-state="error"],
+#authModal .auth-telegram-status[data-state="expired"] {
+  color: var(--danger, #A52D20);
+}
+
 #authModal .auth-telegram-button {
   box-sizing: border-box;
   width: 100%;
