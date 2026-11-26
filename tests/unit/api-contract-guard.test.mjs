@@ -119,7 +119,7 @@ test('audit sentinels describe known F-003 gaps without fixing them', () => {
     'server/domain/customers.js': "uid('u'); randomBytes(3).toString('hex').toUpperCase()",
     'server.js': "uid('p')",
     'server/routes/auth.js': "consent !== 1 && consent !== true; via === 'sms'; res.json({ ok: true, via: 'sms' })",
-    'server/routes/orders.js': "const ORDER_STATUS = { new: 1, accept: 1, cook: 1, way: 1, done: 1, cancel: 1 }; min < 1 || min > 180",
+    'server/routes/orders.js': "const ORDER_STATUS = { new: 1, accept: 1, cook: 1, way: 1, done: 1, cancel: 1 }; Number.isInteger(minutes) && minutes >= 1 && minutes <= 180",
     'server/routes/promos.js': "res.json({ ok: false, error: 'bad' }); promosRouter.post('/api/promos', handler); req.body.code",
     'server/routes/chat.js': 'INSERT INTO chat_meta; botlog',
     'server/routes/push.js': 'if (!sub || !sub.endpoint)',
