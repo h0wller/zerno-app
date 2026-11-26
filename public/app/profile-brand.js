@@ -34,6 +34,12 @@
   if(historySection)pb.insertBefore(d,historySection);else pb.appendChild(d);
 })();
 /* ── брендовые правила: слияние v64 profileBrandRules + R4 applyProfileBrand ── */
+function getRealTelegramMiniApp(){
+  var webApp = window.Telegram && window.Telegram.WebApp;
+  if(!webApp || webApp.isStub || window.__isTgMiniApp !== true) return null;
+  return typeof webApp.initData === 'string' && webApp.initData.length > 0 ? webApp : null;
+}
+
 function brandRules(){
   var deliv=(typeof brand!=='undefined'&&brand==='delivery');
   var currentCustomer = window.me || (typeof me !== 'undefined' ? me : null);
@@ -220,7 +226,7 @@ window.renderVerifyNote=function(){
         if(telegramUrl.protocol !== 'https:' || telegramUrl.hostname !== 't.me'){
           throw new Error('Сервер вернул некорректную ссылку Telegram');
         }
-        var miniApp = window.Telegram && window.Telegram.WebApp;
+        var miniApp = getRealTelegramMiniApp();
         if(miniApp && typeof miniApp.openTelegramLink === 'function'){
           miniApp.openTelegramLink(telegramUrl.toString());
         }else{
