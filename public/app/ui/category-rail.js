@@ -1,13 +1,26 @@
 /* public/app/ui/category-rail.js
-   Shared rail viewport positioning and transient scroll fade.
+   Shared rail viewport positioning and direction-aware scroll visibility.
    menu.js / delivery.js own category state and markup; CSS owns the capsule geometry. */
 var railHeadObserver = null;
 var observedRailHead = null;
 var observedRailTopbar = null;
 var railStickyLayout = null;
 var railDesktopAnchor = new WeakMap();
-var railFadeTimer = null;
 var fadedElements = [];
+var railScrollLastY = null;
+var railScrollDirection = 0;
+var railScrollDirectionDistance = 0;
+var railScrollHidden = false;
+var RAIL_SCROLL_DIRECTION_THRESHOLD = 8;
+var RAIL_SCROLL_INPUT_RECENCY_MS = 3500;
+var railLastUserScrollInputAt = 0;
+var railUserScrollInputDirection = 0;
+var railLastTouchY = null;
+var railTouchMoved = false;
+var railCategoryAlignmentPending = false;
+var railCategoryAlignmentTimer = null;
+var railBrandChangePending = false;
+var railBrandChangeFrame = 0;
 var programmaticScrollToTop = false;
 var programmaticScrollToTopTimer = null;
 var railScrollTick = false;
@@ -179,6 +192,13 @@ function alignRailWithCard() {
     if (head) railHeadObserver.observe(head);
     if (topbar) railHeadObserver.observe(topbar);
   }
+
+  if (!window.matchMedia || !window.matchMedia('(max-width: 820px)').matches) {
+    resetRailScrollDirection(readPageScrollY());
+    setRailScrollHidden(false);
+  } else {
+    applyScrollFadeState(railScrollHidden);
+  }
 }
 
 function activeRail() {
@@ -187,8 +207,7 @@ function activeRail() {
 }
 
 function clearScrollFade() {
-  if (railFadeTimer) window.clearTimeout(railFadeTimer);
-  railFadeTimer = null;
+  railScrollHidden = false;
   fadedElements.forEach(function (element) {
     if (element && element.classList) element.classList.remove('is-scroll-fading');
   });
@@ -209,26 +228,206 @@ function currentScrollFadeTargets() {
   return targets;
 }
 
-function markRailScrolling() {
-  if (programmaticScrollToTop) return;
+function readPageScrollY() {
+  return Math.max(0, window.scrollY || document.documentElement.scrollTop || 0);
+}
 
-  /* Preserve #269: fade only portrait/tablet rails; compact landscape is not faded. */
-  if (!window.matchMedia || !window.matchMedia('(max-width: 820px)').matches) {
-    clearScrollFade();
-    return;
-  }
+function resetRailScrollDirection(position) {
+  railScrollLastY = typeof position === 'number' ? position : readPageScrollY();
+  railScrollDirection = 0;
+  railScrollDirectionDistance = 0;
+}
 
+function applyScrollFadeState(hidden) {
   var targets = currentScrollFadeTargets();
   fadedElements.forEach(function (element) {
     if (targets.indexOf(element) === -1) element.classList.remove('is-scroll-fading');
   });
   fadedElements = targets;
   fadedElements.forEach(function (element) {
-    element.classList.add('is-scroll-fading');
+    element.classList.toggle('is-scroll-fading', hidden);
   });
+}
 
-  if (railFadeTimer) window.clearTimeout(railFadeTimer);
-  railFadeTimer = window.setTimeout(clearScrollFade, 520);
+function setRailScrollHidden(hidden) {
+  railScrollHidden = hidden;
+  applyScrollFadeState(hidden);
+}
+
+function finishRailBrandTransition() {
+  if (!railBrandChangePending) return;
+  if (railBrandChangeFrame) window.cancelAnimationFrame(railBrandChangeFrame);
+  railBrandChangeFrame = 0;
+  railBrandChangePending = false;
+  resetRailScrollDirection(readPageScrollY());
+}
+
+function prepareRailForUserScrollInput() {
+  finishRailCategoryAlignment();
+  finishRailBrandTransition();
+}
+
+function rememberRailScrollInput(direction) {
+  if (!direction) return;
+  railUserScrollInputDirection = direction > 0 ? 1 : -1;
+  railLastUserScrollInputAt = Date.now();
+}
+
+function handleRailWheelInput(event) {
+  if (!event.deltaY) return;
+  prepareRailForUserScrollInput();
+  rememberRailScrollInput(event.deltaY);
+}
+
+function handleRailTouchStart(event) {
+  var touch = event.touches && event.touches[0];
+  railLastTouchY = touch ? touch.clientY : null;
+  railTouchMoved = false;
+}
+
+function handleRailTouchMove(event) {
+  var touch = event.touches && event.touches[0];
+  if (!touch) return;
+  if (railLastTouchY !== null) {
+    /* Moving a finger up moves the document down, and vice versa. */
+    var fingerDelta = railLastTouchY - touch.clientY;
+    if (Math.abs(fingerDelta) >= 1) {
+      prepareRailForUserScrollInput();
+      rememberRailScrollInput(fingerDelta);
+      railTouchMoved = true;
+    }
+  }
+  railLastTouchY = touch.clientY;
+}
+
+function handleRailTouchEnd() {
+  if (railTouchMoved && railUserScrollInputDirection) {
+    railLastUserScrollInputAt = Date.now();
+  }
+  railTouchMoved = false;
+  railLastTouchY = null;
+}
+
+function handleRailKeyboardInput(event) {
+  var target = event.target;
+  if (target && target.closest &&
+      target.closest('input, textarea, select, button, [contenteditable="true"]')) return;
+
+  if (event.key === 'ArrowDown' || event.key === 'PageDown' || event.key === 'End' ||
+      event.code === 'Space') {
+    prepareRailForUserScrollInput();
+    rememberRailScrollInput(1);
+    cancelProgrammaticScrollToTop();
+  } else if (event.key === 'ArrowUp' || event.key === 'PageUp' || event.key === 'Home') {
+    prepareRailForUserScrollInput();
+    rememberRailScrollInput(-1);
+    cancelProgrammaticScrollToTop();
+  }
+}
+
+function beginRailCategoryAlignment(event) {
+  var target = event.target;
+  var button = target && target.closest
+    ? target.closest('#rail [data-cat], #deliveryRail [data-dcat]')
+    : null;
+  if (!button) return;
+
+  railCategoryAlignmentPending = true;
+  railLastUserScrollInputAt = 0;
+  railUserScrollInputDirection = 0;
+  if (railCategoryAlignmentTimer) window.clearTimeout(railCategoryAlignmentTimer);
+  railCategoryAlignmentTimer = window.setTimeout(function () {
+    railCategoryAlignmentTimer = null;
+    railCategoryAlignmentPending = false;
+    resetRailScrollDirection(readPageScrollY());
+  }, 1200);
+}
+
+function finishRailCategoryAlignment() {
+  if (railCategoryAlignmentTimer) {
+    window.clearTimeout(railCategoryAlignmentTimer);
+    railCategoryAlignmentTimer = null;
+  }
+  railCategoryAlignmentPending = false;
+}
+
+function syncRailAfterBrandSelection() {
+  var shouldRemainHidden = railScrollHidden;
+  railLastUserScrollInputAt = 0;
+  railUserScrollInputDirection = 0;
+  railBrandChangePending = true;
+  resetRailScrollDirection(readPageScrollY());
+  applyScrollFadeState(shouldRemainHidden);
+
+  if (railBrandChangeFrame) window.cancelAnimationFrame(railBrandChangeFrame);
+  railBrandChangeFrame = window.requestAnimationFrame(function () {
+    railBrandChangeFrame = window.requestAnimationFrame(function () {
+      railBrandChangeFrame = 0;
+      var currentY = readPageScrollY();
+      resetRailScrollDirection(currentY);
+      setRailScrollHidden(shouldRemainHidden && currentY > 0);
+      railBrandChangePending = false;
+    });
+  });
+}
+
+function markRailScrolling() {
+  var currentY = readPageScrollY();
+  if (railScrollLastY === null) {
+    resetRailScrollDirection(currentY);
+    return;
+  }
+
+  var delta = currentY - railScrollLastY;
+  railScrollLastY = currentY;
+
+  /* The top of the document always wins, including the final inertial scroll frame. */
+  if (currentY <= 0) {
+    resetRailScrollDirection(currentY);
+    setRailScrollHidden(false);
+    return;
+  }
+
+  /* App-driven view transitions and category alignment are not user scroll gestures. */
+  if (programmaticScrollToTop || railCategoryAlignmentPending || railBrandChangePending) {
+    resetRailScrollDirection(currentY);
+    return;
+  }
+
+  /* A scroll event without a matching wheel/touch/key input is usually layout anchoring. */
+  var inputAge = Date.now() - railLastUserScrollInputAt;
+  if (inputAge > RAIL_SCROLL_INPUT_RECENCY_MS ||
+      (railUserScrollInputDirection && Math.sign(delta) !== railUserScrollInputDirection)) {
+    resetRailScrollDirection(currentY);
+    return;
+  }
+
+  /* Preserve the existing contract: fade only portrait/tablet rails, not compact landscape or desktop. */
+  if (!window.matchMedia || !window.matchMedia('(max-width: 820px)').matches) {
+    resetRailScrollDirection(currentY);
+    setRailScrollHidden(false);
+    return;
+  }
+
+  if (delta === 0) return;
+
+  var nextDirection = delta > 0 ? 1 : -1;
+  if (nextDirection !== railScrollDirection) {
+    railScrollDirection = nextDirection;
+    railScrollDirectionDistance = delta;
+  } else {
+    railScrollDirectionDistance += delta;
+  }
+
+  if (nextDirection > 0 &&
+      railScrollDirectionDistance >= RAIL_SCROLL_DIRECTION_THRESHOLD &&
+      !railScrollHidden) {
+    setRailScrollHidden(true);
+  } else if (nextDirection < 0 &&
+      railScrollDirectionDistance <= -RAIL_SCROLL_DIRECTION_THRESHOLD &&
+      railScrollHidden) {
+    setRailScrollHidden(false);
+  }
 }
 
 function finishProgrammaticScrollToTop() {
@@ -237,6 +436,7 @@ function finishProgrammaticScrollToTop() {
     programmaticScrollToTopTimer = null;
   }
   programmaticScrollToTop = false;
+  resetRailScrollDirection(readPageScrollY());
 }
 
 function cancelProgrammaticScrollToTop() {
@@ -247,6 +447,7 @@ function cancelProgrammaticScrollToTop() {
 /* Any scroll started by the app itself (retap of the active category, switching category)
    must not fade the rail: the user did not scroll, so the capsule has to stay visible. */
 window.scrollToWithoutRailFade = function (top) {
+  finishRailCategoryAlignment();
   finishProgrammaticScrollToTop();
   clearScrollFade();
   var currentY = window.scrollY || document.documentElement.scrollTop || 0;
@@ -265,13 +466,30 @@ window.scrollToTopWithoutRailFade = function () {
   window.scrollToWithoutRailFade(0);
 };
 
-window.addEventListener('scrollend', finishProgrammaticScrollToTop, { passive: true });
+window.addEventListener('scrollend', function () {
+  if (programmaticScrollToTop) finishProgrammaticScrollToTop();
+}, { passive: true });
+
+window.addEventListener('wheel', handleRailWheelInput, { passive: true });
+window.addEventListener('touchstart', handleRailTouchStart, { passive: true });
+window.addEventListener('touchmove', handleRailTouchMove, { passive: true });
+window.addEventListener('touchend', handleRailTouchEnd, { passive: true });
+window.addEventListener('touchcancel', handleRailTouchEnd, { passive: true });
+window.addEventListener('keydown', handleRailKeyboardInput, { passive: true });
+document.addEventListener('click', beginRailCategoryAlignment, true);
+
+if (window.ztBus && typeof window.ztBus.on === 'function') {
+  window.ztBus.on('brand:selected', syncRailAfterBrandSelection);
+}
+
 ['wheel', 'touchstart', 'pointerdown'].forEach(function (eventName) {
   window.addEventListener(eventName, cancelProgrammaticScrollToTop, { passive: true });
 });
 
 window.alignRailWithCard = alignRailWithCard;
 window.usesHorizontalCategoryRailViewport = usesFloatingCategoryRailViewport;
+
+resetRailScrollDirection(readPageScrollY());
 
 window.addEventListener('scroll', function () {
   markRailScrolling();
