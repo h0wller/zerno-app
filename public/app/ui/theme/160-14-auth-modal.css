@@ -152,7 +152,7 @@
   margin: 0;
   border: 1px solid var(--line);
   border-radius: 12px;
-  background: #fff;
+  background: var(--panel);
   color: var(--ink);
   font-size: 13px;
   font-weight: 800;
