@@ -411,7 +411,7 @@ test('registration keeps consent compact and exposes no SMS or standalone Telegr
     expect(consentMetrics.right).toBeLessThanOrEqual(consentMetrics.viewportWidth);
     expect(consentMetrics.height).toBeGreaterThanOrEqual(44);
     expect(consentMetrics.text).toContain('персональных данных');
-    expect(consentMetrics.text).toContain('политике конфиденциальности');
+    expect(consentMetrics.text).toContain('Политика конфиденциальности');
 
     const readRegistrationTokens = () => page.evaluate(() => {
       const tabStyle = getComputedStyle(document.getElementById('toReg'));
