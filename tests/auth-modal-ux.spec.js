@@ -46,6 +46,8 @@ for (const viewport of viewports) {
     const layout = await page.evaluate(() => {
       const cardEl = document.querySelector('#authModal .authcard');
       const input = document.querySelector('#authModal #regName');
+      const consent = document.querySelector('#authModal #consentRow');
+      const form = document.querySelector('#authModal #regForm');
       const rect = (el) => {
         const r = el.getBoundingClientRect();
         return { x: r.x, y: r.y, width: r.width, height: r.height, right: r.right, bottom: r.bottom };
@@ -55,6 +57,9 @@ for (const viewport of viewports) {
         documentWidth: document.documentElement.scrollWidth,
         card: rect(cardEl),
         input: rect(input),
+        consent: rect(consent),
+        consentFormWidth: form.clientWidth,
+        consentMaxWidth: getComputedStyle(consent).maxWidth,
         overflowY: getComputedStyle(cardEl).overflowY,
         boxSizing: getComputedStyle(cardEl).boxSizing,
         contentWidth: cardEl.clientWidth,
@@ -68,6 +73,10 @@ for (const viewport of viewports) {
     expect(layout.card.right).toBeLessThanOrEqual(layout.viewport.width + 1);
     expect(layout.card.bottom).toBeLessThanOrEqual(layout.viewport.height + 1);
     expect(layout.input.height).toBeGreaterThanOrEqual(44);
+    expect(Math.abs(layout.consent.width - layout.consentFormWidth)).toBeLessThanOrEqual(1);
+    expect(layout.consent.height).toBeGreaterThanOrEqual(44);
+    expect(layout.consent.height).toBeLessThanOrEqual(88);
+    expect(layout.consentMaxWidth).toBe('none');
     expect(layout.overflowY).toBe('auto');
     expect(layout.boxSizing).toBe('border-box');
     expect(layout.contentScrollWidth).toBeLessThanOrEqual(layout.contentWidth + 1);
