@@ -413,7 +413,7 @@ test('registration uses brand action tokens and a compact consent row without a 
     expect(consentMetrics.height).toBeGreaterThanOrEqual(44);
     expect(consentMetrics.text).toContain('политике конфиденциальности');
 
-    const registrationTokens = await page.evaluate(() => {
+    const readRegistrationTokens = () => page.evaluate(() => {
       const tabStyle = getComputedStyle(document.getElementById('toReg'));
       const ctaStyle = getComputedStyle(document.getElementById('regBtn'));
       return {
@@ -425,9 +425,32 @@ test('registration uses brand action tokens and a compact consent row without a 
         ctaShadow: ctaStyle.boxShadow,
       };
     });
-    expect(registrationTokens.tabBackground).toBe(registrationTokens.ctaBackground);
-    expect(registrationTokens.tabBorder).toBe(registrationTokens.ctaBorder);
-    expect(registrationTokens.tabShadow).toBe(registrationTokens.ctaShadow);
+    await expect.poll(async () => {
+      const tokens = await readRegistrationTokens();
+      return [tokens.tabBackground, tokens.tabBorder, tokens.tabShadow];
+    }).toEqual(await page.locator('#regBtn').evaluate((element) => {
+      const style = getComputedStyle(element);
+      return [style.backgroundColor, style.border, style.boxShadow];
+    }));
+
+    const consentContrast = await page.locator('#consentRow a').evaluate((link) => {
+      const parseRgb = (value) => {
+        const match = value.match(/[\\d.]+/g);
+        if (!match || match.length < 3) throw new Error('Unsupported computed color: ' + value);
+        return match.slice(0, 3).map(Number);
+      };
+      const luminance = (value) => {
+        const channels = parseRgb(value).map((channel) => {
+          const normalized = channel / 255;
+          return normalized <= 0.04045 ? normalized / 12.92 : Math.pow((normalized + 0.055) / 1.055, 2.4);
+        });
+        return 0.2126 * channels[0] + 0.7152 * channels[1] + 0.0722 * channels[2];
+      };
+      const foreground = luminance(getComputedStyle(link).color);
+      const background = luminance(getComputedStyle(link.parentElement.parentElement).backgroundColor);
+      return (Math.max(foreground, background) + 0.05) / (Math.min(foreground, background) + 0.05);
+    });
+    expect(consentContrast).toBeGreaterThanOrEqual(4.5);
 
     await testInfo.attach('auth-registration-' + brand + '-390x844.png', {
       body: await page.screenshot({ fullPage: false }),
@@ -435,21 +458,12 @@ test('registration uses brand action tokens and a compact consent row without a 
     });
 
     await page.locator('#toLogin').click();
-    const loginTokens = await page.evaluate(() => {
+    await expect.poll(() => page.evaluate(() => {
       const tabStyle = getComputedStyle(document.getElementById('toLogin'));
       const ctaStyle = getComputedStyle(document.getElementById('logBtn'));
-      return {
-        tabBackground: tabStyle.backgroundColor,
-        ctaBackground: ctaStyle.backgroundColor,
-        tabBorder: tabStyle.border,
-        ctaBorder: ctaStyle.border,
-        tabShadow: tabStyle.boxShadow,
-        ctaShadow: ctaStyle.boxShadow,
-      };
-    });
-    expect(loginTokens.tabBackground).toBe(loginTokens.ctaBackground);
-    expect(loginTokens.tabBorder).toBe(loginTokens.ctaBorder);
-    expect(loginTokens.tabShadow).toBe(loginTokens.ctaShadow);
+      return [tabStyle.backgroundColor, tabStyle.border, tabStyle.boxShadow].join('|') ===
+        [ctaStyle.backgroundColor, ctaStyle.border, ctaStyle.boxShadow].join('|');
+    })).toBe(true);
   }
 });
 
@@ -630,6 +644,11 @@ test('Enter skips the consent checkbox while Tab and Space keep it keyboard-acce
 
   await regPhone.focus();
   await page.keyboard.press('Tab');
+  const smsRegistrationButton = page.locator('#regOtpBtn');
+  if (await smsRegistrationButton.isVisible()) {
+    await expect(smsRegistrationButton).toBeFocused();
+    await page.keyboard.press('Tab');
+  }
   await expect(regPin).toBeFocused();
   await page.keyboard.press('Tab');
   await expect(consent).toBeFocused();
