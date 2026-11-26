@@ -884,6 +884,7 @@ test('P0 registration baseline: capture guest, registration and the separate pro
       const registrationGeometry = await page.evaluate(() => {
         const card = document.querySelector('#authModal .authcard');
         const consent = document.getElementById('consentRow');
+        const form = document.getElementById('regForm');
         const submit = document.getElementById('regBtn');
         const regTab = document.getElementById('toReg');
         const loginTab = document.getElementById('toLogin');
@@ -901,6 +902,9 @@ test('P0 registration baseline: capture guest, registration and the separate pro
           cardFitsOrScrolls: (cardRect.top >= 0 && cardRect.bottom <= window.innerHeight) || cardCanScroll,
           consentFontSize: Number.parseFloat(getComputedStyle(consent).fontSize),
           consent: dimensions(consent),
+          consentFormWidth: form.clientWidth,
+          consentMaxWidth: getComputedStyle(consent).maxWidth,
+          consentAlignSelf: getComputedStyle(consent).alignSelf,
           submit: dimensions(submit),
           regTab: dimensions(regTab),
           loginTab: dimensions(loginTab),
@@ -910,7 +914,9 @@ test('P0 registration baseline: capture guest, registration and the separate pro
       expect(registrationGeometry.horizontalOverflow).toBe(false);
       expect(registrationGeometry.cardFitsOrScrolls).toBe(true);
       expect(registrationGeometry.consentFontSize).toBeGreaterThanOrEqual(12);
-      expect(registrationGeometry.consent.width).toBeLessThanOrEqual(300);
+      expect(Math.abs(registrationGeometry.consent.width - registrationGeometry.consentFormWidth)).toBeLessThanOrEqual(1);
+      expect(registrationGeometry.consentMaxWidth).toBe('none');
+      expect(registrationGeometry.consentAlignSelf).toBe('stretch');
       for (const target of ['consent', 'submit', 'regTab', 'loginTab', 'regPin']) {
         expect(registrationGeometry[target].width, target + ' hit target width').toBeGreaterThanOrEqual(44);
         expect(registrationGeometry[target].height, target + ' hit target height').toBeGreaterThanOrEqual(44);
