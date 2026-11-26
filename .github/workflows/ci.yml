@@ -237,6 +237,26 @@ jobs:
                   tg: 0,
                   history: []
                 });
+                const pendingDebug = await page.evaluate(() => ({
+                  documentBrand: document.documentElement.getAttribute('data-brand'),
+                  windowBrand: window.brand,
+                  globalBrand: typeof brand === 'undefined' ? null : brand,
+                  windowCustomer: window.me ? {
+                    id: window.me.id,
+                    role: window.me.role,
+                    verified: window.me.verified,
+                    phone: window.me.phone
+                  } : null,
+                  lexicalCustomer: typeof me === 'undefined' || !me ? null : {
+                    id: me.id,
+                    role: me.role,
+                    verified: me.verified,
+                    phone: me.phone
+                  },
+                  verifyNoteHidden: document.getElementById('verifyNote')?.hidden,
+                  verifyNoteText: document.getElementById('verifyNote')?.textContent
+                }));
+                console.log('AUTH BASELINE PENDING DEBUG ' + JSON.stringify(pendingDebug));
                 await expect(page.locator('#profileBox')).toBeVisible();
                 await expect(page.locator('#verifyNote')).toBeVisible();
                 await expect(page.locator('#actCode')).toBeVisible();
