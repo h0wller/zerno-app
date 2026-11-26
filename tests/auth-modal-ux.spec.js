@@ -399,7 +399,7 @@ test('registration offers Telegram and keeps consent compact without SMS control
     await page.evaluate(() => window.openAuth(false));
 
     await expect(page.locator('#regTgBtn')).toBeVisible();
-    await expect(page.locator('#regTgBtn')).toHaveText('Войти через Telegram');
+    await expect(page.locator('#regTgBtn')).toHaveText('Зарегистрироваться через Telegram');
     await expect(page.locator('#regTgRow')).toHaveCount(0);
     await expect(page.locator('#regOtpBtn')).toHaveCount(0);
     await expect(page.locator('#regOtpRow')).toHaveCount(0);
@@ -804,7 +804,7 @@ test('registration never exposes SMS controls even when the server opts in', asy
   await page.evaluate(() => window.openAuth(false));
 
   await expect(page.locator('#regTgBtn')).toBeVisible();
-  await expect(page.locator('#regTgBtn')).toHaveText('Войти через Telegram');
+  await expect(page.locator('#regTgBtn')).toHaveText('Зарегистрироваться через Telegram');
   await expect(page.locator('#regOtpBtn')).toHaveCount(0);
   await expect(page.locator('#regOtpRow')).toHaveCount(0);
   await expect(page.locator('#regOtp')).toHaveCount(0);
