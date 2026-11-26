@@ -891,6 +891,7 @@ for (const brand of ['coffee', 'delivery']) {
       });
 
       const cashierDetails = page.locator('#verifyNote .profile-activation-details');
+      await expect(cashierDetails.locator('summary')).toContainText('Активировать через кассира');
       await cashierDetails.scrollIntoViewIfNeeded();
       await cashierDetails.locator('summary').click();
       await expect(cashierDetails).toHaveAttribute('open', '');
