@@ -51,7 +51,7 @@
     "eslint-plugin-sonarjs": "^4.2.2",
     "globals": "^17.14.0",
     "jscpd": "^5.4.3",
-    "knip": "^6.45.1",
+    "knip": "^6.48.0",
     "yaml": "^2.9.1"
   },
   "overrides": {
