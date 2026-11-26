@@ -252,6 +252,19 @@ test('cashier activation does not invent a welcome gift when bonus_cfg disables 
 });
 
 test('pending guest activates through a one-time Telegram pairing link using their own matching contact', async () => {
+  const bonusKey = "SELECT value FROM meta WHERE key='bonus_cfg'";
+  const previousConfig = inspectDb.prepare(bonusKey).get();
+  const enabledConfig = {
+    days: 30,
+    kinds: {
+      signup: { coffee: 10, delivery: 0, freeFirstDelivery: 0 },
+      qr: { coffee: 10, delivery: 0, freeFirstDelivery: 0 },
+      install: { coffee: 0, delivery: 0, freeFirstDelivery: 0 }
+    }
+  };
+  inspectDb.prepare(
+    "INSERT INTO meta(key,value) VALUES('bonus_cfg',?) ON CONFLICT(key) DO UPDATE SET value=excluded.value"
+  ).run(JSON.stringify(enabledConfig));
   const phone = '+7 900 000-01-31';
   const pending = await api('/api/auth/register', {
     name: 'TG Activation Guest',
@@ -337,6 +350,7 @@ test('pending guest activates through a one-time Telegram pairing link using the
   const bonusGrants = () => inspectDb.prepare(
     "SELECT COUNT(*) AS count FROM bonus_grants WHERE cid=? AND kind IN ('signup','qr')"
   ).get(pending.json.customer.id).count;
+  assert.equal(bonusGrants(), 1);
   const grantsAfterFirstActivation = bonusGrants();
 
   const replay = await webhook({
@@ -352,6 +366,11 @@ test('pending guest activates through a one-time Telegram pairing link using the
     1
   );
   assert.equal(bonusGrants(), grantsAfterFirstActivation);
+  if (previousConfig) {
+    inspectDb.prepare("UPDATE meta SET value=? WHERE key='bonus_cfg'").run(previousConfig.value);
+  } else {
+    inspectDb.prepare("DELETE FROM meta WHERE key='bonus_cfg'").run();
+  }
 });
 
 test('cashier-created guests get a PIN immediately and duplicate registration reuses the same profile', async () => {
@@ -484,7 +503,7 @@ test('Telegram registration polling is scoped to a random one-attempt secret, no
   const customerId = validPoll.json.customer.id;
   assert.deepEqual(
     inspectDb.prepare('SELECT kind FROM bonus_grants WHERE cid=?').all(customerId).map(row => row.kind),
-    ['signup']
+    ['qr']
   );
   assert.equal(inspectDb.prepare('SELECT free FROM customers WHERE id=?').get(customerId).free, 1);
   assert.equal(inspectDb.prepare("SELECT COUNT(*) AS n FROM promos WHERE owner=? AND kind='freeship'").get(customerId).n, 1);
