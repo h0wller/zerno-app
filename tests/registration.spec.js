@@ -970,6 +970,44 @@ test('P0 registration baseline: capture guest, registration and the separate pro
         await expect(page.locator('#profileCoffeeSection')).toBeHidden();
       }
       await expect(page.locator('#verifyNote')).toContainText('Код активации');
+
+      if (viewport.width === 820 || viewport.width === 1440) {
+        const pendingGeometry = await page.evaluate(() => {
+          const note = document.getElementById('verifyNote');
+          const code = document.getElementById('actCode');
+          const submit = document.getElementById('actBtn');
+          const noteRect = note.getBoundingClientRect();
+          const dimensions = (element) => {
+            const rect = element.getBoundingClientRect();
+            return { width: rect.width, height: rect.height };
+          };
+          let hasScrollableAncestor = false;
+          for (let node = note.parentElement; node && node !== document.body; node = node.parentElement) {
+            const style = getComputedStyle(node);
+            if (/(auto|scroll)/.test(style.overflowY) && node.scrollHeight > node.clientHeight + 1) {
+              hasScrollableAncestor = true;
+              break;
+            }
+          }
+          return {
+            horizontalOverflow: document.documentElement.scrollWidth > window.innerWidth,
+            noteFitsOrScrolls:
+              (noteRect.top >= 0 && noteRect.bottom <= window.innerHeight) || hasScrollableAncestor,
+            noteFitsHorizontally: noteRect.left >= 0 && noteRect.right <= window.innerWidth,
+            code: dimensions(code),
+            submit: dimensions(submit)
+          };
+        });
+
+        expect(pendingGeometry.horizontalOverflow).toBe(false);
+        expect(pendingGeometry.noteFitsHorizontally).toBe(true);
+        expect(pendingGeometry.noteFitsOrScrolls).toBe(true);
+        for (const target of ['code', 'submit']) {
+          expect(pendingGeometry[target].width, 'pending ' + target + ' hit target width').toBeGreaterThanOrEqual(44);
+          expect(pendingGeometry[target].height, 'pending ' + target + ' hit target height').toBeGreaterThanOrEqual(44);
+        }
+      }
+
       await testInfo.attach(prefix + '-pending-activation.png', {
         body: await page.screenshot({ fullPage: false }),
         contentType: 'image/png'
