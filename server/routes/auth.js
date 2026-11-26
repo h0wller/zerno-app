@@ -61,7 +61,7 @@ if (process.env.NODE_ENV === 'test') {
 
   authRouter.post('/__test/otp/inspect', (req, res) => {
     const key = String(req.body?.key || '');
-    if (!/^(?:tgactivate:[a-f0-9]{48}|tgactivate-chat:\\d+)$/.test(key)) {
+    if (!/^(?:tgactivate:[a-f0-9]{48}|tgactivate-chat:[0-9]+)$/.test(key)) {
       return res.status(400).json({ error: 'Invalid test OTP inspection key' });
     }
     const entry = otpStore.get(key);
