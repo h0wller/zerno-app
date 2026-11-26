@@ -403,11 +403,10 @@ test.describe('PWA Responsive Layout Audit', () => {
       await page.addInitScript(() => {
         localStorage.clear();
         sessionStorage.clear();
-        window.Telegram = { WebApp: { initData: 'query_id=test-mini-app', isStub: false } };
       });
 
       await page.setViewportSize({ width: 390, height: 844 });
-      await page.goto(`/?brand=${brand}`, { waitUntil: 'domcontentloaded' });
+      await page.goto(`/?brand=${brand}#tgWebAppData=query_id%3Dtest-mini-app`, { waitUntil: 'domcontentloaded' });
       await expect.poll(() => page.evaluate(() => window.__isTgMiniApp)).toBe(true);
       await page.waitForTimeout(1000);
       await expect(page.locator('#iosHint')).toBeHidden();
