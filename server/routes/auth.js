@@ -166,7 +166,7 @@ authRouter.post('/api/auth/request-reg-otp', async (req, res) => {
   const p = fmtPhone(req.body.phone || '');
   const reqPin = String(req.body.pin || '').trim();
   const reqSource = req.body.src === QR_SOURCE ? QR_SOURCE : '';
-  if (reqPin && !/^\\d{4}$/.test(reqPin)) return res.status(400).json({ error: 'PIN — ровно 4 цифры' });
+  if (reqPin && !/^\d{4}$/.test(reqPin)) return res.status(400).json({ error: 'PIN — ровно 4 цифры' });
   const returnUrl = req.body.returnTo ? normalizeAppReturnUrl(req.body.returnTo) : null;
   if (req.body.returnTo && !returnUrl) return res.status(400).json({ error: 'Некорректный адрес возврата в приложение' });
   const via = req.body.via === 'sms' ? 'sms' : 'tg';
