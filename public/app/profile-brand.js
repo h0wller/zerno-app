@@ -273,12 +273,19 @@ window.renderVerifyNote=function(){
 
       try{
         var navigation = await openTelegramLink(async function(){
-          var returnUrl = new URL(window.location.href);
-          returnUrl.searchParams.set('tab', 'profile');
-          returnUrl.searchParams.delete('auth_token');
-          returnUrl.searchParams.delete('token');
-          returnUrl.searchParams.delete('pollToken');
-          var returnTo = returnUrl.pathname + returnUrl.search + returnUrl.hash;
+          var returnTo;
+          if (typeof window.getAppReturnPath === 'function') {
+            var returnUrl = new URL(window.getAppReturnPath(window.brand), window.location.origin);
+            returnUrl.searchParams.set('tab', 'profile');
+            returnTo = returnUrl.pathname + returnUrl.search + returnUrl.hash;
+          } else {
+            var fallbackReturnUrl = new URL(window.location.href);
+            ['auth_token', 'access_token', 'token', 'pollToken', 'ref'].forEach(function (key) {
+              fallbackReturnUrl.searchParams.delete(key);
+            });
+            fallbackReturnUrl.searchParams.set('tab', 'profile');
+            returnTo = fallbackReturnUrl.pathname + fallbackReturnUrl.search + fallbackReturnUrl.hash;
+          }
           var response = await api('/auth/tg-link/request', {
             method: 'POST',
             body: { returnTo: returnTo }
