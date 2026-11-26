@@ -140,7 +140,8 @@ test('audit sentinel drift reports file, method/path, expected and actual values
     openapi: { components: { schemas: { Customer: { properties: { id: { type: 'string' } } } } }, paths: {} },
     sources: {},
   });
-  const message = formatDiagnostic(result.diagnostics[0]);
+  const customerSchemaDrift = result.diagnostics.find((item) => item.file === 'docs/openapi.yaml' && item.path === 'Customer.id');
+  const message = formatDiagnostic(customerSchemaDrift);
   assert.match(message, /docs\/openapi\.yaml/);
   assert.match(message, /Customer\.id/);
   assert.match(message, /expected/i);
