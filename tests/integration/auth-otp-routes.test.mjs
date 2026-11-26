@@ -353,9 +353,24 @@ test('pending guest activates through a one-time Telegram pairing link using the
   });
   assert.equal(confirmed.status, 200);
   const activated = inspectDb.prepare(
-    'SELECT verified, tg, actcode FROM customers WHERE id=?'
+    'SELECT verified, tg, actcode, role, phone FROM customers WHERE id=?'
   ).get(pending.json.customer.id);
-  assert.equal(activated?.verified, 1, output);
+  const activationStateAfterContact = await api('/__test/otp/inspect', {
+    key: 'tgactivate:' + activationToken
+  });
+  const chatStateAfterContact = await api('/__test/otp/inspect', {
+    key: 'tgactivate-chat:' + chatId
+  });
+  const telegramOwners = inspectDb.prepare(
+    'SELECT id, phone, role FROM customers WHERE tg=?'
+  ).all(String(chatId));
+  assert.equal(activated?.verified, 1, JSON.stringify({
+    activated,
+    activationStateAfterContact: activationStateAfterContact.json,
+    chatStateAfterContact: chatStateAfterContact.json,
+    telegramOwners,
+    serverOutput: output
+  }));
   assert.equal(String(activated?.tg), String(chatId));
   assert.equal(activated?.actcode, null);
   const consumedChallenge = await api('/__test/otp/inspect', { key: 'tgactivate:' + activationToken });
