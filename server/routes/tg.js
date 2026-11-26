@@ -338,7 +338,6 @@ export function createTgRouter({ appKb }) {
 
     if (u.message.contact) {
       const activation = otpStore.get('tgactivate-chat:' + chatId);
-      if (process.env.NODE_ENV === 'test') console.log('[tg-test] activation lookup', { found: !!activation, chatId });
       if (activation) {
         const senderId = String(u.message.from?.id || '');
         const ownContact = !!senderId &&
@@ -350,7 +349,6 @@ export function createTgRouter({ appKb }) {
         }
 
         const contactPhone = fmtPhone(u.message.contact.phone_number);
-        if (process.env.NODE_ENV === 'test') console.log('[tg-test] activation contact', { ownContact, phoneMatches: contactPhone === fmtPhone(activation.phone) });
         if (contactPhone !== fmtPhone(activation.phone)) {
           await tgSend(chatId, 'Номер не совпадает с номером профиля. Проверьте контакт и отправьте свой номер ещё раз.');
           return;
@@ -362,14 +360,12 @@ export function createTgRouter({ appKb }) {
             fmtPhone(entry.phone) === contactPhone
         );
         if (!challenge) {
-          if (process.env.NODE_ENV === 'test') console.log('[tg-test] activation challenge missing or mismatched');
           otpStore.delete('tgactivate-chat:' + chatId);
           await tgSend(chatId, 'Ссылка активации устарела. Вернитесь в приложение и запросите новую.');
           return;
         }
 
         const targetCust = db.prepare('SELECT * FROM customers WHERE id=?').get(challenge.customerId);
-        if (process.env.NODE_ENV === 'test') console.log('[tg-test] activation target', { found: !!targetCust, role: targetCust?.role, phoneMatches: !!targetCust && fmtPhone(targetCust.phone) === contactPhone });
         if (!targetCust || targetCust.role !== 'guest' || fmtPhone(targetCust.phone) !== contactPhone) {
           otpStore.delete('tgactivate-chat:' + chatId);
           await tgSend(chatId, 'Не удалось найти ожидающий профиль. Запросите новую ссылку в приложении или обратитесь к кассиру.');
@@ -378,7 +374,6 @@ export function createTgRouter({ appKb }) {
 
         const linked = linkTelegram(db, targetCust.id, chatId);
         if (!linked.ok) {
-          if (process.env.NODE_ENV === 'test') console.log('[tg-test] activation link failed', linked.reason);
           otpStore.delete('tgactivate-chat:' + chatId);
           await tgSend(chatId, 'Этот Telegram уже привязан к другому профилю или профиль связан с другим Telegram. Обратитесь к кассиру.');
           return;
@@ -387,7 +382,6 @@ export function createTgRouter({ appKb }) {
         const activationResult = db.prepare(
           'UPDATE customers SET verified=1, actcode=NULL WHERE id=? AND verified=0'
         ).run(targetCust.id);
-        if (process.env.NODE_ENV === 'test') console.log('[tg-test] activation update', { changes: activationResult.changes, verifiedBefore: targetCust.verified });
         if (activationResult.changes > 0) {
           // Повторяем точные бизнес-правила активации кассиром; повторная активация бонус не начисляет.
           grantBonus(targetCust.id, targetCust.src === QR_SOURCE ? 'qr' : 'signup');
@@ -408,7 +402,6 @@ export function createTgRouter({ appKb }) {
         return;
       }
 
-      if (process.env.NODE_ENV === 'test') console.log('[tg-test] generic contact fallback', { chatId });
       const pend = otpStore.get('regchat:' + chatId);
       // Подтверждать номер может только тот, кто прислал СВОЙ контакт (user_id совпадает с отправителем).
       const ownContact = String(u.message.contact.user_id || '') === String(u.message.from?.id || '') && !!u.message.from?.id;
