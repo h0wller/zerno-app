@@ -792,6 +792,11 @@ test.describe('P0 cashier activation UI', () => {
 
 test('P0 registration baseline: capture guest, registration and the separate profile activation state', async ({ page }, testInfo) => {
   test.setTimeout(180000);
+  await page.route('**/api/config', (route) => route.fulfill({
+    status: 200,
+    contentType: 'application/json',
+    body: JSON.stringify({ tgUsername: 'test_bot', smsAuthEnabled: false })
+  }));
   await page.route('**/api/orders/mine', (route) => route.fulfill({
     status: 200,
     contentType: 'application/json',
@@ -906,8 +911,22 @@ test('P0 registration baseline: capture guest, registration and the separate pro
         contentType: 'image/png'
       });
 
+      await page.locator('#consentRow').scrollIntoViewIfNeeded();
+      await expect(page.locator('#consentRow')).toBeInViewport();
+      await page.locator('#regBtn').scrollIntoViewIfNeeded();
+      await expect(page.locator('#regBtn')).toBeInViewport();
+      await testInfo.attach(prefix + '-registration-cta-visible.png', {
+        body: await page.screenshot({ fullPage: false }),
+        contentType: 'image/png'
+      });
+
       const miniAppPage = await page.context().newPage();
       await miniAppPage.setViewportSize(viewport);
+      await miniAppPage.route('**/api/config', (route) => route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ tgUsername: 'test_bot', smsAuthEnabled: false })
+      }));
       await miniAppPage.addInitScript(() => {
         localStorage.setItem('zt_onb', '1');
         sessionStorage.setItem('splashDone', '1');
