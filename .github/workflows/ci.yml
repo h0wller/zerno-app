@@ -127,6 +127,64 @@ jobs:
           if-no-files-found: ignore
           retention-days: 7
 
+  auth-registration-before:
+    name: E2E / Auth registration baseline (pizza 7330120)
+    if: github.event_name == 'pull_request' && github.event.pull_request.number == 345
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout the unchanged pre-PR baseline
+        uses: actions/checkout@v7
+        with:
+          ref: 7330120947944ab68393e9f041d3a3fbd224cf25
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: 'npm'
+      - name: Normalize dependency lockfile
+        run: npm install --package-lock-only --ignore-scripts --no-audit --no-fund
+      - name: Install dependencies
+        run: npm ci
+      - name: Install Playwright Chromium
+        run: npx playwright install chromium
+      - name: Extend only the temporary baseline viewport matrix
+        run: |
+          node --input-type=module <<'NODE'
+          import { readFileSync, writeFileSync } from 'node:fs';
+          const path = 'tests/registration.spec.js';
+          const source = readFileSync(path, 'utf8');
+          const before = `  const viewports = [
+              { width: 390, height: 844 },
+              { width: 844, height: 390 },
+              { width: 820, height: 1024 },
+              { width: 1440, height: 900 }
+            ];`;
+          const after = `  const viewports = [
+              { width: 320, height: 640 },
+              { width: 360, height: 640 },
+              { width: 390, height: 844 },
+              { width: 844, height: 390 },
+              { width: 820, height: 1024 },
+              { width: 1440, height: 900 }
+            ];`;
+          if (!source.includes(before)) throw new Error('Expected pizza 7330120 P0 baseline matrix was not found');
+          writeFileSync(path, source.replace(before, after));
+          NODE
+      - name: Capture pre-PR registration and pending-activation frames
+        run: npx playwright test tests/registration.spec.js --grep "P0 registration baseline" --project=chromium --workers=1
+        env:
+          PORT: 3000
+      - name: Upload pre-PR baseline frames
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: auth-registration-before-pizza-7330120-${{ github.run_id }}
+          path: |
+            playwright-report/
+            test-results/
+          if-no-files-found: error
+          retention-days: 30
+
   visual-audit-capture:
     name: E2E / Visual UX capture
     needs: quality-gates
