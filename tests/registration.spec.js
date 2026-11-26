@@ -1064,11 +1064,15 @@ test('pending profile opens Telegram and preserves the delivery profile return r
   }));
 
   await page.goto('/?brand=delivery');
-  await page.waitForFunction(() => typeof window.renderVerifyNote === 'function');
+  await page.waitForFunction(() =>
+    typeof window.setUser === 'function' &&
+    typeof window.__profileMeReady === 'function' &&
+    typeof window.renderProfile === 'function' &&
+    typeof window.renderVerifyNote === 'function' &&
+    typeof window.openPanel === 'function'
+  );
   await page.evaluate(() => {
-    localStorage.setItem('zt_user', 'pending-profile-test-session');
-    window.brand = 'delivery';
-    window.me = {
+    window.setUser('pending-profile-test-session', {
       id: 987654,
       role: 'guest',
       verified: 0,
@@ -1076,13 +1080,15 @@ test('pending profile opens Telegram and preserves the delivery profile return r
       phone: '+7 900 000-00-01',
       free: 0,
       stamps: 0,
-      welcome: 0
-    };
-    const panel = document.getElementById('panel');
-    const profileTab = document.getElementById('pvProfile');
-    if (panel) panel.classList.add('open');
-    if (profileTab) profileTab.hidden = false;
+      welcome: 0,
+      cups: 0,
+      qr: 'Z-PENDING-PROFILE',
+      history: []
+    });
+    window.__profileMeReady();
+    window.renderProfile();
     window.renderVerifyNote();
+    window.openPanel('profile');
   });
 
   await page.locator('#verifyNote .profile-activation-details summary').click();
@@ -1094,7 +1100,7 @@ test('pending profile opens Telegram and preserves the delivery profile return r
 });
 
 
-test('registration Telegram CTA completes the signup and returns to the originating brand profile', async ({ page }) => {
+test('registration Telegram CTA completes the signup and returns to the originating screen', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.addInitScript(() => { window.Telegram = null; window.__tgInitData = null; });
   let registrationRequest = null;
