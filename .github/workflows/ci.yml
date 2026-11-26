@@ -237,29 +237,15 @@ jobs:
                   tg: 0,
                   history: []
                 });
-                const pendingDebug = await page.evaluate(() => ({
-                  documentBrand: document.documentElement.getAttribute('data-brand'),
-                  windowBrand: window.brand,
-                  globalBrand: typeof brand === 'undefined' ? null : brand,
-                  windowCustomer: window.me ? {
-                    id: window.me.id,
-                    role: window.me.role,
-                    verified: window.me.verified,
-                    phone: window.me.phone
-                  } : null,
-                  lexicalCustomer: typeof me === 'undefined' || !me ? null : {
-                    id: me.id,
-                    role: me.role,
-                    verified: me.verified,
-                    phone: me.phone
-                  },
-                  verifyNoteHidden: document.getElementById('verifyNote')?.hidden,
-                  verifyNoteText: document.getElementById('verifyNote')?.textContent
-                }));
-                console.log('AUTH BASELINE PENDING DEBUG ' + JSON.stringify(pendingDebug));
                 await expect(page.locator('#profileBox')).toBeVisible();
-                await expect(page.locator('#verifyNote')).toBeVisible();
-                await expect(page.locator('#actCode')).toBeVisible();
+                if (brand === 'coffee') {
+                  await expect(page.locator('#verifyNote')).toBeVisible();
+                  await expect(page.locator('#actCode')).toBeVisible();
+                } else {
+                  // pizza/7330120 intentionally hides the pending activation note for delivery guests.
+                  await expect(page.locator('#verifyNote')).toBeHidden();
+                  await expect(page.locator('#actCode')).toHaveCount(0);
+                }
                 await page.evaluate(() => document.fonts.ready);
                 const pendingPath = join('artifacts/auth-registration-before', prefix + '-pending-activation.png');
                 await page.screenshot({ path: pendingPath, fullPage: false });
