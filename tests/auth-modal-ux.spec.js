@@ -348,7 +348,7 @@ test('consent checkbox and its full row show a visible keyboard focus indicator'
   const checkbox = page.locator('#consentBox');
   const row = page.locator('#consentRow');
 
-  await phone.focus();
+  await page.locator('#regPin').focus();
   await page.keyboard.press('Tab');
   await expect(checkbox).toBeFocused();
 
@@ -611,6 +611,8 @@ test('Enter skips the consent checkbox while Tab and Space keep it keyboard-acce
   await expect(regPin).toBeFocused();
 
   await regPhone.focus();
+  await page.keyboard.press('Tab');
+  await expect(regPin).toBeFocused();
   await page.keyboard.press('Tab');
   await expect(consent).toBeFocused();
   await page.keyboard.press('Space');
