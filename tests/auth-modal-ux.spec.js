@@ -81,6 +81,16 @@ for (const viewport of viewports) {
     expect(layout.boxSizing).toBe('border-box');
     expect(layout.contentScrollWidth).toBeLessThanOrEqual(layout.contentWidth + 1);
 
+    if (viewport.height <= 560) {
+      const scrollMetrics = await card.evaluate((element) => ({
+        overflowY: getComputedStyle(element).overflowY,
+        scrollHeight: element.scrollHeight,
+        clientHeight: element.clientHeight,
+      }));
+      expect(scrollMetrics.overflowY).toBe('auto');
+      expect(scrollMetrics.scrollHeight).toBeGreaterThan(scrollMetrics.clientHeight);
+    }
+
     const telegramCta = card.locator('#regTgBtn');
     await telegramCta.evaluate((button) => {
       const scrollOwner = button.closest('.authcard');
