@@ -909,7 +909,7 @@ test('P0 registration baseline: capture guest, registration and the separate pro
       expect(registrationGeometry.horizontalOverflow).toBe(false);
       expect(registrationGeometry.cardFitsOrScrolls).toBe(true);
       expect(registrationGeometry.consentFontSize).toBeGreaterThanOrEqual(12);
-      expect(registrationGeometry.consent.width).toBeLessThanOrEqual(320);
+      expect(registrationGeometry.consent.width).toBeLessThanOrEqual(300);
       for (const target of ['consent', 'submit', 'regTab', 'loginTab', 'regPin']) {
         expect(registrationGeometry[target].width, target + ' hit target width').toBeGreaterThanOrEqual(44);
         expect(registrationGeometry[target].height, target + ' hit target height').toBeGreaterThanOrEqual(44);
