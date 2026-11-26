@@ -95,13 +95,24 @@ export function grantStamps(cid, n, by = 'Система') {
 }
 
 export function redeem(cid, by, item) {
-  const c = db.prepare('SELECT * FROM customers WHERE id=?').get(cid);
-  if (!c || c.free < 1) return null;
-  db.prepare('UPDATE customers SET free=? WHERE id=?').run(c.free - 1, cid);
-  addHist(cid, `🎁 Списан бесплатный кофе: ${item || 'классика'} (осталось ${c.free - 1})`, by);
-  logEv(c.name, 'списан бесплатный кофе: ' + (item || 'классика'));
+  // Условное уменьшение в одной транзакции исключает двойное списание
+  // последнего подарка при конкурентных запросах из кассы и профиля гостя.
+  const updatedCustomer = db.transaction(() => {
+    const changed = db.prepare(
+      'UPDATE customers SET free=free-1 WHERE id=? AND free>0'
+    ).run(cid);
+    if (!changed.changes) return null;
+
+    const c = db.prepare('SELECT * FROM customers WHERE id=?').get(cid);
+    if (!c) return null;
+    addHist(cid, `🎁 Списан бесплатный кофе: ${item || 'классика'} (осталось ${c.free})`, by);
+    logEv(c.name, 'списан бесплатный кофе: ' + (item || 'классика'));
+    return cust(db.prepare('SELECT * FROM customers WHERE id=?').get(cid));
+  })();
+  if (!updatedCustomer) return null;
+
   const baseAppUrl = APP_URL || 'https://friday.andcoffee.online';
-  const leftFree = c.free - 1;
+  const leftFree = Number(updatedCustomer.free) || 0;
   const freeText = leftFree > 0 ? `\nДоступных подарков: ${leftFree}` : '';
   sendPush(
     cid,
@@ -112,7 +123,7 @@ export function redeem(cid, by, item) {
       ]]
     }
   );
-  return { customer: cust(db.prepare('SELECT * FROM customers WHERE id=?').get(cid)) };
+  return { customer: updatedCustomer };
 }
 
 export function grantWelcome(cid, _by) {
