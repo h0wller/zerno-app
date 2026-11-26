@@ -262,7 +262,7 @@ export function checkAuditSentinels({ openapi, sources }) {
   addSentinel(diagnostics, 'C-10', 'docs/openapi.yaml', 'POST', '/api/orders/{id}/status', { type: 'string', enum: undefined }, { type: statusSchema?.type, enum: statusSchema?.enum });
   const orderSource = sources['server/routes/orders.js'] || '';
   const expectedStatuses = ['new', 'accept', 'cook', 'way', 'done', 'cancel'];
-  const missingStatuses = expectedStatuses.filter((status) => !new RegExp('\\\\b' + status + ':').test(orderSource));
+  const missingStatuses = expectedStatuses.filter((status) => !orderSource.includes(status + ':'));
   addSentinel(diagnostics, 'C-10', 'server/routes/orders.js', 'POST', '/api/orders/{id}/status', [], missingStatuses);
   if (!/Number\.isInteger\(minutes\)\s*&&\s*minutes\s*>=\s*1\s*&&\s*minutes\s*<=\s*180/.test(orderSource)) {
     addSentinel(diagnostics, 'C-09', 'server/routes/orders.js', 'POST', '/api/orders/{id}/delay', 'delay range 1..180', 'audited delay bounds not found');
