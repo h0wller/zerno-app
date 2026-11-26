@@ -12,7 +12,7 @@ import { lockedSeconds, registerFail, clearLock, getOtpSendState, getOtpSendBloc
 import { otpStore, isOtpLive, consumeOtp } from '../utils/otp.js';
 import { nowISO } from '../utils/id-time.js';
 import { sendSms } from '../services/sms.js';
-import { tgSend, TG_TOKEN } from '../services/telegram.js';
+import { tgSend, TG_TOKEN, APP_URL } from '../services/telegram.js';
 import { sendPush } from '../services/push.js';
 import { userGuard, pendingGuard, adminGuard, getBearerToken } from '../middleware/auth.js';
 import { grantBonus, getBonusConfig, setBonusConfig, QR_SOURCE } from '../domain/bonuses.js';
@@ -279,6 +279,60 @@ authRouter.post('/api/auth/register', validate(RegisterSchema), (req, res) => {
   if (okSms) grantBonus(r.customer.id, req.body.src === QR_SOURCE ? 'qr' : 'signup');
   res.json({ token: issueToken(r.customer.id), customer: cust(db.prepare('SELECT * FROM customers WHERE id=?').get(r.customer.id)) });
 });
+function normalizeTelegramActivationReturnUrl(value) {
+  const raw = String(value || '').trim();
+  if (!raw || !raw.startsWith('/') || raw.startsWith('//') || raw.includes('\\') || /[\\u0000-\\u001f]/.test(raw)) {
+    return null;
+  }
+  try {
+    const target = new URL(raw, APP_URL);
+    if (target.origin !== new URL(APP_URL).origin) return null;
+    ['auth_token', 'access_token', 'token', 'pollToken'].forEach(key => target.searchParams.delete(key));
+    return target.toString();
+  } catch (_) {
+    return null;
+  }
+}
+
+authRouter.post('/api/auth/tg-link/request', userGuard, (req, res) => {
+  const customerId = String(req.user.id || '');
+  const customer = db.prepare('SELECT * FROM customers WHERE id=?').get(customerId);
+  if (!customer || customer.role !== 'guest') {
+    return res.status(403).json({ error: 'Подтверждение Telegram доступно только гостевому профилю' });
+  }
+  if (Number(customer.verified) > 0) {
+    return res.status(409).json({ error: 'Профиль уже активирован' });
+  }
+  if (!customer.phone) {
+    return res.status(409).json({ error: 'У профиля нет номера телефона для подтверждения' });
+  }
+
+  const returnUrl = normalizeTelegramActivationReturnUrl(req.body?.returnTo);
+  if (!returnUrl) {
+    return res.status(400).json({ error: 'Не удалось определить безопасный адрес возврата в приложение' });
+  }
+  if (!/^[A-Za-z0-9_]{5,32}$/.test(String(TG_BOT_USERNAME || ''))) {
+    return res.status(503).json({ error: 'Telegram-бот пока не настроен' });
+  }
+
+  const userKey = 'tgactivate-user:' + customerId;
+  const previous = otpStore.get(userKey);
+  if (previous?.token) otpStore.delete('tgactivate:' + previous.token);
+
+  const token = crypto.randomBytes(24).toString('hex');
+  const expires = Date.now() + 10 * 60 * 1000;
+  otpStore.set('tgactivate:' + token, {
+    customerId,
+    phone: fmtPhone(customer.phone),
+    returnUrl,
+    expires
+  });
+  otpStore.set(userKey, { token, expires });
+
+  const tgUrl = 'https://t.me/' + TG_BOT_USERNAME + '?start=activate_' + token;
+  return res.json({ ok: true, tgUrl, expiresAt: new Date(expires).toISOString() });
+});
+
 authRouter.post('/api/auth/activate-guest', userGuard,(req, res) => {
   const wait = lockedSeconds(req, 'act', req.user.id);
   if (wait > 0) {
