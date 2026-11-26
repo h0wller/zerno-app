@@ -208,12 +208,12 @@ paths:
           application/json:
             schema:
               type: object
-              required: [phone, consent]
+              required: [phone]
               properties:
                 phone: { type: string }
                 name: { type: string, maxLength: 24 }
-                pin: { type: string, pattern: '^\d{4}$' }
-                consent: { type: boolean, enum: [true] }
+                pin: { type: string, pattern: '^\d{4}
+                consent: { type: boolean, enum: [true], description: 'Required for PWA registration when returnTo is supplied' }
                 returnTo: { type: string, pattern: '^/', description: 'Безопасный относительный адрес возврата в исходный бренд/вкладку' }
                 via: { type: string, enum: [tg], default: tg }
                 src: { type: string, enum: [qr], description: 'Необязательный источник QR-регистрации' }
@@ -232,8 +232,7 @@ paths:
         '400': { description: Неверный номер, согласие или PIN }
         '409': { description: Номер уже зарегистрирован }
         '429': { description: Слишком частые запросы }
-
- }
+, description: 'Required for PWA Telegram registration when returnTo is supplied' }
                 consent: { type: boolean, enum: [true] }
                 returnTo: { type: string, pattern: '^/', description: 'Безопасный относительный адрес возврата в исходный бренд/вкладку' }
                 via: { type: string, enum: [tg], default: tg }
