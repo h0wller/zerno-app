@@ -904,11 +904,10 @@ test('P0 registration baseline: capture guest, registration and the separate pro
       expect(registrationGeometry.horizontalOverflow).toBe(false);
       expect(registrationGeometry.cardFitsOrScrolls).toBe(true);
       expect(registrationGeometry.consentFontSize).toBeGreaterThanOrEqual(12);
-      expect(registrationGeometry.consent.height).toBeGreaterThanOrEqual(44);
-      expect(registrationGeometry.submit.height).toBeGreaterThanOrEqual(44);
-      expect(registrationGeometry.regTab.height).toBeGreaterThanOrEqual(44);
-      expect(registrationGeometry.loginTab.height).toBeGreaterThanOrEqual(44);
-      expect(registrationGeometry.regPin.height).toBeGreaterThanOrEqual(44);
+      for (const target of ['consent', 'submit', 'regTab', 'loginTab', 'regPin']) {
+        expect(registrationGeometry[target].width, target + ' hit target width').toBeGreaterThanOrEqual(44);
+        expect(registrationGeometry[target].height, target + ' hit target height').toBeGreaterThanOrEqual(44);
+      }
 
       await page.locator('#regPin').focus();
       await expect(page.locator('#regPin')).toBeFocused();
