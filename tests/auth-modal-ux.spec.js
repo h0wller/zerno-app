@@ -427,6 +427,8 @@ test('registration offers Telegram and keeps consent compact without SMS control
 
     await expect(page.locator('#regTgBtn')).toBeVisible();
     await expect(page.locator('#regTgBtn')).toHaveText('Зарегистрироваться через Telegram');
+    await expect(page.locator('.auth-registration-followup')).toBeVisible();
+    await expect(page.locator('.auth-registration-followup')).toHaveText('Без Telegram активация будет доступна в профиле.');
     await expect(page.locator('#regTgRow')).toHaveCount(0);
     await expect(page.locator('#regOtpBtn')).toHaveCount(0);
     await expect(page.locator('#regOtpRow')).toHaveCount(0);
