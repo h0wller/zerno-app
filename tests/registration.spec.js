@@ -1096,6 +1096,7 @@ test('pending profile opens Telegram and preserves the delivery profile return r
 
 test('registration Telegram CTA completes the signup and returns to the originating brand profile', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
+  await page.addInitScript(() => { window.Telegram = null; window.__tgInitData = null; });
   let registrationRequest = null;
   let polls = 0;
   await page.route('**/api/auth/request-reg-otp', async (route) => {
@@ -1138,7 +1139,7 @@ test('registration Telegram CTA completes the signup and returns to the originat
           })
     });
   });
-  await page.route('https://t.me/**', (route) => route.fulfill({
+  await page.context().route('https://t.me/**', (route) => route.fulfill({
     status: 200,
     contentType: 'text/html',
     body: '<title>Telegram registration test</title>'
