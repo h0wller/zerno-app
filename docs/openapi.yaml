@@ -215,7 +215,8 @@ paths:
                 pin: { type: string, pattern: '^\\d{4}$' }
                 consent: { type: boolean, enum: [true] }
                 returnTo: { type: string, pattern: '^/', description: 'Безопасный относительный адрес возврата в исходный бренд/вкладку' }
-                via: { type: string, enum: [tg, sms], default: tg, description: 'SMS не отображается в PWA и доступна только при наличии разрешения и включённой интеграции' }
+                via: { type: string, enum: [tg], default: tg }
+                src: { type: string, enum: [qr], description: 'Необязательный источник QR-регистрации' }
       responses:
         '200':
           description: OK
