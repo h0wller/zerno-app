@@ -24,6 +24,18 @@ staffRouter.get('/api/staff/customers', staffGuard, (req, res) => {
 
   const all = db.prepare('SELECT * FROM customers').all();
 
+  // A complete phone query is an identity lookup: prioritize its canonical
+  // 10-digit match instead of mixing it with name substring results and the
+  // generic five-result cap. Return every exact duplicate so the cashier can
+  // stop on ambiguity rather than selecting an unrelated profile.
+  const normalizedPhone = ph10(raw);
+  if (normalizedPhone.length === 10) {
+    const exactPhones = all.filter(customer => ph10(customer.phone) === normalizedPhone);
+    if (exactPhones.length) {
+      return res.json({ customers: exactPhones.map(cust) });
+    }
+  }
+
   const matches = all.filter(c => {
     if (t && c.name && String(c.name).toLowerCase().includes(t)) return true;
     if (d10.length >= 3) {

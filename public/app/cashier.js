@@ -25,7 +25,7 @@ function showCust(u, last = null) {
   $('#custNote').textContent = `Штампов: ${u.stamps} из 10` + (u.free ? ` · бесплатных кофе: ${u.free}` : '');
   const fb = $('#custFree');
   if (fb) { fb.hidden = u.free < 1; const fn = $('#custFreeN'); if (fn) fn.textContent = u.free; }
-  $('#custHist').innerHTML = (u.history || []).slice(0, 4).map(hrow).join('') || '<div class="hmini">История пуста</div>';
+  $('#custHist').innerHTML = (u.history || []).map(hrow).join('') || '<div class="hmini">История пуста</div>';
   $('#giveStampBtn').textContent = u.stamps === 9
     ? '☕ Пробить 10-й штамп → кофе в подарок'
     : `🫘 Пробить штамп · будет ${u.stamps + 1} из 10`;
