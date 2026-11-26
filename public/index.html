@@ -4993,7 +4993,8 @@ html body #tickerTrack .tickerGroup > span {
           <input type="checkbox" id="consentBox" name="consent" required />
           <span>Даю согласие на обработку персональных данных. <a href="/privacy.html" target="_blank" rel="noopener noreferrer">Политика конфиденциальности</a></span>
         </label>
-        <button type="button" class="btn ghost auth-telegram-button" id="regTgBtn">Войти через Telegram</button>
+        <button type="button" class="btn ghost auth-telegram-button" id="regTgBtn">Зарегистрироваться через Telegram</button>
+        <p class="auth-telegram-status" id="regTgStatus" data-state="idle" role="status" aria-live="polite" hidden></p>
         <button type="button" class="cta" id="regBtn">Создать профиль</button>
       </form>
       <form id="loginForm" style="display: none; flex-direction: column; gap: 11px">
