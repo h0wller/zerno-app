@@ -178,10 +178,6 @@ jobs:
             for (const viewport of viewports) {
               test('pizza 7330120 baseline ' + brand + ' ' + viewport.width + 'x' + viewport.height, async ({ page }, testInfo) => {
                 await page.setViewportSize(viewport);
-                await page.addInitScript(() => {
-                  localStorage.setItem('zt_onb', '1');
-                  sessionStorage.setItem('splashDone', '1');
-                });
                 await page.route('**/api/orders/mine', (route) => route.fulfill({
                   status: 200,
                   contentType: 'application/json',
@@ -189,6 +185,13 @@ jobs:
                 }));
 
                 await page.goto('/?brand=' + brand);
+                await page.evaluate(() => {
+                  localStorage.removeItem('zt_user');
+                  localStorage.removeItem('zt_role');
+                  localStorage.setItem('zt_onb', '1');
+                  sessionStorage.setItem('splashDone', '1');
+                });
+                await page.reload();
                 await page.waitForFunction(() =>
                   typeof window.openAuth === 'function' &&
                   typeof window.setUser === 'function' &&
