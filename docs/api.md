@@ -87,6 +87,7 @@ SMS.ru остаётся подготовленным будущим платны
 | Метод и путь | Назначение | Доступ |
 |---|---|---|
 | `GET /api/staff/customers` | Поиск клиентов | staffGuard |
+| `GET /api/staff/customers/:id` | Получить актуальную карточку конкретного гостя по ID | staffGuard |
 | `POST /api/staff/customers` | Создать или активировать профиль гостя; принимает `name`, `phone`, `pin` (4 цифры), повторный номер безопасно переиспользует профиль | staffGuard |
 | `POST /api/staff/stamp` | Начислить один штамп клиенту | staffGuard |
 | `POST /api/staff/redeem` | Списать бесплатный кофе | staffGuard |
