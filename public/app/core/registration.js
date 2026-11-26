@@ -83,7 +83,7 @@
     }
   }
 
-  async function completeRegistration(response, isNew) {
+  async function completeRegistration(response, isNew, options) {
     var customer = response && response.customer;
     if (!response || !response.token || !customer) {
       throw new Error('Сервер не подтвердил создание профиля. Повторите попытку.');
@@ -97,6 +97,11 @@
     if (typeof renderAll === 'function') renderAll();
     if (typeof window.renderProfile === 'function') window.renderProfile();
     if (typeof window.renderVerifyNote === 'function') window.renderVerifyNote();
+
+    if (options && options.preserveContext) {
+      toast('Регистрация завершена. Вы вернулись в приложение.', '✅');
+      return;
+    }
 
     if (!customerIsVerified(customer)) {
       openProfileAfterAuth();
@@ -192,7 +197,6 @@
   function getRegistrationReturnPath() {
     var target = new URL(window.location.href);
     target.searchParams.set('brand', window.brand === 'delivery' ? 'delivery' : 'coffee');
-    target.searchParams.set('tab', 'profile');
     target.searchParams.delete('auth_token');
     target.searchParams.delete('token');
     target.searchParams.delete('pollToken');
@@ -214,7 +218,7 @@
         if (result && result.confirmed && result.token && result.customer) {
           try { localStorage.removeItem(TELEGRAM_REGISTRATION_SESSION_KEY); } catch (_) {}
           try { localStorage.removeItem('zt_src'); } catch (_) {}
-          await completeRegistration({ token: result.token, customer: result.customer }, true);
+          await completeRegistration({ token: result.token, customer: result.customer }, true, { preserveContext: true });
           return;
         }
       } catch (error) {
