@@ -182,7 +182,7 @@ paths:
                 name:    { type: string, maxLength: 24 }
                 phone:   { type: string }
                 pin:     { type: string, pattern: '^\\d{4}$' }
-                code:    { type: string, description: Одноразовый SMS OTP при включённом SMS_AUTH_ENABLED }
+                code:    { type: string, description: Legacy OTP-поле только при серверном SMS_AUTH_ENABLED; текущая форма PWA его не отображает }
                 consent: { type: integer, enum: [0, 1] }
       responses:
         '200':
@@ -201,7 +201,7 @@ paths:
   /api/auth/request-reg-otp:
     post:
       tags: [Auth]
-      summary: Подтверждение регистрации через Telegram (SMS — отдельная опция)
+      summary: Существующий запрос подтверждения регистрации (не используется PWA-формой; SMS остаётся отдельно config-gated)
       requestBody:
         required: true
         content:
@@ -321,6 +321,43 @@ paths:
         '403': { description: Неверный код активации }
         '409': { description: Профиль уже активирован }
         '429': { description: Превышен лимит неверных кодов; Retry-After содержит время ожидания }
+
+  /api/auth/tg-link/request:
+    post:
+      tags: [Auth]
+      summary: Запросить активацию ожидающего профиля через Telegram
+      description: >-
+        Требует BearerAuth текущего гостевого профиля со статусом verified=0.
+        Выдаёт одноразовую ссылку на 10 минут; бот проверяет собственный Telegram-контакт
+        и совпадение телефона. Возврат ограничен текущим origin приложения; session token
+        и другие секреты не помещаются в Telegram URL.
+      security: [{ BearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [returnTo]
+              properties:
+                returnTo: { type: string, minLength: 2, maxLength: 2048, pattern: '^/' }
+      responses:
+        '200':
+          description: Одноразовая ссылка для открытия Telegram и время её истечения
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, tgUrl, expiresAt]
+                properties:
+                  ok: { type: boolean, enum: [true] }
+                  tgUrl: { type: string, format: uri }
+                  expiresAt: { type: string, format: date-time }
+        '400': { description: Небезопасный адрес возврата }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { description: Запрос доступен только гостевому профилю }
+        '409': { description: Профиль уже активирован или отсутствует номер }
+        '503': { description: Telegram-бот не настроен }
 
   /api/auth/tg-link:
     post:
