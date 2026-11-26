@@ -160,12 +160,12 @@ authRouter.post('/api/auth/tg-link', (req, res) => {
 });
 
 authRouter.post('/api/auth/request-reg-otp', async (req, res) => {
-  if (req.body.consent !== 1 && req.body.consent !== true) {
-    return res.status(400).json({ error: 'Нужно согласие с политикой конфиденциальности' });
-  }
   const p = fmtPhone(req.body.phone || '');
   const reqPin = String(req.body.pin || '').trim();
   const reqSource = req.body.src === QR_SOURCE ? QR_SOURCE : '';
+  if ((req.body.returnTo || req.body.pin) && req.body.consent !== 1 && req.body.consent !== true) {
+    return res.status(400).json({ error: 'Нужно согласие с политикой конфиденциальности' });
+  }
   if (reqPin && !/^\d{4}$/.test(reqPin)) return res.status(400).json({ error: 'PIN — ровно 4 цифры' });
   const returnUrl = req.body.returnTo ? normalizeAppReturnUrl(req.body.returnTo) : null;
   if (req.body.returnTo && !returnUrl) return res.status(400).json({ error: 'Некорректный адрес возврата в приложение' });
