@@ -840,10 +840,12 @@ test('P0 registration baseline: capture guest, registration and the separate pro
 
   for (const brand of ['coffee', 'delivery']) {
     for (const viewport of viewports) {
-      await page.evaluate(() => {
-        localStorage.removeItem('zt_user');
-        localStorage.removeItem('zt_role');
-      });
+      if (page.url().startsWith('http')) {
+        await page.evaluate(() => {
+          localStorage.removeItem('zt_user');
+          localStorage.removeItem('zt_role');
+        });
+      }
       await page.setViewportSize(viewport);
       await page.goto('/?brand=' + brand);
       await page.waitForFunction(() =>
