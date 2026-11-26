@@ -211,8 +211,13 @@ test('brand transitions retain the scroll state and reveal the newly active rail
   await expect(page.locator('html')).toHaveAttribute('data-brand', 'coffee');
   await expect(coffeeRail).toHaveClass(/is-scroll-fading/);
 
-  await scrollPageAsUser(page, 680);
-  await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(680);
+  // Brand DOM updates may trigger browser scroll anchoring. Start from the actual
+  // post-transition position so this assertion always includes a real upward gesture.
+  const postTransitionScrollY = await page.evaluate(() => window.scrollY);
+  const upwardTarget = Math.max(0, postTransitionScrollY - 20);
+  expect(postTransitionScrollY).toBeGreaterThan(20);
+  await scrollPageAsUser(page, upwardTarget);
+  await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(upwardTarget);
   await expect(coffeeRail).not.toHaveClass(/is-scroll-fading/);
   await expect.poll(() => coffeeRail.evaluate(el => Number.parseFloat(getComputedStyle(el).opacity)))
     .toBeGreaterThan(0.9);
