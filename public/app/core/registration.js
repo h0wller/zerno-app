@@ -196,6 +196,7 @@
     target.searchParams.delete('auth_token');
     target.searchParams.delete('token');
     target.searchParams.delete('pollToken');
+    target.searchParams.delete('ref');
     return target.pathname + target.search + target.hash;
   }
 
@@ -203,37 +204,40 @@
     var deadline = Number(expiresAt) || (Date.now() + 10 * 60 * 1000);
     while (Date.now() < deadline) {
       try {
+        if (!localStorage.getItem(TELEGRAM_REGISTRATION_SESSION_KEY)) return;
+      } catch (_) {}
+      try {
         var result = await api('/auth/check-reg', {
           method: 'POST',
           body: { pollToken: pollToken }
         });
         if (result && result.confirmed && result.token && result.customer) {
-          try { sessionStorage.removeItem(TELEGRAM_REGISTRATION_SESSION_KEY); } catch (_) {}
+          try { localStorage.removeItem(TELEGRAM_REGISTRATION_SESSION_KEY); } catch (_) {}
           try { localStorage.removeItem('zt_src'); } catch (_) {}
           await completeRegistration({ token: result.token, customer: result.customer }, true);
           return;
         }
       } catch (error) {
         if (error && error.code === 400) {
-          try { sessionStorage.removeItem(TELEGRAM_REGISTRATION_SESSION_KEY); } catch (_) {}
+          try { localStorage.removeItem(TELEGRAM_REGISTRATION_SESSION_KEY); } catch (_) {}
           toast(error.message || 'Ссылка подтверждения регистрации устарела. Начните ещё раз.', '⚠️');
           return;
         }
       }
       await wait(document.visibilityState === 'visible' ? 1400 : 4000);
     }
-    try { sessionStorage.removeItem(TELEGRAM_REGISTRATION_SESSION_KEY); } catch (_) {}
+    try { localStorage.removeItem(TELEGRAM_REGISTRATION_SESSION_KEY); } catch (_) {}
     toast('Срок ссылки Telegram истёк. Откройте регистрацию и запросите новую.', '⏳');
   }
 
   function resumeTelegramRegistration() {
     try {
-      var saved = JSON.parse(sessionStorage.getItem(TELEGRAM_REGISTRATION_SESSION_KEY) || 'null');
+      var saved = JSON.parse(localStorage.getItem(TELEGRAM_REGISTRATION_SESSION_KEY) || 'null');
       if (saved && /^[a-f0-9]{64}$/.test(String(saved.pollToken || '')) &&
           Number(saved.expiresAt) > Date.now()) {
         pollTelegramRegistration(saved.pollToken, saved.expiresAt);
       } else if (saved) {
-        sessionStorage.removeItem(TELEGRAM_REGISTRATION_SESSION_KEY);
+        localStorage.removeItem(TELEGRAM_REGISTRATION_SESSION_KEY);
       }
     } catch (_) {}
   }
@@ -262,7 +266,8 @@
           pin: form.pin,
           consent: 1,
           via: 'tg',
-          returnTo: getRegistrationReturnPath()
+          returnTo: getRegistrationReturnPath(),
+          src: getRegSource()
         }
       });
       if (!response || !response.tgUrl || !/^[a-f0-9]{64}$/.test(String(response.pollToken || ''))) {
@@ -271,7 +276,7 @@
 
       var expiry = response.expiresAt ? Date.parse(response.expiresAt) : Date.now() + 10 * 60 * 1000;
       try {
-        sessionStorage.setItem(TELEGRAM_REGISTRATION_SESSION_KEY, JSON.stringify({
+        localStorage.setItem(TELEGRAM_REGISTRATION_SESSION_KEY, JSON.stringify({
           pollToken: response.pollToken,
           expiresAt: expiry
         }));
