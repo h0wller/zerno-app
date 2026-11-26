@@ -352,15 +352,17 @@ test('pending guest activates through a one-time Telegram pairing link using the
     }
   });
   assert.equal(confirmed.status, 200);
-  const activated = inspectDb.prepare(
-    'SELECT verified, tg, actcode, role, phone FROM customers WHERE id=?'
-  ).get(pending.json.customer.id);
   const activationStateAfterContact = await api('/__test/otp/inspect', {
     key: 'tgactivate:' + activationToken
   });
   const chatStateAfterContact = await api('/__test/otp/inspect', {
     key: 'tgactivate-chat:' + chatId
   });
+  assert.equal(activationStateAfterContact.json.exists, false, JSON.stringify(activationStateAfterContact.json));
+  assert.equal(chatStateAfterContact.json.exists, false, JSON.stringify(chatStateAfterContact.json));
+  const activated = inspectDb.prepare(
+    'SELECT verified, tg, actcode, role, phone FROM customers WHERE id=?'
+  ).get(pending.json.customer.id);
   const telegramOwners = inspectDb.prepare(
     'SELECT id, phone, role FROM customers WHERE tg=?'
   ).all(String(chatId));
@@ -373,11 +375,6 @@ test('pending guest activates through a one-time Telegram pairing link using the
   }));
   assert.equal(String(activated?.tg), String(chatId));
   assert.equal(activated?.actcode, null);
-  const consumedChallenge = await api('/__test/otp/inspect', { key: 'tgactivate:' + activationToken });
-  const consumedChat = await api('/__test/otp/inspect', { key: 'tgactivate-chat:' + chatId });
-  assert.equal(consumedChallenge.json.exists, false);
-  assert.equal(consumedChat.json.exists, false);
-
   const bonusGrants = () => inspectDb.prepare(
     "SELECT COUNT(*) AS count FROM bonus_grants WHERE cid=? AND kind IN ('signup','qr')"
   ).get(pending.json.customer.id).count;
