@@ -22,7 +22,7 @@
 
 | Модуль | Владеет | Контракты |
 | --- | --- | --- |
-| `core/state.js` | window-глобалы: USER_TOKEN, onboarded, MENU, meta, me, mode, editMode, brand; CATS/TINT; iOS gesture-guard; детект TG Mini App | `window.CATS`, `window.TINT`, `window.__isTgMiniApp` |
+| `core/state.js` | window-глобалы: USER_TOKEN, onboarded, MENU, meta, me, mode, editMode, brand; CATS/TINT; сохраняет исходные pathname/search/hash до очистки диплинка; iOS gesture-guard; детект TG Mini App | `window.CATS`, `window.TINT`, `window.__isTgMiniApp`, `window.__initialPathname`, `window.__initialSearch`, `window.__initialHash` |
 | `core/utils.js` | Чистые утилиты форматирования/DOM | `$`, `clone`, `esc`, `fmt`, `fmtTs`, `ph10`, `fmtPhone`, `bindMask`, `fmtMulti` |
 | `core/api.js` | Определяет базовый URL API для app-origin и локальных frontend-серверов | `window.API_BASE` |
 | `core/ui.js` | `api()` с обработкой 401 и 20-секундным timeout; дедуп только безопасных GET без caller AbortSignal; ARIA live toasts с адаптивной длительностью | `window.api`, `window.toast`, `window.renderUpd` |
@@ -93,7 +93,7 @@
 | `core/auth.js` | Единственный владелец `#authModal` (open/close/swap и сброс временного состояния), вход по PIN/OTP, `#profileTopBtn`, выход и удаление аккаунта; отдельный входной OTP не связан с регистрационным SMS UI | `window.openAuth`, `window.closeAuth`, `window.authSwap` |
 | `core/auth-pin.js` | Единственный владелец `#setPinModal`: задание PIN для старого профиля и смена PIN | `window.openSetPin`, `window.closeSetPin` |
 | `core/telegram-link.js` | Общий helper внешних Telegram deep links: синхронный popup в обычном браузере, нативный `openTelegramLink` только в Mini App, blocked-popup fallback возвращается вызывающему модулю; DOM status принадлежат registration/profile owners | `isTelegramMiniApp`, `openTelegramLink` |
-| `core/registration.js` | Создание профиля и согласие; web/PWA имеет «Зарегистрироваться через Telegram», одноразовый `check-reg` polling, TTL, resume, отмену предыдущей попытки и защиту `__authSessionRevision`; обычное «Создать профиль» оставляет pending-активацию; browser navigation использует общий `core/telegram-link.js`; регистрационный SMS UI отсутствует | — |
+| `core/registration.js` | Создание профиля и согласие; web/PWA имеет «Войти через Telegram» с одноразовым `check-reg` polling, TTL, resume, отменой предыдущей попытки и безопасным возвратом через `window.getAppReturnPath`; `openTelegramLink` используется только в Mini App с подписанным `initData`; обычное «Создать профиль» оставляет pending-активацию; регистрационный SMS UI отсутствует | — |
 | `core/staffpin.js` | `#pinModal` (код сотрудника), `tryActivate`, делегирование submit форм | `window.openPin`, `window.closePin`, `window.tryActivate` |
 
 ## 8. Персонал: кассир и сканер
@@ -134,7 +134,7 @@
 | `ui/settings.js` | `#settingsModal` (PIN, каналы уведомлений, выход, typed-confirmation удаления); шестерёнка и управление фокусом | `window.openProfileSettings`, `window.closeProfileSettings` |
 | `core/fx.js` | Канвас конфетти `#fx` | `window.confetti` |
 | `core/a11y.js` | loading=lazy для небрендовых изображений; общий алгоритм удержания Tab-фокуса в границах модалки без владения самими модалками | `window.trapModalFocus` |
-| `core/deeplink.js` | Диплинки: brand/tab/no/reorder/auth_token; legacy `staff_chat` делегирует в `chat.js` | — |
+| `core/deeplink.js` | Диплинки: brand/tab/no/reorder/auth_token; формирует безопасный относительный URL возврата на исходный экран из сохранённых entry pathname/search/hash без auth/poll/Telegram launch secrets и QR-trigger; legacy `staff_chat` делегирует в `chat.js` | `window.getAppReturnPath` |
 | `ui/styles.js` | Глобальные инжекции СЛОЯ 3: z-index, body.panel-open, пульсы чата, футер, cartPanel ≥900px, бар подсказок | — |
 
 ## 12. Промокоды и дашборд владельца
