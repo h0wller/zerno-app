@@ -185,6 +185,36 @@ for (const brand of BRANDS) {
 
 
 
+for (const brand of BRANDS) {
+  test(`${brand.brand}: visibility follows actual scroll direction when momentum and input signals differ`, async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.addInitScript(() => sessionStorage.setItem('splashDone', '1'));
+    await page.goto('/?brand=' + brand.brand, { waitUntil: 'domcontentloaded' });
+    const rail = page.locator(brand.rail);
+    await expect(rail).toBeVisible({ timeout: 15000 });
+
+    await scrollPageAsUser(page, 700);
+    await expect(rail).toHaveClass(/is-scroll-fading/);
+
+    // An older momentum frame can arrive after the finger/wheel has reversed.
+    // The rail must follow the actual viewport movement, not the stale input direction.
+    await page.evaluate(() => {
+      window.dispatchEvent(new WheelEvent('wheel', { deltaY: -24, bubbles: true, cancelable: true }));
+      window.dispatchEvent(new WheelEvent('wheel', { deltaY: 24, bubbles: true, cancelable: true }));
+      window.scrollTo({ top: 676, behavior: 'instant' });
+    });
+    await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(676);
+    await expect(rail).not.toHaveClass(/is-scroll-fading/);
+
+    await page.evaluate(() => {
+      window.dispatchEvent(new WheelEvent('wheel', { deltaY: -24, bubbles: true, cancelable: true }));
+      window.scrollTo({ top: 700, behavior: 'instant' });
+    });
+    await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(700);
+    await expect(rail).toHaveClass(/is-scroll-fading/);
+  });
+}
+
 test('brand transitions retain the scroll state and reveal the newly active rail on upward scroll', async ({ page }, testInfo) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.addInitScript(() => sessionStorage.setItem('splashDone', '1'));
