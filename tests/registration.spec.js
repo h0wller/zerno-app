@@ -1190,6 +1190,9 @@ test('registration Telegram CTA completes the signup and returns to the originat
   expect(registrationRequest.returnTo).not.toContain('auth_token');
 });
 
+test.describe('P0 profile activation and Telegram Mini App', () => {
+  test.use({ serviceWorkers: 'block' });
+
 test('P0 profile Telegram activation exposes all states, both brands and portrait/landscape compact viewports', async ({ page }) => {
   test.setTimeout(120000);
   await page.addInitScript(() => {
@@ -1403,13 +1406,20 @@ test('P0 Telegram Mini App uses WebApp.openTelegramLink and hides the browser re
     window.renderProfile();
     window.renderVerifyNote();
     window.openPanel('profile');
+    return new Promise((resolve) => {
+      requestAnimationFrame(() => requestAnimationFrame(resolve));
+    });
   });
+  await expect(page.locator('#authModal')).not.toHaveClass(/show/);
+  await expect(page.locator('#panel')).toHaveClass(/open/);
   const telegram = page.locator('#actTgBtn');
   await expect(telegram).toBeVisible();
   await telegram.click();
   await expect.poll(() => page.evaluate(() => window.__openedTelegramUrl))
     .toMatch(/^https:\/\/t\.me\/test_bot\?start=activate_[a-f0-9]{48}$/);
   await expect(page).not.toHaveURL(/t\.me/);
+});
+
 });
 
 test('P0 registration Telegram popup blocked falls back to an actionable status link', async ({ page }) => {

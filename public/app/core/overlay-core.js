@@ -1,5 +1,6 @@
 /* public/app/core/overlay-core.js — Ф5.7: кластер "overlay-core" из legacy-core.js. Top-level = global. */
 let histPushed = false;
+let histBackPending = false;
 
 function syncOverlay() {
   const ov = document.getElementById("overlay");
@@ -54,21 +55,34 @@ function syncOverlay() {
 
   // Управление history pushState/back вызывается ТОЛЬКО внутри Telegram Mini App
   if (isMiniApp) {
-    if (on && !histPushed) {
+    if (on && !histPushed && !histBackPending) {
       histPushed = true;
       try {
         history.pushState({ zerno: 1 }, "");
-      } catch (e) {}
+      } catch (e) {
+        histPushed = false;
+      }
     } else if (!on && histPushed) {
       histPushed = false;
+      histBackPending = true;
       try {
         history.back();
-      } catch (e) {}
+      } catch (e) {
+        histBackPending = false;
+      }
     }
   }
 }
 
 addEventListener("popstate", () => {
+  // Closing one overlay schedules history.back(). A different overlay can open
+  // before popstate fires (e.g. auth -> profile); that delayed event belongs
+  // to the previous overlay and must not close the newly opened surface.
+  if (histBackPending) {
+    histBackPending = false;
+    syncOverlay();
+    return;
+  }
   if (!histPushed) return;
   histPushed = false;
   closePanel();
