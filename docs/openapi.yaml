@@ -201,18 +201,21 @@ paths:
   /api/auth/request-reg-otp:
     post:
       tags: [Auth]
-      summary: Существующий запрос подтверждения регистрации (не используется PWA-формой; SMS остаётся отдельно config-gated)
+      summary: Начать регистрацию через Telegram-бота (SMS не отображается в интерфейсе)
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
-              required: [phone]
+              required: [phone, consent]
               properties:
                 phone: { type: string }
-                name:  { type: string }
-                via:   { type: string, enum: [tg, sms], default: tg, description: 'SMS доступна только при SMS_AUTH_ENABLED=true' }
+                name: { type: string, maxLength: 24 }
+                pin: { type: string, pattern: '^\\d{4}$' }
+                consent: { type: boolean, enum: [true] }
+                returnTo: { type: string, pattern: '^/', description: 'Безопасный относительный адрес возврата в исходный бренд/вкладку' }
+                via: { type: string, enum: [tg, sms], default: tg, description: 'SMS не отображается в PWA и доступна только при наличии разрешения и включённой интеграции' }
       responses:
         '200':
           description: OK
@@ -223,8 +226,9 @@ paths:
                 properties:
                   ok:        { type: boolean }
                   tgUrl:     { type: string }
-                  pollToken: { type: string, description: "Случайный секрет этой попытки; передавать только в POST /api/auth/check-reg" }
-        '400': { description: Неверный номер }
+                  pollToken: { type: string, description: "Одноразовый случайный секрет этой попытки; передавать только в POST /api/auth/check-reg" }
+                  expiresAt: { type: string, format: date-time }
+        '400': { description: Неверный номер, согласие или PIN }
         '409': { description: Номер уже зарегистрирован }
         '429': { description: Слишком частые запросы }
 
