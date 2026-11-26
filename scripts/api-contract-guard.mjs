@@ -261,6 +261,9 @@ export function checkAuditSentinels({ openapi, sources }) {
   const statusSchema = openapi.paths?.['/api/orders/{id}/status']?.post?.requestBody?.content?.['application/json']?.schema?.properties?.status;
   addSentinel(diagnostics, 'C-10', 'docs/openapi.yaml', 'POST', '/api/orders/{id}/status', { type: 'string', enum: undefined }, { type: statusSchema?.type, enum: statusSchema?.enum });
   const orderSource = sources['server/routes/orders.js'] || '';
+  const expectedStatuses = ['new', 'accept', 'cook', 'way', 'done', 'cancel'];
+  const missingStatuses = expectedStatuses.filter((status) => !new RegExp('\\\\b' + status + ':').test(orderSource));
+  addSentinel(diagnostics, 'C-10', 'server/routes/orders.js', 'POST', '/api/orders/{id}/status', [], missingStatuses);
   if (!/Number\.isInteger\(minutes\)\s*&&\s*minutes\s*>=\s*1\s*&&\s*minutes\s*<=\s*180/.test(orderSource)) {
     addSentinel(diagnostics, 'C-09', 'server/routes/orders.js', 'POST', '/api/orders/{id}/delay', 'delay range 1..180', 'audited delay bounds not found');
   }
@@ -295,6 +298,12 @@ export function checkAuditSentinels({ openapi, sources }) {
     ['/api/stats', 'get'],
     ['/api/orders/{id}/status', 'post'],
   ];
+  const missingGuards = [
+    ['server/routes/promos.js', 'adminGuard'],
+    ['server/routes/stats.js', 'adminGuard'],
+    ['server/routes/orders.js', 'dispatchGuard'],
+  ].filter(([file, guard]) => !(sources[file] || '').includes(guard)).map(([file, guard]) => file + ' missing ' + guard);
+  addSentinel(diagnostics, 'C-17', 'server/routes/*.js', 'GUARD', 'adminGuard/dispatchGuard', [], missingGuards);
   const missingSecurity = guarded.filter(([path, method]) => {
     const security = openapi.paths?.[path]?.[method]?.security;
     return !Array.isArray(security) || !security.some((entry) => Object.hasOwn(entry, 'BearerAuth'));
