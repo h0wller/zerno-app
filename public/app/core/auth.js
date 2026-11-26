@@ -68,10 +68,18 @@
   }
 
   function adaptAuthForTelegram(modal) {
-    var isTg = !!(window.__isTgMiniApp || window.__tgInitData || (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData));
-    if (!isTg || !modal) return;
+    if (!modal) return;
+    var webApp = window.Telegram && window.Telegram.WebApp;
+    var isTg = !!(
+      window.__isTgMiniApp ||
+      window.__tgInitData ||
+      (webApp && typeof webApp.initData === 'string' && webApp.initData.length > 0)
+    );
+    modal.classList.toggle('tg-mode', isTg);
+    var telegramEntry = document.getElementById('regTgBtn');
+    if (telegramEntry) telegramEntry.hidden = isTg;
+    if (!isTg) return;
 
-    modal.classList.add('tg-mode');
     var hint = modal.querySelector('.mhint, .subhint, #regForm .hint');
     if (hint) hint.style.display = 'none';
     // Согласие рендерится в authModal и проверяется обработчиком регистрации независимо от среды.
