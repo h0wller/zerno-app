@@ -46,6 +46,24 @@ test('reports dynamic API route registration instead of silently skipping it', (
   assert.match(formatDiagnostic(routes.diagnostics[0]), /dynamic|static/i);
 });
 
+
+test('resolves literal route constants without creating a second route registry', () => {
+  const routes = extractExpressRoutes({
+    file: 'server/routes/constants.js',
+    source: "const endpoint = '/api/orders/:id'; router.get(endpoint, handler);",
+  });
+  assert.deepEqual(routes.map(({ method, path }) => [method, path]), [
+    ['GET', '/api/orders/{id}'],
+  ]);
+});
+
+test('strict YAML parsing rejects duplicate operation keys under one path', () => {
+  assert.throws(
+    () => parseOpenApiStrict('openapi: 3.0.3\\npaths:\\n  /api/x:\\n    get: {}\\n    get: {}\\n'),
+    /duplicate|unique/i,
+  );
+});
+
 test('route parity accepts matching methods and parameter names', () => {
   const diagnostics = compareRouteInventories(
     [{ file: 'server/routes/orders.js', line: 10, method: 'GET', path: '/api/orders/{id}' }],
@@ -119,8 +137,9 @@ test('audit sentinels describe known F-003 gaps without fixing them', () => {
     'server/domain/customers.js': "uid('u'); randomBytes(3).toString('hex').toUpperCase()",
     'server.js': "uid('p')",
     'server/routes/auth.js': "consent !== 1 && consent !== true; via === 'sms'; res.json({ ok: true, via: 'sms' })",
-    'server/routes/orders.js': "const ORDER_STATUS = { new: 1, accept: 1, cook: 1, way: 1, done: 1, cancel: 1 }; Number.isInteger(minutes) && minutes >= 1 && minutes <= 180",
-    'server/routes/promos.js': "res.json({ ok: false, error: 'bad' }); promosRouter.post('/api/promos', handler); req.body.code",
+    'server/routes/orders.js': "dispatchGuard; const ORDER_STATUS = { new: 1, accept: 1, cook: 1, way: 1, done: 1, cancel: 1 }; Number.isInteger(minutes) && minutes >= 1 && minutes <= 180",
+    'server/routes/promos.js': "adminGuard; res.json({ ok: false, error: 'bad' }); promosRouter.post('/api/promos', handler); req.body.code",
+    'server/routes/stats.js': 'adminGuard',
     'server/routes/chat.js': 'INSERT INTO chat_meta; botlog',
     'server/routes/push.js': 'if (!sub || !sub.endpoint)',
   };
