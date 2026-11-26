@@ -74,9 +74,6 @@
     modal.classList.add('tg-mode');
     var hint = modal.querySelector('.mhint, .subhint, #regForm .hint');
     if (hint) hint.style.display = 'none';
-    var registrationHelp = modal.querySelector('.auth-registration-help');
-    if (registrationHelp) registrationHelp.hidden = true;
-
     // Согласие рендерится в authModal и проверяется обработчиком регистрации независимо от среды.
 
     if (window.__tgUser && window.__tgUser.name) {
@@ -93,8 +90,6 @@
     var isDelivery = window.brand === 'delivery';
     var title = document.getElementById('authTitle');
     var subtitle = modal.querySelector('.msub');
-    var registrationHelp = modal.querySelector('#regForm .auth-registration-help');
-
     if (login) {
       if (title) title.textContent = 'Вход по номеру';
       if (subtitle) subtitle.textContent = 'Войдите по номеру телефона, чтобы вернуться к своему профилю и заказам.';
@@ -106,15 +101,11 @@
       : 'Профиль «…и кофе»';
 
     if (subtitle) {
-      subtitle.textContent = isDelivery
-        ? 'Сначала создайте профиль. После подтверждения номера у кассира откроются заказы; персональный бонус доставки появится, только если его назначит сервер.'
-        : 'Сначала создайте профиль. После подтверждения номера у кассира откроются карта штампов и QR: 10 штампов дают 1 бесплатный кофе.';
-    }
-
-    if (registrationHelp) {
-      registrationHelp.textContent = isDelivery
-        ? 'После создания профиля получите 4-значный код у кассира и введите его в профиле, чтобы активировать заказы.'
-        : 'После создания профиля получите 4-значный код у кассира и введите его в профиле, чтобы активировать карту и QR.';
+      subtitle.textContent = modal.classList.contains('tg-mode')
+        ? 'Создайте профиль — подтвердим номер через Telegram.'
+        : isDelivery
+          ? 'Сначала создайте профиль. После подтверждения номера у кассира откроются заказы; персональный бонус доставки появится, только если его назначит сервер.'
+          : 'Сначала создайте профиль. После подтверждения номера у кассира откроются карта штампов и QR: 10 штампов дают 1 бесплатный кофе.';
     }
   }
 
