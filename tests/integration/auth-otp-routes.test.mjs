@@ -254,7 +254,7 @@ test('cashier activation does not invent a welcome gift when bonus_cfg disables 
 test('pending guest activates through a one-time Telegram pairing link using their own matching contact', async () => {
   const phone = '+7 900 000-01-31';
   const pending = await api('/api/auth/register', {
-    name: 'Telegram Activation Guest',
+    name: 'TG Activation Guest',
     phone,
     pin: '2468',
     consent: true
@@ -286,7 +286,7 @@ test('pending guest activates through a one-time Telegram pairing link using the
   const start = await webhook({
     message: {
       chat: { id: chatId, type: 'private' },
-      from: { id: chatId, first_name: 'Telegram Activation Guest' },
+      from: { id: chatId, first_name: 'TG Activation Guest' },
       text: '/start ' + startPayload
     }
   });
@@ -322,7 +322,7 @@ test('pending guest activates through a one-time Telegram pairing link using the
   const confirmed = await webhook({
     message: {
       chat: { id: chatId, type: 'private' },
-      from: { id: chatId, first_name: 'Telegram Activation Guest' },
+      from: { id: chatId, first_name: 'TG Activation Guest' },
       contact: { phone_number: phone, user_id: chatId }
     }
   });
@@ -342,7 +342,7 @@ test('pending guest activates through a one-time Telegram pairing link using the
   const replay = await webhook({
     message: {
       chat: { id: chatId, type: 'private' },
-      from: { id: chatId, first_name: 'Telegram Activation Guest' },
+      from: { id: chatId, first_name: 'TG Activation Guest' },
       text: '/start ' + startPayload
     }
   });
