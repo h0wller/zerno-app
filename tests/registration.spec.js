@@ -933,9 +933,11 @@ test('P0 registration baseline: capture guest, registration and the separate pro
 
       await expect(page.locator('#verifyNote')).toBeVisible();
       await expect(page.locator('#verifyNote')).toContainText('Профиль создан, но ещё не активирован');
-      await expect(page.locator('#toasts .toast').filter({
+      const pendingToast = page.locator('#toasts .toast').filter({
         hasText: 'Профиль создан, но номер ещё не подтверждён'
-      })).toHaveCount(0, { timeout: 10000 });
+      });
+      await expect(pendingToast).toBeVisible();
+      await expect(pendingToast).toHaveCount(0, { timeout: 10000 });
       await expect(page.locator('#verifyNote #actCode')).toBeVisible();
       await expect(page.locator('#verifyNote #actBtn')).toBeVisible();
       if (brand === 'delivery') {
