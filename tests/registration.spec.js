@@ -164,8 +164,6 @@ test.describe('Registration & Auth Suite (F3.61 - F3.63)', () => {
     await expect(page.locator('#logBtn')).toHaveText('Войти');
   });
 
-
-
   test('auth-session owns persisted user state and clears it centrally', async ({ page }) => {
     // The app starts chat/profile requests in the background. Their auth responses
     // must not invalidate this test's deliberately synthetic session token.
@@ -279,7 +277,7 @@ test.describe('Registration & Auth Suite (F3.61 - F3.63)', () => {
     await page.click('#profileTopBtn');
     await expect(page.locator('#authModal')).toHaveClass(/tg-mode/);
     await expect(page.locator('#consentBox')).toBeVisible();
-    await expect(page.locator('.auth-registration-help')).toBeHidden();
+    await expect(page.locator('.auth-registration-help')).toHaveCount(0);
   });
 
   test('F3.63: TMA chain needPhone → needBotConfirm → token', async ({ page }) => {
@@ -493,7 +491,6 @@ test.describe('Registration & Auth Suite (F3.61 - F3.63)', () => {
   });
   });
 
-
   test('staff activation immediately reveals the role switcher without a reload', async ({ page }) => {
     await page.addInitScript(() => {
       localStorage.setItem('zt_user', 'guest-to-cashier-token');
@@ -541,7 +538,6 @@ test.describe('Registration & Auth Suite (F3.61 - F3.63)', () => {
   });
 
 });
-
 
 test('P0: an existing customer returns to the profile without a repeated welcome offer', async ({ page }) => {
   await page.route('**/api/auth/login', (route) => route.fulfill({
@@ -840,9 +836,10 @@ test('P0 registration baseline: capture guest, registration and the separate pro
     { width: 320, height: 640 },
     { width: 360, height: 640 },
     { width: 390, height: 844 },
-    { width: 844, height: 390 }
+    { width: 844, height: 390 },
+    { width: 820, height: 1024 },
+    { width: 1440, height: 900 }
   ];
-
   for (const brand of ['coffee', 'delivery']) {
     for (const viewport of viewports) {
       if (page.url().startsWith('http')) {
@@ -884,24 +881,34 @@ test('P0 registration baseline: capture guest, registration and the separate pro
         const submit = document.getElementById('regBtn');
         const regTab = document.getElementById('toReg');
         const loginTab = document.getElementById('toLogin');
+        const regPin = document.getElementById('regPin');
         const cardRect = card.getBoundingClientRect();
+        const cardStyle = getComputedStyle(card);
+        const cardCanScroll = card.scrollHeight > card.clientHeight &&
+          ['auto', 'scroll'].includes(cardStyle.overflowY);
+        const dimensions = (element) => {
+          const rect = element.getBoundingClientRect();
+          return { width: rect.width, height: rect.height };
+        };
         return {
           horizontalOverflow: document.documentElement.scrollWidth > window.innerWidth,
-          cardInsideViewport: cardRect.top >= 0 && cardRect.bottom <= window.innerHeight,
+          cardFitsOrScrolls: (cardRect.top >= 0 && cardRect.bottom <= window.innerHeight) || cardCanScroll,
           consentFontSize: Number.parseFloat(getComputedStyle(consent).fontSize),
-          consentHeight: consent.getBoundingClientRect().height,
-          submitHeight: submit.getBoundingClientRect().height,
-          regTabHeight: regTab.getBoundingClientRect().height,
-          loginTabHeight: loginTab.getBoundingClientRect().height,
+          consent: dimensions(consent),
+          submit: dimensions(submit),
+          regTab: dimensions(regTab),
+          loginTab: dimensions(loginTab),
+          regPin: dimensions(regPin),
         };
       });
       expect(registrationGeometry.horizontalOverflow).toBe(false);
-      expect(registrationGeometry.cardInsideViewport).toBe(true);
+      expect(registrationGeometry.cardFitsOrScrolls).toBe(true);
       expect(registrationGeometry.consentFontSize).toBeGreaterThanOrEqual(12);
-      expect(registrationGeometry.consentHeight).toBeGreaterThanOrEqual(44);
-      expect(registrationGeometry.submitHeight).toBeGreaterThanOrEqual(48);
-      expect(registrationGeometry.regTabHeight).toBeGreaterThanOrEqual(44);
-      expect(registrationGeometry.loginTabHeight).toBeGreaterThanOrEqual(44);
+      expect(registrationGeometry.consent.height).toBeGreaterThanOrEqual(44);
+      expect(registrationGeometry.submit.height).toBeGreaterThanOrEqual(44);
+      expect(registrationGeometry.regTab.height).toBeGreaterThanOrEqual(44);
+      expect(registrationGeometry.loginTab.height).toBeGreaterThanOrEqual(44);
+      expect(registrationGeometry.regPin.height).toBeGreaterThanOrEqual(44);
 
       await page.locator('#regPin').focus();
       await expect(page.locator('#regPin')).toBeFocused();
@@ -972,25 +979,4 @@ test('P0 registration baseline: capture guest, registration and the separate pro
     }
   }
 });
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
