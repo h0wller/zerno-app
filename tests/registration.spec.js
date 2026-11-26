@@ -869,6 +869,8 @@ test('P0 registration baseline: capture guest, registration and the separate pro
       await page.evaluate(() => window.openAuth(false));
       await expect(page.locator('#regTgBtn')).toHaveCount(0);
       await expect(page.locator('#regTgRow')).toHaveCount(0);
+      await expect(page.locator('#regOtpBtn')).toHaveCount(0);
+      await expect(page.locator('#regOtpRow')).toHaveCount(0);
       await testInfo.attach(prefix + '-registration.png', {
         body: await page.screenshot({ fullPage: false }),
         contentType: 'image/png'
@@ -956,26 +958,42 @@ test('P0 registration baseline: capture guest, registration and the separate pro
       await page.locator('#regBtn').click();
 
       await expect(page.locator('#verifyNote')).toBeVisible();
-      await expect(page.locator('#verifyNote')).toContainText('Профиль создан, но ещё не активирован');
-      const pendingToast = page.locator('#toasts .toast').filter({
-        hasText: 'Профиль создан, но номер ещё не подтверждён'
-      });
-      await expect(pendingToast).toBeVisible();
-      await expect(pendingToast).toHaveCount(0, { timeout: 10000 });
-      await expect(page.locator('#verifyNote #actCode')).toBeVisible();
-      await expect(page.locator('#verifyNote #actBtn')).toBeVisible();
+      await expect(page.locator('#verifyNote')).toContainText('Профиль не активирован');
+      await expect(page.locator('#toasts .toast').last()).toContainText('Профиль создан');
       if (brand === 'delivery') {
         await expect(page.locator('#profileOrdersSection')).toBeHidden();
       } else {
         await expect(page.locator('#profileCoffeeSection')).toBeHidden();
       }
-      await expect(page.locator('#verifyNote')).toContainText('Код активации');
+      const activationDetails = page.locator('#verifyNote .profile-activation-details');
+      await expect(activationDetails).toBeVisible();
+      await expect(activationDetails).not.toHaveAttribute('open', '');
+      await expect(page.locator('#verifyNote #actCode')).toBeHidden();
+      await testInfo.attach(prefix + '-pending-activation.png', {
+        body: await page.screenshot({ fullPage: false }),
+        contentType: 'image/png'
+      });
+
+      await activationDetails.locator('summary').click();
+      await expect(page.locator('#verifyNote #actTgBtn')).toHaveText('Войти через Telegram');
+      await expect(page.locator('#verifyNote #showCashierCodeBtn')).toHaveText('Ввести код кассира');
+      await expect(page.locator('#verifyNote .profile-activation-details-content')).toContainText('Подтвердите свой номер');
+      await testInfo.attach(prefix + '-pending-activation-expanded.png', {
+        body: await page.screenshot({ fullPage: false }),
+        contentType: 'image/png'
+      });
+
+      await page.locator('#showCashierCodeBtn').click();
+      await expect(page.locator('#verifyNote #actCode')).toBeVisible();
+      await expect(page.locator('#verifyNote #actBtn')).toBeVisible();
 
       if (viewport.width === 820 || viewport.width === 1440) {
         const pendingGeometry = await page.evaluate(() => {
           const note = document.getElementById('verifyNote');
           const code = document.getElementById('actCode');
           const submit = document.getElementById('actBtn');
+          const telegram = document.getElementById('actTgBtn');
+          const cashier = document.getElementById('showCashierCodeBtn');
           const noteRect = note.getBoundingClientRect();
           const dimensions = (element) => {
             const rect = element.getBoundingClientRect();
@@ -995,20 +1013,22 @@ test('P0 registration baseline: capture guest, registration and the separate pro
               (noteRect.top >= 0 && noteRect.bottom <= window.innerHeight) || hasScrollableAncestor,
             noteFitsHorizontally: noteRect.left >= 0 && noteRect.right <= window.innerWidth,
             code: dimensions(code),
-            submit: dimensions(submit)
+            submit: dimensions(submit),
+            telegram: dimensions(telegram),
+            cashier: dimensions(cashier)
           };
         });
 
         expect(pendingGeometry.horizontalOverflow).toBe(false);
         expect(pendingGeometry.noteFitsHorizontally).toBe(true);
         expect(pendingGeometry.noteFitsOrScrolls).toBe(true);
-        for (const target of ['code', 'submit']) {
+        for (const target of ['code', 'submit', 'telegram', 'cashier']) {
           expect(pendingGeometry[target].width, 'pending ' + target + ' hit target width').toBeGreaterThanOrEqual(44);
           expect(pendingGeometry[target].height, 'pending ' + target + ' hit target height').toBeGreaterThanOrEqual(44);
         }
       }
 
-      await testInfo.attach(prefix + '-pending-activation.png', {
+      await testInfo.attach(prefix + '-pending-activation-cashier.png', {
         body: await page.screenshot({ fullPage: false }),
         contentType: 'image/png'
       });
