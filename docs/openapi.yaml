@@ -220,7 +220,6 @@ paths:
                 consent: { type: boolean, enum: [true], description: 'Required for PWA requests with returnTo' }
                 returnTo: { type: string, minLength: 2, maxLength: 2048, pattern: '^/', description: 'Safe relative path on the originating app origin' }
                 via: { type: string, enum: [tg, sms], default: tg, description: 'SMS is separately gated; it is not offered by the PWA' }
-                src: { type: string, enum: [qr], description: 'Optional QR registration source' }
       responses:
         '200':
           description: Telegram deep link and one-time browser polling credential
