@@ -35,7 +35,7 @@ test('excludes test-only routes from production inventory', () => {
 test('reports dynamic API route registration instead of silently skipping it', () => {
   const routes = extractExpressRoutes({
     file: 'server/routes/dynamic.js',
-    source: "const path = '/api/runtime'; router.get(path, handler);",
+    source: "router.get(resolvePath(), handler);",
   });
   assert.equal(routes.length, 0);
   assert.match(formatDiagnostic(routes.diagnostics[0]), /server\/routes\/dynamic\.js/);
