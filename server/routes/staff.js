@@ -36,6 +36,15 @@ staffRouter.get('/api/staff/customers', staffGuard, (req, res) => {
   res.json({ customers: matches.map(cust) });
 });
 
+// Карточка кассира должна перечитывать конкретный профиль, а не полагаться на
+// устаревший результат поиска или совпадение по одному имени.
+staffRouter.get('/api/staff/customers/:id', staffGuard, (req, res) => {
+  const customer = db.prepare('SELECT * FROM customers WHERE id=?').get(String(req.params.id || ''));
+  return customer
+    ? res.json({ customer: cust(customer) })
+    : res.status(404).json({ error: 'Гость не найден' });
+});
+
 /* ── СОЗДАНИЕ / ПОВТОРНОЕ ИСПОЛЬЗОВАНИЕ ГОСТЯ ──
    Телефон сравнивается по каноническим десяти цифрам, а не по строковому
    форматированию. При неоднозначных legacy-дубликатах не выбираем профиль наугад. */
