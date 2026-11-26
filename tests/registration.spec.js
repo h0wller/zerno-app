@@ -832,10 +832,10 @@ test('P0 registration baseline: capture guest, registration and the separate pro
   });
 
   const viewports = [
+    { width: 320, height: 640 },
+    { width: 360, height: 640 },
     { width: 390, height: 844 },
-    { width: 844, height: 390 },
-    { width: 820, height: 1024 },
-    { width: 1440, height: 900 }
+    { width: 844, height: 390 }
   ];
 
   for (const brand of ['coffee', 'delivery']) {
@@ -868,10 +868,62 @@ test('P0 registration baseline: capture guest, registration and the separate pro
       await page.evaluate(() => window.openAuth(false));
       await expect(page.locator('#regTgBtn')).toHaveCount(0);
       await expect(page.locator('#regTgRow')).toHaveCount(0);
-      await testInfo.attach(prefix + '-auth.png', {
+      await testInfo.attach(prefix + '-registration.png', {
         body: await page.screenshot({ fullPage: false }),
         contentType: 'image/png'
       });
+
+      const registrationGeometry = await page.evaluate(() => {
+        const card = document.querySelector('#authModal .authcard');
+        const consent = document.getElementById('consentRow');
+        const submit = document.getElementById('regBtn');
+        const regTab = document.getElementById('toReg');
+        const loginTab = document.getElementById('toLogin');
+        const cardRect = card.getBoundingClientRect();
+        return {
+          horizontalOverflow: document.documentElement.scrollWidth > window.innerWidth,
+          cardInsideViewport: cardRect.top >= 0 && cardRect.bottom <= window.innerHeight,
+          consentFontSize: Number.parseFloat(getComputedStyle(consent).fontSize),
+          consentHeight: consent.getBoundingClientRect().height,
+          submitHeight: submit.getBoundingClientRect().height,
+          regTabHeight: regTab.getBoundingClientRect().height,
+          loginTabHeight: loginTab.getBoundingClientRect().height,
+        };
+      });
+      expect(registrationGeometry.horizontalOverflow).toBe(false);
+      expect(registrationGeometry.cardInsideViewport).toBe(true);
+      expect(registrationGeometry.consentFontSize).toBeGreaterThanOrEqual(12);
+      expect(registrationGeometry.consentHeight).toBeGreaterThanOrEqual(44);
+      expect(registrationGeometry.submitHeight).toBeGreaterThanOrEqual(48);
+      expect(registrationGeometry.regTabHeight).toBeGreaterThanOrEqual(44);
+      expect(registrationGeometry.loginTabHeight).toBeGreaterThanOrEqual(44);
+
+      await page.locator('#regPin').focus();
+      await expect(page.locator('#regPin')).toBeFocused();
+      await page.locator('#regPin').scrollIntoViewIfNeeded();
+      await testInfo.attach(prefix + '-registration-pin-focused.png', {
+        body: await page.screenshot({ fullPage: false }),
+        contentType: 'image/png'
+      });
+
+      const miniAppPage = await page.context().newPage();
+      await miniAppPage.setViewportSize(viewport);
+      await miniAppPage.addInitScript(() => {
+        localStorage.setItem('zt_onb', '1');
+        sessionStorage.setItem('splashDone', '1');
+        window.__isTgMiniApp = true;
+        window.__tgInitData = 'mini-app-visual-fixture';
+      });
+      await miniAppPage.goto('/?src=tg&brand=' + brand);
+      await miniAppPage.waitForFunction(() => typeof window.openAuth === 'function');
+      await miniAppPage.evaluate(() => window.openAuth(false));
+      await expect(miniAppPage.locator('#authModal')).toHaveClass(/tg-mode/);
+      await expect(miniAppPage.locator('#authModal .msub')).not.toContainText(/кассир/i);
+      await testInfo.attach(prefix + '-mini-app.png', {
+        body: await miniAppPage.screenshot({ fullPage: false }),
+        contentType: 'image/png'
+      });
+      await miniAppPage.close();
 
       await page.locator('#regName').fill('P0 Baseline Guest');
       await page.locator('#regPhone').fill('+7 900 000-00-01');
@@ -888,6 +940,7 @@ test('P0 registration baseline: capture guest, registration and the separate pro
       } else {
         await expect(page.locator('#profileCoffeeSection')).toBeHidden();
       }
+      await expect(page.locator('#verifyNote')).toContainText('Код активации');
       await testInfo.attach(prefix + '-pending-activation.png', {
         body: await page.screenshot({ fullPage: false }),
         contentType: 'image/png'
