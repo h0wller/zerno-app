@@ -432,7 +432,7 @@ test('Telegram registration polling is scoped to a random one-attempt secret, no
   assert.ok(requested.json.expiresAt);
 
   const throttled = await api('/api/auth/request-reg-otp', {
-    name: 'Telegram Poll Guest', phone, via: 'tg'
+    name: 'Telegram Poll Guest', phone, pin: '1357', consent: true, returnTo, via: 'tg'
   });
   assert.equal(throttled.status, 429);
 
