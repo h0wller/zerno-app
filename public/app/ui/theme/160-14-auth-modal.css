@@ -373,6 +373,11 @@
   letter-spacing: 0;
 }
 
+#authModal .auth-registration-followup {
+  margin: -7px 4px 0;
+  text-align: center;
+}
+
 #authModal #logOtpHint {
   margin: -2px 1px 0;
 }
