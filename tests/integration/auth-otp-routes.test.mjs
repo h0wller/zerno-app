@@ -799,3 +799,63 @@ test('stamp promo applies one batch grant and creates one history entry', async 
   assert.equal(current.stamps, 5);
   assert.equal(current.cups, 0);
 });
+
+
+test('cashier exact-customer lookup returns current gift state and redemption is single-use', async () => {
+  const adminRegistration = await api('/api/auth/register', {
+    name: 'Cashier Freshness Admin',
+    phone: '+7 900 000-02-18',
+    pin: '1357',
+    consent: true
+  });
+  assert.equal(adminRegistration.status, 200, JSON.stringify(adminRegistration.json));
+  const adminToken = adminRegistration.json.token;
+  const activated = await api('/api/auth/activate', {
+    code: 'integration-test-admin'
+  }, adminToken);
+  assert.equal(activated.status, 200, JSON.stringify(activated.json));
+
+  const guestRegistration = await api('/api/auth/register', {
+    name: 'Cashier Freshness Guest',
+    phone: '+7 900 000-02-19',
+    pin: '2468',
+    consent: true
+  });
+  assert.equal(guestRegistration.status, 200, JSON.stringify(guestRegistration.json));
+  const customerId = guestRegistration.json.customer.id;
+  inspectDb.prepare('UPDATE customers SET free=1 WHERE id=?').run(customerId);
+
+  const lookupPath = '/api/staff/customers/' + encodeURIComponent(customerId);
+  const anonymousLookup = await fetch(base + lookupPath);
+  assert.equal(anonymousLookup.status, 401);
+
+  const beforeRedeem = await fetch(base + lookupPath, {
+    headers: { authorization: 'Bearer ' + adminToken }
+  });
+  assert.equal(beforeRedeem.status, 200);
+  const beforeCustomer = await beforeRedeem.json();
+  assert.equal(beforeCustomer.customer.id, customerId);
+  assert.equal(beforeCustomer.customer.free, 1);
+
+  const attempts = await Promise.all([
+    api('/api/staff/redeem', { id: customerId, item: 'Латте' }, adminToken),
+    api('/api/staff/redeem', { id: customerId, item: 'Латте' }, adminToken)
+  ]);
+  assert.deepEqual(attempts.map(result => result.status).sort(), [200, 400]);
+
+  const afterRedeem = await fetch(base + lookupPath, {
+    headers: { authorization: 'Bearer ' + adminToken }
+  });
+  assert.equal(afterRedeem.status, 200);
+  const afterCustomer = (await afterRedeem.json()).customer;
+  assert.equal(afterCustomer.free, 0);
+  assert.equal(
+    afterCustomer.history.filter(entry => entry.a.includes('Списан бесплатный кофе: Латте')).length,
+    1
+  );
+
+  const missing = await fetch(base + '/api/staff/customers/missing-customer-id', {
+    headers: { authorization: 'Bearer ' + adminToken }
+  });
+  assert.equal(missing.status, 404);
+});
