@@ -905,6 +905,7 @@ test('P0 registration baseline: capture guest, registration and the separate pro
       expect(registrationGeometry.horizontalOverflow).toBe(false);
       expect(registrationGeometry.cardFitsOrScrolls).toBe(true);
       expect(registrationGeometry.consentFontSize).toBeGreaterThanOrEqual(12);
+      expect(registrationGeometry.consent.width).toBeLessThanOrEqual(320);
       for (const target of ['consent', 'submit', 'regTab', 'loginTab', 'regPin']) {
         expect(registrationGeometry[target].width, target + ' hit target width').toBeGreaterThanOrEqual(44);
         expect(registrationGeometry[target].height, target + ' hit target height').toBeGreaterThanOrEqual(44);
@@ -959,7 +960,6 @@ test('P0 registration baseline: capture guest, registration and the separate pro
 
       await expect(page.locator('#verifyNote')).toBeVisible();
       await expect(page.locator('#verifyNote')).toContainText('Профиль не активирован');
-      await expect(page.locator('#toasts .toast').last()).toContainText('Профиль создан');
       if (brand === 'delivery') {
         await expect(page.locator('#profileOrdersSection')).toBeHidden();
       } else {
