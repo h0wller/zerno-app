@@ -212,7 +212,28 @@ paths:
               properties:
                 phone: { type: string }
                 name: { type: string, maxLength: 24 }
-                pin: { type: string, pattern: '^\\d{4}$' }
+                pin: { type: string, pattern: '^\d{4} }
+                consent: { type: boolean, enum: [true] }
+                returnTo: { type: string, pattern: '^/', description: 'Безопасный относительный адрес возврата в исходный бренд/вкладку' }
+                via: { type: string, enum: [tg], default: tg }
+                src: { type: string, enum: [qr], description: 'Необязательный источник QR-регистрации' }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:        { type: boolean }
+                  tgUrl:     { type: string }
+                  pollToken: { type: string, description: "Одноразовый случайный секрет этой попытки; передавать только в POST /api/auth/check-reg" }
+                  expiresAt: { type: string, format: date-time }
+        '400': { description: Неверный номер, согласие или PIN }
+        '409': { description: Номер уже зарегистрирован }
+        '429': { description: Слишком частые запросы }
+
+ }
                 consent: { type: boolean, enum: [true] }
                 returnTo: { type: string, pattern: '^/', description: 'Безопасный относительный адрес возврата в исходный бренд/вкладку' }
                 via: { type: string, enum: [tg], default: tg }
