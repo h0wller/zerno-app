@@ -430,7 +430,7 @@ export function createTgRouter({ appKb }) {
               }
               db.prepare('UPDATE customers SET verified=1, consent=? WHERE id=?').run(nowISO() + ' v1', r.customer.id);
               grantWelcome(r.customer.id, 'Telegram');
-              bonusOutcome = grantBonusDetailed(r.customer.id, 'signup');
+              bonusOutcome = grantBonusDetailed(r.customer.id, pend.src === QR_SOURCE ? 'qr' : 'signup');
               addHist(r.customer.id, 'Регистрация через Telegram', 'Telegram');
             }
           }
