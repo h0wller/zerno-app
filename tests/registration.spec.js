@@ -949,6 +949,7 @@ test('P0 registration baseline: capture guest, registration and the separate pro
       await miniAppPage.waitForFunction(() => typeof window.openAuth === 'function');
       await miniAppPage.evaluate(() => window.openAuth(false));
       await expect(miniAppPage.locator('#authModal')).toHaveClass(/tg-mode/);
+      await expect(miniAppPage.locator('#regTgBtn')).toBeHidden();
       await expect(miniAppPage.locator('#authModal .msub')).not.toContainText(/кассир/i);
       await testInfo.attach(prefix + '-mini-app.png', {
         body: await miniAppPage.screenshot({ fullPage: false }),
@@ -970,26 +971,35 @@ test('P0 registration baseline: capture guest, registration and the separate pro
         await expect(page.locator('#profileCoffeeSection')).toBeHidden();
       }
       const activationDetails = page.locator('#verifyNote .profile-activation-details');
+      const telegramActivation = page.locator('#verifyNote #actTgBtn');
       await expect(activationDetails).toBeVisible();
       await expect(activationDetails).not.toHaveAttribute('open', '');
+      await expect(activationDetails.locator('summary')).toContainText('Вы в заведении? Код кассира');
+      await expect(telegramActivation).toBeVisible();
+      await expect(telegramActivation).toHaveText('Подтвердить через Telegram');
+      await expect(telegramActivation).not.toBeDisabled();
+      await expect(telegramActivation).not.toHaveAttribute('aria-busy', 'true');
       await expect(page.locator('#verifyNote #actCode')).toBeHidden();
       await testInfo.attach(prefix + '-pending-activation.png', {
         body: await page.screenshot({ fullPage: false }),
         contentType: 'image/png'
       });
-
-      await activationDetails.locator('summary').click();
-      await expect(page.locator('#verifyNote #actTgBtn')).toHaveText('Активировать через Telegram');
-      await expect(page.locator('#verifyNote #showCashierCodeBtn')).toHaveText('Ввести код кассира');
-      await expect(page.locator('#verifyNote .profile-activation-details-content')).toContainText('Подтвердите свой номер');
-      await testInfo.attach(prefix + '-pending-activation-expanded.png', {
+      await testInfo.attach(prefix + '-pending-activation-telegram-visible.png', {
         body: await page.screenshot({ fullPage: false }),
         contentType: 'image/png'
       });
 
-      await page.locator('#showCashierCodeBtn').click();
+      await activationDetails.locator('summary').click();
+      await expect(telegramActivation).toBeVisible();
       await expect(page.locator('#verifyNote #actCode')).toBeVisible();
       await expect(page.locator('#verifyNote #actBtn')).toBeVisible();
+      await testInfo.attach(prefix + '-pending-activation-cashier-expanded.png', {
+        body: await page.screenshot({ fullPage: false }),
+        contentType: 'image/png'
+      });
+      await expect(page.locator('#verifyNote #actCode')).toBeVisible();
+      await expect(page.locator('#verifyNote #actBtn')).toBeVisible();
+      await expect(page.locator('#verifyNote #actTgBtn')).toBeVisible();
 
       if (viewport.width === 820 || viewport.width === 1440) {
         const pendingGeometry = await page.evaluate(() => {
@@ -997,7 +1007,7 @@ test('P0 registration baseline: capture guest, registration and the separate pro
           const code = document.getElementById('actCode');
           const submit = document.getElementById('actBtn');
           const telegram = document.getElementById('actTgBtn');
-          const cashier = document.getElementById('showCashierCodeBtn');
+          const cashier = note.querySelector('.profile-activation-details > summary');
           const noteRect = note.getBoundingClientRect();
           const dimensions = (element) => {
             const rect = element.getBoundingClientRect();
@@ -1091,9 +1101,11 @@ test('pending profile opens Telegram and preserves the delivery profile return r
     window.openPanel('profile');
   });
 
-  await page.locator('#verifyNote .profile-activation-details summary').click();
+  const popupPromise = page.waitForEvent('popup');
   await page.locator('#actTgBtn').click();
-  await expect(page).toHaveURL(/https:\/\/t\.me\/test_bot\?start=activate_[a-f0-9]{48}$/);
+  const popup = await popupPromise;
+  await expect(popup).toHaveURL(/https:\/\/t\.me\/test_bot\?start=activate_[a-f0-9]{48}$/);
+  await expect(page.locator('#actTgStatus')).toContainText('Откройте бота и поделитесь своим номером.');
   expect(activationRequest).toEqual({
     returnTo: '/?brand=delivery&campaign=activation-test&tab=profile#profile-panel'
   });
@@ -1102,7 +1114,6 @@ test('pending profile opens Telegram and preserves the delivery profile return r
 
 test('registration Telegram CTA completes the signup and returns to the originating screen', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.addInitScript(() => { window.Telegram = null; window.__tgInitData = null; });
   let registrationRequest = null;
   let polls = 0;
   await page.route('**/api/auth/request-reg-otp', async (route) => {
@@ -1173,7 +1184,7 @@ test('registration Telegram CTA completes the signup and returns to the originat
     pin: '2468',
     consent: 1,
     via: 'tg',
-    returnTo: '/?brand=delivery&campaign=registration-test#menu'
+    returnTo: '/?brand=delivery'
   });
   expect(registrationRequest.returnTo).not.toContain('auth_token');
 });
