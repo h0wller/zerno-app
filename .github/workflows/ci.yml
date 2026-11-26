@@ -147,31 +147,104 @@ jobs:
         run: npm ci
       - name: Install Playwright Chromium
         run: npx playwright install chromium
-      - name: Extend only the temporary baseline viewport matrix
+      - name: Create an isolated visual capture spec (temporary CI checkout only)
         run: |
-          node --input-type=module <<'NODE'
-          import { readFileSync, writeFileSync } from 'node:fs';
-          const path = 'tests/registration.spec.js';
-          const source = readFileSync(path, 'utf8');
-          const before = `  const viewports = [
-              { width: 390, height: 844 },
-              { width: 844, height: 390 },
-              { width: 820, height: 1024 },
-              { width: 1440, height: 900 }
-            ];`;
-          const after = `  const viewports = [
-              { width: 320, height: 640 },
-              { width: 360, height: 640 },
-              { width: 390, height: 844 },
-              { width: 844, height: 390 },
-              { width: 820, height: 1024 },
-              { width: 1440, height: 900 }
-            ];`;
-          if (!source.includes(before)) throw new Error('Expected pizza 7330120 P0 baseline matrix was not found');
-          writeFileSync(path, source.replace(before, after));
-          NODE
+          mkdir -p artifacts/auth-registration-before
+          cat > tests/__auth-registration-before-baseline.spec.js <<'SPEC'
+          import { test, expect } from '@playwright/test';
+          import { mkdirSync } from 'node:fs';
+          import { join } from 'node:path';
+
+          const brands = ['coffee', 'delivery'];
+          const viewports = [
+            { width: 320, height: 640 },
+            { width: 360, height: 640 },
+            { width: 390, height: 844 },
+            { width: 844, height: 390 },
+            { width: 820, height: 1024 },
+            { width: 1440, height: 900 }
+          ];
+
+          for (const brand of brands) {
+            for (const viewport of viewports) {
+              test('pizza 7330120 baseline ' + brand + ' ' + viewport.width + 'x' + viewport.height, async ({ page }, testInfo) => {
+                await page.setViewportSize(viewport);
+                await page.addInitScript(() => {
+                  localStorage.setItem('zt_onb', '1');
+                  sessionStorage.setItem('splashDone', '1');
+                });
+                await page.route('**/api/**', async (route) => {
+                  const pathname = new URL(route.request().url()).pathname;
+                  const body = pathname === '/api/config'
+                    ? { tgUsername: 'test_bot', smsAuthEnabled: false }
+                    : pathname === '/api/orders/mine'
+                      ? { orders: [] }
+                      : {};
+                  await route.fulfill({
+                    status: 200,
+                    contentType: 'application/json',
+                    body: JSON.stringify(body)
+                  });
+                });
+
+                await page.goto('/?brand=' + brand);
+                await page.waitForFunction(() =>
+                  typeof window.openAuth === 'function' &&
+                  typeof window.setUser === 'function' &&
+                  typeof window.renderProfile === 'function' &&
+                  typeof window.renderVerifyNote === 'function'
+                );
+                await page.evaluate(() => document.fonts.ready);
+
+                await page.evaluate(() => window.openAuth(false));
+                await expect(page.locator('#authModal')).toHaveClass(/show/);
+                await expect(page.locator('#regForm')).toBeVisible();
+                const prefix = brand + '-' + viewport.width + 'x' + viewport.height;
+                const registrationPath = join('artifacts/auth-registration-before', prefix + '-registration.png');
+                mkdirSync('artifacts/auth-registration-before', { recursive: true });
+                await page.screenshot({ path: registrationPath, fullPage: false });
+                await testInfo.attach(prefix + '-registration-before.png', {
+                  path: registrationPath,
+                  contentType: 'image/png'
+                });
+
+                await page.evaluate((customer) => {
+                  window.closeAuth();
+                  window.setUser('pizza-7330120-baseline-session', customer);
+                  window.__profileMeReady();
+                  window.renderProfile();
+                  window.renderVerifyNote();
+                  window.openPanel();
+                }, {
+                  id: 'before-' + brand + '-' + viewport.width,
+                  name: 'Baseline Guest',
+                  phone: '+7 900 000-00-01',
+                  role: 'guest',
+                  cups: 0,
+                  stamps: 0,
+                  free: 0,
+                  qr: 'Z-BEFORE',
+                  verified: 0,
+                  welcome: 0,
+                  tg: 0,
+                  history: []
+                });
+                await expect(page.locator('#profileBox')).toBeVisible();
+                await expect(page.locator('#verifyNote')).toBeVisible();
+                await expect(page.locator('#actCode')).toBeVisible();
+                await page.evaluate(() => document.fonts.ready);
+                const pendingPath = join('artifacts/auth-registration-before', prefix + '-pending-activation.png');
+                await page.screenshot({ path: pendingPath, fullPage: false });
+                await testInfo.attach(prefix + '-pending-activation-before.png', {
+                  path: pendingPath,
+                  contentType: 'image/png'
+                });
+              });
+            }
+          }
+          SPEC
       - name: Capture pre-PR registration and pending-activation frames
-        run: npx playwright test tests/registration.spec.js --grep "P0 registration baseline" --project=chromium --workers=1
+        run: npx playwright test tests/__auth-registration-before-baseline.spec.js --project=chromium --workers=1 --retries=0
         env:
           PORT: 3000
       - name: Upload pre-PR baseline frames
