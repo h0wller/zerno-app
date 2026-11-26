@@ -374,7 +374,7 @@ test('Telegram Mini App registration subtitle explains native confirmation witho
   await expect(subtitle).not.toContainText(/кассир/i);
 });
 
-test('registration keeps consent compact and exposes no SMS or standalone Telegram CTA', async ({ page }, testInfo) => {
+test('registration offers Telegram and keeps consent compact without SMS controls', async ({ page }, testInfo) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.addInitScript(() => {
     localStorage.setItem('zt_onb', '1');
@@ -392,7 +392,8 @@ test('registration keeps consent compact and exposes no SMS or standalone Telegr
     });
     await page.evaluate(() => window.openAuth(false));
 
-    await expect(page.locator('#regTgBtn')).toHaveCount(0);
+    await expect(page.locator('#regTgBtn')).toBeVisible();
+    await expect(page.locator('#regTgBtn')).toHaveText('Войти через Telegram');
     await expect(page.locator('#regTgRow')).toHaveCount(0);
     await expect(page.locator('#regOtpBtn')).toHaveCount(0);
     await expect(page.locator('#regOtpRow')).toHaveCount(0);
@@ -407,7 +408,7 @@ test('registration keeps consent compact and exposes no SMS or standalone Telegr
       text: element.innerText,
     }));
     expect(consentMetrics.fontSize).toBeGreaterThanOrEqual(12);
-    expect(consentMetrics.width).toBeLessThanOrEqual(320);
+    expect(consentMetrics.width).toBeLessThanOrEqual(300);
     expect(consentMetrics.right).toBeLessThanOrEqual(consentMetrics.viewportWidth);
     expect(consentMetrics.height).toBeGreaterThanOrEqual(44);
     expect(consentMetrics.text).toContain('персональных данных');
@@ -636,6 +637,8 @@ test('Enter skips the consent checkbox while Tab and Space keep it keyboard-acce
 
   await regPhone.focus();
   await page.keyboard.press('Tab');
+  await expect(page.locator('#regTgBtn')).toBeFocused();
+  await page.keyboard.press('Tab');
   await expect(regPin).toBeFocused();
   await page.keyboard.press('Tab');
   await expect(consent).toBeFocused();
@@ -796,6 +799,8 @@ test('registration never exposes SMS controls even when the server opts in', asy
   await page.waitForFunction(() => window.SMS_AUTH_ENABLED === true);
   await page.evaluate(() => window.openAuth(false));
 
+  await expect(page.locator('#regTgBtn')).toBeVisible();
+  await expect(page.locator('#regTgBtn')).toHaveText('Войти через Telegram');
   await expect(page.locator('#regOtpBtn')).toHaveCount(0);
   await expect(page.locator('#regOtpRow')).toHaveCount(0);
   await expect(page.locator('#regOtp')).toHaveCount(0);
