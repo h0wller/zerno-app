@@ -12,11 +12,7 @@ var railScrollDirection = 0;
 var railScrollDirectionDistance = 0;
 var railScrollHidden = false;
 var RAIL_SCROLL_DIRECTION_THRESHOLD = 8;
-var RAIL_SCROLL_INPUT_RECENCY_MS = 3500;
-var railLastUserScrollInputAt = 0;
-var railUserScrollInputDirection = 0;
 var railLastTouchY = null;
-var railTouchMoved = false;
 var railCategoryAlignmentPending = false;
 var railCategoryAlignmentTimer = null;
 var railBrandChangePending = false;
@@ -267,44 +263,26 @@ function prepareRailForUserScrollInput() {
   finishRailBrandTransition();
 }
 
-function rememberRailScrollInput(direction) {
-  if (!direction) return;
-  railUserScrollInputDirection = direction > 0 ? 1 : -1;
-  railLastUserScrollInputAt = Date.now();
-}
-
 function handleRailWheelInput(event) {
   if (!event.deltaY) return;
   prepareRailForUserScrollInput();
-  rememberRailScrollInput(event.deltaY);
 }
 
 function handleRailTouchStart(event) {
   var touch = event.touches && event.touches[0];
   railLastTouchY = touch ? touch.clientY : null;
-  railTouchMoved = false;
 }
 
 function handleRailTouchMove(event) {
   var touch = event.touches && event.touches[0];
   if (!touch) return;
-  if (railLastTouchY !== null) {
-    /* Moving a finger up moves the document down, and vice versa. */
-    var fingerDelta = railLastTouchY - touch.clientY;
-    if (Math.abs(fingerDelta) >= 1) {
-      prepareRailForUserScrollInput();
-      rememberRailScrollInput(fingerDelta);
-      railTouchMoved = true;
-    }
+  if (railLastTouchY !== null && Math.abs(railLastTouchY - touch.clientY) >= 1) {
+    prepareRailForUserScrollInput();
   }
   railLastTouchY = touch.clientY;
 }
 
 function handleRailTouchEnd() {
-  if (railTouchMoved && railUserScrollInputDirection) {
-    railLastUserScrollInputAt = Date.now();
-  }
-  railTouchMoved = false;
   railLastTouchY = null;
 }
 
@@ -316,11 +294,9 @@ function handleRailKeyboardInput(event) {
   if (event.key === 'ArrowDown' || event.key === 'PageDown' || event.key === 'End' ||
       event.code === 'Space') {
     prepareRailForUserScrollInput();
-    rememberRailScrollInput(1);
     cancelProgrammaticScrollToTop();
   } else if (event.key === 'ArrowUp' || event.key === 'PageUp' || event.key === 'Home') {
     prepareRailForUserScrollInput();
-    rememberRailScrollInput(-1);
     cancelProgrammaticScrollToTop();
   }
 }
@@ -333,8 +309,6 @@ function beginRailCategoryAlignment(event) {
   if (!button) return;
 
   railCategoryAlignmentPending = true;
-  railLastUserScrollInputAt = 0;
-  railUserScrollInputDirection = 0;
   if (railCategoryAlignmentTimer) window.clearTimeout(railCategoryAlignmentTimer);
   railCategoryAlignmentTimer = window.setTimeout(function () {
     railCategoryAlignmentTimer = null;
@@ -353,8 +327,6 @@ function finishRailCategoryAlignment() {
 
 function syncRailAfterBrandSelection() {
   var shouldRemainHidden = railScrollHidden;
-  railLastUserScrollInputAt = 0;
-  railUserScrollInputDirection = 0;
   railBrandChangePending = true;
   resetRailScrollDirection(readPageScrollY());
   applyScrollFadeState(shouldRemainHidden);
@@ -394,14 +366,8 @@ function markRailScrolling() {
     return;
   }
 
-  /* A scroll event without a matching wheel/touch/key input is usually layout anchoring. */
-  var inputAge = Date.now() - railLastUserScrollInputAt;
-  if (inputAge > RAIL_SCROLL_INPUT_RECENCY_MS ||
-      (railUserScrollInputDirection && Math.sign(delta) !== railUserScrollInputDirection)) {
-    resetRailScrollDirection(currentY);
-    return;
-  }
-
+  /* Actual viewport movement is authoritative; gesture events and inertial scroll
+     may arrive on different frames, so matching their directions drops real reversals. */
   /* Preserve the existing contract: fade only portrait/tablet rails, not compact landscape or desktop. */
   if (!window.matchMedia || !window.matchMedia('(max-width: 820px)').matches) {
     resetRailScrollDirection(currentY);
