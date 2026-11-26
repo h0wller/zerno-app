@@ -784,7 +784,6 @@ test.describe('P0 cashier activation UI', () => {
     }
     });
   });
-  
 
 test('P0 registration baseline: capture guest, registration and the separate profile activation state', async ({ page }, testInfo) => {
   test.setTimeout(180000);
