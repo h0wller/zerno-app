@@ -194,6 +194,12 @@
     return new Promise(function(resolve){ setTimeout(resolve, ms); });
   }
 
+  function getRealTelegramMiniApp() {
+    var webApp = window.Telegram && window.Telegram.WebApp;
+    if (!webApp || webApp.isStub || window.__isTgMiniApp !== true) return null;
+    return typeof webApp.initData === 'string' && webApp.initData.length > 0 ? webApp : null;
+  }
+
   function getRegistrationReturnPath() {
     var target = new URL(window.location.href);
     target.searchParams.set('brand', window.brand === 'delivery' ? 'delivery' : 'coffee');
@@ -251,7 +257,7 @@
     var form = readRegistrationForm();
     if (!validateRegistrationForm(form)) return;
 
-    var webApp = window.Telegram && window.Telegram.WebApp;
+    var webApp = getRealTelegramMiniApp();
     var telegramPopup = null;
     if (!webApp || typeof webApp.openTelegramLink !== 'function') {
       try { telegramPopup = window.open('about:blank', '_blank'); } catch (_) {}
