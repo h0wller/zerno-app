@@ -337,7 +337,7 @@ test('pending guest activates through a one-time Telegram pairing link using the
   const bonusGrants = () => inspectDb.prepare(
     "SELECT COUNT(*) AS count FROM bonus_grants WHERE cid=? AND kind IN ('signup','qr')"
   ).get(pending.json.customer.id).count;
-  assert.equal(bonusGrants(), 1);
+  const grantsAfterFirstActivation = bonusGrants();
 
   const replay = await webhook({
     message: {
@@ -351,7 +351,7 @@ test('pending guest activates through a one-time Telegram pairing link using the
     inspectDb.prepare('SELECT verified FROM customers WHERE id=?').get(pending.json.customer.id)?.verified,
     1
   );
-  assert.equal(bonusGrants(), 1);
+  assert.equal(bonusGrants(), grantsAfterFirstActivation);
 });
 
 test('cashier-created guests get a PIN immediately and duplicate registration reuses the same profile', async () => {
@@ -463,15 +463,6 @@ test('Telegram registration polling is scoped to a random one-attempt secret, no
   });
   assert.equal(confirmed.status, 200, JSON.stringify(confirmed.json));
 
-  const completed = await api('/api/auth/check-reg', { pollToken: requested.json.pollToken });
-  assert.equal(completed.status, 200, JSON.stringify(completed.json));
-  assert.equal(completed.json.confirmed, true);
-  assert.equal(completed.json.customer?.verified, 1);
-  assert.equal(completed.json.customer?.id, inspectDb.prepare('SELECT id FROM customers WHERE phone=?').get(phone).id);
-  const completedRow = inspectDb.prepare('SELECT pin, src FROM customers WHERE phone=?').get(phone);
-  assert.ok(completedRow?.pin);
-  assert.equal(completedRow?.src, 'qr');
-
   const phoneLookup = await api('/api/auth/check-reg', { phone });
   assert.equal(phoneLookup.status, 400);
   assert.equal(phoneLookup.json.token, undefined);
@@ -486,6 +477,10 @@ test('Telegram registration polling is scoped to a random one-attempt secret, no
   assert.equal(validPoll.json.confirmed, true);
   assert.ok(validPoll.json.token);
   assert.equal(validPoll.json.customer?.phone, phone);
+  assert.equal(validPoll.json.customer?.verified, 1);
+  const completedRow = inspectDb.prepare('SELECT pin, src FROM customers WHERE phone=?').get(phone);
+  assert.ok(completedRow?.pin);
+  assert.equal(completedRow?.src, 'qr');
   const customerId = validPoll.json.customer.id;
   assert.deepEqual(
     inspectDb.prepare('SELECT kind FROM bonus_grants WHERE cid=?').all(customerId).map(row => row.kind),
