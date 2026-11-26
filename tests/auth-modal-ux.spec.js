@@ -278,10 +278,10 @@ test('auth modal explains the coffee stamp card before registration and avoids a
 
   const subtitle = page.locator('#authModal .msub');
   await page.evaluate(() => window.openAuth(false));
-  await expect(subtitle).toContainText('1 штамп за покупку');
-  await expect(subtitle).toContainText('10 штампов');
+  await expect(subtitle).toContainText('Сначала создайте профиль');
+  await expect(subtitle).toContainText('после подтверждения номера');
+  await expect(subtitle).toContainText('10 штампов дают 1 бесплатный кофе');
   await expect(subtitle).toContainText('QR');
-  await expect(subtitle).toContainText('только после начисления сервером');
 
   await page.evaluate(() => window.openAuth(true));
   await expect(subtitle).toContainText('Войдите по номеру телефона');
@@ -298,9 +298,9 @@ test('auth modal explains Friday delivery value in registration and avoids it in
 
   const benefit = page.locator('#authModal .msub');
   await page.evaluate(() => window.openAuth(false));
-  await expect(benefit).toContainText('Профиль сохраняет ваши заказы');
-  await expect(benefit).toContainText('сервер назначит вам персональный код');
-  await expect(benefit).toContainText('корзина применит его автоматически');
+  await expect(benefit).toContainText('Сначала создайте профиль');
+  await expect(benefit).toContainText('после подтверждения номера');
+  await expect(benefit).toContainText('персональный бонус доставки');
   await expect(benefit).toHaveCSS('max-width', '100%');
 
   await page.evaluate(() => window.openAuth(true));
