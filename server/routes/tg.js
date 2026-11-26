@@ -274,6 +274,10 @@ export function createTgRouter({ appKb }) {
 
     if (text.startsWith('/start reg_')) {
       const token = text.slice(11).trim();
+      if (String(u.message.chat?.type || '') !== 'private' || chatId !== String(u.message.from?.id || '')) {
+        await tgSend(chatId, 'Регистрацию можно завершить только в личном чате с ботом.');
+        return;
+      }
       const st = otpStore.get('regtg:' + token);
       if (!st || Date.now() > st.expires) {
         tgSend(chatId, 'Ссылка для подтверждения устарела ⏳\nНажмите «Войти через Telegram» в приложении ещё раз.');
@@ -282,7 +286,7 @@ export function createTgRouter({ appKb }) {
       otpStore.set('regchat:' + chatId, {
         token, pollToken: st.pollToken || null, phone: st.phone,
         name: st.name || '', pin: st.pin || '', src: st.src || '', returnUrl: st.returnUrl || null,
-        expires: Date.now() + 10 * 60 * 1000
+        expires: st.expires
       });
       await tgSend(chatId, 'Чтобы завершить регистрацию, поделитесь своим номером кнопкой ниже 👇', appKb());
       return;
@@ -401,7 +405,7 @@ export function createTgRouter({ appKb }) {
       const pend = otpStore.get('regchat:' + chatId);
       // Подтверждать номер может только тот, кто прислал СВОЙ контакт (user_id совпадает с отправителем).
       const ownContact = String(u.message.contact.user_id || '') === String(u.message.from?.id || '') && !!u.message.from?.id;
-      if (pend && Date.now() < pend.expires && ownContact) {
+      if (pend && Date.now() < pend.expires && ownContact && String(u.message.chat?.type || '') === 'private' && chatId === String(u.message.from?.id || '')) {
         const contactPhone = fmtPhone(u.message.contact.phone_number);
         if (contactPhone === fmtPhone(pend.phone)) {
           const targetCust = db.prepare('SELECT * FROM customers WHERE phone=?').get(contactPhone);
