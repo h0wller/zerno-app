@@ -72,9 +72,6 @@
     if (!isTg || !modal) return;
 
     modal.classList.add('tg-mode');
-    var tgBtn = document.getElementById('regTgBtn');
-    if (tgBtn) tgBtn.style.display = 'none';
-
     var hint = modal.querySelector('.mhint, .subhint, #regForm .hint');
     if (hint) hint.style.display = 'none';
 
@@ -108,14 +105,14 @@
 
     if (subtitle) {
       subtitle.textContent = isDelivery
-        ? 'Профиль сохраняет ваши заказы. Первая доставка бесплатна, если сервер назначит вам персональный код: корзина применит его автоматически и покажет результат в расчёте доставки.'
-        : '1 штамп за покупку; 10 штампов — бесплатный кофе. Карта и QR будут в профиле: покажите QR кассиру. Приветственный подарок появится там только после начисления сервером.';
+        ? 'Сначала создайте профиль. После подтверждения номера у кассира откроются заказы; персональный бонус доставки появится, только если его назначит сервер.'
+        : 'Сначала создайте профиль. После подтверждения номера у кассира откроются карта штампов и QR: 10 штампов дают 1 бесплатный кофе.';
     }
 
     if (registrationHelp) {
       registrationHelp.textContent = isDelivery
-        ? 'Нет Telegram? Создайте профиль, получите 4-значный код у кассира и введите его в профиле. До подтверждения номера заказы недоступны.'
-        : 'Нет Telegram? Создайте профиль, получите 4-значный код у кассира и введите его в профиле. После активации откроются карта штампов и QR.';
+        ? 'После создания профиля получите 4-значный код у кассира и введите его в профиле, чтобы активировать заказы.'
+        : 'После создания профиля получите 4-значный код у кассира и введите его в профиле, чтобы активировать карту и QR.';
     }
   }
 
@@ -136,8 +133,6 @@
 
     setAuthFormMode(login);
     applyAuthBrand(login);
-    if (typeof window.renderRegistrationState === 'function') window.renderRegistrationState();
-
     if (typeof syncOverlay === 'function') syncOverlay();
     if (authFocusTimer) clearTimeout(authFocusTimer);
     authFocusTimer = setTimeout(function () {
@@ -152,7 +147,6 @@
 
   function resetAuthTransientState() {
     // Временные состояния не должны переживать закрытие модалки.
-    if (typeof window.resetRegistrationState === 'function') window.resetRegistrationState();
     loginMode = 'pin';
 
     var consent = document.getElementById('consentBox');
@@ -312,8 +306,6 @@
           window.__tgUser = r.tgUser;
           var rn = document.getElementById('regName');
           if (rn && !rn.value && r.tgUser && r.tgUser.name) rn.value = r.tgUser.name;
-          var rtb = document.getElementById('regTgBtn');
-          if (rtb) rtb.style.display = 'none';
         }
       } catch (_) {}
     }
