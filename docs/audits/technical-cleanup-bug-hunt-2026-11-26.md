@@ -140,3 +140,47 @@ Step-level skips also occurred in matrix jobs because each group runs only its o
 - No baseline snapshot update.
 - No merge, draft change, or deployment.
 - No production access or data mutation.
+
+
+## F-005 continuation — implementation-phase verification (2026-11-26)
+
+**Verified source/base:** `pizza` @ `9e0007ad6cefa3a7bd4b2d82a158a4fcb9adbf78`.
+**PR #350:** remains open, Draft, mergeable; audit branch HEAD remains `7f136b97c74fbbc306851fbcb85b61786c3d1f19`.
+**Scope of this continuation:** F-005 only. No application files or tests were changed.
+
+### Confirmed implementation details
+
+- `GET /api/staff/customers` in `server/routes/staff.js` runs `SELECT * FROM customers`, then performs exact phone lookup and generic name/partial-phone matching in JavaScript.
+- Exact full-phone matching uses `ph10()` and returns all canonical matches before generic matching. This is intentional identity/ambiguity behavior; do not replace it with `LIMIT 1`.
+- Generic name/partial-phone matching returns at most five results.
+- `server/domain/helpers.js:cust()` performs a separate `SELECT ts,a,by FROM history WHERE cid=? ORDER BY id DESC LIMIT 10` for every serialized customer. Search therefore includes N additional history lookups for N returned customers.
+- `server/domain/customers.js:createCustomer()` independently reads all customer phone values and normalizes them in JS to prevent legacy formatted-number duplicates.
+- `server/db/schema.js` creates `customers.phone TEXT UNIQUE`, which is unique by stored string, not by `ph10()`. No canonical phone index or normalized phone column is defined in this schema at this SHA.
+- `ph10()` strips non-digits, rewrites a leading 8 to 7, removes one leading 7, and slices to ten digits. SQL/index changes must exactly preserve this behavior for legacy rows and inputs.
+
+### Existing regression evidence
+
+- PR #349 is merged into the baseline commit `9e0007ad6cefa3a7bd4b2d82a158a4fcb9adbf78`. Its integration test checks one full RU phone in canonical, formatted `+7`, and `8`-prefixed input forms. It does not exercise 1k/10k/100k scale, exact duplicate legacy rows, partial-phone ambiguity, or query-plan behavior.
+- The exact-base Code Quality & Guardrails job from run `45886523091` executed `npm run test:unit`: **276 passed, 0 failed, 0 skipped**. The exact-phone integration subtest passed (25.04 ms in that specific CI run; this is test duration, not an isolated database query benchmark).
+- The same run's `E2E / Staff API` artifact reports **17 expected, 0 skipped, 0 unexpected, 0 flaky**, including ambiguity-safe name search, exact-phone forwarding, selected-customer refresh, reward safety and full ten-entry scrollable history.
+- Code Quality & Guardrails in run `45886523091` also completed `lint:code`, `lint:dup`, `lint:dead`, `lint:layers` and `npm run smoke` successfully. `jscpd` reported 25 warnings in its strict scan (0 errors); `depcruise` reported no violations across 120 modules / 196 dependencies. These are repository-wide signals, not F-005 measurements.
+
+### Measurement status — not completed
+
+The requested benchmark matrix has **not** been run. No numeric EXPLAIN QUERY PLAN, rows-visited count, or latency measurements for 1,000 / 10,000 / 100,000 synthetic customers are available. Do not infer a percentage improvement or add an index based on code inspection.
+
+The current execution environment has GitHub source/PR/Actions read-write access but no working checkout, shell attached to this repository, or GitHub Actions workflow-dispatch action. The Vercel sandbox lookup for project name `zerno-app` returned `not_found`; no other project/team scope was guessed. No production DB or production API was accessed.
+
+### Disposition
+
+F-005 remains a **P3 measured optimization candidate**, not a confirmed user-visible performance defect. Implementation is deliberately blocked pending an executable isolated SQLite benchmark.
+
+The minimum next benchmark must:
+1. create temporary databases from the current schema with only synthetic customer/history data;
+2. seed 1k / 10k / 100k rows with RU formatted and canonical legacy phone representations, duplicate canonical forms, common/rare names and partial digits;
+3. capture `EXPLAIN QUERY PLAN` and repeated timing distributions (warm/cold conditions separately) for the current route-equivalent algorithm and any candidate SQL/index strategy;
+4. measure end-to-end handler serialization cost, including the per-customer history query, separately from the search predicate;
+5. verify exact-phone, duplicate ambiguity, name, partial phone, five-result cap, `cust()` response shape and staff authorization against the current implementation;
+6. add RED integration coverage before changing code, run it to failure, implement only if the candidate has a repeatable win, then run the complete relevant suites on the new HEAD.
+
+No SQL, schema, endpoint, response or UI change is proposed until this evidence exists.
