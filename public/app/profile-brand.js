@@ -1,7 +1,57 @@
+import { openTelegramLink } from './core/telegram-link.js';
+
 /* public/app/profile-brand.js — Ф3.16: брендовые правила профиля + verifyNote + fridayInfo.
 Было fix-views.js: секция 6 + R4 + v64. Единственная обёртка renderProfile. */
 (function(){
 'use strict';
+
+var telegramActivationState = {
+  customerId: null,
+  requestId: 0,
+  state: 'idle',
+  message: '',
+  url: '',
+  expiresAt: 0,
+  expiryTimer: null
+};
+
+function resetTelegramActivationState(customerId) {
+  if (telegramActivationState.expiryTimer) clearTimeout(telegramActivationState.expiryTimer);
+  telegramActivationState = {
+    customerId: customerId == null ? null : String(customerId),
+    requestId: telegramActivationState.requestId + 1,
+    state: 'idle',
+    message: '',
+    url: '',
+    expiresAt: 0,
+    expiryTimer: null
+  };
+}
+
+function setTelegramActivationState(state, message, url) {
+  telegramActivationState.state = state;
+  telegramActivationState.message = message || '';
+  telegramActivationState.url = url || '';
+  var status = document.getElementById('actTgStatus');
+  if (!status) return;
+  status.dataset.state = state;
+  status.hidden = !telegramActivationState.message && !telegramActivationState.url;
+  status.replaceChildren();
+  if (telegramActivationState.message) {
+    var copy = document.createElement('span');
+    copy.textContent = telegramActivationState.message;
+    status.appendChild(copy);
+  }
+  if (telegramActivationState.url) {
+    var link = document.createElement('a');
+    link.href = telegramActivationState.url;
+    link.target = '_blank';
+    link.rel = 'noopener noreferrer';
+    link.textContent = 'Открыть Telegram';
+    status.appendChild(link);
+  }
+}
+
 /* ── fridayInfo: инжект инфо-блока (было R4) ── */
 (function(){
   var pb=document.getElementById('profileBox');if(!pb||document.getElementById('fridayInfo'))return;
@@ -34,12 +84,6 @@
   if(historySection)pb.insertBefore(d,historySection);else pb.appendChild(d);
 })();
 /* ── брендовые правила: слияние v64 profileBrandRules + R4 applyProfileBrand ── */
-function getRealTelegramMiniApp(){
-  var webApp = window.Telegram && window.Telegram.WebApp;
-  if(!webApp || webApp.isStub || window.__isTgMiniApp !== true) return null;
-  return typeof webApp.initData === 'string' && webApp.initData.length > 0 ? webApp : null;
-}
-
 function brandRules(){
   var deliv=(typeof brand!=='undefined'&&brand==='delivery');
   var currentCustomer = window.me || (typeof me !== 'undefined' ? me : null);
@@ -135,6 +179,16 @@ window.renderVerifyNote=function(){
   }
 
   var isDelivery = window.brand === 'delivery';
+  if (telegramActivationState.customerId !== String(customer.id)) {
+    resetTelegramActivationState(customer.id);
+  }
+  if (isVerified && telegramActivationState.state !== 'idle') {
+    if (telegramActivationState.expiryTimer) clearTimeout(telegramActivationState.expiryTimer);
+    telegramActivationState.expiryTimer = null;
+    telegramActivationState.state = 'confirmed';
+    telegramActivationState.message = 'Номер подтверждён.';
+    telegramActivationState.url = '';
+  }
   var existingActivationDetails = n.querySelector('.profile-activation-details');
   var activationDetailsWasOpen = !!(existingActivationDetails && existingActivationDetails.open);
   var existingCashierFields = n.querySelector('#cashierActivationFields');
@@ -172,28 +226,28 @@ window.renderVerifyNote=function(){
         '<h4>Профиль не активирован</h4>' +
         '<p>' + activatedHint + '</p>' +
       '</div>' +
+      '<div class="profile-activation-telegram">' +
+        '<button class="btn fire" id="actTgBtn" type="button">Подтвердить через Telegram</button>' +
+        '<p class="profile-activation-telegram-status" id="actTgStatus" data-state="' + telegramActivationState.state + '" role="status" aria-live="polite" hidden></p>' +
+      '</div>' +
       '<details class="profile-activation-details"' + (activationDetailsWasOpen ? ' open' : '') + '>' +
-        '<summary><span>Инструкция по активации</span><span class="profile-activation-chevron" aria-hidden="true">⌄</span></summary>' +
+        '<summary><span>Вы в заведении? Код кассира</span><span class="profile-activation-chevron" aria-hidden="true">⌄</span></summary>' +
         '<div class="profile-activation-details-content">' +
-          '<p>Подтвердите свой номер одним из двух способов:</p>' +
-          '<div class="profile-activation-actions">' +
-            '<button class="btn fire" id="actTgBtn" type="button">Активировать через Telegram</button>' +
-            '<button class="btn ghost" id="showCashierCodeBtn" type="button" aria-controls="cashierActivationFields" aria-expanded="' + (cashierFieldsWereOpen ? 'true' : 'false') + '">' +
-              (cashierFieldsWereOpen ? 'Скрыть поле кода' : 'Ввести код кассира') +
-            '</button>' +
-          '</div>' +
-          '<div class="profile-activation-code" id="cashierActivationFields"' + (cashierFieldsWereOpen ? '' : ' hidden') + '>' +
-            '<p>Получите 4-значный код у кассира и введите его здесь.</p>' +
-            '<div class="profile-activation-row">' +
-              '<label class="profile-activation-label" for="actCode">Код кассира</label>' +
-              '<input id="actCode" inputmode="numeric" maxlength="4" placeholder="4 цифры" aria-label="Четырёхзначный код кассира" autocomplete="one-time-code">' +
-              '<button class="btn fire" id="actBtn" type="button">Активировать</button>' +
-            '</div>' +
+          '<p>Получите 4-значный код у кассира и введите его здесь.</p>' +
+          '<div class="profile-activation-row">' +
+            '<label class="profile-activation-label" for="actCode">Код кассира</label>' +
+            '<input id="actCode" inputmode="numeric" maxlength="4" placeholder="4 цифры" aria-label="Четырёхзначный код кассира" autocomplete="one-time-code">' +
+            '<button class="btn fire" id="actBtn" type="button">Активировать</button>' +
           '</div>' +
         '</div>' +
       '</details>';
     var codeInput = document.getElementById('actCode');
     if(codeInput) codeInput.value = previousActivationCode;
+    setTelegramActivationState(
+      telegramActivationState.state,
+      telegramActivationState.message,
+      telegramActivationState.url
+    );
   } else if(!isDelivery){
     // The coffee explanation remains available after activation; the stamp card
     // and its actual free count remain the source of reward status.
@@ -209,52 +263,71 @@ window.renderVerifyNote=function(){
   var telegramActivationButton = document.getElementById('actTgBtn');
   if(telegramActivationButton){
     telegramActivationButton.onclick = async function(){
-      if(telegramActivationButton.disabled) return;
-      telegramActivationButton.disabled = true;
+      if(telegramActivationState.state === 'requesting') return;
+      var requestId = ++telegramActivationState.requestId;
+      if(telegramActivationState.expiryTimer) clearTimeout(telegramActivationState.expiryTimer);
+      telegramActivationState.expiryTimer = null;
       telegramActivationButton.setAttribute('aria-busy', 'true');
       telegramActivationButton.textContent = 'Открываем Telegram…';
+      setTelegramActivationState('requesting', 'Подготавливаем ссылку Telegram…');
+
       try{
-        var returnUrl = new URL(window.location.href);
-        returnUrl.searchParams.set('tab', 'profile');
-        returnUrl.searchParams.delete('auth_token');
-        var returnTo = returnUrl.pathname + returnUrl.search + returnUrl.hash;
-        var response = await api('/auth/tg-link/request', {
-          method: 'POST',
-          body: { returnTo: returnTo }
+        var navigation = await openTelegramLink(async function(){
+          var returnUrl = new URL(window.location.href);
+          returnUrl.searchParams.set('tab', 'profile');
+          returnUrl.searchParams.delete('auth_token');
+          returnUrl.searchParams.delete('token');
+          returnUrl.searchParams.delete('pollToken');
+          var returnTo = returnUrl.pathname + returnUrl.search + returnUrl.hash;
+          var response = await api('/auth/tg-link/request', {
+            method: 'POST',
+            body: { returnTo: returnTo }
+          });
+          if (requestId !== telegramActivationState.requestId) {
+            throw new Error('Запрос активации был заменён. Попробуйте ещё раз.');
+          }
+          var expiresAt = response && response.expiresAt ? Date.parse(response.expiresAt) : NaN;
+          if (!response || !response.tgUrl || !Number.isFinite(expiresAt) || expiresAt <= Date.now()) {
+            throw new Error('Сервер не подготовил действующую ссылку Telegram.');
+          }
+          telegramActivationState.expiresAt = expiresAt;
+          return response.tgUrl;
         });
-        var telegramUrl = new URL(response && response.tgUrl || '');
-        if(telegramUrl.protocol !== 'https:' || telegramUrl.hostname !== 't.me'){
-          throw new Error('Сервер вернул некорректную ссылку Telegram');
-        }
-        var miniApp = getRealTelegramMiniApp();
-        if(miniApp && typeof miniApp.openTelegramLink === 'function'){
-          miniApp.openTelegramLink(telegramUrl.toString());
-        }else{
-          window.location.assign(telegramUrl.toString());
-        }
+
+        if (requestId !== telegramActivationState.requestId) return;
+        setTelegramActivationState(
+          'waiting',
+          'Откройте бота и поделитесь своим номером.',
+          navigation && navigation.blocked ? navigation.url : ''
+        );
+        var waitMs = Math.max(0, telegramActivationState.expiresAt - Date.now());
+        telegramActivationState.expiryTimer = setTimeout(function(){
+          if (requestId === telegramActivationState.requestId &&
+              telegramActivationState.state === 'waiting') {
+            setTelegramActivationState('expired', 'Срок ссылки истёк. Запросите новую.');
+          }
+        }, waitMs);
       }catch(error){
+        if (requestId === telegramActivationState.requestId) {
+          var isExpired = /истёк|устарела/i.test(String(error && error.message || ''));
+          setTelegramActivationState(isExpired ? 'expired' : 'error',
+            error.message || 'Не удалось открыть Telegram. Попробуйте ещё раз.');
+        }
         toast(error.message || 'Не удалось открыть Telegram. Попробуйте ещё раз.', '⚠️');
-        telegramActivationButton.disabled = false;
+      }finally{
         telegramActivationButton.removeAttribute('aria-busy');
-        telegramActivationButton.textContent = 'Активировать через Telegram';
+        telegramActivationButton.textContent = 'Подтвердить через Telegram';
       }
     };
   }
 
-  var cashierToggleButton = document.getElementById('showCashierCodeBtn');
-  if(cashierToggleButton){
-    cashierToggleButton.onclick = function(){
-      var fields = document.getElementById('cashierActivationFields');
-      if(!fields) return;
-      var open = fields.hidden;
-      fields.hidden = !open;
-      cashierToggleButton.setAttribute('aria-expanded', open ? 'true' : 'false');
-      cashierToggleButton.textContent = open ? 'Скрыть поле кода' : 'Ввести код кассира';
-      if(open){
-        var codeField = document.getElementById('actCode');
-        if(codeField) codeField.focus();
-      }
-    };
+  var cashierDetails = document.querySelector('#verifyNote .profile-activation-details');
+  if (cashierDetails) {
+    cashierDetails.addEventListener('toggle', function(){
+      if (!cashierDetails.open) return;
+      var codeField = document.getElementById('actCode');
+      if (codeField && !codeField.value) codeField.focus();
+    });
   }
 
   var ab = document.getElementById('actBtn');
