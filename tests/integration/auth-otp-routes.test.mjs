@@ -250,6 +250,109 @@ test('cashier activation does not invent a welcome gift when bonus_cfg disables 
   }
 });
 
+test('pending guest activates through a one-time Telegram pairing link using their own matching contact', async () => {
+  const phone = '+7 900 000-01-31';
+  const pending = await api('/api/auth/register', {
+    name: 'Telegram Activation Guest',
+    phone,
+    pin: '2468',
+    consent: true
+  });
+  assert.equal(pending.status, 200, JSON.stringify(pending.json));
+  assert.equal(pending.json.customer?.verified, 0);
+
+  const returnTo = '/?brand=delivery&tab=profile#profile';
+  const anonymous = await api('/api/auth/tg-link/request', { returnTo });
+  assert.equal(anonymous.status, 401);
+
+  const unsafeReturn = await api('/api/auth/tg-link/request', {
+    returnTo: 'https://evil.example/collect'
+  }, pending.json.token);
+  assert.equal(unsafeReturn.status, 400);
+
+  const requested = await api('/api/auth/tg-link/request', { returnTo }, pending.json.token);
+  assert.equal(requested.status, 200, JSON.stringify(requested.json));
+  assert.equal(requested.json.ok, true);
+  const telegramUrl = new URL(requested.json.tgUrl);
+  assert.equal(telegramUrl.hostname, 't.me');
+  assert.equal(telegramUrl.pathname, '/test_bot');
+  const startPayload = telegramUrl.searchParams.get('start') || '';
+  assert.match(startPayload, /^activate_[a-f0-9]{48}$/);
+  assert.equal(telegramUrl.searchParams.has('auth_token'), false);
+  assert.equal(telegramUrl.searchParams.has('token'), false);
+
+  const chatId = 900000131;
+  const start = await webhook({
+    message: {
+      chat: { id: chatId, type: 'private' },
+      from: { id: chatId, first_name: 'Telegram Activation Guest' },
+      text: '/start ' + startPayload
+    }
+  });
+  assert.equal(start.status, 200);
+
+  const foreignContact = await webhook({
+    message: {
+      chat: { id: chatId, type: 'private' },
+      from: { id: chatId },
+      contact: { phone_number: phone, user_id: chatId + 1 }
+    }
+  });
+  assert.equal(foreignContact.status, 200);
+  const afterForeignContact = inspectDb.prepare(
+    'SELECT verified, tg FROM customers WHERE id=?'
+  ).get(pending.json.customer.id);
+  assert.equal(afterForeignContact?.verified, 0);
+  assert.equal(afterForeignContact?.tg, null);
+
+  const wrongPhone = await webhook({
+    message: {
+      chat: { id: chatId, type: 'private' },
+      from: { id: chatId },
+      contact: { phone_number: '+7 900 000-01-32', user_id: chatId }
+    }
+  });
+  assert.equal(wrongPhone.status, 200);
+  assert.equal(
+    inspectDb.prepare('SELECT verified FROM customers WHERE id=?').get(pending.json.customer.id)?.verified,
+    0
+  );
+
+  const confirmed = await webhook({
+    message: {
+      chat: { id: chatId, type: 'private' },
+      from: { id: chatId, first_name: 'Telegram Activation Guest' },
+      contact: { phone_number: phone, user_id: chatId }
+    }
+  });
+  assert.equal(confirmed.status, 200);
+  const activated = inspectDb.prepare(
+    'SELECT verified, tg, actcode FROM customers WHERE id=?'
+  ).get(pending.json.customer.id);
+  assert.equal(activated?.verified, 1);
+  assert.equal(String(activated?.tg), String(chatId));
+  assert.equal(activated?.actcode, null);
+
+  const bonusGrants = () => inspectDb.prepare(
+    "SELECT COUNT(*) AS count FROM bonus_grants WHERE cid=? AND kind IN ('signup','qr')"
+  ).get(pending.json.customer.id).count;
+  assert.equal(bonusGrants(), 1);
+
+  const replay = await webhook({
+    message: {
+      chat: { id: chatId, type: 'private' },
+      from: { id: chatId, first_name: 'Telegram Activation Guest' },
+      text: '/start ' + startPayload
+    }
+  });
+  assert.equal(replay.status, 200);
+  assert.equal(
+    inspectDb.prepare('SELECT verified FROM customers WHERE id=?').get(pending.json.customer.id)?.verified,
+    1
+  );
+  assert.equal(bonusGrants(), 1);
+});
+
 test('cashier-created guests get a PIN immediately and duplicate registration reuses the same profile', async () => {
   const adminPhone = '+7 900 000-01-10';
   await seedOtp('reg:' + adminPhone, '2468');
