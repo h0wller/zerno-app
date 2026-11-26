@@ -281,7 +281,7 @@ authRouter.post('/api/auth/register', validate(RegisterSchema), (req, res) => {
 });
 function normalizeTelegramActivationReturnUrl(value) {
   const raw = String(value || '').trim();
-  if (!raw || !raw.startsWith('/') || raw.startsWith('//') || raw.includes('\\') || /[\\u0000-\\u001f]/.test(raw)) {
+  if (!raw || !raw.startsWith('/') || raw.startsWith('//') || raw.includes('\\') || /[\u0000-\u001f]/.test(raw)) {
     return null;
   }
   try {
