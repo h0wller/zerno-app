@@ -72,6 +72,11 @@ for (const viewport of viewports) {
     expect(layout.boxSizing).toBe('border-box');
     expect(layout.contentScrollWidth).toBeLessThanOrEqual(layout.contentWidth + 1);
 
+    const telegramCta = card.locator('#regTgBtn');
+    await telegramCta.scrollIntoViewIfNeeded();
+    await expect(telegramCta).toBeInViewport();
+    expect(await telegramCta.evaluate((element) => element.getBoundingClientRect().height)).toBeGreaterThanOrEqual(44);
+
     const submit = card.locator('#regBtn');
     if (viewport.height <= 560) {
       await card.hover();
