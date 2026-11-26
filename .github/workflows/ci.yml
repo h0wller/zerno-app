@@ -201,9 +201,13 @@ jobs:
                   typeof window.openAuth === 'function' &&
                   typeof window.setUser === 'function' &&
                   typeof window.renderProfile === 'function' &&
-                  typeof window.renderVerifyNote === 'function'
+                  typeof window.renderVerifyNote === 'function' &&
+                  typeof window.__profileMeReady === 'function'
                 );
-                await page.evaluate(() => document.fonts.ready);
+                await page.evaluate(() => {
+                  window.__profileMeReady();
+                  return document.fonts.ready;
+                });
 
                 await page.evaluate(() => window.openAuth(false));
                 await expect(page.locator('#authModal')).toHaveClass(/show/);
