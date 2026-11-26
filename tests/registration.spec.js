@@ -640,7 +640,8 @@ test('P0: closing auth during the phone registration request preserves the resul
   await expect.poll(() => page.evaluate(() => window.me && window.me.name), { timeout: 10000 })
     .toBe('P0 Closed Network');
   await expect(page.locator('#verifyNote')).toBeVisible();
-  await expect(page.locator('#verifyNote')).toContainText('заказы недоступны');
+  await expect(page.locator('#verifyNote')).toContainText('Профиль не активирован');
+  await expect(page.locator('#verifyNote')).toContainText('После активации станут доступны заказы.');
   await expect(page.locator('#authModal')).not.toHaveClass(/show/);
 });
 
@@ -740,6 +741,8 @@ test.describe('P0 cashier activation UI', () => {
         window.openPanel();
       });
   
+      await page.locator('#verifyNote .profile-activation-details summary').click();
+      await page.locator('#showCashierCodeBtn').click();
       await expect(page.locator('#actCode')).toBeVisible();
       if (scenario.brand === 'coffee') {
         const beforeInvalid = activationCalls;
