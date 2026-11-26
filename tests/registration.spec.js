@@ -1036,3 +1036,55 @@ test('P0 registration baseline: capture guest, registration and the separate pro
   }
 });
 
+
+
+test('pending profile opens Telegram and preserves the delivery profile return route', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  let activationRequest = null;
+  await page.route('**/api/auth/tg-link/request', async (route) => {
+    activationRequest = route.request().postDataJSON();
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        ok: true,
+        tgUrl: 'https://t.me/test_bot?start=activate_' + 'a'.repeat(48),
+        expiresAt: new Date(Date.now() + 600000).toISOString()
+      })
+    });
+  });
+  await page.route('https://t.me/**', (route) => route.fulfill({
+    status: 200,
+    contentType: 'text/html',
+    body: '<title>Telegram test route</title>'
+  }));
+
+  await page.goto('/?brand=delivery');
+  await page.waitForFunction(() => typeof window.renderVerifyNote === 'function');
+  await page.evaluate(() => {
+    localStorage.setItem('zt_user', 'pending-profile-test-session');
+    window.brand = 'delivery';
+    window.me = {
+      id: 987654,
+      role: 'guest',
+      verified: 0,
+      name: 'Pending Profile',
+      phone: '+7 900 000-00-01',
+      free: 0,
+      stamps: 0,
+      welcome: 0
+    };
+    const panel = document.getElementById('panel');
+    const profileTab = document.getElementById('pvProfile');
+    if (panel) panel.classList.add('open');
+    if (profileTab) profileTab.hidden = false;
+    window.renderVerifyNote();
+  });
+
+  await page.locator('#verifyNote .profile-activation-details summary').click();
+  await page.locator('#actTgBtn').click();
+  await expect(page).toHaveURL(/https:\/\/t\.me\/test_bot\?start=activate_[a-f0-9]{48}$/);
+  expect(activationRequest).toEqual({
+    returnTo: '/?brand=delivery&tab=profile'
+  });
+});
