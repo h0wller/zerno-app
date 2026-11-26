@@ -265,6 +265,7 @@ test('pending guest activates through a one-time Telegram pairing link using the
   inspectDb.prepare(
     "INSERT INTO meta(key,value) VALUES('bonus_cfg',?) ON CONFLICT(key) DO UPDATE SET value=excluded.value"
   ).run(JSON.stringify(enabledConfig));
+  try {
   const phone = '+7 900 000-01-31';
   const pending = await api('/api/auth/register', {
     name: 'TG Activation Guest',
@@ -366,10 +367,12 @@ test('pending guest activates through a one-time Telegram pairing link using the
     1
   );
   assert.equal(bonusGrants(), grantsAfterFirstActivation);
-  if (previousConfig) {
-    inspectDb.prepare("UPDATE meta SET value=? WHERE key='bonus_cfg'").run(previousConfig.value);
-  } else {
-    inspectDb.prepare("DELETE FROM meta WHERE key='bonus_cfg'").run();
+  } finally {
+    if (previousConfig) {
+      inspectDb.prepare("UPDATE meta SET value=? WHERE key='bonus_cfg'").run(previousConfig.value);
+    } else {
+      inspectDb.prepare("DELETE FROM meta WHERE key='bonus_cfg'").run();
+    }
   }
 });
 
