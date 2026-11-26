@@ -82,7 +82,19 @@ for (const viewport of viewports) {
     expect(layout.contentScrollWidth).toBeLessThanOrEqual(layout.contentWidth + 1);
 
     const telegramCta = card.locator('#regTgBtn');
-    await telegramCta.scrollIntoViewIfNeeded();
+    await telegramCta.evaluate((button) => {
+      const scrollOwner = button.closest('.authcard');
+      const buttonRect = button.getBoundingClientRect();
+      const cardRect = scrollOwner.getBoundingClientRect();
+      if (buttonRect.bottom > cardRect.bottom) {
+        scrollOwner.scrollTop += buttonRect.bottom - cardRect.bottom + 12;
+      } else if (buttonRect.top < cardRect.top) {
+        scrollOwner.scrollTop -= cardRect.top - buttonRect.top + 12;
+      }
+    });
+    if (viewport.height <= 560) {
+      await expect.poll(() => card.evaluate((element) => element.scrollTop)).toBeGreaterThan(0);
+    }
     await expect(telegramCta).toBeInViewport();
     expect(await telegramCta.evaluate((element) => element.getBoundingClientRect().height)).toBeGreaterThanOrEqual(44);
 
