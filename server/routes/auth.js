@@ -307,8 +307,12 @@ authRouter.post('/api/auth/register', validate(RegisterSchema), (req, res) => {
 });
 function normalizeAppReturnUrl(value) {
   const raw = String(value || '').trim();
-  if (!raw || !raw.startsWith('/') || raw.startsWith('//') || raw.includes('\\') || /[\u0000-\u001f]/.test(raw)) {
+  if (!raw || !raw.startsWith('/') || raw.startsWith('//') || raw.includes('\\')) {
     return null;
+  }
+  for (let index = 0; index < raw.length; index += 1) {
+    const code = raw.charCodeAt(index);
+    if (code <= 0x1f || code === 0x7f) return null;
   }
   try {
     const target = new URL(raw, APP_URL);
