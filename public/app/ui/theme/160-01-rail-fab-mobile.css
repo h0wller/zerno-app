@@ -869,5 +869,5 @@ html body:has(#cartPanel.open) #cartFab {
 
 /* Telegram Mini App keeps its signed initData registration flow; hide the browser bot CTA. */
 #authModal.tg-mode #regTgBtn {
-  display: none !important;
+  display: none;
 }
