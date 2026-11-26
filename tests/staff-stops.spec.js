@@ -450,4 +450,52 @@ test.describe('Cashier guest PIN and reward picker', () => {
     expect(redemptions).toHaveLength(0);
   });
 
+  test('cashier guest history renders the latest ten entries in a scrollable region', async ({ page }) => {
+    const history = Array.from({ length: 10 }, (_, index) => ({
+      ts: '2026-11-' + String(26 - index).padStart(2, '0') + 'T12:00:00.000Z',
+      a: 'Событие истории ' + index,
+      by: 'Система'
+    }));
+    await mockCashierSession(page, () => {}, {
+      getCustomer: () => ({ ...cashierGuest, history })
+    });
+    await enterCashierMode(page);
+
+    await page.locator('#findInput').fill('Guest E2E');
+    await page.locator('#findBtn').click();
+
+    await expect(page.locator('#custHist .hmini')).toHaveCount(10);
+    const metrics = await page.locator('#custHist').evaluate(element => ({
+      overflowY: getComputedStyle(element).overflowY,
+      maxHeight: getComputedStyle(element).maxHeight,
+      scrollHeight: element.scrollHeight,
+      clientHeight: element.clientHeight
+    }));
+    expect(metrics.overflowY).toBe('auto');
+    expect(metrics.scrollHeight).toBeGreaterThan(metrics.clientHeight);
+    await page.locator('#custHist').evaluate(element => { element.scrollTop = element.scrollHeight; });
+    await expect(page.locator('#custHist .hmini').last()).toContainText('Событие истории 9');
+  });
+
+  test('cashier phone search forwards the canonical last ten digits and selects the exact phone match', async ({ page }) => {
+    const anna = { ...cashierGuest, id: 'anna-phone-exact', name: 'Анна', phone: '+7 911 854-30-45', free: 0 };
+    let searched = '';
+    await mockCashierSession(page, () => {}, {
+      searchCustomers: request => {
+        searched = new URL(request.url()).searchParams.get('search') || '';
+        return searched === '9118543045' ? [anna] : [];
+      },
+      getCustomer: () => anna
+    });
+    await enterCashierMode(page);
+
+    await page.locator('#findInput').fill('+7 911 854-30-45');
+    await page.locator('#findBtn').click();
+
+    await expect.poll(() => searched).toBe('9118543045');
+    await expect(page.locator('#custName')).toHaveText('Анна');
+    await expect(page.locator('#custPhone')).toContainText('+7 911 854-30-45');
+    await expect(page.locator('#redeemBtn')).toBeHidden();
+  });
+
 });
