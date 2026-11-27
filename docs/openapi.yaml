@@ -1016,9 +1016,18 @@ paths:
               type: object
               required: [sub]
               properties:
-                sub: { type: object }
+                sub:
+                  type: object
+                  required: [endpoint]
+                  properties:
+                    endpoint: { type: string, format: uri }
+                  additionalProperties: true
                 dev: { type: string, maxLength: 64 }
-      responses: { '200': { description: OK } }
+      responses:
+        '200': { description: Подписка сохранена }
+        '400': { description: В объекте sub отсутствует endpoint }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
 
   /api/promo/redeem:
     post:
