@@ -826,7 +826,8 @@ paths:
                   type: string
                   minLength: 8
                   maxLength: 8
-                  pattern: '^Z-[A-F0-9]{6}
+                  pattern: '^Z-[A-F0-9]{6}$'
+                  description: QR generated as Z- followed by six uppercase hexadecimal characters
       responses:
         '200': { description: Возвращает найденный профиль клиента }
         '401': { $ref: '#/components/responses/Unauthorized' }
