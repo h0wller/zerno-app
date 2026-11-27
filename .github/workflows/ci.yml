@@ -27,6 +27,8 @@ jobs:
         run: npm ci
       - name: Run Static Audits & Linters
         run: npm run check && npm run pretest && npm run lint:code && npm run lint:dup && npm run lint:dead && npm run lint:layers
+      - name: Run API contract guard
+        run: npm run audit:api-contract
       - name: Run Contract Smoke Tests
         run: npm run smoke
 
