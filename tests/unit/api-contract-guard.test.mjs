@@ -153,7 +153,7 @@ test('audit sentinels accept resolved contracts and pin remaining F-003 baseline
     'server/routes/orders.js': "dispatchGuard; const ORDER_STATUS = { new: 1, accept: 1, cook: 1, way: 1, done: 1, cancel: 1 }; Number.isInteger(minutes) && minutes >= 1 && minutes <= 180",
     'server/routes/promos.js': "adminGuard; res.json({ ok: false, error: 'bad' }); promosRouter.post('/api/promos', handler); req.body.code",
     'server/routes/stats.js': 'adminGuard',
-    'server/routes/chat.js': 'INSERT INTO chat_meta; botlog',
+    'server/routes/chat.js': 'INSERT INTO chat_meta(key,closed,ctx) VALUES(?,0,?) ON CONFLICT(key) DO UPDATE SET ctx=excluded.ctx; botlog',
     'server/routes/push.js': 'if (!sub || !sub.endpoint)',
   };
   const result = checkAuditSentinels({ openapi, sources });
