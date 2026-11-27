@@ -134,7 +134,24 @@ test('audit sentinels accept resolved contracts and pin remaining F-003 baseline
     post: { security: [{ BearerAuth: [] }], ...jsonBody({ properties: { status: { type: 'string' } } }) },
   };
   paths['/api/orders/{id}/delay'] = { post: jsonBody({ type: 'object', required: ['min'], properties: { min: { type: 'integer', minimum: 1, maximum: 180 } } }) };
-  paths['/api/promo/info'] = { get: { responses: { '404': {} } } };
+  paths['/api/promo/info'] = {
+    get: {
+      responses: {
+        '200': {
+          content: {
+            'application/json': {
+              schema: {
+                oneOf: [
+                  { type: 'object', required: ['ok', 'error'], properties: { ok: { type: 'boolean', enum: [false] }, error: { type: 'string' } } },
+                  { type: 'object', required: ['ok', 'kind', 'value', 'code'], properties: { ok: { type: 'boolean', enum: [true] }, kind: { type: 'string' }, value: { type: 'number' }, code: { type: 'string' } } },
+                ],
+              },
+            },
+          },
+        },
+      },
+    },
+  };
   paths['/api/promos'] = { post: { security: [{ BearerAuth: [] }] } };
   paths['/api/chat/botlog'] = { post: { responses: { '409': {} } } };
   const pushSub = { type: 'object', properties: { endpoint: { type: 'string' } } };
@@ -154,6 +171,10 @@ test('audit sentinels accept resolved contracts and pin remaining F-003 baseline
   const result = checkAuditSentinels({ openapi, sources });
   assert.equal(result.findings.length, 12);
   assert.deepEqual(result.diagnostics, []);
+  const invalidPromoInfoOpenapi = structuredClone(openapi);
+  invalidPromoInfoOpenapi.paths['/api/promo/info'].get.responses['404'] = {};
+  const invalidPromoInfoResult = checkAuditSentinels({ openapi: invalidPromoInfoOpenapi, sources });
+  assert.ok(invalidPromoInfoResult.diagnostics.some((item) => item.invariant === 'C-11'));
 });
 
 test('audit sentinel drift reports file, method/path, expected and actual values', () => {
