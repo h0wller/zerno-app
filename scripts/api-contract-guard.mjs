@@ -220,7 +220,7 @@ export const AUDIT_SENTINELS = [
   { id: 'C-10', title: 'Order status schema has no enum in the audited baseline', file: 'docs/openapi.yaml', method: 'POST', path: '/api/orders/{id}/status' },
   { id: 'C-09', title: 'Order delay requires integer min in the inclusive 1–180 range', file: 'docs/openapi.yaml', method: 'POST', path: '/api/orders/{id}/delay' },
   { id: 'C-11', title: 'Promo info documents 404 although handler returns 200 false payload', file: 'docs/openapi.yaml', method: 'GET', path: '/api/promo/info' },
-  { id: 'C-12', title: 'Promo creation has no requestBody in the audited baseline', file: 'docs/openapi.yaml', method: 'POST', path: '/api/promos' },
+  { id: 'C-12', title: 'Promo creation documents its request fields', file: 'docs/openapi.yaml', method: 'POST', path: '/api/promos' },
   { id: 'C-15', title: 'Chat botlog documents 409 in the audited baseline', file: 'docs/openapi.yaml', method: 'POST', path: '/api/chat/botlog' },
   { id: 'C-14', title: 'Push subscription endpoint is not required in the audited baseline', file: 'docs/openapi.yaml', method: 'POST', path: '/api/push/subscribe' },
   { id: 'C-17', title: 'Role guards remain explicitly represented by BearerAuth on guarded operations', file: 'docs/openapi.yaml', method: 'MULTIPLE', path: '/api/promos, /api/stats, /api/orders/{id}/status' },
@@ -286,7 +286,32 @@ export function checkAuditSentinels({ openapi, sources }) {
   if (!/promosRouter\.post\(['"]\/api\/promos['"]/.test(promoSource) || !/req\.body\.code/.test(promoSource)) {
     addSentinel(diagnostics, 'C-12', 'server/routes/promos.js', 'POST', '/api/promos', 'handler reads request body code', 'audited promo creation handler not found');
   }
-  addSentinel(diagnostics, 'C-12', 'docs/openapi.yaml', 'POST', '/api/promos', undefined, openapi.paths?.['/api/promos']?.post?.requestBody);
+  const promoCreateRequest = openapi.paths?.['/api/promos']?.post?.requestBody;
+  const promoCreateSchema = promoCreateRequest?.content?.['application/json']?.schema;
+  const promoCreateProperties = promoCreateSchema?.properties || {};
+  addSentinel(diagnostics, 'C-12', 'docs/openapi.yaml', 'POST', '/api/promos', {
+    required: true,
+    type: 'object',
+    requiredFields: ['code'],
+    properties: {
+      code: 'string',
+      kind: 'string',
+      value: 'number',
+      days: 'number',
+      maxuses: 'number',
+    },
+  }, {
+    required: promoCreateRequest?.required === true,
+    type: promoCreateSchema?.type,
+    requiredFields: promoCreateSchema?.required,
+    properties: {
+      code: promoCreateProperties.code?.type,
+      kind: promoCreateProperties.kind?.type,
+      value: promoCreateProperties.value?.type,
+      days: promoCreateProperties.days?.type,
+      maxuses: promoCreateProperties.maxuses?.type,
+    },
+  });
 
   const chatSource = sources['server/routes/chat.js'] || '';
   if (!/INSERT INTO chat_meta/.test(chatSource)) {
