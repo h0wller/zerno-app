@@ -289,7 +289,7 @@ export function checkAuditSentinels({ openapi, sources }) {
   addSentinel(diagnostics, 'C-12', 'docs/openapi.yaml', 'POST', '/api/promos', undefined, openapi.paths?.['/api/promos']?.post?.requestBody);
 
   const chatSource = sources['server/routes/chat.js'] || '';
-  if (!/INSERT INTO chat_meta[\\s\\S]*ON CONFLICT\\(key\\)\\s+DO UPDATE/.test(chatSource)) {
+  if (!/INSERT INTO chat_meta[\s\S]*ON CONFLICT\\(key\\)\\s+DO UPDATE/.test(chatSource)) {
     addSentinel(diagnostics, 'C-15', 'server/routes/chat.js', 'POST', '/api/chat/botlog', 'botlog upserts chat metadata by thread key', 'audited chat_meta upsert not found');
   }
   const botlogOperation = openapi.paths?.['/api/chat/botlog']?.post;
