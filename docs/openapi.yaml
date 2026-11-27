@@ -594,35 +594,13 @@ paths:
     get:
       tags: [Menu]
       summary: Меню доставки «Пятница»
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [code]
-              properties:
-                code: { type: string, description: 'После удаления пробелов код должен содержать не менее 3 символов' }
-                kind: { type: string, default: stamp, description: 'percent и money создают delivery-промокод; остальные значения относятся к coffee' }
-                value: { type: number, minimum: 1, default: 1 }
-                days: { type: number, description: 'Срок действия в днях; 0 или отсутствие значения — без срока' }
-                maxuses: { type: number, default: 0, description: '0 или отсутствие значения — без ограничения количества применений' }
-      responses:
-        '200': { description: Промокод создан }
-        '400': { description: Код короче 3 символов после нормализации }
-        '401': { $ref: '#/components/responses/Unauthorized' }
-        '403': { $ref: '#/components/responses/Forbidden' }
-        '409': { description: Промокод с таким кодом уже существует }
+      responses: { '200': { description: OK } }
 
   /api/delivery/info:
     get:
       tags: [Menu]
       summary: Конфиг доставки (часы, ETA, ссылки)
-      responses:
-        '200': { description: Подписка сохранена }
-        '400': { description: В объекте sub отсутствует endpoint }
-        '401': { $ref: '#/components/responses/Unauthorized' }
-        '403': { $ref: '#/components/responses/Forbidden' }
+      responses: { '200': { description: OK } }
 
   /api/orders:
     post:
@@ -1063,7 +1041,11 @@ paths:
                     endpoint: { type: string }
                   additionalProperties: true
                 dev: { type: string, maxLength: 64 }
-      responses: { '200': { description: OK } }
+      responses:
+        '200': { description: Подписка сохранена }
+        '400': { description: В объекте sub отсутствует endpoint }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
 
   /api/promo/redeem:
     post:
@@ -1143,7 +1125,25 @@ paths:
       tags: [Admin]
       summary: Создать промокод
       security: [{ BearerAuth: [] }]
-      responses: { '200': { description: OK } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [code]
+              properties:
+                code: { type: string, description: 'После удаления пробелов код должен содержать не менее 3 символов' }
+                kind: { type: string, default: stamp, description: 'percent и money создают delivery-промокод; остальные значения относятся к coffee' }
+                value: { type: number, minimum: 1, default: 1 }
+                days: { type: number, description: 'Срок действия в днях; 0 или отсутствие значения — без срока' }
+                maxuses: { type: number, default: 0, description: '0 или отсутствие значения — без ограничения количества применений' }
+      responses:
+        '200': { description: Промокод создан }
+        '400': { description: Код короче 3 символов после нормализации }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409': { description: Промокод с таким кодом уже существует }
 
   /api/stats:
     get:
