@@ -137,7 +137,7 @@ test('audit sentinels accept resolved contracts and pin remaining F-003 baseline
   paths['/api/promo/info'] = { get: { responses: { '404': {} } } };
   paths['/api/promos'] = { post: { security: [{ BearerAuth: [] }] } };
   paths['/api/chat/botlog'] = { post: { responses: { '409': {} } } };
-  const pushSub = { type: 'object', properties: { endpoint: { type: 'string' } } };
+  const pushSub = { type: 'object', required: ['endpoint'], properties: { endpoint: { type: 'string', format: 'uri' } } };
   paths['/api/push/subscribe'] = { post: jsonBody({ properties: { sub: pushSub } }) };
   paths['/api/stats'] = { get: { security: [{ BearerAuth: [] }] } };
 
@@ -154,6 +154,10 @@ test('audit sentinels accept resolved contracts and pin remaining F-003 baseline
   const result = checkAuditSentinels({ openapi, sources });
   assert.equal(result.findings.length, 12);
   assert.deepEqual(result.diagnostics, []);
+  const invalidPushOpenapi = structuredClone(openapi);
+  invalidPushOpenapi.paths['/api/push/subscribe'].post.requestBody.content['application/json'].schema.properties.sub.required = [];
+  const invalidPushResult = checkAuditSentinels({ openapi: invalidPushOpenapi, sources });
+  assert.ok(invalidPushResult.diagnostics.some((item) => item.invariant === 'C-14'));
 });
 
 test('audit sentinel drift reports file, method/path, expected and actual values', () => {
