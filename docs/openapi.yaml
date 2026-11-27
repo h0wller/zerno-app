@@ -1094,7 +1094,7 @@ paths:
                 kind: { type: string, default: stamp, description: 'percent и money создают delivery-промокод; остальные значения относятся к coffee' }
                 value: { type: number, minimum: 1, default: 1 }
                 days: { type: number, description: 'Срок действия в днях; 0 или отсутствие значения — без срока' }
-                maxuses: { type: number, minimum: 0, default: 0, description: '0 или отсутствие значения — без ограничения количества применений' }
+                maxuses: { type: number, default: 0, description: '0 или отсутствие значения — без ограничения количества применений' }
       responses:
         '200': { description: Промокод создан }
         '400': { description: Код короче 3 символов после нормализации }
