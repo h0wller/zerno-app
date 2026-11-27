@@ -125,9 +125,36 @@ test('audit sentinels accept resolved contracts and pin remaining F-003 baseline
     },
   };
   const paths = openapi.paths;
-  paths['/api/auth/register'] = { post: jsonBody({ properties: { consent: { type: 'integer', enum: [0, 1] } } }) };
+  paths['/api/auth/register'] = {
+    post: jsonBody({
+      properties: {
+        consent: {
+          oneOf: [
+            { type: 'integer', enum: [1] },
+            { type: 'boolean', enum: [true] },
+          ],
+        },
+      },
+    }),
+  };
   paths['/api/auth/request-reg-otp'] = {
-    post: { responses: { '200': { content: { 'application/json': { schema: { required: ['tgUrl', 'pollToken'] } } } } } },
+    post: {
+      responses: {
+        '200': {
+          content: {
+            'application/json': {
+              schema: {
+                oneOf: [
+                  { type: 'object', required: ['ok', 'tgUrl', 'pollToken', 'expiresAt'], properties: { ok: { type: 'boolean' }, tgUrl: { type: 'string' }, pollToken: { type: 'string' }, expiresAt: { type: 'string' } } },
+                  { type: 'object', required: ['ok', 'via'], properties: { ok: { type: 'boolean' }, via: { type: 'string', enum: ['sms'] } } },
+                ],
+              },
+            },
+          },
+        },
+        '503': {},
+      },
+    },
   };
   paths['/api/staff/scan'] = { post: jsonBody({ properties: { code: { minLength: 16, maxLength: 64 } } }) };
   paths['/api/orders/{id}/status'] = {
@@ -154,6 +181,15 @@ test('audit sentinels accept resolved contracts and pin remaining F-003 baseline
   const result = checkAuditSentinels({ openapi, sources });
   assert.equal(result.findings.length, 12);
   assert.deepEqual(result.diagnostics, []);
+  const invalidConsentOpenapi = structuredClone(openapi);
+  invalidConsentOpenapi.paths['/api/auth/register'].post.requestBody.content['application/json'].schema.properties.consent = { type: 'integer', enum: [0, 1] };
+  const invalidConsentResult = checkAuditSentinels({ openapi: invalidConsentOpenapi, sources });
+  assert.ok(invalidConsentResult.diagnostics.some((item) => item.invariant === 'C-03'));
+
+  const invalidOtpOpenapi = structuredClone(openapi);
+  invalidOtpOpenapi.paths['/api/auth/request-reg-otp'].post.responses['200'].content['application/json'].schema.oneOf.pop();
+  const invalidOtpResult = checkAuditSentinels({ openapi: invalidOtpOpenapi, sources });
+  assert.ok(invalidOtpResult.diagnostics.some((item) => item.invariant === 'C-04'));
 });
 
 test('audit sentinel drift reports file, method/path, expected and actual values', () => {
