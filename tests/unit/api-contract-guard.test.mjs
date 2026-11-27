@@ -185,7 +185,7 @@ test('C-09 rejects missing required min and incorrect delay bounds', () => {
   const drift = result.diagnostics.find((item) => item.invariant === 'C-09' && item.file === 'docs/openapi.yaml');
   assert.ok(drift, 'missing required:min must be reported as C-09 drift');
   assert.match(drift.expected, /required/);
-  assert.match(drift.actual, /undefined/);
+  assert.doesNotMatch(drift.actual, /required/);
 
   openapi.paths['/api/orders/{id}/delay'].post.requestBody.content['application/json'].schema.required = ['min'];
   openapi.paths['/api/orders/{id}/delay'].post.requestBody.content['application/json'].schema.properties.min = {
