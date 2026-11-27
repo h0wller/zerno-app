@@ -120,8 +120,8 @@ test('audit sentinels accept resolved contracts and pin remaining F-003 baseline
   const openapi = minimalOpenApi({});
   openapi.components = {
     schemas: {
-      Customer: { properties: { id: { type: 'integer' } } },
-      MenuItem: { properties: { id: { type: 'integer' } } },
+      Customer: { properties: { id: { type: 'string' } } },
+      MenuItem: { properties: { id: { type: 'string' } } },
     },
   };
   const paths = openapi.paths;
@@ -154,6 +154,12 @@ test('audit sentinels accept resolved contracts and pin remaining F-003 baseline
   const result = checkAuditSentinels({ openapi, sources });
   assert.equal(result.findings.length, 12);
   assert.deepEqual(result.diagnostics, []);
+  const invalidEntityIdOpenapi = structuredClone(openapi);
+  invalidEntityIdOpenapi.components.schemas.Customer.properties.id.type = 'integer';
+  invalidEntityIdOpenapi.components.schemas.MenuItem.properties.id.type = 'integer';
+  const invalidEntityIdResult = checkAuditSentinels({ openapi: invalidEntityIdOpenapi, sources });
+  assert.ok(invalidEntityIdResult.diagnostics.some((item) => item.invariant === 'C-01'));
+  assert.ok(invalidEntityIdResult.diagnostics.some((item) => item.invariant === 'C-02'));
 });
 
 test('audit sentinel drift reports file, method/path, expected and actual values', () => {
