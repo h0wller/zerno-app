@@ -133,7 +133,7 @@ test('audit sentinels pin known F-003 baseline observations without fixing them'
   paths['/api/orders/{id}/status'] = {
     post: { security: [{ BearerAuth: [] }], ...jsonBody({ properties: { status: { type: 'string' } } }) },
   };
-  paths['/api/orders/{id}/delay'] = { post: jsonBody({ properties: { min: { minimum: 0 } } }) };
+  paths['/api/orders/{id}/delay'] = { post: jsonBody({ type: 'object', required: ['min'], properties: { min: { type: 'integer', minimum: 1, maximum: 180 } } }) };
   paths['/api/promo/info'] = { get: { responses: { '404': {} } } };
   paths['/api/promos'] = { post: { security: [{ BearerAuth: [] }] } };
   paths['/api/chat/botlog'] = { post: { responses: { '409': {} } } };
@@ -167,4 +167,33 @@ test('audit sentinel drift reports file, method/path, expected and actual values
   assert.match(message, /Customer\.id/);
   assert.match(message, /expected/i);
   assert.match(message, /actual/i);
+});
+
+test('C-09 rejects missing required min and incorrect delay bounds', () => {
+  const openapi = minimalOpenApi({
+    '/api/orders/{id}/delay': {
+      post: jsonBody({
+        type: 'object',
+        properties: { min: { type: 'integer', minimum: 1, maximum: 180 } },
+      }),
+    },
+  });
+  const result = checkAuditSentinels({
+    openapi,
+    sources: { 'server/routes/orders.js': 'Number.isInteger(minutes) && minutes >= 1 && minutes <= 180' },
+  });
+  const drift = result.diagnostics.find((item) => item.invariant === 'C-09' && item.file === 'docs/openapi.yaml');
+  assert.ok(drift, 'missing required:min must be reported as C-09 drift');
+  assert.match(drift.expected, /required/);
+  assert.match(drift.actual, /undefined/);
+
+  openapi.paths['/api/orders/{id}/delay'].post.requestBody.content['application/json'].schema.required = ['min'];
+  openapi.paths['/api/orders/{id}/delay'].post.requestBody.content['application/json'].schema.properties.min = {
+    type: 'integer', minimum: 1, maximum: 181,
+  };
+  const invalidMax = checkAuditSentinels({
+    openapi,
+    sources: { 'server/routes/orders.js': 'Number.isInteger(minutes) && minutes >= 1 && minutes <= 180' },
+  });
+  assert.ok(invalidMax.diagnostics.some((item) => item.invariant === 'C-09' && item.file === 'docs/openapi.yaml'));
 });
