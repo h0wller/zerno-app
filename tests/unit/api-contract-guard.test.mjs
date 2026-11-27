@@ -129,7 +129,7 @@ test('audit sentinels accept resolved contracts and pin remaining F-003 baseline
   paths['/api/auth/request-reg-otp'] = {
     post: { responses: { '200': { content: { 'application/json': { schema: { required: ['tgUrl', 'pollToken'] } } } } } },
   };
-  paths['/api/staff/scan'] = { post: jsonBody({ properties: { code: { minLength: 16, maxLength: 64 } } }) };
+  paths['/api/staff/scan'] = { post: jsonBody({ properties: { code: { minLength: 8, maxLength: 8, pattern: '^Z-[A-F0-9]{6}$' } } }) };
   paths['/api/orders/{id}/status'] = {
     post: { security: [{ BearerAuth: [] }], ...jsonBody({ properties: { status: { type: 'string' } } }) },
   };
@@ -142,7 +142,7 @@ test('audit sentinels accept resolved contracts and pin remaining F-003 baseline
   paths['/api/stats'] = { get: { security: [{ BearerAuth: [] }] } };
 
   const sources = {
-    'server/domain/customers.js': "uid('u'); randomBytes(3).toString('hex').toUpperCase()",
+    'server/domain/customers.js': "uid('u'); const qr = 'Z-' + crypto.randomBytes(3).toString('hex').toUpperCase()",
     'server.js': "uid('p')",
     'server/routes/auth.js': "req.body.consent !== 1 && req.body.consent !== true; via === 'sms'; res.json({ ok: true, via: 'sms' })",
     'server/routes/orders.js': "dispatchGuard; const ORDER_STATUS = { new: 1, accept: 1, cook: 1, way: 1, done: 1, cancel: 1 }; Number.isInteger(minutes) && minutes >= 1 && minutes <= 180",

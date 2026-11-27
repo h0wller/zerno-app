@@ -216,7 +216,7 @@ export const AUDIT_SENTINELS = [
   { id: 'C-02', title: 'MenuItem.id is integer in the audited OpenAPI baseline', file: 'docs/openapi.yaml', method: 'RESPONSE', path: 'components.schemas.MenuItem.properties.id.type' },
   { id: 'C-03', title: 'Registration consent is integer enum [0,1]', file: 'docs/openapi.yaml', method: 'POST', path: '/api/auth/register' },
   { id: 'C-04', title: 'Registration response documents Telegram fields while SMS has a separate server branch', file: 'docs/openapi.yaml', method: 'POST', path: '/api/auth/request-reg-otp' },
-  { id: 'C-08', title: 'Staff QR schema retains the audited 16–64 length constraint', file: 'docs/openapi.yaml', method: 'POST', path: '/api/staff/scan' },
+  { id: 'C-08', title: 'Staff QR schema matches generated Z- plus six uppercase hex characters', file: 'docs/openapi.yaml', method: 'POST', path: '/api/staff/scan' },
   { id: 'C-10', title: 'Order status schema has no enum in the audited baseline', file: 'docs/openapi.yaml', method: 'POST', path: '/api/orders/{id}/status' },
   { id: 'C-09', title: 'Order delay requires integer min in the inclusive 1–180 range', file: 'docs/openapi.yaml', method: 'POST', path: '/api/orders/{id}/delay' },
   { id: 'C-11', title: 'Promo info documents 404 although handler returns 200 false payload', file: 'docs/openapi.yaml', method: 'GET', path: '/api/promo/info' },
@@ -253,9 +253,9 @@ export function checkAuditSentinels({ openapi, sources }) {
   }
 
   const qrSchema = openapi.paths?.['/api/staff/scan']?.post?.requestBody?.content?.['application/json']?.schema?.properties?.code;
-  addSentinel(diagnostics, 'C-08', 'docs/openapi.yaml', 'POST', '/api/staff/scan', { minLength: 16, maxLength: 64 }, { minLength: qrSchema?.minLength, maxLength: qrSchema?.maxLength });
-  if (!/randomBytes\(3\).*toString\(['"]hex['"]\).*toUpperCase\(\)/s.test(sources['server/domain/customers.js'] || '')) {
-    addSentinel(diagnostics, 'C-08', 'server/domain/customers.js', 'POST', '/api/staff/scan', 'QR generated from 3 random bytes as uppercase hex', 'audited QR generator not found');
+  addSentinel(diagnostics, 'C-08', 'docs/openapi.yaml', 'POST', '/api/staff/scan', { minLength: 8, maxLength: 8, pattern: '^Z-[A-F0-9]{6}$' }, { minLength: qrSchema?.minLength, maxLength: qrSchema?.maxLength, pattern: qrSchema?.pattern });
+  if (!/'Z-'\s*\+\s*crypto\.randomBytes\(3\)\.toString\(['"]hex['"]\)\.toUpperCase\(\)/s.test(sources['server/domain/customers.js'] || '')) {
+    addSentinel(diagnostics, 'C-08', 'server/domain/customers.js', 'POST', '/api/staff/scan', 'QR generated as Z- plus 3 random bytes in uppercase hex', 'audited QR generator not found');
   }
 
   const statusSchema = openapi.paths?.['/api/orders/{id}/status']?.post?.requestBody?.content?.['application/json']?.schema?.properties?.status;
