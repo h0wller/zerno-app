@@ -300,7 +300,7 @@ export function checkAuditSentinels({ openapi, sources }) {
   }, {
     has200: Boolean(botlogOperation?.responses?.['200']),
     has409: Boolean(botlogOperation?.responses?.['409']),
-    documentsAutomaticThreadCreation: /(?:автоматически\\s+)?созда[её]т метаданные треда(?: автоматически)?/i.test(botlogOperation?.description || ''),
+    documentsAutomaticThreadCreation: /(?:автоматически\s+)?созда[её]т метаданные треда(?: автоматически)?/i.test(botlogOperation?.description || ''),
   });
 
   const pushSchema = openapi.paths?.['/api/push/subscribe']?.post?.requestBody?.content?.['application/json']?.schema?.properties?.sub;
