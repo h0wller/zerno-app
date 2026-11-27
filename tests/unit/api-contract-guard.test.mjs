@@ -129,7 +129,46 @@ test('audit sentinels pin known F-003 baseline observations without fixing them'
   paths['/api/auth/request-reg-otp'] = {
     post: { responses: { '200': { content: { 'application/json': { schema: { required: ['tgUrl', 'pollToken'] } } } } } },
   };
-  paths['/api/staff/scan'] = { post: jsonBody({ properties: { code: { minLength: 16, maxLength: 64 } } }) };
+  paths['/api/staff/scan'] = { post: jsonBody({ properties: { code: { minLength: 8, maxLength: 8, pattern: '^Z-[A-F0-9]{6}
+  paths['/api/orders/{id}/status'] = {
+    post: { security: [{ BearerAuth: [] }], ...jsonBody({ properties: { status: { type: 'string' } } }) },
+  };
+  paths['/api/orders/{id}/delay'] = { post: jsonBody({ properties: { min: { minimum: 0 } } }) };
+  paths['/api/promo/info'] = { get: { responses: { '404': {} } } };
+  paths['/api/promos'] = { post: { security: [{ BearerAuth: [] }] } };
+  paths['/api/chat/botlog'] = { post: { responses: { '409': {} } } };
+  const pushSub = { type: 'object', properties: { endpoint: { type: 'string' } } };
+  paths['/api/push/subscribe'] = { post: jsonBody({ properties: { sub: pushSub } }) };
+  paths['/api/stats'] = { get: { security: [{ BearerAuth: [] }] } };
+
+  const sources = {
+    'server/domain/customers.js': "uid('u'); const qr = 'Z-' + randomBytes(3).toString('hex').toUpperCase()",
+    'server.js': "uid('p')",
+    'server/routes/auth.js': "req.body.consent !== 1 && req.body.consent !== true; via === 'sms'; res.json({ ok: true, via: 'sms' })",
+    'server/routes/orders.js': "dispatchGuard; const ORDER_STATUS = { new: 1, accept: 1, cook: 1, way: 1, done: 1, cancel: 1 }; Number.isInteger(minutes) && minutes >= 1 && minutes <= 180",
+    'server/routes/promos.js': "adminGuard; res.json({ ok: false, error: 'bad' }); promosRouter.post('/api/promos', handler); req.body.code",
+    'server/routes/stats.js': 'adminGuard',
+    'server/routes/chat.js': 'INSERT INTO chat_meta; botlog',
+    'server/routes/push.js': 'if (!sub || !sub.endpoint)',
+  };
+  const result = checkAuditSentinels({ openapi, sources });
+  assert.equal(result.findings.length, 12);
+  assert.deepEqual(result.diagnostics, []);
+});
+
+test('audit sentinel drift reports file, method/path, expected and actual values', () => {
+  const result = checkAuditSentinels({
+    openapi: { components: { schemas: { Customer: { properties: { id: { type: 'string' } } } } }, paths: {} },
+    sources: {},
+  });
+  const customerSchemaDrift = result.diagnostics.find((item) => item.file === 'docs/openapi.yaml' && item.path === 'Customer.id');
+  const message = formatDiagnostic(customerSchemaDrift);
+  assert.match(message, /docs\/openapi\.yaml/);
+  assert.match(message, /Customer\.id/);
+  assert.match(message, /expected/i);
+  assert.match(message, /actual/i);
+});
+ } } }) };
   paths['/api/orders/{id}/status'] = {
     post: { security: [{ BearerAuth: [] }], ...jsonBody({ properties: { status: { type: 'string' } } }) },
   };
