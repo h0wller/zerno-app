@@ -131,7 +131,7 @@ test('audit sentinels accept resolved contracts and pin remaining F-003 baseline
   };
   paths['/api/staff/scan'] = { post: jsonBody({ properties: { code: { minLength: 16, maxLength: 64 } } }) };
   paths['/api/orders/{id}/status'] = {
-    post: { security: [{ BearerAuth: [] }], ...jsonBody({ properties: { status: { type: 'string' } } }) },
+    post: { security: [{ BearerAuth: [] }], ...jsonBody({ properties: { status: { type: 'string', enum: ['new', 'accept', 'cook', 'way', 'done', 'cancel'] } } }) },
   };
   paths['/api/orders/{id}/delay'] = { post: jsonBody({ type: 'object', required: ['min'], properties: { min: { type: 'integer', minimum: 1, maximum: 180 } } }) };
   paths['/api/promo/info'] = { get: { responses: { '404': {} } } };
