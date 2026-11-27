@@ -52,7 +52,7 @@ components:
       type: object
       required: [id, name, phone, stamps, free, cups, role]
       properties:
-        id:          { type: integer, minimum: 1 }
+        id:          { type: string, description: 'Идентификатор профиля; сервер генерирует u + 10 hex-символов' }
         name:        { type: string, maxLength: 24 }
         phone:       { type: string, pattern: '^\\+7\\d{10}$' }
         stamps:      { type: integer, minimum: 0, maximum: 10 }
@@ -80,7 +80,7 @@ components:
       type: object
       required: [id, cat, name, price]
       properties:
-        id:      { type: integer }
+        id:      { type: string, description: 'Строковый идентификатор позиции; при генерации сервер использует p + 10 hex-символов' }
         cat:     { type: string, enum: [coffee, drinks, food, pizza, rolls, snacks] }
         e:       { type: string }
         name:    { type: string, maxLength: 40 }
