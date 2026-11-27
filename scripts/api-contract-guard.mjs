@@ -218,7 +218,7 @@ export const AUDIT_SENTINELS = [
   { id: 'C-04', title: 'Registration response documents Telegram fields while SMS has a separate server branch', file: 'docs/openapi.yaml', method: 'POST', path: '/api/auth/request-reg-otp' },
   { id: 'C-08', title: 'Staff QR schema retains the audited 16–64 length constraint', file: 'docs/openapi.yaml', method: 'POST', path: '/api/staff/scan' },
   { id: 'C-10', title: 'Order status schema has no enum in the audited baseline', file: 'docs/openapi.yaml', method: 'POST', path: '/api/orders/{id}/status' },
-  { id: 'C-09', title: 'Order delay schema minimum remains zero and maximum is absent', file: 'docs/openapi.yaml', method: 'POST', path: '/api/orders/{id}/delay' },
+  { id: 'C-09', title: 'Order delay requires integer min in the inclusive 1–180 range', file: 'docs/openapi.yaml', method: 'POST', path: '/api/orders/{id}/delay' },
   { id: 'C-11', title: 'Promo info documents 404 although handler returns 200 false payload', file: 'docs/openapi.yaml', method: 'GET', path: '/api/promo/info' },
   { id: 'C-12', title: 'Promo creation has no requestBody in the audited baseline', file: 'docs/openapi.yaml', method: 'POST', path: '/api/promos' },
   { id: 'C-15', title: 'Chat botlog documents 409 in the audited baseline', file: 'docs/openapi.yaml', method: 'POST', path: '/api/chat/botlog' },
@@ -267,8 +267,15 @@ export function checkAuditSentinels({ openapi, sources }) {
   if (!/Number\.isInteger\(minutes\)\s*&&\s*minutes\s*>=\s*1\s*&&\s*minutes\s*<=\s*180/.test(orderSource)) {
     addSentinel(diagnostics, 'C-09', 'server/routes/orders.js', 'POST', '/api/orders/{id}/delay', 'delay range 1..180', 'audited delay bounds not found');
   }
-  const delaySchema = openapi.paths?.['/api/orders/{id}/delay']?.post?.requestBody?.content?.['application/json']?.schema?.properties?.min;
-  addSentinel(diagnostics, 'C-09', 'docs/openapi.yaml', 'POST', '/api/orders/{id}/delay', { minimum: 0, maximum: undefined }, { minimum: delaySchema?.minimum, maximum: delaySchema?.maximum });
+  const delayRequestSchema = openapi.paths?.['/api/orders/{id}/delay']?.post?.requestBody?.content?.['application/json']?.schema;
+  const delaySchema = delayRequestSchema?.properties?.min;
+  addSentinel(diagnostics, 'C-09', 'docs/openapi.yaml', 'POST', '/api/orders/{id}/delay', {
+    required: ['min'],
+    min: { type: 'integer', minimum: 1, maximum: 180 },
+  }, {
+    required: delayRequestSchema?.required,
+    min: { type: delaySchema?.type, minimum: delaySchema?.minimum, maximum: delaySchema?.maximum },
+  });
 
   const promoSource = sources['server/routes/promos.js'] || '';
   if (!/res\.json\(\{\s*ok:\s*false,\s*error:/.test(promoSource)) {
