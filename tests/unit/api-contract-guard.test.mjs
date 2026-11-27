@@ -116,7 +116,7 @@ test('OpenAPI operation inventory includes each declared HTTP method/path pair',
   );
 });
 
-test('audit sentinels pin known F-003 baseline observations without fixing them', () => {
+test('audit sentinels accept resolved contracts and pin remaining F-003 baseline observations', () => {
   const openapi = minimalOpenApi({});
   openapi.components = {
     schemas: {
