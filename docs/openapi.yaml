@@ -729,7 +729,7 @@ paths:
         required: true
         content:
           application/json:
-            schema: { type: object, required: [status], properties: { status: { type: string } } }
+            schema: { type: object, required: [status], properties: { status: { type: string, enum: [new, accept, cook, way, done, cancel] } } }
       responses:
         '200': { description: Статус изменён }
         '400': { description: Неизвестный статус }
