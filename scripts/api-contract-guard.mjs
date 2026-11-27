@@ -217,7 +217,7 @@ export const AUDIT_SENTINELS = [
   { id: 'C-03', title: 'Registration consent is integer enum [0,1]', file: 'docs/openapi.yaml', method: 'POST', path: '/api/auth/register' },
   { id: 'C-04', title: 'Registration response documents Telegram fields while SMS has a separate server branch', file: 'docs/openapi.yaml', method: 'POST', path: '/api/auth/request-reg-otp' },
   { id: 'C-08', title: 'Staff QR schema retains the audited 16–64 length constraint', file: 'docs/openapi.yaml', method: 'POST', path: '/api/staff/scan' },
-  { id: 'C-10', title: 'Order status schema has no enum in the audited baseline', file: 'docs/openapi.yaml', method: 'POST', path: '/api/orders/{id}/status' },
+  { id: 'C-10', title: 'Order status schema matches runtime accepted status values', file: 'docs/openapi.yaml', method: 'POST', path: '/api/orders/{id}/status' },
   { id: 'C-09', title: 'Order delay requires integer min in the inclusive 1–180 range', file: 'docs/openapi.yaml', method: 'POST', path: '/api/orders/{id}/delay' },
   { id: 'C-11', title: 'Promo info documents 404 although handler returns 200 false payload', file: 'docs/openapi.yaml', method: 'GET', path: '/api/promo/info' },
   { id: 'C-12', title: 'Promo creation has no requestBody in the audited baseline', file: 'docs/openapi.yaml', method: 'POST', path: '/api/promos' },
@@ -259,7 +259,7 @@ export function checkAuditSentinels({ openapi, sources }) {
   }
 
   const statusSchema = openapi.paths?.['/api/orders/{id}/status']?.post?.requestBody?.content?.['application/json']?.schema?.properties?.status;
-  addSentinel(diagnostics, 'C-10', 'docs/openapi.yaml', 'POST', '/api/orders/{id}/status', { type: 'string', enum: undefined }, { type: statusSchema?.type, enum: statusSchema?.enum });
+  addSentinel(diagnostics, 'C-10', 'docs/openapi.yaml', 'POST', '/api/orders/{id}/status', { type: 'string', enum: ['new', 'accept', 'cook', 'way', 'done', 'cancel'] }, { type: statusSchema?.type, enum: statusSchema?.enum });
   const orderSource = sources['server/routes/orders.js'] || '';
   const expectedStatuses = ['new', 'accept', 'cook', 'way', 'done', 'cancel'];
   const missingStatuses = expectedStatuses.filter((status) => !orderSource.includes(status + ':'));
