@@ -120,7 +120,7 @@ test('audit sentinels accept resolved contracts and pin remaining F-003 baseline
   const openapi = minimalOpenApi({});
   openapi.components = {
     schemas: {
-      Customer: { properties: { id: { type: 'string' } } },
+      Customer: { properties: { id: { type: 'integer' } } },
       MenuItem: { properties: { id: { type: 'string' } } },
     },
   };
