@@ -136,7 +136,12 @@ test('audit sentinels accept resolved contracts and pin remaining F-003 baseline
   paths['/api/orders/{id}/delay'] = { post: jsonBody({ type: 'object', required: ['min'], properties: { min: { type: 'integer', minimum: 1, maximum: 180 } } }) };
   paths['/api/promo/info'] = { get: { responses: { '404': {} } } };
   paths['/api/promos'] = { post: { security: [{ BearerAuth: [] }] } };
-  paths['/api/chat/botlog'] = { post: { responses: { '409': {} } } };
+  paths['/api/chat/botlog'] = {
+    post: {
+      description: 'При первом допустимом ответе бота создаёт метаданные треда автоматически',
+      responses: { '200': {}, '400': {}, '401': {}, '403': {}, '429': {}, '503': {} },
+    },
+  };
   const pushSub = { type: 'object', properties: { endpoint: { type: 'string' } } };
   paths['/api/push/subscribe'] = { post: jsonBody({ properties: { sub: pushSub } }) };
   paths['/api/stats'] = { get: { security: [{ BearerAuth: [] }] } };
@@ -154,6 +159,10 @@ test('audit sentinels accept resolved contracts and pin remaining F-003 baseline
   const result = checkAuditSentinels({ openapi, sources });
   assert.equal(result.findings.length, 12);
   assert.deepEqual(result.diagnostics, []);
+  const invalidBotlogOpenapi = structuredClone(openapi);
+  invalidBotlogOpenapi.paths['/api/chat/botlog'].post.responses['409'] = {};
+  const invalidBotlogResult = checkAuditSentinels({ openapi: invalidBotlogOpenapi, sources });
+  assert.ok(invalidBotlogResult.diagnostics.some((item) => item.invariant === 'C-15'));
 });
 
 test('audit sentinel drift reports file, method/path, expected and actual values', () => {
