@@ -120,7 +120,7 @@ test('audit sentinels accept resolved contracts and pin remaining F-003 baseline
   const openapi = minimalOpenApi({});
   openapi.components = {
     schemas: {
-      Customer: { properties: { id: { type: 'integer' } } },
+      Customer: { properties: { id: { type: 'string' } } },
       MenuItem: { properties: { id: { type: 'string' } } },
     },
   };
@@ -164,7 +164,7 @@ test('audit sentinels accept resolved contracts and pin remaining F-003 baseline
 
 test('audit sentinel drift reports file, method/path, expected and actual values', () => {
   const result = checkAuditSentinels({
-    openapi: { components: { schemas: { Customer: { properties: { id: { type: 'string' } } } } }, paths: {} },
+    openapi: { components: { schemas: { Customer: { properties: { id: { type: 'integer' } } } } }, paths: {} },
     sources: {},
   });
   const customerSchemaDrift = result.diagnostics.find((item) => item.file === 'docs/openapi.yaml' && item.path === 'Customer.id');
