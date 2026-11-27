@@ -52,7 +52,7 @@ components:
       type: object
       required: [id, name, phone, stamps, free, cups, role]
       properties:
-        id:          { type: integer, minimum: 1 }
+        id:          { type: string, description: 'Идентификатор профиля; сервер генерирует u + 10 hex-символов' }
         name:        { type: string, maxLength: 24 }
         phone:       { type: string, pattern: '^\\+7\\d{10}$' }
         stamps:      { type: integer, minimum: 0, maximum: 10 }
@@ -80,7 +80,7 @@ components:
       type: object
       required: [id, cat, name, price]
       properties:
-        id:      { type: integer }
+        id:      { type: string, description: 'Строковый идентификатор позиции; при генерации сервер использует p + 10 hex-символов' }
         cat:     { type: string, enum: [coffee, drinks, food, pizza, rolls, snacks] }
         e:       { type: string }
         name:    { type: string, maxLength: 40 }
@@ -183,7 +183,12 @@ paths:
                 phone:   { type: string }
                 pin:     { type: string, pattern: '^\\d{4}$' }
                 code:    { type: string, description: Одноразовый SMS OTP при включённом SMS_AUTH_ENABLED }
-                consent: { type: integer, enum: [0, 1] }
+                consent:
+                  oneOf:
+                    - type: integer
+                      enum: [1]
+                    - type: boolean
+                      enum: [true]
       responses:
         '200':
           description: Профиль создан
@@ -217,25 +222,38 @@ paths:
                 phone: { type: string }
                 name: { type: string, maxLength: 24 }
                 pin: { type: string, minLength: 4, maxLength: 4, pattern: '^[0-9]{4}$', description: 'Required for PWA requests with returnTo' }
-                consent: { type: boolean, enum: [true], description: 'Required for PWA requests with returnTo' }
+                consent:
+                  description: 'Required for PWA requests with returnTo or PIN; accepts numeric 1 or boolean true'
+                  oneOf:
+                    - type: boolean
+                      enum: [true]
+                    - type: integer
+                      enum: [1]
                 returnTo: { type: string, minLength: 2, maxLength: 2048, pattern: '^/', description: 'Safe relative path on the originating app origin' }
                 via: { type: string, enum: [tg, sms], default: tg, description: 'SMS is separately gated; it is not offered by the PWA' }
       responses:
         '200':
-          description: Telegram deep link and one-time browser polling credential
+          description: Telegram deep link or accepted SMS delivery request, depending on via
           content:
             application/json:
               schema:
-                type: object
-                required: [ok, tgUrl, pollToken, expiresAt]
-                properties:
-                  ok: { type: boolean }
-                  tgUrl: { type: string, format: uri }
-                  pollToken: { type: string, pattern: '^[a-f0-9]{64}$', description: 'One-time attempt secret used only by POST /api/auth/check-reg' }
-                  expiresAt: { type: string, format: date-time }
+                oneOf:
+                  - type: object
+                    required: [ok, tgUrl, pollToken, expiresAt]
+                    properties:
+                      ok: { type: boolean, enum: [true] }
+                      tgUrl: { type: string, format: uri }
+                      pollToken: { type: string, description: '64-character hexadecimal one-time attempt secret used only by POST /api/auth/check-reg' }
+                      expiresAt: { type: string, format: date-time }
+                  - type: object
+                    required: [ok, via]
+                    properties:
+                      ok: { type: boolean, enum: [true] }
+                      via: { type: string, enum: [sms] }
         '400': { description: Invalid phone, PIN, consent or returnTo }
         '409': { description: Phone already registered }
-        '429': { description: Telegram registration rate limit reached }
+        '429': { description: Telegram or SMS registration rate limit reached }
+        '503': { description: SMS is disabled or the SMS provider did not accept delivery }
 
   /api/auth/check-reg:
     post:
@@ -576,13 +594,35 @@ paths:
     get:
       tags: [Menu]
       summary: Меню доставки «Пятница»
-      responses: { '200': { description: OK } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [code]
+              properties:
+                code: { type: string, description: 'После удаления пробелов код должен содержать не менее 3 символов' }
+                kind: { type: string, default: stamp, description: 'percent и money создают delivery-промокод; остальные значения относятся к coffee' }
+                value: { type: number, minimum: 1, default: 1 }
+                days: { type: number, description: 'Срок действия в днях; 0 или отсутствие значения — без срока' }
+                maxuses: { type: number, default: 0, description: '0 или отсутствие значения — без ограничения количества применений' }
+      responses:
+        '200': { description: Промокод создан }
+        '400': { description: Код короче 3 символов после нормализации }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409': { description: Промокод с таким кодом уже существует }
 
   /api/delivery/info:
     get:
       tags: [Menu]
       summary: Конфиг доставки (часы, ETA, ссылки)
-      responses: { '200': { description: OK } }
+      responses:
+        '200': { description: Подписка сохранена }
+        '400': { description: В объекте sub отсутствует endpoint }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
 
   /api/orders:
     post:
@@ -729,7 +769,7 @@ paths:
         required: true
         content:
           application/json:
-            schema: { type: object, required: [status], properties: { status: { type: string } } }
+            schema: { type: object, required: [status], properties: { status: { type: string, enum: [new, accept, cook, way, done, cancel] } } }
       responses:
         '200': { description: Статус изменён }
         '400': { description: Неизвестный статус }
@@ -894,7 +934,7 @@ paths:
     post:
       tags: [Chat]
       summary: Сохранить ответ бота в своём треде
-      description: Требует BearerAuth владельца или ChatAccessToken анонимного треда; тред должен быть создан первым сообщением гостя.
+      description: Требует BearerAuth владельца или ChatAccessToken анонимного треда. При первом допустимом ответе бота автоматически создаёт метаданные треда.
       security:
         - BearerAuth: []
         - ChatAccessToken: []
@@ -909,11 +949,10 @@ paths:
                 key: { type: string, maxLength: 80, pattern: '^(u[a-f0-9]{10}|anon-[a-f0-9]{64}):[cd]$' }
                 text: { type: string, minLength: 1, maxLength: 2000 }
       responses:
-        '200': { description: Сообщение бота сохранено }
+        '200': { description: Сообщение бота сохранено; метаданные треда созданы или обновлены }
         '400': { description: Некорректный ключ или текст }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
-        '409': { description: Сначала требуется создать тред }
         '429': { description: Превышен лимит запросов }
         '503': { description: Хранилище rate-limit записей заполнено; запрос отклонён без создания нового счётчика }
 
@@ -1017,7 +1056,12 @@ paths:
               type: object
               required: [sub]
               properties:
-                sub: { type: object }
+                sub:
+                  type: object
+                  required: [endpoint]
+                  properties:
+                    endpoint: { type: string }
+                  additionalProperties: true
                 dev: { type: string, maxLength: 64 }
       responses: { '200': { description: OK } }
 

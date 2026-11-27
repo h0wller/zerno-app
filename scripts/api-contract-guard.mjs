@@ -212,17 +212,17 @@ function addSentinel(diagnostics, id, file, method, path, expected, actual) {
 // exact F-003 observations until a dedicated implementation PR intentionally
 // resolves a finding and updates/removes its sentinel.
 export const AUDIT_SENTINELS = [
-  { id: 'C-01', title: 'Customer.id is integer in the audited OpenAPI baseline', file: 'docs/openapi.yaml', method: 'RESPONSE', path: 'components.schemas.Customer.properties.id.type' },
-  { id: 'C-02', title: 'MenuItem.id is integer in the audited OpenAPI baseline', file: 'docs/openapi.yaml', method: 'RESPONSE', path: 'components.schemas.MenuItem.properties.id.type' },
-  { id: 'C-03', title: 'Registration consent is integer enum [0,1]', file: 'docs/openapi.yaml', method: 'POST', path: '/api/auth/register' },
-  { id: 'C-04', title: 'Registration response documents Telegram fields while SMS has a separate server branch', file: 'docs/openapi.yaml', method: 'POST', path: '/api/auth/request-reg-otp' },
+  { id: 'C-01', title: 'Customer.id is a string generated with the u prefix', file: 'docs/openapi.yaml', method: 'RESPONSE', path: 'components.schemas.Customer.properties.id.type' },
+  { id: 'C-02', title: 'MenuItem.id is a string generated with the p prefix', file: 'docs/openapi.yaml', method: 'RESPONSE', path: 'components.schemas.MenuItem.properties.id.type' },
+  { id: 'C-03', title: 'Registration consent accepts only integer 1 or boolean true', file: 'docs/openapi.yaml', method: 'POST', path: '/api/auth/register' },
+  { id: 'C-04', title: 'Registration OTP response documents Telegram and SMS variants', file: 'docs/openapi.yaml', method: 'POST', path: '/api/auth/request-reg-otp' },
   { id: 'C-08', title: 'Staff QR schema matches generated Z- plus six uppercase hex characters', file: 'docs/openapi.yaml', method: 'POST', path: '/api/staff/scan' },
-  { id: 'C-10', title: 'Order status schema has no enum in the audited baseline', file: 'docs/openapi.yaml', method: 'POST', path: '/api/orders/{id}/status' },
+  { id: 'C-10', title: 'Order status schema matches runtime accepted status values', file: 'docs/openapi.yaml', method: 'POST', path: '/api/orders/{id}/status' },
   { id: 'C-09', title: 'Order delay requires integer min in the inclusive 1–180 range', file: 'docs/openapi.yaml', method: 'POST', path: '/api/orders/{id}/delay' },
   { id: 'C-11', title: 'Promo info documents HTTP 200 success and error payloads', file: 'docs/openapi.yaml', method: 'GET', path: '/api/promo/info' },
-  { id: 'C-12', title: 'Promo creation has no requestBody in the audited baseline', file: 'docs/openapi.yaml', method: 'POST', path: '/api/promos' },
-  { id: 'C-15', title: 'Chat botlog documents 409 in the audited baseline', file: 'docs/openapi.yaml', method: 'POST', path: '/api/chat/botlog' },
-  { id: 'C-14', title: 'Push subscription endpoint is not required in the audited baseline', file: 'docs/openapi.yaml', method: 'POST', path: '/api/push/subscribe' },
+  { id: 'C-12', title: 'Promo creation documents its request fields', file: 'docs/openapi.yaml', method: 'POST', path: '/api/promos' },
+  { id: 'C-15', title: 'Chat botlog documents automatic thread metadata creation', file: 'docs/openapi.yaml', method: 'POST', path: '/api/chat/botlog' },
+  { id: 'C-14', title: 'Push subscription requires a URI endpoint', file: 'docs/openapi.yaml', method: 'POST', path: '/api/push/subscribe' },
   { id: 'C-17', title: 'Role guards remain explicitly represented by BearerAuth on guarded operations', file: 'docs/openapi.yaml', method: 'MULTIPLE', path: '/api/promos, /api/stats, /api/orders/{id}/status' },
 ];
 
@@ -236,18 +236,44 @@ export function checkAuditSentinels({ openapi, sources }) {
   if (!(sources['server.js'] || '').includes("uid('p')")) {
     addSentinel(diagnostics, 'C-02', 'server.js', 'RESPONSE', 'MenuItem.id', "uid('p') prefixed string ID", 'audited menu ID generator not found');
   }
-  addSentinel(diagnostics, 'C-01', 'docs/openapi.yaml', 'RESPONSE', 'Customer.id', 'integer', schema('Customer'));
-  addSentinel(diagnostics, 'C-02', 'docs/openapi.yaml', 'RESPONSE', 'MenuItem.id', 'integer', schema('MenuItem'));
+  addSentinel(diagnostics, 'C-01', 'docs/openapi.yaml', 'RESPONSE', 'Customer.id', 'string', schema('Customer'));
+  addSentinel(diagnostics, 'C-02', 'docs/openapi.yaml', 'RESPONSE', 'MenuItem.id', 'string', schema('MenuItem'));
 
   const register = openapi.paths?.['/api/auth/register']?.post?.requestBody?.content?.['application/json']?.schema?.properties?.consent;
-  addSentinel(diagnostics, 'C-03', 'docs/openapi.yaml', 'POST', '/api/auth/register', { type: 'integer', enum: [0, 1] }, register);
+  addSentinel(diagnostics, 'C-03', 'docs/openapi.yaml', 'POST', '/api/auth/register', {
+    oneOf: [
+      { type: 'integer', enum: [1] },
+      { type: 'boolean', enum: [true] },
+    ],
+  }, register);
   const authSource = sources['server/routes/auth.js'] || '';
   if (!authSource.includes('req.body.consent !== 1 && req.body.consent !== true')) {
     addSentinel(diagnostics, 'C-03', 'server/routes/auth.js', 'POST', '/api/auth/register', 'handler accepts only 1 or true', 'audited consent predicate not found');
   }
 
   const regResponse = openapi.paths?.['/api/auth/request-reg-otp']?.post?.responses?.['200']?.content?.['application/json']?.schema;
-  addSentinel(diagnostics, 'C-04', 'docs/openapi.yaml', 'POST', '/api/auth/request-reg-otp', true, Boolean(regResponse?.required?.includes('tgUrl') && regResponse?.required?.includes('pollToken')));
+  const regResponseVariants = Array.isArray(regResponse?.oneOf) ? regResponse.oneOf : [];
+  const hasTelegramRegVariant = regResponseVariants.some((variant) => (
+    ['ok', 'tgUrl', 'pollToken', 'expiresAt'].every((key) => variant.required?.includes(key))
+    && variant.properties?.ok?.type === 'boolean'
+    && variant.properties?.tgUrl?.type === 'string'
+    && variant.properties?.pollToken?.type === 'string'
+    && variant.properties?.expiresAt?.type === 'string'
+  ));
+  const hasSmsRegVariant = regResponseVariants.some((variant) => (
+    ['ok', 'via'].every((key) => variant.required?.includes(key))
+    && variant.properties?.ok?.type === 'boolean'
+    && variant.properties?.via?.enum?.includes('sms')
+  ));
+  addSentinel(diagnostics, 'C-04', 'docs/openapi.yaml', 'POST', '/api/auth/request-reg-otp', {
+    telegramVariant: true,
+    smsVariant: true,
+    has503: true,
+  }, {
+    telegramVariant: hasTelegramRegVariant,
+    smsVariant: hasSmsRegVariant,
+    has503: Boolean(openapi.paths?.['/api/auth/request-reg-otp']?.post?.responses?.['503']),
+  });
   if (!/via\s*===\s*['"]sms['"]/.test(authSource) || !/via:\s*['"]sms['"]/.test(authSource)) {
     addSentinel(diagnostics, 'C-04', 'server/routes/auth.js', 'POST', '/api/auth/request-reg-otp', 'SMS branch returns via=sms', 'audited SMS response branch not found');
   }
@@ -259,7 +285,7 @@ export function checkAuditSentinels({ openapi, sources }) {
   }
 
   const statusSchema = openapi.paths?.['/api/orders/{id}/status']?.post?.requestBody?.content?.['application/json']?.schema?.properties?.status;
-  addSentinel(diagnostics, 'C-10', 'docs/openapi.yaml', 'POST', '/api/orders/{id}/status', { type: 'string', enum: undefined }, { type: statusSchema?.type, enum: statusSchema?.enum });
+  addSentinel(diagnostics, 'C-10', 'docs/openapi.yaml', 'POST', '/api/orders/{id}/status', { type: 'string', enum: ['new', 'accept', 'cook', 'way', 'done', 'cancel'] }, { type: statusSchema?.type, enum: statusSchema?.enum });
   const orderSource = sources['server/routes/orders.js'] || '';
   const expectedStatuses = ['new', 'accept', 'cook', 'way', 'done', 'cancel'];
   const missingStatuses = expectedStatuses.filter((status) => !orderSource.includes(status + ':'));
@@ -312,16 +338,58 @@ export function checkAuditSentinels({ openapi, sources }) {
   if (!/promosRouter\.post\(['"]\/api\/promos['"]/.test(promoSource) || !/req\.body\.code/.test(promoSource)) {
     addSentinel(diagnostics, 'C-12', 'server/routes/promos.js', 'POST', '/api/promos', 'handler reads request body code', 'audited promo creation handler not found');
   }
-  addSentinel(diagnostics, 'C-12', 'docs/openapi.yaml', 'POST', '/api/promos', undefined, openapi.paths?.['/api/promos']?.post?.requestBody);
+  const promoCreateRequest = openapi.paths?.['/api/promos']?.post?.requestBody;
+  const promoCreateSchema = promoCreateRequest?.content?.['application/json']?.schema;
+  const promoCreateProperties = promoCreateSchema?.properties || {};
+  addSentinel(diagnostics, 'C-12', 'docs/openapi.yaml', 'POST', '/api/promos', {
+    required: true,
+    type: 'object',
+    requiredFields: ['code'],
+    properties: {
+      code: 'string',
+      kind: 'string',
+      value: 'number',
+      days: 'number',
+      maxuses: 'number',
+    },
+  }, {
+    required: promoCreateRequest?.required === true,
+    type: promoCreateSchema?.type,
+    requiredFields: promoCreateSchema?.required,
+    properties: {
+      code: promoCreateProperties.code?.type,
+      kind: promoCreateProperties.kind?.type,
+      value: promoCreateProperties.value?.type,
+      days: promoCreateProperties.days?.type,
+      maxuses: promoCreateProperties.maxuses?.type,
+    },
+  });
 
   const chatSource = sources['server/routes/chat.js'] || '';
-  if (!/INSERT INTO chat_meta/.test(chatSource)) {
-    addSentinel(diagnostics, 'C-15', 'server/routes/chat.js', 'POST', '/api/chat/botlog', 'botlog upserts chat metadata', 'audited chat_meta insert not found');
+  if (!/INSERT INTO chat_meta[\s\S]*ON CONFLICT\(key\)\s+DO UPDATE/.test(chatSource)) {
+    addSentinel(diagnostics, 'C-15', 'server/routes/chat.js', 'POST', '/api/chat/botlog', 'botlog upserts chat metadata by thread key', 'audited chat_meta upsert not found');
   }
-  addSentinel(diagnostics, 'C-15', 'docs/openapi.yaml', 'POST', '/api/chat/botlog', true, Boolean(openapi.paths?.['/api/chat/botlog']?.post?.responses?.['409']));
+  const botlogOperation = openapi.paths?.['/api/chat/botlog']?.post;
+  addSentinel(diagnostics, 'C-15', 'docs/openapi.yaml', 'POST', '/api/chat/botlog', {
+    has200: true,
+    has409: false,
+    documentsAutomaticThreadCreation: true,
+  }, {
+    has200: Boolean(botlogOperation?.responses?.['200']),
+    has409: Boolean(botlogOperation?.responses?.['409']),
+    documentsAutomaticThreadCreation: /(?:автоматически\s+)?созда[её]т метаданные треда(?: автоматически)?/i.test(botlogOperation?.description || ''),
+  });
 
   const pushSchema = openapi.paths?.['/api/push/subscribe']?.post?.requestBody?.content?.['application/json']?.schema?.properties?.sub;
-  addSentinel(diagnostics, 'C-14', 'docs/openapi.yaml', 'POST', '/api/push/subscribe', false, Boolean(pushSchema?.required?.includes('endpoint')));
+  addSentinel(diagnostics, 'C-14', 'docs/openapi.yaml', 'POST', '/api/push/subscribe', {
+    type: 'object',
+    endpointRequired: true,
+    endpointType: 'string',
+  }, {
+    type: pushSchema?.type,
+    endpointRequired: Boolean(pushSchema?.required?.includes('endpoint')),
+    endpointType: pushSchema?.properties?.endpoint?.type,
+  });
   if (!/!sub\s*\|\|\s*!sub\.endpoint/.test(sources['server/routes/push.js'] || '')) {
     addSentinel(diagnostics, 'C-14', 'server/routes/push.js', 'POST', '/api/push/subscribe', 'handler requires sub.endpoint', 'audited endpoint validation not found');
   }

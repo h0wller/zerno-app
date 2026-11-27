@@ -120,18 +120,45 @@ test('audit sentinels accept resolved contracts and pin remaining F-003 baseline
   const openapi = minimalOpenApi({});
   openapi.components = {
     schemas: {
-      Customer: { properties: { id: { type: 'integer' } } },
-      MenuItem: { properties: { id: { type: 'integer' } } },
+      Customer: { properties: { id: { type: 'string' } } },
+      MenuItem: { properties: { id: { type: 'string' } } },
     },
   };
   const paths = openapi.paths;
-  paths['/api/auth/register'] = { post: jsonBody({ properties: { consent: { type: 'integer', enum: [0, 1] } } }) };
+  paths['/api/auth/register'] = {
+    post: jsonBody({
+      properties: {
+        consent: {
+          oneOf: [
+            { type: 'integer', enum: [1] },
+            { type: 'boolean', enum: [true] },
+          ],
+        },
+      },
+    }),
+  };
   paths['/api/auth/request-reg-otp'] = {
-    post: { responses: { '200': { content: { 'application/json': { schema: { required: ['tgUrl', 'pollToken'] } } } } } },
+    post: {
+      responses: {
+        '200': {
+          content: {
+            'application/json': {
+              schema: {
+                oneOf: [
+                  { type: 'object', required: ['ok', 'tgUrl', 'pollToken', 'expiresAt'], properties: { ok: { type: 'boolean' }, tgUrl: { type: 'string' }, pollToken: { type: 'string' }, expiresAt: { type: 'string' } } },
+                  { type: 'object', required: ['ok', 'via'], properties: { ok: { type: 'boolean' }, via: { type: 'string', enum: ['sms'] } } },
+                ],
+              },
+            },
+          },
+        },
+        '503': {},
+      },
+    },
   };
   paths['/api/staff/scan'] = { post: jsonBody({ properties: { code: { minLength: 8, maxLength: 8, pattern: '^Z-[A-F0-9]{6}$' } } }) };
   paths['/api/orders/{id}/status'] = {
-    post: { security: [{ BearerAuth: [] }], ...jsonBody({ properties: { status: { type: 'string' } } }) },
+    post: { security: [{ BearerAuth: [] }], ...jsonBody({ properties: { status: { type: 'string', enum: ['new', 'accept', 'cook', 'way', 'done', 'cancel'] } } }) },
   };
   paths['/api/orders/{id}/delay'] = { post: jsonBody({ type: 'object', required: ['min'], properties: { min: { type: 'integer', minimum: 1, maximum: 180 } } }) };
   paths['/api/promo/info'] = {
@@ -152,9 +179,36 @@ test('audit sentinels accept resolved contracts and pin remaining F-003 baseline
       },
     },
   };
-  paths['/api/promos'] = { post: { security: [{ BearerAuth: [] }] } };
-  paths['/api/chat/botlog'] = { post: { responses: { '409': {} } } };
-  const pushSub = { type: 'object', properties: { endpoint: { type: 'string' } } };
+  paths['/api/promos'] = {
+    post: {
+      security: [{ BearerAuth: [] }],
+      requestBody: {
+        required: true,
+        content: {
+          'application/json': {
+            schema: {
+              type: 'object',
+              required: ['code'],
+              properties: {
+                code: { type: 'string' },
+                kind: { type: 'string', default: 'stamp' },
+                value: { type: 'number' },
+                days: { type: 'number' },
+                maxuses: { type: 'number' },
+              },
+            },
+          },
+        },
+      },
+    },
+  };
+  paths['/api/chat/botlog'] = {
+    post: {
+      description: 'При первом допустимом ответе бота создаёт метаданные треда автоматически',
+      responses: { '200': {}, '400': {}, '401': {}, '403': {}, '429': {}, '503': {} },
+    },
+  };
+  const pushSub = { type: 'object', required: ['endpoint'], properties: { endpoint: { type: 'string' } } };
   paths['/api/push/subscribe'] = { post: jsonBody({ properties: { sub: pushSub } }) };
   paths['/api/stats'] = { get: { security: [{ BearerAuth: [] }] } };
 
@@ -165,12 +219,44 @@ test('audit sentinels accept resolved contracts and pin remaining F-003 baseline
     'server/routes/orders.js': "dispatchGuard; const ORDER_STATUS = { new: 1, accept: 1, cook: 1, way: 1, done: 1, cancel: 1 }; Number.isInteger(minutes) && minutes >= 1 && minutes <= 180",
     'server/routes/promos.js': "adminGuard; res.json({ ok: false, error: 'bad' }); promosRouter.post('/api/promos', handler); req.body.code",
     'server/routes/stats.js': 'adminGuard',
-    'server/routes/chat.js': 'INSERT INTO chat_meta; botlog',
+    'server/routes/chat.js': 'INSERT INTO chat_meta(key,closed,ctx) VALUES(?,0,?) ON CONFLICT(key) DO UPDATE SET ctx=excluded.ctx; botlog',
     'server/routes/push.js': 'if (!sub || !sub.endpoint)',
   };
   const result = checkAuditSentinels({ openapi, sources });
   assert.equal(result.findings.length, 12);
   assert.deepEqual(result.diagnostics, []);
+  const invalidConsentOpenapi = structuredClone(openapi);
+  invalidConsentOpenapi.paths['/api/auth/register'].post.requestBody.content['application/json'].schema.properties.consent = { type: 'integer', enum: [0, 1] };
+  const invalidConsentResult = checkAuditSentinels({ openapi: invalidConsentOpenapi, sources });
+  assert.ok(invalidConsentResult.diagnostics.some((item) => item.invariant === 'C-03'));
+
+  const invalidOtpOpenapi = structuredClone(openapi);
+  invalidOtpOpenapi.paths['/api/auth/request-reg-otp'].post.responses['200'].content['application/json'].schema.oneOf.pop();
+  const invalidOtpResult = checkAuditSentinels({ openapi: invalidOtpOpenapi, sources });
+  assert.ok(invalidOtpResult.diagnostics.some((item) => item.invariant === 'C-04'));
+  const invalidEntityIdOpenapi = structuredClone(openapi);
+  invalidEntityIdOpenapi.components.schemas.Customer.properties.id.type = 'integer';
+  invalidEntityIdOpenapi.components.schemas.MenuItem.properties.id.type = 'integer';
+  const invalidEntityIdResult = checkAuditSentinels({ openapi: invalidEntityIdOpenapi, sources });
+  assert.ok(invalidEntityIdResult.diagnostics.some((item) => item.invariant === 'C-01'));
+  assert.ok(invalidEntityIdResult.diagnostics.some((item) => item.invariant === 'C-02'));
+  const invalidBotlogOpenapi = structuredClone(openapi);
+  invalidBotlogOpenapi.paths['/api/chat/botlog'].post.responses['409'] = {};
+  const invalidBotlogResult = checkAuditSentinels({ openapi: invalidBotlogOpenapi, sources });
+  assert.ok(invalidBotlogResult.diagnostics.some((item) => item.invariant === 'C-15'));
+  const invalidPushOpenapi = structuredClone(openapi);
+  invalidPushOpenapi.paths['/api/push/subscribe'].post.requestBody.content['application/json'].schema.properties.sub.required = [];
+  const invalidPushResult = checkAuditSentinels({ openapi: invalidPushOpenapi, sources });
+  assert.ok(invalidPushResult.diagnostics.some((item) => item.invariant === 'C-14'));
+  const invalidPromoCreateOpenapi = structuredClone(openapi);
+  invalidPromoCreateOpenapi.paths['/api/promos'].post.requestBody.content['application/json'].schema.required = [];
+  const invalidPromoCreateResult = checkAuditSentinels({ openapi: invalidPromoCreateOpenapi, sources });
+  assert.ok(invalidPromoCreateResult.diagnostics.some((item) => item.invariant === 'C-12'));
+
+  const invalidStatusOpenapi = structuredClone(openapi);
+  invalidStatusOpenapi.paths['/api/orders/{id}/status'].post.requestBody.content['application/json'].schema.properties.status.enum = ['new', 'accept'];
+  const invalidStatusResult = checkAuditSentinels({ openapi: invalidStatusOpenapi, sources });
+  assert.ok(invalidStatusResult.diagnostics.some((item) => item.invariant === 'C-10'));
   const invalidPromoInfoOpenapi = structuredClone(openapi);
   invalidPromoInfoOpenapi.paths['/api/promo/info'].get.responses['404'] = {};
   const invalidPromoInfoResult = checkAuditSentinels({ openapi: invalidPromoInfoOpenapi, sources });
@@ -179,7 +265,7 @@ test('audit sentinels accept resolved contracts and pin remaining F-003 baseline
 
 test('audit sentinel drift reports file, method/path, expected and actual values', () => {
   const result = checkAuditSentinels({
-    openapi: { components: { schemas: { Customer: { properties: { id: { type: 'string' } } } } }, paths: {} },
+    openapi: { components: { schemas: { Customer: { properties: { id: { type: 'integer' } } } } }, paths: {} },
     sources: {},
   });
   const customerSchemaDrift = result.diagnostics.find((item) => item.file === 'docs/openapi.yaml' && item.path === 'Customer.id');
