@@ -221,7 +221,7 @@ export const AUDIT_SENTINELS = [
   { id: 'C-09', title: 'Order delay requires integer min in the inclusive 1–180 range', file: 'docs/openapi.yaml', method: 'POST', path: '/api/orders/{id}/delay' },
   { id: 'C-11', title: 'Promo info documents 404 although handler returns 200 false payload', file: 'docs/openapi.yaml', method: 'GET', path: '/api/promo/info' },
   { id: 'C-12', title: 'Promo creation has no requestBody in the audited baseline', file: 'docs/openapi.yaml', method: 'POST', path: '/api/promos' },
-  { id: 'C-15', title: 'Chat botlog documents 409 in the audited baseline', file: 'docs/openapi.yaml', method: 'POST', path: '/api/chat/botlog' },
+  { id: 'C-15', title: 'Chat botlog documents automatic thread metadata creation', file: 'docs/openapi.yaml', method: 'POST', path: '/api/chat/botlog' },
   { id: 'C-14', title: 'Push subscription endpoint is not required in the audited baseline', file: 'docs/openapi.yaml', method: 'POST', path: '/api/push/subscribe' },
   { id: 'C-17', title: 'Role guards remain explicitly represented by BearerAuth on guarded operations', file: 'docs/openapi.yaml', method: 'MULTIPLE', path: '/api/promos, /api/stats, /api/orders/{id}/status' },
 ];
@@ -289,10 +289,19 @@ export function checkAuditSentinels({ openapi, sources }) {
   addSentinel(diagnostics, 'C-12', 'docs/openapi.yaml', 'POST', '/api/promos', undefined, openapi.paths?.['/api/promos']?.post?.requestBody);
 
   const chatSource = sources['server/routes/chat.js'] || '';
-  if (!/INSERT INTO chat_meta/.test(chatSource)) {
-    addSentinel(diagnostics, 'C-15', 'server/routes/chat.js', 'POST', '/api/chat/botlog', 'botlog upserts chat metadata', 'audited chat_meta insert not found');
+  if (!/INSERT INTO chat_meta[\\s\\S]*ON CONFLICT\\(key\\)\\s+DO UPDATE/.test(chatSource)) {
+    addSentinel(diagnostics, 'C-15', 'server/routes/chat.js', 'POST', '/api/chat/botlog', 'botlog upserts chat metadata by thread key', 'audited chat_meta upsert not found');
   }
-  addSentinel(diagnostics, 'C-15', 'docs/openapi.yaml', 'POST', '/api/chat/botlog', true, Boolean(openapi.paths?.['/api/chat/botlog']?.post?.responses?.['409']));
+  const botlogOperation = openapi.paths?.['/api/chat/botlog']?.post;
+  addSentinel(diagnostics, 'C-15', 'docs/openapi.yaml', 'POST', '/api/chat/botlog', {
+    has200: true,
+    has409: false,
+    documentsAutomaticThreadCreation: true,
+  }, {
+    has200: Boolean(botlogOperation?.responses?.['200']),
+    has409: Boolean(botlogOperation?.responses?.['409']),
+    documentsAutomaticThreadCreation: /созда[её]т метаданные треда автоматически/i.test(botlogOperation?.description || ''),
+  });
 
   const pushSchema = openapi.paths?.['/api/push/subscribe']?.post?.requestBody?.content?.['application/json']?.schema?.properties?.sub;
   addSentinel(diagnostics, 'C-14', 'docs/openapi.yaml', 'POST', '/api/push/subscribe', false, Boolean(pushSchema?.required?.includes('endpoint')));
