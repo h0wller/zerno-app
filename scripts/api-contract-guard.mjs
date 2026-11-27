@@ -214,8 +214,8 @@ function addSentinel(diagnostics, id, file, method, path, expected, actual) {
 export const AUDIT_SENTINELS = [
   { id: 'C-01', title: 'Customer.id is integer in the audited OpenAPI baseline', file: 'docs/openapi.yaml', method: 'RESPONSE', path: 'components.schemas.Customer.properties.id.type' },
   { id: 'C-02', title: 'MenuItem.id is integer in the audited OpenAPI baseline', file: 'docs/openapi.yaml', method: 'RESPONSE', path: 'components.schemas.MenuItem.properties.id.type' },
-  { id: 'C-03', title: 'Registration consent is integer enum [0,1]', file: 'docs/openapi.yaml', method: 'POST', path: '/api/auth/register' },
-  { id: 'C-04', title: 'Registration response documents Telegram fields while SMS has a separate server branch', file: 'docs/openapi.yaml', method: 'POST', path: '/api/auth/request-reg-otp' },
+  { id: 'C-03', title: 'Registration consent accepts only integer 1 or boolean true', file: 'docs/openapi.yaml', method: 'POST', path: '/api/auth/register' },
+  { id: 'C-04', title: 'Registration OTP response documents Telegram and SMS variants', file: 'docs/openapi.yaml', method: 'POST', path: '/api/auth/request-reg-otp' },
   { id: 'C-08', title: 'Staff QR schema retains the audited 16–64 length constraint', file: 'docs/openapi.yaml', method: 'POST', path: '/api/staff/scan' },
   { id: 'C-10', title: 'Order status schema has no enum in the audited baseline', file: 'docs/openapi.yaml', method: 'POST', path: '/api/orders/{id}/status' },
   { id: 'C-09', title: 'Order delay requires integer min in the inclusive 1–180 range', file: 'docs/openapi.yaml', method: 'POST', path: '/api/orders/{id}/delay' },
@@ -240,14 +240,40 @@ export function checkAuditSentinels({ openapi, sources }) {
   addSentinel(diagnostics, 'C-02', 'docs/openapi.yaml', 'RESPONSE', 'MenuItem.id', 'integer', schema('MenuItem'));
 
   const register = openapi.paths?.['/api/auth/register']?.post?.requestBody?.content?.['application/json']?.schema?.properties?.consent;
-  addSentinel(diagnostics, 'C-03', 'docs/openapi.yaml', 'POST', '/api/auth/register', { type: 'integer', enum: [0, 1] }, register);
+  addSentinel(diagnostics, 'C-03', 'docs/openapi.yaml', 'POST', '/api/auth/register', {
+    oneOf: [
+      { type: 'integer', enum: [1] },
+      { type: 'boolean', enum: [true] },
+    ],
+  }, register);
   const authSource = sources['server/routes/auth.js'] || '';
   if (!authSource.includes('req.body.consent !== 1 && req.body.consent !== true')) {
     addSentinel(diagnostics, 'C-03', 'server/routes/auth.js', 'POST', '/api/auth/register', 'handler accepts only 1 or true', 'audited consent predicate not found');
   }
 
   const regResponse = openapi.paths?.['/api/auth/request-reg-otp']?.post?.responses?.['200']?.content?.['application/json']?.schema;
-  addSentinel(diagnostics, 'C-04', 'docs/openapi.yaml', 'POST', '/api/auth/request-reg-otp', true, Boolean(regResponse?.required?.includes('tgUrl') && regResponse?.required?.includes('pollToken')));
+  const regResponseVariants = Array.isArray(regResponse?.oneOf) ? regResponse.oneOf : [];
+  const hasTelegramRegVariant = regResponseVariants.some((variant) => (
+    ['ok', 'tgUrl', 'pollToken', 'expiresAt'].every((key) => variant.required?.includes(key))
+    && variant.properties?.ok?.type === 'boolean'
+    && variant.properties?.tgUrl?.type === 'string'
+    && variant.properties?.pollToken?.type === 'string'
+    && variant.properties?.expiresAt?.type === 'string'
+  ));
+  const hasSmsRegVariant = regResponseVariants.some((variant) => (
+    ['ok', 'via'].every((key) => variant.required?.includes(key))
+    && variant.properties?.ok?.type === 'boolean'
+    && variant.properties?.via?.enum?.includes('sms')
+  ));
+  addSentinel(diagnostics, 'C-04', 'docs/openapi.yaml', 'POST', '/api/auth/request-reg-otp', {
+    telegramVariant: true,
+    smsVariant: true,
+    has503: true,
+  }, {
+    telegramVariant: hasTelegramRegVariant,
+    smsVariant: hasSmsRegVariant,
+    has503: Boolean(openapi.paths?.['/api/auth/request-reg-otp']?.post?.responses?.['503']),
+  });
   if (!/via\s*===\s*['"]sms['"]/.test(authSource) || !/via:\s*['"]sms['"]/.test(authSource)) {
     addSentinel(diagnostics, 'C-04', 'server/routes/auth.js', 'POST', '/api/auth/request-reg-otp', 'SMS branch returns via=sms', 'audited SMS response branch not found');
   }
