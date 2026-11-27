@@ -754,10 +754,10 @@ paths:
       responses:
         '200': { description: Статус изменён }
         '400': { description: Неизвестный статус }
+        '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { description: Заказ не найден }
         '409': { description: Недопустимый переход статуса }
-        '401': { $ref: '#/components/responses/Unauthorized' }
   /api/orders/{id}/delay:
     post:
       tags: [Orders]
@@ -781,9 +781,9 @@ paths:
       responses:
         '200': { description: Задержка применена }
         '400': { description: min must be an integer from 1 to 180 }
+        '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { description: Заказ не найден }
-        '401': { $ref: '#/components/responses/Unauthorized' }
   /api/orders/delay-all:
     post:
       tags: [Orders]
@@ -816,9 +816,9 @@ paths:
             schema: { type: object, required: [id], properties: { id: { type: string } } }
       responses:
         '200': { description: Результат операции }
-        '404': { description: Гость не найден }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { description: Гость не найден }
   /api/staff/redeem:
     post:
       tags: [Staff]
@@ -1253,8 +1253,8 @@ paths:
       security: [{ BearerAuth: [] }]
       responses:
         '200': { description: Возвращает customer с ролью guest }
-        '403': { description: Нельзя отключить последнего администратора }
         '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { description: Нельзя отключить последнего администратора }
   /api/exit:
     post:
       tags: [Auth]
@@ -1294,10 +1294,10 @@ paths:
             schema: { type: object, required: [id], properties: { id: { type: string } } }
       responses:
         '200': { description: 'Операция выполнена успешно (ok: true)' }
-        '404': { description: Гость не найден }
-        '409': { description: Уже активирован }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { description: Гость не найден }
+        '409': { description: Уже активирован }
   /api/staff/pending:
     get:
       tags: [Staff]
@@ -1455,8 +1455,8 @@ paths:
       security: [{ BearerAuth: [] }]
       responses:
         '200': { description: Передача на устройство подтверждена; внутренний smoke-запрос возвращает ok=false и skipped=smoke-test без отправки }
-        '503': { description: Нет подтверждённой доставки Web Push/FCM }
         '401': { $ref: '#/components/responses/Unauthorized' }
+        '503': { description: Нет подтверждённой доставки Web Push/FCM }
   /api/push/fcm:
     post:
       tags: [Push]
