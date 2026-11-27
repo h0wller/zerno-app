@@ -254,7 +254,7 @@ export function checkAuditSentinels({ openapi, sources }) {
 
   const qrSchema = openapi.paths?.['/api/staff/scan']?.post?.requestBody?.content?.['application/json']?.schema?.properties?.code;
   addSentinel(diagnostics, 'C-08', 'docs/openapi.yaml', 'POST', '/api/staff/scan', { minLength: 8, maxLength: 8, pattern: '^Z-[A-F0-9]{6}$' }, { minLength: qrSchema?.minLength, maxLength: qrSchema?.maxLength, pattern: qrSchema?.pattern });
-  if (!/'Z-'\\s*\\+\\s*crypto\\.randomBytes\\(3\\)\\.toString\\(['"]hex['"]\\)\\.toUpperCase\\(\\)/s.test(sources['server/domain/customers.js'] || '')) {
+  if (!/'Z-'\s*\+\s*crypto\.randomBytes\(3\)\.toString\(['"]hex['"]\)\.toUpperCase\(\)/s.test(sources['server/domain/customers.js'] || '')) {
     addSentinel(diagnostics, 'C-08', 'server/domain/customers.js', 'POST', '/api/staff/scan', 'QR generated as Z- plus 3 random bytes in uppercase hex', 'audited QR generator not found');
   }
 
