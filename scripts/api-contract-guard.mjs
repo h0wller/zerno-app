@@ -222,7 +222,7 @@ export const AUDIT_SENTINELS = [
   { id: 'C-11', title: 'Promo info documents 404 although handler returns 200 false payload', file: 'docs/openapi.yaml', method: 'GET', path: '/api/promo/info' },
   { id: 'C-12', title: 'Promo creation has no requestBody in the audited baseline', file: 'docs/openapi.yaml', method: 'POST', path: '/api/promos' },
   { id: 'C-15', title: 'Chat botlog documents 409 in the audited baseline', file: 'docs/openapi.yaml', method: 'POST', path: '/api/chat/botlog' },
-  { id: 'C-14', title: 'Push subscription endpoint is not required in the audited baseline', file: 'docs/openapi.yaml', method: 'POST', path: '/api/push/subscribe' },
+  { id: 'C-14', title: 'Push subscription requires a URI endpoint', file: 'docs/openapi.yaml', method: 'POST', path: '/api/push/subscribe' },
   { id: 'C-17', title: 'Role guards remain explicitly represented by BearerAuth on guarded operations', file: 'docs/openapi.yaml', method: 'MULTIPLE', path: '/api/promos, /api/stats, /api/orders/{id}/status' },
 ];
 
@@ -295,7 +295,17 @@ export function checkAuditSentinels({ openapi, sources }) {
   addSentinel(diagnostics, 'C-15', 'docs/openapi.yaml', 'POST', '/api/chat/botlog', true, Boolean(openapi.paths?.['/api/chat/botlog']?.post?.responses?.['409']));
 
   const pushSchema = openapi.paths?.['/api/push/subscribe']?.post?.requestBody?.content?.['application/json']?.schema?.properties?.sub;
-  addSentinel(diagnostics, 'C-14', 'docs/openapi.yaml', 'POST', '/api/push/subscribe', false, Boolean(pushSchema?.required?.includes('endpoint')));
+  addSentinel(diagnostics, 'C-14', 'docs/openapi.yaml', 'POST', '/api/push/subscribe', {
+    type: 'object',
+    endpointRequired: true,
+    endpointType: 'string',
+    endpointFormat: 'uri',
+  }, {
+    type: pushSchema?.type,
+    endpointRequired: Boolean(pushSchema?.required?.includes('endpoint')),
+    endpointType: pushSchema?.properties?.endpoint?.type,
+    endpointFormat: pushSchema?.properties?.endpoint?.format,
+  });
   if (!/!sub\s*\|\|\s*!sub\.endpoint/.test(sources['server/routes/push.js'] || '')) {
     addSentinel(diagnostics, 'C-14', 'server/routes/push.js', 'POST', '/api/push/subscribe', 'handler requires sub.endpoint', 'audited endpoint validation not found');
   }
