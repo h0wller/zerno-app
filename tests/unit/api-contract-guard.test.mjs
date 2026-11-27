@@ -154,6 +154,11 @@ test('audit sentinels accept resolved contracts and pin remaining F-003 baseline
   const result = checkAuditSentinels({ openapi, sources });
   assert.equal(result.findings.length, 12);
   assert.deepEqual(result.diagnostics, []);
+
+  const invalidStatusOpenapi = structuredClone(openapi);
+  invalidStatusOpenapi.paths['/api/orders/{id}/status'].post.requestBody.content['application/json'].schema.properties.status.enum = ['new', 'accept'];
+  const invalidStatusResult = checkAuditSentinels({ openapi: invalidStatusOpenapi, sources });
+  assert.ok(invalidStatusResult.diagnostics.some((item) => item.invariant === 'C-10'));
 });
 
 test('audit sentinel drift reports file, method/path, expected and actual values', () => {
