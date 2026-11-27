@@ -212,8 +212,8 @@ function addSentinel(diagnostics, id, file, method, path, expected, actual) {
 // exact F-003 observations until a dedicated implementation PR intentionally
 // resolves a finding and updates/removes its sentinel.
 export const AUDIT_SENTINELS = [
-  { id: 'C-01', title: 'Customer.id is integer in the audited OpenAPI baseline', file: 'docs/openapi.yaml', method: 'RESPONSE', path: 'components.schemas.Customer.properties.id.type' },
-  { id: 'C-02', title: 'MenuItem.id is integer in the audited OpenAPI baseline', file: 'docs/openapi.yaml', method: 'RESPONSE', path: 'components.schemas.MenuItem.properties.id.type' },
+  { id: 'C-01', title: 'Customer.id is a string generated with the u prefix', file: 'docs/openapi.yaml', method: 'RESPONSE', path: 'components.schemas.Customer.properties.id.type' },
+  { id: 'C-02', title: 'MenuItem.id is a string generated with the p prefix', file: 'docs/openapi.yaml', method: 'RESPONSE', path: 'components.schemas.MenuItem.properties.id.type' },
   { id: 'C-03', title: 'Registration consent is integer enum [0,1]', file: 'docs/openapi.yaml', method: 'POST', path: '/api/auth/register' },
   { id: 'C-04', title: 'Registration response documents Telegram fields while SMS has a separate server branch', file: 'docs/openapi.yaml', method: 'POST', path: '/api/auth/request-reg-otp' },
   { id: 'C-08', title: 'Staff QR schema retains the audited 16–64 length constraint', file: 'docs/openapi.yaml', method: 'POST', path: '/api/staff/scan' },
@@ -236,8 +236,8 @@ export function checkAuditSentinels({ openapi, sources }) {
   if (!(sources['server.js'] || '').includes("uid('p')")) {
     addSentinel(diagnostics, 'C-02', 'server.js', 'RESPONSE', 'MenuItem.id', "uid('p') prefixed string ID", 'audited menu ID generator not found');
   }
-  addSentinel(diagnostics, 'C-01', 'docs/openapi.yaml', 'RESPONSE', 'Customer.id', 'integer', schema('Customer'));
-  addSentinel(diagnostics, 'C-02', 'docs/openapi.yaml', 'RESPONSE', 'MenuItem.id', 'integer', schema('MenuItem'));
+  addSentinel(diagnostics, 'C-01', 'docs/openapi.yaml', 'RESPONSE', 'Customer.id', 'string', schema('Customer'));
+  addSentinel(diagnostics, 'C-02', 'docs/openapi.yaml', 'RESPONSE', 'MenuItem.id', 'string', schema('MenuItem'));
 
   const register = openapi.paths?.['/api/auth/register']?.post?.requestBody?.content?.['application/json']?.schema?.properties?.consent;
   addSentinel(diagnostics, 'C-03', 'docs/openapi.yaml', 'POST', '/api/auth/register', { type: 'integer', enum: [0, 1] }, register);
