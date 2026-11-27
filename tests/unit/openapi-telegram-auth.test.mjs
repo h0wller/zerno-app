@@ -20,8 +20,17 @@ test('OpenAPI documents Telegram registration and pending-profile activation con
   assert.ok(registrationProperties.pin);
   assert.ok(registrationProperties.consent);
   assert.ok(registrationProperties.returnTo);
-  assert.ok(registration.responses['200'].content['application/json'].schema.properties.expiresAt);
-  for (const status of ['400', '409', '429']) {
+  assert.deepEqual(registrationProperties.consent.oneOf, [
+    { type: 'boolean', enum: [true] },
+    { type: 'integer', enum: [1] },
+  ]);
+  const responseSchema = registration.responses['200'].content['application/json'].schema;
+  const telegramVariant = responseSchema.oneOf.find((variant) => variant.required.includes('expiresAt'));
+  const smsVariant = responseSchema.oneOf.find((variant) => variant.required.includes('via'));
+  assert.ok(telegramVariant?.properties.expiresAt);
+  assert.ok(telegramVariant?.properties.pollToken);
+  assert.deepEqual(smsVariant?.properties.via.enum, ['sms']);
+  for (const status of ['400', '409', '429', '503']) {
     assert.ok(registration.responses[status], 'request-reg-otp must document HTTP ' + status);
   }
 
