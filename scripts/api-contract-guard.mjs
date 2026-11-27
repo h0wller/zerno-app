@@ -222,7 +222,7 @@ export const AUDIT_SENTINELS = [
   { id: 'C-11', title: 'Promo info documents HTTP 200 success and error payloads', file: 'docs/openapi.yaml', method: 'GET', path: '/api/promo/info' },
   { id: 'C-12', title: 'Promo creation documents its request fields', file: 'docs/openapi.yaml', method: 'POST', path: '/api/promos' },
   { id: 'C-15', title: 'Chat botlog documents automatic thread metadata creation', file: 'docs/openapi.yaml', method: 'POST', path: '/api/chat/botlog' },
-  { id: 'C-14', title: 'Push subscription requires a URI endpoint', file: 'docs/openapi.yaml', method: 'POST', path: '/api/push/subscribe' },
+  { id: 'C-14', title: 'Push subscription requires a string endpoint', file: 'docs/openapi.yaml', method: 'POST', path: '/api/push/subscribe' },
   { id: 'C-17', title: 'Role guards remain explicitly represented by BearerAuth on guarded operations', file: 'docs/openapi.yaml', method: 'MULTIPLE', path: '/api/promos, /api/stats, /api/orders/{id}/status' },
 ];
 
