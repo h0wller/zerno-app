@@ -1069,8 +1069,24 @@ paths:
           required: true
           schema: { type: string }
       responses:
-        '200': { description: OK }
-        '404': { description: Промокод не найден }
+        '200':
+          description: Результат проверки промокода; ошибки проверки также возвращаются с HTTP 200
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - type: object
+                    required: [ok, error]
+                    properties:
+                      ok: { type: boolean, enum: [false] }
+                      error: { type: string }
+                  - type: object
+                    required: [ok, kind, value, code]
+                    properties:
+                      ok: { type: boolean, enum: [true] }
+                      kind: { type: string }
+                      value: { type: number }
+                      code: { type: string }
 
   /api/promos:
     get:
