@@ -19,7 +19,7 @@ function percentile(samples, fraction) {
 function measure(fn, count) {
   for (let i = 0; i < 3; i += 1) fn();
   const samples = [];
-  for (let i = 0; i < count; i += 1) {
+  for (let i = 0; i < count - 1; i += 1) {
     const started = process.hrtime.bigint();
     fn();
     samples.push(Number(process.hrtime.bigint() - started) / 1e6);
@@ -95,7 +95,7 @@ for (const size of sizes) {
     const indexedTiming = measure(() => indexed.all(targetDigits), reps);
 
     results.push({
-      rows: size + 1,
+      rows: size,
       repetitions: reps,
       full_scan_js_filter: scanTiming,
       indexed_sql_lookup: indexedTiming,
