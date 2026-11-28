@@ -2,7 +2,6 @@ import { test, expect } from '@playwright/test';
 import fs from 'node:fs';
 import path from 'node:path';
 
-const BASE = process.env.TEST_URL || process.env.PLAYWRIGHT_BASE_URL || 'http://localhost:3000';
 const OUT = path.join('artifacts', 'visual-audit');
 const VIEWPORTS = [
   { id: 'xs', width: 320, height: 740 },
@@ -31,8 +30,17 @@ async function prepareColdGuest(page, brand, viewport) {
     } catch {}
   }, brand);
 
-  await page.goto(`${BASE}/?brand=${brand}`, { waitUntil: 'domcontentloaded' });
+  await page.goto(`/?brand=${brand}`, { waitUntil: 'domcontentloaded' });
 }
+
+test('cold guest navigation uses the configured Playwright baseURL', async ({ page }, testInfo) => {
+  const configuredBaseURL = testInfo.project.use.baseURL;
+  expect(configuredBaseURL, 'Playwright baseURL must be configured').toBeTruthy();
+
+  await prepareColdGuest(page, 'coffee', { width: 390, height: 844 });
+
+  expect(new URL(page.url()).origin).toBe(new URL(configuredBaseURL).origin);
+});
 
 async function waitForHydratedStorefront(page, brand) {
   const grid = brand === 'delivery' ? '#deliveryGrid' : '#grid';
