@@ -757,11 +757,13 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                required: [error]
-                properties:
-                  error: { type: string }
-                  code: { type: string, enum: [INVALID_CLIENT_ORDER_ID] }
+                oneOf:
+                  - type: object
+                    required: [error]
+                    properties:
+                      error: { type: string }
+                      code: { type: string, enum: [INVALID_CLIENT_ORDER_ID] }
+                  - $ref: '#/components/schemas/Error'
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403':
           description: Номер гостя не подтверждён (служебные роли исключены)

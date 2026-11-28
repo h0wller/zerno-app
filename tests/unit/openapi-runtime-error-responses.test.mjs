@@ -137,9 +137,11 @@ test('OpenAPI documents global JSON parser errors on every JSON request operatio
         : response.$ref === '#/components/responses/PayloadTooLarge'
           ? openapi.components.responses.PayloadTooLarge.content?.['application/json']?.schema
           : response.content?.['application/json']?.schema;
+      const describesSharedError = schema?.$ref === '#/components/schemas/Error'
+        || schema?.oneOf?.some(variant => variant.$ref === '#/components/schemas/Error');
       assert.equal(
-        schema?.$ref,
-        '#/components/schemas/Error',
+        describesSharedError,
+        true,
         `${operation.method.toUpperCase()} ${operation.path} HTTP ${status} must describe the shared JSON error envelope`,
       );
     }
