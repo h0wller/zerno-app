@@ -378,7 +378,7 @@ test('pending guest activates through a one-time Telegram pairing link using the
   assert.equal(confirmed.status, 200);
 
   const activationMessage = await waitForTelegramMessage(message => (
-    message.chat_id === chatId &&
+    String(message.chat_id) === String(chatId) &&
     /Номер подтверждён, профиль активирован/.test(message.text || '') &&
     /Карта:/.test(message.text || '')
   ));
@@ -387,7 +387,7 @@ test('pending guest activates through a one-time Telegram pairing link using the
   assert.match(activationMessage.text, /Персональная бесплатная первая доставка доступна/);
   assert.match(activationMessage.text, /автоматически в корзине/);
   const returnMessage = await waitForTelegramMessage(message => (
-    message.chat_id === chatId && /Вернитесь в приложение/.test(message.text || '')
+    String(message.chat_id) === String(chatId) && /Вернитесь в приложение/.test(message.text || '')
   ));
   const returnButton = returnMessage.reply_markup?.inline_keyboard?.[0]?.[0];
   assert.equal(returnButton?.text, 'Вернуться в приложение');
