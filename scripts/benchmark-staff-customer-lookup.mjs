@@ -161,10 +161,6 @@ function benchmarkRouteEquivalentLookup() {
     const historyForCustomer = database.prepare(
       'SELECT ts,a,by FROM history WHERE cid=? ORDER BY id DESC LIMIT 10'
     );
-    const historyForMatches = database.prepare(
-      'SELECT cid,ts,a,by FROM history WHERE cid IN (?,?,?) ORDER BY cid ASC,id DESC'
-    );
-
     const serializeCustomer = (customer, history) => ({
       id: customer.id,
       name: customer.name,
