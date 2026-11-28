@@ -561,6 +561,43 @@ test('Telegram registration polling is scoped to a random one-attempt secret, no
   });
   assert.equal(confirmed.status, 200, JSON.stringify(confirmed.json));
 
+  // The real Telegram confirmation must describe the persisted grant and both brand benefits.
+  const registrationMessage = await waitForTelegramMessage(message => (
+    String(message.chat_id) === String(chatId) && /Профиль готов,/.test(message.text || '')
+  ));
+  assert.match(registrationMessage.text, /🎁 Приветственный бонус начислен:/);
+  assert.match(registrationMessage.text, /Карта: <b>10\/10<\/b> штампов/);
+  assert.match(registrationMessage.text, /бесплатных кофе: <b>1<\/b>/);
+  assert.match(registrationMessage.text, /Персональная бесплатная первая доставка доступна/);
+  assert.match(registrationMessage.text, /подставит его автоматически/);
+  const registrationReturnButton = registrationMessage.reply_markup?.inline_keyboard?.[0]?.[0];
+  assert.equal(registrationReturnButton?.text, 'Вернуться в приложение');
+  const registrationReturnUrl = new URL(registrationReturnButton.url);
+  assert.equal(registrationReturnUrl.origin, 'https://friday.andcoffee.online');
+  assert.equal(registrationReturnUrl.searchParams.get('brand'), 'coffee');
+  assert.equal(registrationReturnUrl.searchParams.get('tab'), 'profile');
+
+  const returningStart = await webhook({
+    message: { chat: { id: chatId, type: 'private' }, from: { id: chatId }, text: '/start' }
+  });
+  assert.equal(returningStart.status, 200);
+  const returningStartMessage = await waitForTelegramMessage(message => (
+    String(message.chat_id) === String(chatId) && /С возвращением,/.test(message.text || '')
+  ));
+  assert.match(returningStartMessage.text, /Карта: <b>10\/10<\/b> штампов/);
+  assert.match(returningStartMessage.text, /Персональная бесплатная первая доставка доступна/);
+
+  const returningBonus = await webhook({
+    message: { chat: { id: chatId, type: 'private' }, from: { id: chatId }, text: '/bonus' }
+  });
+  assert.equal(returningBonus.status, 200);
+  const returningBonusMessage = await waitForTelegramMessage(message => (
+    String(message.chat_id) === String(chatId) && /Ваши преимущества/.test(message.text || '')
+  ));
+  assert.match(returningBonusMessage.text, /Карта: <b>10\/10<\/b> штампов/);
+  assert.match(returningBonusMessage.text, /бесплатных кофе: <b>1<\/b>/);
+  assert.match(returningBonusMessage.text, /Персональная бесплатная первая доставка доступна/);
+
   const phoneLookup = await api('/api/auth/check-reg', { phone });
   assert.equal(phoneLookup.status, 400);
   assert.equal(phoneLookup.json.token, undefined);
