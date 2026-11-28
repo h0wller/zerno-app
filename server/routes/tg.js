@@ -6,7 +6,7 @@ import { tgSend, escapeTelegramHtml, TG_TOKEN, TG_WEBHOOK_SECRET, APP_URL } from
 import { fmtPhone, ph10 } from '../utils/phone.js';
 import { otpStore, consumeOtp } from '../utils/otp.js';
 import { grantWelcome } from '../domain/loyalty.js';
-import { grantBonus, grantBonusDetailed, findFreeDeliveryCode, QR_SOURCE } from '../domain/bonuses.js';
+import { grantBonusDetailed, findFreeDeliveryCode, QR_SOURCE } from '../domain/bonuses.js';
 import { formatWelcomeBonusMessage } from '../domain/welcome-bonus-message.js';
 import { formatTelegramBenefitsMessage } from '../domain/telegram-benefits-message.js';
 import { cust, addHist, issueToken } from '../domain/helpers.js';
@@ -382,9 +382,15 @@ export function createTgRouter({ appKb }) {
         const activationResult = db.prepare(
           'UPDATE customers SET verified=1, actcode=NULL WHERE id=? AND verified=0'
         ).run(targetCust.id);
+        let bonusOutcome = { status: 'unknown' };
         if (activationResult.changes > 0) {
-          // Повторяем точные бизнес-правила активации кассиром; повторная активация бонус не начисляет.
-          grantBonus(targetCust.id, targetCust.src === QR_SOURCE ? 'qr' : 'signup');
+          // Preserve the existing activation eligibility rules; suppress the standalone push
+          // because the complete, state-aware Telegram confirmation is sent below.
+          bonusOutcome = grantBonusDetailed(
+            targetCust.id,
+            targetCust.src === QR_SOURCE ? 'qr' : 'signup',
+            { notify: false }
+          );
           addHist(targetCust.id, '✅ Профиль активирован через Telegram', 'Telegram');
         }
 
@@ -393,7 +399,19 @@ export function createTgRouter({ appKb }) {
         const userRequest = otpStore.get(userKey);
         if (userRequest?.token === activation.token) otpStore.delete(userKey);
 
-        await tgSend(chatId, '✅ Номер подтверждён, профиль активирован.', { remove_keyboard: true });
+        const refreshedCustomer = db.prepare('SELECT * FROM customers WHERE id=?').get(targetCust.id);
+        const activationSummary = activationResult.changes > 0
+          ? formatWelcomeBonusMessage(bonusOutcome)
+          : 'Профиль был активирован ранее. Повторное начисление не выполнялось.';
+        const benefitDetails = refreshedCustomer
+          ? telegramBenefitsMessage(refreshedCustomer)
+          : 'Не удалось загрузить состояние преимуществ. Откройте профиль в приложении и проверьте данные.';
+
+        await tgSend(chatId,
+          '✅ Номер подтверждён, профиль активирован.\n\n' +
+          activationSummary + '\n\n' + benefitDetails,
+          { remove_keyboard: true }
+        );
         await tgSend(chatId, 'Вернитесь в приложение — вы вернётесь в свой профиль:', {
           inline_keyboard: [[
             { text: 'Вернуться в приложение', url: challenge.returnUrl }
