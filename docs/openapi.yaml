@@ -7,6 +7,7 @@ info:
     Контракт API PWA «…и кофе» / «Пятница». Собран из docs/api.md
     и фактических роутов server/routes/*.js. Источник правды — серверный код.
     При расхождении — правьте спеку и server/routes/* в одном PR.
+    Пока приложение не готово после обязательной стартовой миграции, все /api/* кроме /api/health возвращают 503 { ok: false } с Retry-After: 2.
   contact:
     name: Zerno App
     url: https://friday.andcoffee.online
