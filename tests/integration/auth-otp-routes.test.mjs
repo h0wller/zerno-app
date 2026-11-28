@@ -566,7 +566,7 @@ test('Telegram registration polling is scoped to a random one-attempt secret, no
     String(message.chat_id) === String(chatId) && /Профиль готов,/.test(message.text || '')
   ));
   assert.match(registrationMessage.text, /🎁 Приветственный бонус начислен:/);
-  assert.match(registrationMessage.text, /Карта: <b>10\/10<\/b> штампов/);
+  assert.match(registrationMessage.text, /Карта: <b>0\/10<\/b> штампов/);
   assert.match(registrationMessage.text, /бесплатных кофе: <b>1<\/b>/);
   assert.match(registrationMessage.text, /Персональная бесплатная первая доставка доступна/);
   assert.match(registrationMessage.text, /подставит его автоматически/);
@@ -584,7 +584,7 @@ test('Telegram registration polling is scoped to a random one-attempt secret, no
   const returningStartMessage = await waitForTelegramMessage(message => (
     String(message.chat_id) === String(chatId) && /С возвращением,/.test(message.text || '')
   ));
-  assert.match(returningStartMessage.text, /Карта: <b>10\/10<\/b> штампов/);
+  assert.match(returningStartMessage.text, /Карта: <b>0\/10<\/b> штампов/);
   assert.match(returningStartMessage.text, /Персональная бесплатная первая доставка доступна/);
 
   const returningBonus = await webhook({
@@ -594,7 +594,7 @@ test('Telegram registration polling is scoped to a random one-attempt secret, no
   const returningBonusMessage = await waitForTelegramMessage(message => (
     String(message.chat_id) === String(chatId) && /Ваши преимущества/.test(message.text || '')
   ));
-  assert.match(returningBonusMessage.text, /Карта: <b>10\/10<\/b> штампов/);
+  assert.match(returningBonusMessage.text, /Карта: <b>0\/10<\/b> штампов/);
   assert.match(returningBonusMessage.text, /бесплатных кофе: <b>1<\/b>/);
   assert.match(returningBonusMessage.text, /Персональная бесплатная первая доставка доступна/);
 
