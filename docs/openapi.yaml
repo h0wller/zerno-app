@@ -103,6 +103,16 @@ components:
         code:  { type: string }
 
   responses:
+    InvalidJson:
+      description: Тело запроса содержит некорректный JSON
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    PayloadTooLarge:
+      description: Тело JSON-запроса превышает глобальный лимит 10 MiB
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
     Unauthorized:
       description: Токен отсутствует или недействителен
       content:
@@ -190,6 +200,7 @@ paths:
                     - type: boolean
                       enum: [true]
       responses:
+        '413': { $ref: '#/components/responses/PayloadTooLarge' }
         '200':
           description: Профиль создан
           content:
@@ -233,6 +244,7 @@ paths:
                 returnTo: { type: string, minLength: 2, maxLength: 2048, pattern: '^/', description: 'Safe relative path on the originating app origin' }
                 via: { type: string, enum: [tg, sms], default: tg, description: 'SMS is separately gated; it is not offered by the PWA' }
       responses:
+        '413': { $ref: '#/components/responses/PayloadTooLarge' }
         '200':
           description: Telegram deep link or accepted SMS delivery request, depending on via
           content:
@@ -271,6 +283,7 @@ paths:
               properties:
                 pollToken: { type: string, pattern: '^[a-f0-9]{64}$' }
       responses:
+        '413': { $ref: '#/components/responses/PayloadTooLarge' }
         '200':
           description: Подтверждение ещё ожидается либо профиль готов; при успехе возвращаются token и customer
           content:
@@ -300,6 +313,7 @@ paths:
                 pin: { type: string, pattern: '^\\d{4}$' }
                 otp: { type: string, description: Одноразовый код; SMS-сессии действительны только при SMS_AUTH_ENABLED=true }
       responses:
+        '413': { $ref: '#/components/responses/PayloadTooLarge' }
         '200': { description: 'Возвращает token, customer и возможный needPin' }
         '400': { description: 'Некорректный PIN или PIN отсутствует' }
         '403': { description: 'Неверный или просроченный OTP либо неверный PIN' }
@@ -324,6 +338,7 @@ paths:
               properties:
                 pin: { type: string, pattern: '^\\d{4}$' }
       responses:
+        '413': { $ref: '#/components/responses/PayloadTooLarge' }
         '200': { description: Возвращает обновлённый customer; токен не выдаётся повторно }
         '400': { description: Некорректный PIN }
         '401': { $ref: '#/components/responses/Unauthorized' }
@@ -344,6 +359,7 @@ paths:
               required: [code]
               properties: { code: { type: string } }
       responses:
+        '413': { $ref: '#/components/responses/PayloadTooLarge' }
         '200': { description: Профиль активирован }
         '400': { description: Некорректный формат кода }
         '401': { $ref: '#/components/responses/Unauthorized' }
@@ -370,6 +386,7 @@ paths:
               properties:
                 returnTo: { type: string, minLength: 2, maxLength: 2048, pattern: '^/' }
       responses:
+        '413': { $ref: '#/components/responses/PayloadTooLarge' }
         '200':
           description: Одноразовая ссылка Telegram и срок её действия
           content:
@@ -405,6 +422,7 @@ paths:
                 name: { type: string }
                 pin: { type: string }
       responses:
+        '413': { $ref: '#/components/responses/PayloadTooLarge' }
         '200':
           description: >-
             Вход выполнен ({token, customer}), либо needBotConfirm=true с tgUrl: номер нужно подтвердить в боте
@@ -438,6 +456,7 @@ paths:
               type: object
               properties: { name: { type: string, minLength: 2, maxLength: 24 } }
       responses:
+        '413': { $ref: '#/components/responses/PayloadTooLarge' }
         '200': { description: OK }
         '400': { description: Name must contain 2–24 characters }
         '401': { $ref: '#/components/responses/Unauthorized' }
@@ -490,6 +509,8 @@ paths:
                 comp: { type: array, items: { type: object } }
                 opts: { type: array, items: { type: object } }
       responses:
+        '400': { $ref: '#/components/responses/InvalidJson' }
+        '413': { $ref: '#/components/responses/PayloadTooLarge' }
         '200': { description: Позиция создана; возвращает ok и id }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
@@ -510,6 +531,7 @@ paths:
                 brand: { type: string, enum: [coffee, delivery] }
                 ids: { type: array, items: { type: string }, minItems: 1 }
       responses:
+        '413': { $ref: '#/components/responses/PayloadTooLarge' }
         '200': { description: Порядок обновлён }
         '400': { description: Пустой порядок }
         '401': { $ref: '#/components/responses/Unauthorized' }
@@ -549,6 +571,8 @@ paths:
                 comp: { type: array, items: { type: object } }
                 opts: { type: array, items: { type: object } }
       responses:
+        '400': { $ref: '#/components/responses/InvalidJson' }
+        '413': { $ref: '#/components/responses/PayloadTooLarge' }
         '200': { description: Позиция обновлена }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
@@ -662,6 +686,7 @@ paths:
                             id: { type: string, description: Идентификатор добавки из меню доставки }
               additionalProperties: true
       responses:
+        '413': { $ref: '#/components/responses/PayloadTooLarge' }
         '200':
           description: Заказ создан либо возвращён как результат безопасного повтора с тем же ключом и телом
           content:
@@ -753,6 +778,7 @@ paths:
           application/json:
             schema: { type: object, required: [status], properties: { status: { type: string, enum: [new, accept, cook, way, done, cancel] } } }
       responses:
+        '413': { $ref: '#/components/responses/PayloadTooLarge' }
         '200': { description: Статус изменён }
         '400': { description: Неизвестный статус }
         '401': { $ref: '#/components/responses/Unauthorized' }
@@ -780,6 +806,7 @@ paths:
                 min: { type: integer, minimum: 1, maximum: 180 }
                 comment: { type: string, maxLength: 140 }
       responses:
+        '413': { $ref: '#/components/responses/PayloadTooLarge' }
         '200': { description: Задержка применена }
         '400': { description: min must be an integer from 1 to 180 }
         '401': { $ref: '#/components/responses/Unauthorized' }
@@ -801,6 +828,7 @@ paths:
                 min: { type: integer, minimum: 1, maximum: 180 }
                 comment: { type: string, maxLength: 140 }
       responses:
+        '413': { $ref: '#/components/responses/PayloadTooLarge' }
         '200': { description: Массовая задержка активных обычных заказов и предзаказов на сегодня; будущие предзаказы не меняются }
         '400': { description: min must be an integer from 1 to 180 }
         '401': { $ref: '#/components/responses/Unauthorized' }
@@ -816,6 +844,8 @@ paths:
           application/json:
             schema: { type: object, required: [id], properties: { id: { type: string } } }
       responses:
+        '400': { $ref: '#/components/responses/InvalidJson' }
+        '413': { $ref: '#/components/responses/PayloadTooLarge' }
         '200': { description: Результат операции }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
@@ -831,6 +861,7 @@ paths:
           application/json:
             schema: { type: object, required: [id], properties: { id: { type: string }, item: { type: string, maxLength: 40 } } }
       responses:
+        '413': { $ref: '#/components/responses/PayloadTooLarge' }
         '200': { description: Результат операции }
         '400': { description: Нет доступных подарков }
         '401': { $ref: '#/components/responses/Unauthorized' }
@@ -855,6 +886,8 @@ paths:
                   pattern: '^Z-[A-F0-9]{6}$'
                   description: QR generated as Z- followed by six uppercase hexadecimal characters
       responses:
+        '400': { $ref: '#/components/responses/InvalidJson' }
+        '413': { $ref: '#/components/responses/PayloadTooLarge' }
         '200': { description: Возвращает найденный профиль клиента }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
@@ -883,6 +916,7 @@ paths:
                 human: { oneOf: [{ type: boolean }, { type: integer, enum: [0, 1] }] }
                 ctx: { type: string, enum: [coffee, delivery] }
       responses:
+        '413': { $ref: '#/components/responses/PayloadTooLarge' }
         '200': { description: Сообщение сохранено }
         '400': { description: 'Некорректный ключ, контекст или текст' }
         '401': { $ref: '#/components/responses/Unauthorized' }
@@ -933,6 +967,7 @@ paths:
                 key: { type: string, maxLength: 80, pattern: '^(u[a-f0-9]{10}|anon-[a-f0-9]{64}):[cd]$' }
                 text: { type: string, minLength: 1, maxLength: 2000 }
       responses:
+        '413': { $ref: '#/components/responses/PayloadTooLarge' }
         '200': { description: Сообщение бота сохранено; метаданные треда созданы или обновлены }
         '400': { description: Некорректный ключ или текст }
         '401': { $ref: '#/components/responses/Unauthorized' }
@@ -980,6 +1015,7 @@ paths:
           application/json:
             schema: { type: object, required: [key, text], properties: { key: { type: string, minLength: 1, maxLength: 80 }, text: { type: string, maxLength: 2000 } } }
       responses:
+        '413': { $ref: '#/components/responses/PayloadTooLarge' }
         '200': { description: 'Операция выполнена успешно (ok: true)' }
         '400': { description: Некорректный ключ треда или сообщение длиной вне диапазона 1–2000 символов }
         '401': { $ref: '#/components/responses/Unauthorized' }
@@ -996,6 +1032,7 @@ paths:
           application/json:
             schema: { type: object, required: [key], properties: { key: { type: string, minLength: 1, maxLength: 80 } } }
       responses:
+        '413': { $ref: '#/components/responses/PayloadTooLarge' }
         '200': { description: 'Операция выполнена успешно (ok: true)' }
         '400': { description: Некорректный ключ треда }
         '401': { $ref: '#/components/responses/Unauthorized' }
@@ -1016,6 +1053,7 @@ paths:
               properties:
                 key: { type: string, minLength: 1, maxLength: 80 }
       responses:
+        '413': { $ref: '#/components/responses/PayloadTooLarge' }
         '200': { description: OK }
         '400': { description: Некорректный ключ треда }
         '401': { $ref: '#/components/responses/Unauthorized' }
@@ -1055,6 +1093,7 @@ paths:
                   additionalProperties: true
                 dev: { type: string, maxLength: 64 }
       responses:
+        '413': { $ref: '#/components/responses/PayloadTooLarge' }
         '200': { description: Подписка сохранена }
         '400': { description: В объекте sub отсутствует endpoint }
         '401': { $ref: '#/components/responses/Unauthorized' }
@@ -1076,6 +1115,7 @@ paths:
               properties:
                 code: { type: string }
       responses:
+        '413': { $ref: '#/components/responses/PayloadTooLarge' }
         '200':
           description: Промокод применён
           content:
@@ -1160,6 +1200,7 @@ paths:
                 days: { type: number, description: 'Срок действия в днях; 0 или отсутствие значения — без срока' }
                 maxuses: { type: number, default: 0, description: '0 или отсутствие значения — без ограничения количества применений' }
       responses:
+        '413': { $ref: '#/components/responses/PayloadTooLarge' }
         '200': { description: Промокод создан }
         '400': { description: Код короче 3 символов после нормализации }
         '401': { $ref: '#/components/responses/Unauthorized' }
@@ -1207,6 +1248,7 @@ paths:
           application/json:
             schema: { type: object, required: [phone], properties: { phone: { type: string } } }
       responses:
+        '413': { $ref: '#/components/responses/PayloadTooLarge' }
         '200':
           description: Код принят каналом доставки
           content:
@@ -1232,6 +1274,7 @@ paths:
           application/json:
             schema: { type: object, required: [pin], properties: { pin: { type: string, pattern: '^\\d{4}$' } } }
       responses:
+        '413': { $ref: '#/components/responses/PayloadTooLarge' }
         '200': { description: 'Возвращает customer' }
         '400': { description: Некорректный PIN }
         '401': { $ref: '#/components/responses/Unauthorized' }
@@ -1247,6 +1290,7 @@ paths:
           application/json:
             schema: { type: object, required: [code], properties: { code: { type: string } } }
       responses:
+        '413': { $ref: '#/components/responses/PayloadTooLarge' }
         '200': { description: 'Возвращает customer' }
         '400': { description: Код не соответствует требованиям длины и формата }
         '401': { $ref: '#/components/responses/Unauthorized' }
@@ -1287,6 +1331,8 @@ paths:
                 web: { type: boolean }
               additionalProperties: true
       responses:
+        '400': { $ref: '#/components/responses/InvalidJson' }
+        '413': { $ref: '#/components/responses/PayloadTooLarge' }
         '200': { description: 'Возвращает customer' }
         '401': { $ref: '#/components/responses/Unauthorized' }
   /api/staff/activate-guest:
@@ -1301,6 +1347,8 @@ paths:
           application/json:
             schema: { type: object, required: [id], properties: { id: { type: string } } }
       responses:
+        '400': { $ref: '#/components/responses/InvalidJson' }
+        '413': { $ref: '#/components/responses/PayloadTooLarge' }
         '200': { description: 'Операция выполнена успешно (ok: true)' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
@@ -1348,6 +1396,7 @@ paths:
                   pattern: '^[0-9]{4}$'
                   description: Четырёхзначный PIN; хранится только в виде хеша. Повторный запрос не заменяет уже установленный PIN.
       responses:
+        '413': { $ref: '#/components/responses/PayloadTooLarge' }
         '200': { description: 'Возвращает customer' }
         '400': { description: Некорректное имя, телефон или PIN; создание профиля отклонено }
         '401': { $ref: '#/components/responses/Unauthorized' }
@@ -1417,6 +1466,8 @@ paths:
                 pmName: { type: string }
                 pmOn: { type: boolean }
       responses:
+        '400': { $ref: '#/components/responses/InvalidJson' }
+        '413': { $ref: '#/components/responses/PayloadTooLarge' }
         '200': { description: Акция обновлена }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
@@ -1476,6 +1527,7 @@ paths:
           application/json:
             schema: { type: object, required: [token], properties: { token: { type: string } } }
       responses:
+        '413': { $ref: '#/components/responses/PayloadTooLarge' }
         '200': { description: 'Операция выполнена успешно (ok: true)' }
         '400': { description: Пустой token }
         '401': { $ref: '#/components/responses/Unauthorized' }
@@ -1502,6 +1554,7 @@ paths:
           application/json:
             schema: { type: object, required: [body], properties: { body: { type: string } } }
       responses:
+        '413': { $ref: '#/components/responses/PayloadTooLarge' }
         '200': { description: 'Счётчики sent, delivered, failed и errors' }
         '400': { description: Пустое или состоящее из пробелов поле body }
         '401': { $ref: '#/components/responses/Unauthorized' }
@@ -1537,6 +1590,7 @@ paths:
                 - required: [endpoint]
                 - required: [token]
       responses:
+        '413': { $ref: '#/components/responses/PayloadTooLarge' }
         '200': { description: 'Устройство отвязано (ok: true)' }
         '400': { description: Нужно передать endpoint или token }
         '401': { $ref: '#/components/responses/Unauthorized' }
@@ -1553,6 +1607,8 @@ paths:
           application/json:
             schema: { type: object, required: [cid], properties: { cid: { type: string } } }
       responses:
+        '400': { $ref: '#/components/responses/InvalidJson' }
+        '413': { $ref: '#/components/responses/PayloadTooLarge' }
         '200': { description: 'Операция выполнена успешно (ok: true)' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
@@ -1598,6 +1654,8 @@ paths:
                     qr: { $ref: '#/components/schemas/BonusKind' }
                     install: { $ref: '#/components/schemas/BonusKind' }
       responses:
+        '400': { $ref: '#/components/responses/InvalidJson' }
+        '413': { $ref: '#/components/responses/PayloadTooLarge' }
         '200': { description: OK }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
@@ -1638,6 +1696,8 @@ paths:
               description: Telegram Update object; точная структура определяется Telegram Bot API.
               additionalProperties: true
       responses:
+        '400': { $ref: '#/components/responses/InvalidJson' }
+        '413': { $ref: '#/components/responses/PayloadTooLarge' }
         '200': { description: Update принят в обработку }
         '403': { description: Неверный webhook secret }
         '503': { description: Webhook secret не настроен }

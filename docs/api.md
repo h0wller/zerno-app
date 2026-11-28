@@ -151,6 +151,8 @@ SMS.ru остаётся подготовленным будущим платны
 | `GET /api/stats/redeems` | Списания бесплатных напитков за 30 дней по умолчанию; `?month=YYYY-MM` — календарный месяц в часовом поясе `Europe/Kaliningrad`, с разбивкой по напитку, дням и кассовым начислениям штампов | adminGuard |
 | `GET /api/stats/orders` | Статистика заказов | adminGuard |
 
+**JSON body parser.** Обычные API-маршруты используют общий лимит JSON-тела 10 MiB. Некорректный JSON возвращает HTTP 400 `{ error: "Некорректный JSON", code: "INVALID_JSON" }`; тело больше лимита — HTTP 413 `{ error: "Тело запроса слишком большое", code: "PAYLOAD_TOO_LARGE" }`. Сырой запрос и внутреннее сообщение парсера клиенту не возвращаются. Исключения с отдельными лимитами и локальными ответами — `POST /api/clientlog` (4 KiB) и `POST /api/menu/upload` (6 MiB).
+
 ## Сверка и ограничения
 
 - Старые пути `POST /api/auth/otp-send` и `POST /api/auth/otp-verify` отсутствуют. Для Telegram-регистрации используются `request-reg-otp` и `POST check-reg` с отдельным случайным `pollToken`; входной OTP отправляется через `request-otp` и проверяется в `POST /api/auth/login`.
