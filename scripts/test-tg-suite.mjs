@@ -68,11 +68,11 @@ async function run() {
 
   // 1. Проверка доступности сервера
   try {
-    const hRes = await fetch(`${BASE_URL}/api/health`);
+    const hRes = await fetch(`${BASE_URL}/api/ready`);
     const hData = await hRes.json().catch(() => ({}));
-    report('API Healthcheck (/api/health)', hRes.ok && hData.ok === true);
+    report('API Readiness (/api/ready)', hRes.ok && hData.ok === true);
   } catch (err) {
-    report('API Healthcheck (/api/health)', false, 'Сервер не отвечает на порту ' + PORT);
+    report('API Readiness (/api/ready)', false, 'Сервер не отвечает на порту ' + PORT);
     console.log('\nУбедитесь, что сервер запущен: npm start или pm2 status\n');
     process.exit(1);
   }
