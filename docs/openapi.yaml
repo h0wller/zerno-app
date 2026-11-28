@@ -491,8 +491,8 @@ paths:
                 opts: { type: array, items: { type: object } }
       responses:
         '200': { description: Позиция создана; возвращает ok и id }
+        '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
-
   /api/menu/reorder:
     put:
       tags: [Menu]
@@ -512,9 +512,9 @@ paths:
       responses:
         '200': { description: Порядок обновлён }
         '400': { description: Пустой порядок }
-        '409': { description: Не все позиции найдены в выбранной секции }
+        '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
-
+        '409': { description: Не все позиции найдены в выбранной секции }
   /api/menu/all:
     get:
       tags: [Menu]
@@ -522,8 +522,8 @@ paths:
       security: [{ BearerAuth: [] }]
       responses:
         '200': { description: OK }
+        '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
-
   /api/menu/{id}:
     put:
       tags: [Menu]
@@ -550,6 +550,7 @@ paths:
                 opts: { type: array, items: { type: object } }
       responses:
         '200': { description: Позиция обновлена }
+        '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { description: Позиция не найдена }
     delete:
@@ -564,8 +565,8 @@ paths:
           schema: { type: string }
       responses:
         '200': { description: Позиция удалена }
+        '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
-
   /api/menu/upload:
     post:
       tags: [Menu]
