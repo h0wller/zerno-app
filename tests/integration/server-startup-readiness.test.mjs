@@ -77,11 +77,15 @@ after(async () => {
   fs.rmSync(tempRoot, { recursive: true, force: true });
 });
 
-test('health stays unavailable when the startup image migration fails', async () => {
-  const response = await fetch(base + '/api/health');
-  assert.equal(response.status, 503);
-  assert.deepEqual(await response.json(), { ok: false });
-  assert.equal(response.headers.get('retry-after'), '2');
+test('liveness remains available but readiness fails when startup migration fails', async () => {
+  const liveness = await fetch(base + '/api/health');
+  assert.equal(liveness.status, 200);
+  assert.deepEqual(await liveness.json(), { ok: true });
+
+  const readiness = await fetch(base + '/api/ready');
+  assert.equal(readiness.status, 503);
+  assert.deepEqual(await readiness.json(), { ok: false });
+  assert.equal(readiness.headers.get('retry-after'), '2');
 });
 
 test('API requests stay gated when startup migration has failed', async () => {
