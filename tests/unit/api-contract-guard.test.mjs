@@ -7,6 +7,7 @@ import {
   parseOpenApiStrict,
   collectOpenApiOperations,
   checkAuditSentinels,
+  checkOpenApiReferences,
 } from '../../scripts/api-contract-guard.mjs';
 
 const minimalOpenApi = (paths) => ({ openapi: '3.0.3', paths });
@@ -303,4 +304,43 @@ test('C-09 rejects missing required min and incorrect delay bounds', () => {
     sources: { 'server/routes/orders.js': 'Number.isInteger(minutes) && minutes >= 1 && minutes <= 180' },
   });
   assert.ok(invalidMax.diagnostics.some((item) => item.invariant === 'C-09' && item.file === 'docs/openapi.yaml'));
+});
+
+test('OpenAPI local reference integrity accepts existing JSON pointers', () => {
+  const openapi = {
+    paths: {
+      '/api/example': {
+        get: {
+          responses: {
+            '200': { $ref: '#/components/responses/Ok' },
+          },
+        },
+      },
+    },
+    components: {
+      responses: { Ok: { description: 'OK' } },
+    },
+  };
+  assert.deepEqual(checkOpenApiReferences(openapi), []);
+});
+
+test('OpenAPI local reference integrity reports unresolved JSON pointers', () => {
+  const openapi = {
+    paths: {
+      '/api/example': {
+        post: {
+          requestBody: { $ref: '#/components/requestBodies/Missing' },
+          responses: {
+            '200': { $ref: '#/components/responses/Absent' },
+          },
+        },
+      },
+    },
+    components: { responses: {} },
+  };
+  const diagnostics = checkOpenApiReferences(openapi);
+  assert.equal(diagnostics.length, 2);
+  assert.ok(diagnostics.every((item) => item.code === 'UNRESOLVED_OPENAPI_REF'));
+  assert.match(formatDiagnostic(diagnostics[0]), /components\/requestBodies\/Missing/);
+  assert.match(formatDiagnostic(diagnostics[1]), /components\/responses\/Absent/);
 });

@@ -121,6 +121,61 @@ export function collectOpenApiOperations(openapi) {
   return operations;
 }
 
+export function checkOpenApiReferences(openapi) {
+  const diagnostics = [];
+
+  function resolvePointer(reference) {
+    if (reference === '#') return openapi;
+    if (!reference.startsWith('#/')) return undefined;
+    const segments = reference.slice(2).split('/').map((segment) => {
+      if (/~(?![01])/.test(segment)) return null;
+      return segment.replace(/~1/g, '/').replace(/~0/g, '~');
+    });
+    if (segments.some((segment) => segment === null)) return undefined;
+    return segments.reduce((value, segment) => (
+      value !== null && typeof value === 'object' && Object.hasOwn(value, segment)
+        ? value[segment]
+        : undefined
+    ), openapi);
+  }
+
+  function visit(value, location) {
+    if (!value || typeof value !== 'object') return;
+    if (Array.isArray(value)) {
+      value.forEach((item, index) => visit(item, `${location}[${index}]`));
+      return;
+    }
+    if (Object.hasOwn(value, '$ref')) {
+      const reference = value.$ref;
+      if (typeof reference !== 'string' || !reference.trim()) {
+        diagnostics.push({
+          code: 'INVALID_OPENAPI_REF',
+          file: 'docs/openapi.yaml',
+          method: 'REFERENCE',
+          path: location,
+          expected: 'non-empty string $ref',
+          actual: JSON.stringify(reference),
+        });
+      } else if (reference.startsWith('#') && resolvePointer(reference) === undefined) {
+        diagnostics.push({
+          code: 'UNRESOLVED_OPENAPI_REF',
+          file: 'docs/openapi.yaml',
+          method: 'REFERENCE',
+          path: location,
+          expected: `existing local JSON pointer ${reference}`,
+          actual: 'reference target does not exist',
+        });
+      }
+    }
+    for (const [key, child] of Object.entries(value)) {
+      if (key !== '$ref') visit(child, location ? `${location}.${key}` : key);
+    }
+  }
+
+  visit(openapi, '');
+  return diagnostics;
+}
+
 function operationKey(operation) {
   return `${operation.method.toUpperCase()} ${operation.path}`;
 }
@@ -458,6 +513,7 @@ export function runApiContractAudit(root = process.cwd()) {
 
   const openApiOperations = collectOpenApiOperations(openapi);
   diagnostics.push(...compareRouteInventories(serverRoutes, openApiOperations));
+  diagnostics.push(...checkOpenApiReferences(openapi));
   const sentinels = checkAuditSentinels({ openapi, sources });
   diagnostics.push(...sentinels.diagnostics);
   return { serverRoutes, openApiOperations, diagnostics, sentinelFindings: sentinels.findings };
