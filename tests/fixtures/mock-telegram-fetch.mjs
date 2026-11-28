@@ -11,15 +11,8 @@ if (process.env.ZERNO_MOCK_TELEGRAM_FETCH === '1') {
       payload = typeof init.body === 'string' ? JSON.parse(init.body) : {};
     } catch {}
 
-    process.stdout.write('[TG_MOCK]' + JSON.stringify({
-      method: match[1],
-      payload
-    }) + '\\n');
-
-    return new Response(JSON.stringify({
-      ok: true,
-      result: { message_id: 9001 }
-    }), {
+    process.stdout.write('[TG_MOCK]' + JSON.stringify({ method: match[1], payload }) + '\n');
+    return new Response(JSON.stringify({ ok: true, result: { message_id: 9001 } }), {
       status: 200,
       headers: { 'content-type': 'application/json' }
     });
