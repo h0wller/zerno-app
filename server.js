@@ -38,16 +38,6 @@ import { menuImageForResponse, menuImageSrcsetForResponse } from './server/utils
 const app = express();
 let startupState = 'starting';
 
-// The HTTP listener may start before the legacy image migration finishes.
-// Do not expose API traffic or a successful health check until it is complete.
-app.use((req, res, next) => {
-  if (req.path.startsWith('/api/') && req.path !== '/api/health' && startupState !== 'ready') {
-    res.set('Retry-After', '2');
-    return res.status(503).json({ ok: false });
-  }
-  next();
-});
-
 function menuResponseItem(row) {
   const result = item(row);
   result.img = menuImageForResponse(result.img, PUBLIC_DIR);
@@ -68,6 +58,15 @@ function appKb() {
 app.use(compression({ threshold: 1024 }));
 app.use(securityHeaders);
 app.use(corsMiddleware);
+
+ // API traffic waits until required startup work has completed successfully.
+app.use((req, res, next) => {
+  if (req.path.startsWith('/api/') && req.path !== '/api/health' && startupState !== 'ready') {
+    res.set('Retry-After', '2');
+    return res.status(503).json({ ok: false });
+  }
+  next();
+});
 /* Ф5.20: канонический хост — один origin для SW/кэша/PWA */
 app.use((req, res, next) => {
   if (req.hostname === 'andcoffee.online' || req.hostname === 'www.andcoffee.online') {
