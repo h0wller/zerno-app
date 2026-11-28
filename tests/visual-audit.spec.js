@@ -2,7 +2,6 @@ import { test, expect } from '@playwright/test';
 import fs from 'node:fs';
 import path from 'node:path';
 
-const BASE = process.env.TEST_URL || process.env.PLAYWRIGHT_BASE_URL || 'http://localhost:3000';
 const OUT = path.join('artifacts', 'visual-audit');
 const VIEWPORTS = [
   { id: 'xs', width: 320, height: 740 },
@@ -31,8 +30,17 @@ async function prepareColdGuest(page, brand, viewport) {
     } catch {}
   }, brand);
 
-  await page.goto(`${BASE}/?brand=${brand}`, { waitUntil: 'domcontentloaded' });
+  await page.goto(`/?brand=${brand}`, { waitUntil: 'domcontentloaded' });
 }
+
+test('cold guest navigation uses the configured Playwright baseURL', async ({ page }, testInfo) => {
+  const configuredBaseURL = testInfo.project.use.baseURL;
+  expect(configuredBaseURL, 'Playwright baseURL must be configured').toBeTruthy();
+
+  await prepareColdGuest(page, 'coffee', { width: 390, height: 844 });
+
+  expect(new URL(page.url()).origin).toBe(new URL(configuredBaseURL).origin);
+});
 
 async function waitForHydratedStorefront(page, brand) {
   const grid = brand === 'delivery' ? '#deliveryGrid' : '#grid';
@@ -544,9 +552,9 @@ for (const viewport of [
 }
 
 
-test('visual audit: delivery search states for admin at 390x844', async ({ page }) => {
+test('visual audit: delivery search states for admin at 390x844', async ({ page }, testInfo) => {
   const viewport = { id: '390x844', width: 390, height: 844 };
-  const menuResponse = await page.request.get(`${BASE}/api/dmenu`);
+  const menuResponse = await page.request.get(new URL('/api/dmenu', testInfo.project.use.baseURL).href);
   expect(menuResponse.ok()).toBe(true);
   const publicMenu = await menuResponse.json();
   const staffItems = (publicMenu.items || []).map((item) => ({ ...item, section: 'delivery' }));
@@ -618,7 +626,7 @@ test('visual audit: delivery search states for admin at 390x844', async ({ page 
   });
 
   await page.setViewportSize({ width: viewport.width, height: viewport.height });
-  await page.goto(`${BASE}/?brand=delivery`, { waitUntil: 'domcontentloaded' });
+  await page.goto('/?brand=delivery', { waitUntil: 'domcontentloaded' });
   await page.waitForFunction(() =>
     document.documentElement.getAttribute('data-staff-role') === 'admin' &&
     document.documentElement.getAttribute('data-staff-ready') === '1'
@@ -833,7 +841,7 @@ for (const brand of ['coffee', 'delivery']) {
         body: JSON.stringify({ orders: [] })
       }));
 
-      await page.goto(`${BASE}/?brand=${brand}`, { waitUntil: 'domcontentloaded' });
+      await page.goto(`/?brand=${brand}`, { waitUntil: 'domcontentloaded' });
       await page.waitForFunction(() =>
         document.documentElement.getAttribute('data-staff-ready') === '1' &&
         typeof window.openAuth === 'function' &&
