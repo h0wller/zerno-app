@@ -110,7 +110,7 @@ for (const size of sizes) {
 const legacyDuplicateMatches = verifyLegacyDuplicates();
 console.log(JSON.stringify({
   benchmark: 'F-005 staff customer exact-phone lookup',
-  note: 'Synthetic in-memory SQLite microbenchmark; excludes Express, cust() history serialization, network and production storage.',
+  note: 'Synthetic in-memory SQLite microbenchmark; excludes Express, cust() history serialization, network and production storage. The deterministic ph10() UDF is a prototype index only and would need registration on every production connection.',
   legacy_duplicate_matches: legacyDuplicateMatches,
   results
 }, null, 2));
