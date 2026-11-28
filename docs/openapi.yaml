@@ -493,6 +493,7 @@ paths:
         '200': { description: Позиция создана; возвращает ok и id }
         '403': { $ref: '#/components/responses/Forbidden' }
 
+        '401': { $ref: '#/components/responses/Unauthorized' }
   /api/menu/reorder:
     put:
       tags: [Menu]
@@ -515,6 +516,7 @@ paths:
         '409': { description: Не все позиции найдены в выбранной секции }
         '403': { $ref: '#/components/responses/Forbidden' }
 
+        '401': { $ref: '#/components/responses/Unauthorized' }
   /api/menu/all:
     get:
       tags: [Menu]
@@ -524,6 +526,7 @@ paths:
         '200': { description: OK }
         '403': { $ref: '#/components/responses/Forbidden' }
 
+        '401': { $ref: '#/components/responses/Unauthorized' }
   /api/menu/{id}:
     put:
       tags: [Menu]
@@ -552,6 +555,7 @@ paths:
         '200': { description: Позиция обновлена }
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { description: Позиция не найдена }
+        '401': { $ref: '#/components/responses/Unauthorized' }
     delete:
       tags: [Menu]
       summary: Удалить позицию меню
@@ -566,6 +570,7 @@ paths:
         '200': { description: Позиция удалена }
         '403': { $ref: '#/components/responses/Forbidden' }
 
+        '401': { $ref: '#/components/responses/Unauthorized' }
   /api/menu/upload:
     post:
       tags: [Menu]

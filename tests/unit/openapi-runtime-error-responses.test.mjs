@@ -71,3 +71,18 @@ test('OpenAPI documents remaining authentication and role-guard error responses'
     }
   }
 });
+
+test('OpenAPI documents missing bearer authentication responses for menu guard operations', () => {
+  const expected = [
+    ['get', '/api/menu/all'],
+    ['post', '/api/menu'],
+    ['put', '/api/menu/reorder'],
+    ['put', '/api/menu/{id}'],
+    ['delete', '/api/menu/{id}'],
+  ];
+
+  for (const [method, path] of expected) {
+    const actual = responseCodes(method, path);
+    assert.ok(actual.includes('401'), `${method.toUpperCase()} ${path} must document HTTP 401`);
+  }
+});
