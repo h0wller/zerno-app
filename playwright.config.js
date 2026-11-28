@@ -1,7 +1,7 @@
 import { defineConfig, devices } from '@playwright/test';
 
 const testPort = process.env.CI ? (process.env.PORT || '3000') : '3100';
-const testUrl = process.env.TEST_URL || `http://localhost:${testPort}`;
+const testUrl = process.env.TEST_URL || process.env.PLAYWRIGHT_BASE_URL || `http://localhost:${testPort}`;
 
 export default defineConfig({
   testDir: './tests',
@@ -21,7 +21,7 @@ export default defineConfig({
     // actionTimeout: 10000,
   },
 
-  webServer: process.env.TEST_URL ? undefined : {
+  webServer: process.env.TEST_URL || process.env.PLAYWRIGHT_BASE_URL ? undefined : {
     command: 'node server.js',
     url: `${testUrl}/api/ready`,
     // Do not reuse the developer's server: it does not expose /__test/otp and may
