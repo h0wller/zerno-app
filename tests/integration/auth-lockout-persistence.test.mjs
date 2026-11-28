@@ -41,7 +41,7 @@ async function waitForServer(fixture) {
       );
     }
     try {
-      const response = await fetch(`${fixture.base}/api/health`);
+      const response = await fetch(`${fixture.base}/api/ready`);
       if (response.ok) return;
     } catch {}
     await new Promise(resolve => setTimeout(resolve, 150));
