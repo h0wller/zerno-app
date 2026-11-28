@@ -642,6 +642,94 @@ test('Telegram registration polling is scoped to a random one-attempt secret, no
   assert.equal(replayedPoll.json.token, undefined);
 });
 
+test('Telegram registration does not promise welcome benefits when the campaign is disabled', async () => {
+  const bonusKey = "SELECT value FROM meta WHERE key='bonus_cfg'";
+  const previousConfig = inspectDb.prepare(bonusKey).get();
+  const disabledConfig = {
+    days: 30,
+    kinds: {
+      signup: { coffee: 0, delivery: 0, freeFirstDelivery: 0 },
+      qr: { coffee: 0, delivery: 0, freeFirstDelivery: 0 },
+      install: { coffee: 0, delivery: 0, freeFirstDelivery: 0 }
+    }
+  };
+
+  try {
+    inspectDb.prepare(
+      "INSERT INTO meta(key,value) VALUES('bonus_cfg',?) ON CONFLICT(key) DO UPDATE SET value=excluded.value"
+    ).run(JSON.stringify(disabledConfig));
+
+    const phone = '+7 900 000-01-18';
+    const returnTo = '/?brand=delivery&tab=profile#profile';
+    const requested = await api('/api/auth/request-reg-otp', {
+      name: 'Telegram No Welcome Bonus',
+      phone,
+      pin: '1357',
+      consent: true,
+      returnTo,
+      via: 'tg'
+    });
+    assert.equal(requested.status, 200, JSON.stringify(requested.json));
+
+    const botToken = new URL(requested.json.tgUrl).searchParams.get('start')?.replace(/^reg_/, '');
+    assert.match(botToken || '', /^[a-f0-9]{32}$/);
+    const chatId = 900000118;
+    const started = await webhook({
+      message: {
+        chat: { id: chatId, type: 'private' },
+        from: { id: chatId, first_name: 'Telegram No Welcome Bonus' },
+        text: '/start reg_' + botToken
+      }
+    });
+    assert.equal(started.status, 200);
+
+    const confirmed = await webhook({
+      message: {
+        chat: { id: chatId, type: 'private' },
+        from: { id: chatId, first_name: 'Telegram No Welcome Bonus' },
+        contact: { phone_number: phone, user_id: chatId }
+      }
+    });
+    assert.equal(confirmed.status, 200);
+
+    const registrationMessage = await waitForTelegramMessage(message => (
+      String(message.chat_id) === String(chatId) && /Профиль готов,/.test(message.text || '')
+    ));
+    assert.match(registrationMessage.text, /Приветственный бонус сейчас не начислен: эта возможность отключена/);
+    assert.match(registrationMessage.text, /Бесплатных кофе сейчас нет/);
+    assert.match(registrationMessage.text, /Персонального кода бесплатной доставки сейчас нет/);
+    assert.doesNotMatch(registrationMessage.text, /Персональная бесплатная первая доставка доступна/i);
+    assert.doesNotMatch(registrationMessage.text, /Приветственный бонус начислен:/);
+
+    const returnButton = registrationMessage.reply_markup?.inline_keyboard?.[0]?.[0];
+    assert.equal(returnButton?.text, 'Вернуться в приложение');
+    const returnedUrl = new URL(returnButton.url);
+    assert.equal(returnedUrl.origin, 'https://friday.andcoffee.online');
+    assert.equal(returnedUrl.searchParams.get('brand'), 'delivery');
+    assert.equal(returnedUrl.searchParams.get('tab'), 'profile');
+    assert.equal(returnedUrl.hash, '#profile');
+
+    const customer = inspectDb.prepare(
+      'SELECT id, verified, stamps, free FROM customers WHERE phone=?'
+    ).get(phone);
+    assert.equal(customer?.verified, 1);
+    assert.equal(customer?.stamps, 0);
+    assert.equal(customer?.free, 0);
+    assert.equal(inspectDb.prepare(
+      "SELECT COUNT(*) AS n FROM bonus_grants WHERE cid=? AND kind IN ('signup','qr')"
+    ).get(customer.id).n, 0);
+    assert.equal(inspectDb.prepare(
+      "SELECT COUNT(*) AS n FROM promos WHERE owner=? AND kind='freeship'"
+    ).get(customer.id).n, 0);
+  } finally {
+    if (previousConfig) {
+      inspectDb.prepare("UPDATE meta SET value=? WHERE key='bonus_cfg'").run(previousConfig.value);
+    } else {
+      inspectDb.prepare("DELETE FROM meta WHERE key='bonus_cfg'").run();
+    }
+  }
+});
+
 test('staff role activation fails closed when role secrets are missing or weak', async () => {
   const registered = await api('/api/auth/register', {
     name: 'No Role Secret Test', phone: '+7 900 000-01-09', pin: '1234', consent: true
