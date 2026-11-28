@@ -6,7 +6,7 @@ import { tgSend, escapeTelegramHtml, TG_TOKEN, TG_WEBHOOK_SECRET, APP_URL } from
 import { fmtPhone, ph10 } from '../utils/phone.js';
 import { otpStore, consumeOtp } from '../utils/otp.js';
 import { grantWelcome } from '../domain/loyalty.js';
-import { grantBonus, grantBonusDetailed, findFreeDeliveryCode, QR_SOURCE } from '../domain/bonuses.js';
+import { grantBonusDetailed, findFreeDeliveryCode, QR_SOURCE } from '../domain/bonuses.js';
 import { formatWelcomeBonusMessage } from '../domain/welcome-bonus-message.js';
 import { formatTelegramBenefitsMessage } from '../domain/telegram-benefits-message.js';
 import { cust, addHist, issueToken } from '../domain/helpers.js';

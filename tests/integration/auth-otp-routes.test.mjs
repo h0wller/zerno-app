@@ -6,6 +6,7 @@ import { once } from 'node:events';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import '../fixtures/mock-telegram-fetch.mjs';
 import { pathToFileURL } from 'node:url';
 import { randomUUID } from 'node:crypto';
 import { createRequire } from 'node:module';
