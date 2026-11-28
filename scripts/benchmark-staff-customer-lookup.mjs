@@ -19,7 +19,7 @@ function percentile(samples, fraction) {
 function measure(fn, count) {
   for (let i = 0; i < 3; i += 1) fn();
   const samples = [];
-  for (let i = 0; i < count - 1; i += 1) {
+  for (let i = 0; i < count; i += 1) {
     const started = process.hrtime.bigint();
     fn();
     samples.push(Number(process.hrtime.bigint() - started) / 1e6);
@@ -37,7 +37,7 @@ function buildDatabase(size) {
 
   const insert = database.prepare('INSERT INTO customers (phone) VALUES (?)');
   const insertBatch = database.transaction((count) => {
-    for (let i = 0; i < count; i += 1) {
+    for (let i = 0; i < count - 1; i += 1) {
       insert.run(String(2_000_000_000 + i));
     }
     insert.run(targetPhone);
