@@ -962,11 +962,13 @@ paths:
         - in: query
           name: key
           required: true
-          schema: { type: string, maxLength: 64 }
+          schema: { type: string, minLength: 1, maxLength: 80 }
       responses:
         '200': { description: Массив msgs }
+        '400': { description: Некорректный ключ треда }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { description: Тред не найден }
   /api/chat/reply:
     post:
       tags: [Chat]
@@ -976,12 +978,13 @@ paths:
         required: true
         content:
           application/json:
-            schema: { type: object, required: [key, text], properties: { key: { type: string, maxLength: 64 }, text: { type: string, maxLength: 2000 } } }
+            schema: { type: object, required: [key, text], properties: { key: { type: string, minLength: 1, maxLength: 80 }, text: { type: string, maxLength: 2000 } } }
       responses:
         '200': { description: 'Операция выполнена успешно (ok: true)' }
-        '400': { description: Некорректное сообщение }
+        '400': { description: Некорректный ключ треда или сообщение длиной вне диапазона 1–2000 символов }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { description: Тред не найден }
   /api/chat/close:
     post:
       tags: [Chat]
@@ -991,11 +994,13 @@ paths:
         required: true
         content:
           application/json:
-            schema: { type: object, required: [key], properties: { key: { type: string, maxLength: 64 } } }
+            schema: { type: object, required: [key], properties: { key: { type: string, minLength: 1, maxLength: 80 } } }
       responses:
         '200': { description: 'Операция выполнена успешно (ok: true)' }
+        '400': { description: Некорректный ключ треда }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { description: Тред не найден }
   /api/chat/open:
     post:
       tags: [Chat]
@@ -1009,11 +1014,13 @@ paths:
               type: object
               required: [key]
               properties:
-                key: { type: string }
+                key: { type: string, minLength: 1, maxLength: 80 }
       responses:
         '200': { description: OK }
+        '400': { description: Некорректный ключ треда }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { description: Тред не найден }
   /api/vapid:
     get:
       tags: [Push]

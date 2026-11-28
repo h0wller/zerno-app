@@ -86,3 +86,27 @@ test('OpenAPI documents missing bearer authentication responses for menu guard o
     assert.ok(actual.includes('401'), `${method.toUpperCase()} ${path} must document HTTP 401`);
   }
 });
+
+test('OpenAPI documents staff chat helper errors and the complete supported thread-key length', () => {
+  const expected = [
+    ['get', '/api/chat/dialog', ['400', '401', '403', '404']],
+    ['post', '/api/chat/reply', ['400', '401', '403', '404']],
+    ['post', '/api/chat/close', ['400', '401', '403', '404']],
+    ['post', '/api/chat/open', ['400', '401', '403', '404']],
+  ];
+
+  for (const [method, path, requiredCodes] of expected) {
+    const actual = responseCodes(method, path);
+    for (const code of requiredCodes) {
+      assert.ok(actual.includes(code), `${method.toUpperCase()} ${path} must document HTTP ${code}`);
+    }
+
+    const operation = openapi.paths[path][method];
+    const keySchema = method === 'get'
+      ? operation.parameters.find(parameter => parameter.in === 'query' && parameter.name === 'key')?.schema
+      : operation.requestBody?.content?.['application/json']?.schema?.properties?.key;
+
+    assert.equal(keySchema?.minLength, 1, `${method.toUpperCase()} ${path} key must not be empty`);
+    assert.equal(keySchema?.maxLength, 80, `${method.toUpperCase()} ${path} key must allow the runtime's 80-character limit`);
+  }
+});
