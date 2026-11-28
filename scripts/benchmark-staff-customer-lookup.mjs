@@ -30,17 +30,54 @@ function measure(fn, count) {
   };
 }
 
+function formatPhone(digits) {
+  return `+7 ${digits.slice(0, 3)} ${digits.slice(3, 6)}-${digits.slice(6, 8)}-${digits.slice(8, 10)}`;
+}
+
 function buildDatabase(size) {
   const database = new Database(':memory:');
   database.function('ph10', { deterministic: true }, ph10);
-  database.exec('CREATE TABLE customers (id INTEGER PRIMARY KEY, phone TEXT NOT NULL)');
+  database.exec(`CREATE TABLE customers (
+    id INTEGER PRIMARY KEY,
+    name TEXT,
+    phone TEXT NOT NULL,
+    stamps INTEGER,
+    free INTEGER,
+    cups INTEGER,
+    qr TEXT,
+    created_at TEXT,
+    role TEXT,
+    tg TEXT,
+    pin TEXT,
+    verified INTEGER,
+    welcome INTEGER,
+    actcode TEXT,
+    notify_tg INTEGER,
+    notify_web INTEGER,
+    consent TEXT,
+    src TEXT,
+    qr_done INTEGER
+  )`);
 
-  const insert = database.prepare('INSERT INTO customers (phone) VALUES (?)');
+  const insert = database.prepare(`
+    INSERT INTO customers (
+      name, phone, stamps, free, cups, qr, created_at, role, tg, pin,
+      verified, welcome, actcode, notify_tg, notify_web, consent, src, qr_done
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `);
   const insertBatch = database.transaction((count) => {
     for (let i = 0; i < count - 1; i += 1) {
-      insert.run(String(2_000_000_000 + i));
+      insert.run(
+        `Synthetic Customer ${i}`,
+        formatPhone(String(2_000_000_000 + i)),
+        0, 0, 0, `Z-BENCH-${i}`, '2026-01-01T00:00:00.000Z', 'guest',
+        null, '', 1, 0, null, 1, 1, '', '', 0
+      );
     }
-    insert.run(targetPhone);
+    insert.run(
+      'Synthetic Target', targetPhone, 0, 0, 0, 'Z-BENCH-TARGET',
+      '2026-01-01T00:00:00.000Z', 'guest', null, '', 1, 0, null, 1, 1, '', '', 0
+    );
   });
   insertBatch(size);
 
@@ -72,8 +109,8 @@ const results = [];
 for (const size of sizes) {
   const database = buildDatabase(size);
   try {
-    const scan = database.prepare('SELECT id, phone FROM customers');
-    const indexed = database.prepare('SELECT id FROM customers WHERE ph10(phone)=? ORDER BY id');
+    const scan = database.prepare('SELECT * FROM customers');
+    const indexed = database.prepare('SELECT * FROM customers WHERE ph10(phone)=? ORDER BY id');
     const expected = scan.all().filter(row => ph10(row.phone) === targetDigits).map(row => row.id);
     const actual = indexed.all(targetDigits).map(row => row.id);
     assert.deepEqual(actual, expected, `indexed lookup must match full scan at ${size} rows`);
