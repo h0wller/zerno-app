@@ -84,7 +84,7 @@ after(async () => {
 test('malformed JSON on a regular API route returns a stable JSON error without echoing the body', async () => {
   const response = await sendRawJson('{"phone":');
   assert.equal(response.status, 400);
-  assert.match(response.contentType || '', /application\\/json/i);
+  assert.ok((response.contentType || '').includes('application/json'));
   assert.deepEqual(response.json, {
     error: 'Некорректный JSON',
     code: 'INVALID_JSON'
@@ -95,7 +95,7 @@ test('malformed JSON on a regular API route returns a stable JSON error without 
 test('JSON over the global 10 MiB limit returns a stable JSON 413 response', async () => {
   const response = await sendRawJson(Buffer.alloc(10 * 1024 * 1024 + 1, 0x61));
   assert.equal(response.status, 413);
-  assert.match(response.contentType || '', /application\\/json/i);
+  assert.ok((response.contentType || '').includes('application/json'));
   assert.deepEqual(response.json, {
     error: 'Тело запроса слишком большое',
     code: 'PAYLOAD_TOO_LARGE'
