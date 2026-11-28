@@ -130,7 +130,8 @@ paths:
     get:
       tags: [System]
       summary: Readiness-check after required startup migration
-      description: Returns 200 only after startup migration succeeds. While startup is incomplete or the migration failed, returns 503 and Retry-After: 2. Other API routes also return 503 until the server is ready.
+      description: >-
+        Returns 200 only after startup migration succeeds. While startup is incomplete or the migration failed, returns 503 and a Retry-After header with value 2. Other API routes also return 503 until the server is ready.
       responses:
         '200':
           description: Application is ready
