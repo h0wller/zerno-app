@@ -7,6 +7,7 @@ import {
   parseOpenApiStrict,
   collectOpenApiOperations,
   checkAuditSentinels,
+  checkOpenApiReferences,
 } from '../../scripts/api-contract-guard.mjs';
 
 const minimalOpenApi = (paths) => ({ openapi: '3.0.3', paths });
