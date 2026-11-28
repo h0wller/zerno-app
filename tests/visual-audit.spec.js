@@ -552,9 +552,9 @@ for (const viewport of [
 }
 
 
-test('visual audit: delivery search states for admin at 390x844', async ({ page }) => {
+test('visual audit: delivery search states for admin at 390x844', async ({ page }, testInfo) => {
   const viewport = { id: '390x844', width: 390, height: 844 };
-  const menuResponse = await page.request.get('/api/dmenu');
+  const menuResponse = await page.request.get(new URL('/api/dmenu', testInfo.project.use.baseURL).href);
   expect(menuResponse.ok()).toBe(true);
   const publicMenu = await menuResponse.json();
   const staffItems = (publicMenu.items || []).map((item) => ({ ...item, section: 'delivery' }));
