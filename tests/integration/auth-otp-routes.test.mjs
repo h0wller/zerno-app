@@ -561,6 +561,43 @@ test('Telegram registration polling is scoped to a random one-attempt secret, no
   });
   assert.equal(confirmed.status, 200, JSON.stringify(confirmed.json));
 
+  // The real Telegram confirmation must describe the persisted grant and both brand benefits.
+  const registrationMessage = await waitForTelegramMessage(message => (
+    String(message.chat_id) === String(chatId) && /Профиль готов,/.test(message.text || '')
+  ));
+  assert.match(registrationMessage.text, /🎁 Приветственный бонус начислен:/);
+  assert.match(registrationMessage.text, /Карта: <b>0\/10<\/b> штампов/);
+  assert.match(registrationMessage.text, /бесплатных кофе: <b>1<\/b>/);
+  assert.match(registrationMessage.text, /Персональная бесплатная первая доставка доступна/);
+  assert.match(registrationMessage.text, /подставит его автоматически/);
+  const registrationReturnButton = registrationMessage.reply_markup?.inline_keyboard?.[0]?.[0];
+  assert.equal(registrationReturnButton?.text, 'Вернуться в приложение');
+  const registrationReturnUrl = new URL(registrationReturnButton.url);
+  assert.equal(registrationReturnUrl.origin, 'https://friday.andcoffee.online');
+  assert.equal(registrationReturnUrl.searchParams.get('brand'), 'coffee');
+  assert.equal(registrationReturnUrl.searchParams.get('tab'), 'profile');
+
+  const returningStart = await webhook({
+    message: { chat: { id: chatId, type: 'private' }, from: { id: chatId }, text: '/start' }
+  });
+  assert.equal(returningStart.status, 200);
+  const returningStartMessage = await waitForTelegramMessage(message => (
+    String(message.chat_id) === String(chatId) && /С возвращением,/.test(message.text || '')
+  ));
+  assert.match(returningStartMessage.text, /Карта: <b>0\/10<\/b> штампов/);
+  assert.match(returningStartMessage.text, /Персональная бесплатная первая доставка доступна/);
+
+  const returningBonus = await webhook({
+    message: { chat: { id: chatId, type: 'private' }, from: { id: chatId }, text: '/bonus' }
+  });
+  assert.equal(returningBonus.status, 200);
+  const returningBonusMessage = await waitForTelegramMessage(message => (
+    String(message.chat_id) === String(chatId) && /Ваши преимущества/.test(message.text || '')
+  ));
+  assert.match(returningBonusMessage.text, /Карта: <b>0\/10<\/b> штампов/);
+  assert.match(returningBonusMessage.text, /бесплатных кофе: <b>1<\/b>/);
+  assert.match(returningBonusMessage.text, /Персональная бесплатная первая доставка доступна/);
+
   const phoneLookup = await api('/api/auth/check-reg', { phone });
   assert.equal(phoneLookup.status, 400);
   assert.equal(phoneLookup.json.token, undefined);
@@ -603,6 +640,94 @@ test('Telegram registration polling is scoped to a random one-attempt secret, no
   assert.equal(replayedPoll.status, 200);
   assert.equal(replayedPoll.json.confirmed, false);
   assert.equal(replayedPoll.json.token, undefined);
+});
+
+test('Telegram registration does not promise welcome benefits when the campaign is disabled', async () => {
+  const bonusKey = "SELECT value FROM meta WHERE key='bonus_cfg'";
+  const previousConfig = inspectDb.prepare(bonusKey).get();
+  const disabledConfig = {
+    days: 30,
+    kinds: {
+      signup: { coffee: 0, delivery: 0, freeFirstDelivery: 0 },
+      qr: { coffee: 0, delivery: 0, freeFirstDelivery: 0 },
+      install: { coffee: 0, delivery: 0, freeFirstDelivery: 0 }
+    }
+  };
+
+  try {
+    inspectDb.prepare(
+      "INSERT INTO meta(key,value) VALUES('bonus_cfg',?) ON CONFLICT(key) DO UPDATE SET value=excluded.value"
+    ).run(JSON.stringify(disabledConfig));
+
+    const phone = '+7 900 000-01-18';
+    const returnTo = '/?brand=delivery&tab=profile#profile';
+    const requested = await api('/api/auth/request-reg-otp', {
+      name: 'Telegram No Welcome Bonus',
+      phone,
+      pin: '1357',
+      consent: true,
+      returnTo,
+      via: 'tg'
+    });
+    assert.equal(requested.status, 200, JSON.stringify(requested.json));
+
+    const botToken = new URL(requested.json.tgUrl).searchParams.get('start')?.replace(/^reg_/, '');
+    assert.match(botToken || '', /^[a-f0-9]{32}$/);
+    const chatId = 900000118;
+    const started = await webhook({
+      message: {
+        chat: { id: chatId, type: 'private' },
+        from: { id: chatId, first_name: 'Telegram No Welcome Bonus' },
+        text: '/start reg_' + botToken
+      }
+    });
+    assert.equal(started.status, 200);
+
+    const confirmed = await webhook({
+      message: {
+        chat: { id: chatId, type: 'private' },
+        from: { id: chatId, first_name: 'Telegram No Welcome Bonus' },
+        contact: { phone_number: phone, user_id: chatId }
+      }
+    });
+    assert.equal(confirmed.status, 200);
+
+    const registrationMessage = await waitForTelegramMessage(message => (
+      String(message.chat_id) === String(chatId) && /Профиль готов,/.test(message.text || '')
+    ));
+    assert.match(registrationMessage.text, /Приветственный бонус сейчас не начислен: эта возможность отключена/);
+    assert.match(registrationMessage.text, /Бесплатных кофе сейчас нет/);
+    assert.match(registrationMessage.text, /Персонального кода бесплатной доставки сейчас нет/);
+    assert.doesNotMatch(registrationMessage.text, /Персональная бесплатная первая доставка доступна/i);
+    assert.doesNotMatch(registrationMessage.text, /Приветственный бонус начислен:/);
+
+    const returnButton = registrationMessage.reply_markup?.inline_keyboard?.[0]?.[0];
+    assert.equal(returnButton?.text, 'Вернуться в приложение');
+    const returnedUrl = new URL(returnButton.url);
+    assert.equal(returnedUrl.origin, 'https://friday.andcoffee.online');
+    assert.equal(returnedUrl.searchParams.get('brand'), 'delivery');
+    assert.equal(returnedUrl.searchParams.get('tab'), 'profile');
+    assert.equal(returnedUrl.hash, '#profile');
+
+    const customer = inspectDb.prepare(
+      'SELECT id, verified, stamps, free FROM customers WHERE phone=?'
+    ).get(phone);
+    assert.equal(customer?.verified, 1);
+    assert.equal(customer?.stamps, 0);
+    assert.equal(customer?.free, 0);
+    assert.equal(inspectDb.prepare(
+      "SELECT COUNT(*) AS n FROM bonus_grants WHERE cid=? AND kind IN ('signup','qr')"
+    ).get(customer.id).n, 0);
+    assert.equal(inspectDb.prepare(
+      "SELECT COUNT(*) AS n FROM promos WHERE owner=? AND kind='freeship'"
+    ).get(customer.id).n, 0);
+  } finally {
+    if (previousConfig) {
+      inspectDb.prepare("UPDATE meta SET value=? WHERE key='bonus_cfg'").run(previousConfig.value);
+    } else {
+      inspectDb.prepare("DELETE FROM meta WHERE key='bonus_cfg'").run();
+    }
+  }
 });
 
 test('staff role activation fails closed when role secrets are missing or weak', async () => {
