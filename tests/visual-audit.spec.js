@@ -554,7 +554,7 @@ for (const viewport of [
 
 test('visual audit: delivery search states for admin at 390x844', async ({ page }) => {
   const viewport = { id: '390x844', width: 390, height: 844 };
-  const menuResponse = await page.request.get(`${BASE}/api/dmenu`);
+  const menuResponse = await page.request.get('/api/dmenu');
   expect(menuResponse.ok()).toBe(true);
   const publicMenu = await menuResponse.json();
   const staffItems = (publicMenu.items || []).map((item) => ({ ...item, section: 'delivery' }));
@@ -626,7 +626,7 @@ test('visual audit: delivery search states for admin at 390x844', async ({ page 
   });
 
   await page.setViewportSize({ width: viewport.width, height: viewport.height });
-  await page.goto(`${BASE}/?brand=delivery`, { waitUntil: 'domcontentloaded' });
+  await page.goto('/?brand=delivery', { waitUntil: 'domcontentloaded' });
   await page.waitForFunction(() =>
     document.documentElement.getAttribute('data-staff-role') === 'admin' &&
     document.documentElement.getAttribute('data-staff-ready') === '1'
@@ -841,7 +841,7 @@ for (const brand of ['coffee', 'delivery']) {
         body: JSON.stringify({ orders: [] })
       }));
 
-      await page.goto(`${BASE}/?brand=${brand}`, { waitUntil: 'domcontentloaded' });
+      await page.goto(`/?brand=${brand}`, { waitUntil: 'domcontentloaded' });
       await page.waitForFunction(() =>
         document.documentElement.getAttribute('data-staff-ready') === '1' &&
         typeof window.openAuth === 'function' &&
