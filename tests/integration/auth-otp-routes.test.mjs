@@ -6,6 +6,7 @@ import { once } from 'node:events';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { randomUUID } from 'node:crypto';
 import { createRequire } from 'node:module';
 
@@ -77,6 +78,27 @@ async function webhook(payload) {
   return { status: response.status, json };
 }
 
+function capturedTelegramMessages() {
+  return output.split(/\r?\n/)
+    .filter(line => line.startsWith('[TG_MOCK]'))
+    .map(line => {
+      try { return JSON.parse(line.slice('[TG_MOCK]'.length)); } catch { return null; }
+    })
+    .filter(entry => entry?.method === 'sendMessage')
+    .map(entry => entry.payload);
+}
+
+async function waitForTelegramMessage(predicate, timeoutMs = 3000) {
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    const message = capturedTelegramMessages().find(predicate);
+    if (message) return message;
+    await new Promise(resolve => setTimeout(resolve, 20));
+  }
+  throw new Error('Timed out waiting for Telegram message. Captured messages: ' +
+    JSON.stringify(capturedTelegramMessages()));
+}
+
 before(async () => {
   server = spawn(process.execPath, ['server.js'], {
     cwd: root,
@@ -85,7 +107,9 @@ before(async () => {
       NODE_ENV: 'test',
       PORT: String(port),
       DB_PATH: dbPath,
-      TELEGRAM_BOT_TOKEN: '',
+      TELEGRAM_BOT_TOKEN: 'integration-test-bot-token',
+      ZERNO_MOCK_TELEGRAM_FETCH: '1',
+      NODE_OPTIONS: [process.env.NODE_OPTIONS, '--import=' + pathToFileURL(path.join(root, 'tests/fixtures/mock-telegram-fetch.mjs')).href].filter(Boolean).join(' '),
       PUBLIC_URL: '',
       TG_WEBHOOK_SECRET: 'integration-test-secret',
       TG_BOT_USERNAME: 'test_bot',
@@ -257,8 +281,8 @@ test('pending guest activates through a one-time Telegram pairing link using the
   const enabledConfig = {
     days: 30,
     kinds: {
-      signup: { coffee: 10, delivery: 0, freeFirstDelivery: 0 },
-      qr: { coffee: 10, delivery: 0, freeFirstDelivery: 0 },
+      signup: { coffee: 10, delivery: 0, freeFirstDelivery: 1 },
+      qr: { coffee: 10, delivery: 0, freeFirstDelivery: 1 },
       install: { coffee: 0, delivery: 0, freeFirstDelivery: 0 }
     }
   };
@@ -352,6 +376,23 @@ test('pending guest activates through a one-time Telegram pairing link using the
     }
   });
   assert.equal(confirmed.status, 200);
+
+  const activationMessage = await waitForTelegramMessage(message => (
+    message.chat_id === chatId &&
+    /Номер подтверждён, профиль активирован/.test(message.text || '') &&
+    /Карта:/.test(message.text || '')
+  ));
+  assert.match(activationMessage.text, /🎁 Приветственный бонус начислен:/);
+  assert.match(activationMessage.text, /бесплатных кофе: <b>1<\/b>/);
+  assert.match(activationMessage.text, /Персональная бесплатная первая доставка доступна/);
+  assert.match(activationMessage.text, /автоматически в корзине/);
+  const returnButton = activationMessage.reply_markup?.inline_keyboard?.[0]?.[0];
+  assert.equal(returnButton?.text, 'Вернуться в приложение');
+  const returnedUrl = new URL(returnButton.url);
+  assert.equal(returnedUrl.origin, 'https://friday.andcoffee.online');
+  assert.equal(returnedUrl.searchParams.get('brand'), 'delivery');
+  assert.equal(returnedUrl.searchParams.get('tab'), 'profile');
+  assert.equal(returnedUrl.hash, '#profile');
   const activationStateAfterContact = await api('/__test/otp/inspect', {
     key: 'tgactivate:' + activationToken
   });
