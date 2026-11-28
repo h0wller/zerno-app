@@ -105,6 +105,136 @@ function verifyLegacyDuplicates() {
   return matches.length;
 }
 
+
+function benchmarkRouteEquivalentLookup() {
+  const database = new Database(':memory:');
+  database.function('ph10', { deterministic: true }, ph10);
+  try {
+    database.exec(`
+      CREATE TABLE customers (
+        id TEXT PRIMARY KEY, name TEXT, phone TEXT NOT NULL,
+        stamps INTEGER DEFAULT 0, free INTEGER DEFAULT 0, cups INTEGER DEFAULT 0,
+        qr TEXT, role TEXT DEFAULT 'guest', verified INTEGER DEFAULT 1,
+        welcome INTEGER DEFAULT 0, tg TEXT, notify_tg INTEGER DEFAULT 1,
+        notify_web INTEGER DEFAULT 1
+      );
+      CREATE TABLE history (
+        id INTEGER PRIMARY KEY AUTOINCREMENT, cid TEXT, ts TEXT, a TEXT, by TEXT
+      );
+    `);
+    const insertCustomer = database.prepare(`
+      INSERT INTO customers
+        (id,name,phone,stamps,free,cups,qr,role,verified,welcome,tg,notify_tg,notify_web)
+      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)
+    `);
+    const insertHistory = database.prepare(
+      'INSERT INTO history(cid,ts,a,by) VALUES(?,?,?,?)'
+    );
+    const targetFormats = [
+      '+7 900 123-45-67',
+      '8 (900) 123-45-67',
+      '7 9001234567'
+    ];
+    const seed = database.transaction(() => {
+      for (let index = 0; index < 10_000; index += 1) {
+        const id = `customer-${index}`;
+        const phone = index < targetFormats.length
+          ? targetFormats[index]
+          : formatPhone(String(2_100_000_000 + index));
+        insertCustomer.run(
+          id, `Synthetic Customer ${index}`, phone,
+          index % 10, 0, index % 20, `QR-${index}`, 'guest', 1, 0, null, 1, 1
+        );
+        const historyCount = index < targetFormats.length ? 14 : 2;
+        for (let row = 0; row < historyCount; row += 1) {
+          insertHistory.run(id, `2026-01-01T00:00:${String(row).padStart(2, '0')}.000Z`, `Action ${row}`, 'Кассир');
+        }
+      }
+    });
+    seed();
+    database.exec('CREATE INDEX idx_route_bench_customer_ph10 ON customers(ph10(phone))');
+
+    const allCustomers = database.prepare('SELECT * FROM customers');
+    const exactIndexed = database.prepare(
+      'SELECT * FROM customers WHERE ph10(phone)=? ORDER BY rowid'
+    );
+    const historyForCustomer = database.prepare(
+      'SELECT ts,a,by FROM history WHERE cid=? ORDER BY id DESC LIMIT 10'
+    );
+    const historyForMatches = database.prepare(
+      'SELECT cid,ts,a,by FROM history WHERE cid IN (?,?,?) ORDER BY cid ASC,id DESC'
+    );
+
+    const serializeCustomer = (customer, history) => ({
+      id: customer.id,
+      name: customer.name,
+      phone: customer.phone,
+      stamps: customer.stamps,
+      free: customer.free,
+      cups: customer.cups,
+      qr: customer.qr,
+      role: customer.role || 'guest',
+      verified: customer.verified ? 1 : 0,
+      welcome: customer.welcome ? 1 : 0,
+      tg: customer.tg ? 1 : 0,
+      notify_tg: customer.notify_tg !== 0 ? 1 : 0,
+      notify_web: customer.notify_web !== 0 ? 1 : 0,
+      history
+    });
+
+    const legacyRoute = () => {
+      const all = allCustomers.all();
+      const matches = all.filter(customer => ph10(customer.phone) === targetDigits);
+      return matches.map(customer => serializeCustomer(
+        customer, historyForCustomer.all(customer.id)
+      ));
+    };
+    const optimizedCandidate = () => {
+      const matches = exactIndexed.all(targetDigits);
+      const ids = matches.map(customer => customer.id);
+      const grouped = new Map(ids.map(id => [id, []]));
+      if (ids.length) {
+        const placeholders = ids.map(() => '?').join(',');
+        const rows = database.prepare(
+          `SELECT cid,ts,a,by FROM history WHERE cid IN (${placeholders}) ORDER BY cid ASC,id DESC`
+        ).all(...ids);
+        for (const row of rows) {
+          const history = grouped.get(row.cid);
+          if (history.length < 10) history.push({ ts: row.ts, a: row.a, by: row.by });
+        }
+      }
+      return matches.map(customer => serializeCustomer(customer, grouped.get(customer.id)));
+    };
+
+    const expected = legacyRoute();
+    const actual = optimizedCandidate();
+    assert.deepEqual(actual, expected, 'indexed exact-phone route must preserve complete cust() response');
+    assert.equal(expected.length, targetFormats.length, 'all canonical duplicates must be preserved');
+    assert.ok(expected.every(customer => customer.history.length === 10), 'history remains capped at ten newest rows');
+
+    const legacyTiming = measure(legacyRoute, 30);
+    const candidateTiming = measure(optimizedCandidate, 100);
+    const legacyHistoryQueries = expected.length;
+    const optimizedHistoryQueries = expected.length ? 1 : 0;
+    return {
+      customer_rows: 10_000,
+      exact_phone_matches: expected.length,
+      history_rows_seeded_per_match: 14,
+      history_rows_returned_per_match: 10,
+      legacy_customer_scan: 'SELECT * + JavaScript ph10 filter',
+      candidate_customer_lookup: 'indexed SQLite ph10(phone)',
+      legacy_history_queries: legacyHistoryQueries,
+      candidate_history_queries: optimizedHistoryQueries,
+      legacy_full_route: legacyTiming,
+      indexed_and_batched_candidate: candidateTiming,
+      p50_speedup: Number((legacyTiming.p50_ms / candidateTiming.p50_ms).toFixed(2)),
+      equivalence: 'deepStrictEqual complete response objects'
+    };
+  } finally {
+    database.close();
+  }
+}
+
 const results = [];
 for (const size of sizes) {
   const database = buildDatabase(size);
@@ -149,5 +279,6 @@ console.log(JSON.stringify({
   benchmark: 'F-005 staff customer exact-phone lookup',
   note: 'Synthetic in-memory SQLite microbenchmark; excludes Express, cust() history serialization, network and production storage. The deterministic ph10() UDF is a prototype index only and would need registration on every production connection.',
   legacy_duplicate_matches: legacyDuplicateMatches,
+  route_equivalent_lookup: benchmarkRouteEquivalentLookup(),
   results
 }, null, 2));
