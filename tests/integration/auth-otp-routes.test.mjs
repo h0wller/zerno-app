@@ -386,7 +386,10 @@ test('pending guest activates through a one-time Telegram pairing link using the
   assert.match(activationMessage.text, /бесплатных кофе: <b>1<\/b>/);
   assert.match(activationMessage.text, /Персональная бесплатная первая доставка доступна/);
   assert.match(activationMessage.text, /автоматически в корзине/);
-  const returnButton = activationMessage.reply_markup?.inline_keyboard?.[0]?.[0];
+  const returnMessage = await waitForTelegramMessage(message => (
+    message.chat_id === chatId && /Вернитесь в приложение/.test(message.text || '')
+  ));
+  const returnButton = returnMessage.reply_markup?.inline_keyboard?.[0]?.[0];
   assert.equal(returnButton?.text, 'Вернуться в приложение');
   const returnedUrl = new URL(returnButton.url);
   assert.equal(returnedUrl.origin, 'https://friday.andcoffee.online');
