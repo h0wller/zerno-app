@@ -81,10 +81,12 @@ test('health stays unavailable when the startup image migration fails', async ()
   const response = await fetch(base + '/api/health');
   assert.equal(response.status, 503);
   assert.deepEqual(await response.json(), { ok: false });
+  assert.equal(response.headers.get('retry-after'), '2');
 });
 
 test('API requests stay gated when startup migration has failed', async () => {
   const response = await fetch(base + '/api/config');
   assert.equal(response.status, 503);
   assert.deepEqual(await response.json(), { ok: false });
+  assert.equal(response.headers.get('retry-after'), '2');
 });
