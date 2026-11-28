@@ -110,3 +110,43 @@ test('OpenAPI documents staff chat helper errors and the complete supported thre
     assert.equal(keySchema?.maxLength, 80, `${method.toUpperCase()} ${path} key must allow the runtime's 80-character limit`);
   }
 });
+
+
+test('OpenAPI documents global JSON parser errors on every JSON request operation', () => {
+  const jsonOperations = [];
+
+  for (const [path, pathItem] of Object.entries(openapi.paths || {})) {
+    if (!path.startsWith('/api/')) continue;
+    for (const [method, operation] of Object.entries(pathItem || {})) {
+      if (!['get', 'post', 'put', 'patch', 'delete'].includes(method)) continue;
+      if (!operation?.requestBody?.content?.['application/json']) continue;
+      jsonOperations.push({ method, path, responses: operation.responses || {} });
+    }
+  }
+
+  assert.ok(jsonOperations.length > 0, 'the API must expose JSON request operations');
+  for (const operation of jsonOperations) {
+    for (const status of ['400', '413']) {
+      const response = operation.responses[status];
+      assert.ok(
+        response,
+        `${operation.method.toUpperCase()} ${operation.path} must document global JSON parser HTTP ${status}`,
+      );
+      const schema = response.$ref === '#/components/responses/InvalidJson'
+        ? openapi.components.responses.InvalidJson.content?.['application/json']?.schema
+        : response.$ref === '#/components/responses/PayloadTooLarge'
+          ? openapi.components.responses.PayloadTooLarge.content?.['application/json']?.schema
+          : response.content?.['application/json']?.schema;
+      const describesSharedError = schema?.$ref === '#/components/schemas/Error'
+        || schema?.oneOf?.some(variant => variant.$ref === '#/components/schemas/Error');
+      assert.equal(
+        describesSharedError,
+        true,
+        `${operation.method.toUpperCase()} ${operation.path} HTTP ${status} must describe the shared JSON error envelope`,
+      );
+    }
+  }
+
+  assert.ok(openapi.components?.responses?.InvalidJson, 'OpenAPI must define the shared InvalidJson response');
+  assert.ok(openapi.components?.responses?.PayloadTooLarge, 'OpenAPI must define the shared PayloadTooLarge response');
+});

@@ -334,6 +334,29 @@ app.delete('/api/menu/:id', adminGuard, (req, res) => {
 });
 
 
+// Normalize parser failures from the shared 10 MiB JSON parser.
+// Do not expose body-parser messages or the raw request body to API clients.
+app.use((error, req, res, next) => {
+  if (res.headersSent) return next(error);
+  if (!req.path.startsWith('/api/')) return next(error);
+
+  if (error?.type === 'entity.parse.failed') {
+    return res.status(400).json({
+      error: 'Некорректный JSON',
+      code: 'INVALID_JSON'
+    });
+  }
+
+  if (error?.type === 'entity.too.large') {
+    return res.status(413).json({
+      error: 'Тело запроса слишком большое',
+      code: 'PAYLOAD_TOO_LARGE'
+    });
+  }
+
+  return next(error);
+});
+
 /* ── LCP: document-level preload for the explicitly selected brand ── */
 app.use((req, res, next) => {
   const isAudit = req.query.lighthouse === '1' || req.query.clean === '1';
