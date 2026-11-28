@@ -128,15 +128,29 @@ paths:
   /api/health:
     get:
       tags: [System]
-      summary: Health-check
+      summary: Readiness-check after required startup migration
+      description: Returns 200 only after startup migration succeeds. While startup is incomplete or the migration failed, returns 503 and Retry-After: 2. Other API routes also return 503 until the server is ready.
       responses:
         '200':
-          description: OK
+          description: Application is ready
           content:
             application/json:
               schema:
                 type: object
-                properties: { ok: { type: boolean } }
+                required: [ok]
+                properties: { ok: { type: boolean, enum: [true] } }
+        '503':
+          description: Startup migration is incomplete or failed; retry after the indicated delay
+          headers:
+            Retry-After:
+              schema: { type: string }
+              description: Suggested delay in seconds
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok]
+                properties: { ok: { type: boolean, enum: [false] } }
 
   /api/config:
     get:
