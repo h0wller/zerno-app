@@ -408,8 +408,8 @@ export function createTgRouter({ appKb }) {
           : 'Не удалось загрузить состояние преимуществ. Откройте профиль в приложении и проверьте данные.';
 
         await tgSend(chatId,
-          '✅ Номер подтверждён, профиль активирован.\\n\\n' +
-          activationSummary + '\\n\\n' + benefitDetails,
+          '✅ Номер подтверждён, профиль активирован.\n\n' +
+          activationSummary + '\n\n' + benefitDetails,
           { remove_keyboard: true }
         );
         await tgSend(chatId, 'Вернитесь в приложение — вы вернётесь в свой профиль:', {
