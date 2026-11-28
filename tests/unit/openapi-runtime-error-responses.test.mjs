@@ -127,9 +127,20 @@ test('OpenAPI documents global JSON parser errors on every JSON request operatio
   assert.ok(jsonOperations.length > 0, 'the API must expose JSON request operations');
   for (const operation of jsonOperations) {
     for (const status of ['400', '413']) {
+      const response = operation.responses[status];
       assert.ok(
-        operation.responses[status],
+        response,
         `${operation.method.toUpperCase()} ${operation.path} must document global JSON parser HTTP ${status}`,
+      );
+      const schema = response.$ref === '#/components/responses/InvalidJson'
+        ? openapi.components.responses.InvalidJson.content?.['application/json']?.schema
+        : response.$ref === '#/components/responses/PayloadTooLarge'
+          ? openapi.components.responses.PayloadTooLarge.content?.['application/json']?.schema
+          : response.content?.['application/json']?.schema;
+      assert.equal(
+        schema?.$ref,
+        '#/components/schemas/Error',
+        `${operation.method.toUpperCase()} ${operation.path} HTTP ${status} must describe the shared JSON error envelope`,
       );
     }
   }

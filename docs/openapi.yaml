@@ -172,8 +172,16 @@ paths:
                 msg:  { type: string, maxLength: 300 }
       responses:
         '200': { description: OK }
-        '400': { description: Некорректный JSON }
-        '413': { description: JSON body превышает 4 KiB }
+        '400':
+          description: Некорректный JSON
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '413':
+          description: JSON body превышает 4 KiB
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
         '429': { description: Превышен лимит запросов; Retry-After содержит время ожидания }
 
   /api/auth/register:
@@ -210,7 +218,11 @@ paths:
                 properties:
                   token:    { type: string }
                   customer: { $ref: '#/components/schemas/Customer' }
-        '400': { description: Отсутствует или не принято обязательное согласие consent }
+        '400':
+          description: Отсутствует или не принято обязательное согласие consent
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
         '403': { description: Неверный или просроченный переданный OTP }
         '409': { description: Профиль уже существует }
         '429': { description: Превышен лимит ошибок подтверждения OTP }
@@ -263,7 +275,11 @@ paths:
                     properties:
                       ok: { type: boolean, enum: [true] }
                       via: { type: string, enum: [sms] }
-        '400': { description: Invalid phone, PIN, consent or returnTo }
+        '400':
+          description: Invalid phone, PIN, consent or returnTo
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
         '409': { description: Phone already registered }
         '429': { description: Telegram or SMS registration rate limit reached }
         '503': { description: SMS is disabled or the SMS provider did not accept delivery }
@@ -294,7 +310,11 @@ paths:
                   confirmed: { type: boolean }
                   token: { type: string }
                   customer: { $ref: '#/components/schemas/Customer' }
-        '400': { description: Неверный pollToken }
+        '400':
+          description: Неверный pollToken
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
 
   /api/auth/login:
     post:
@@ -315,7 +335,11 @@ paths:
       responses:
         '413': { $ref: '#/components/responses/PayloadTooLarge' }
         '200': { description: 'Возвращает token, customer и возможный needPin' }
-        '400': { description: 'Некорректный PIN или PIN отсутствует' }
+        '400':
+          description: 'Некорректный PIN или PIN отсутствует'
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
         '403': { description: 'Неверный или просроченный OTP либо неверный PIN' }
         '404': { description: 'Профиль не найден' }
         '409': { description: 'Требуется первичная установка PIN' }
@@ -340,7 +364,11 @@ paths:
       responses:
         '413': { $ref: '#/components/responses/PayloadTooLarge' }
         '200': { description: Возвращает обновлённый customer; токен не выдаётся повторно }
-        '400': { description: Некорректный PIN }
+        '400':
+          description: Некорректный PIN
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { description: PIN уже задан }
 
@@ -361,7 +389,11 @@ paths:
       responses:
         '413': { $ref: '#/components/responses/PayloadTooLarge' }
         '200': { description: Профиль активирован }
-        '400': { description: Некорректный формат кода }
+        '400':
+          description: Некорректный формат кода
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { description: Неверный код активации }
         '409': { description: Профиль уже активирован }
@@ -398,7 +430,11 @@ paths:
                   ok: { type: boolean, enum: [true] }
                   tgUrl: { type: string, format: uri }
                   expiresAt: { type: string, format: date-time }
-        '400': { description: Unsafe or invalid returnTo }
+        '400':
+          description: Unsafe or invalid returnTo
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { description: Current customer is not a guest profile }
         '409': { description: Profile is already activated or has no phone number }
@@ -428,7 +464,11 @@ paths:
             Вход выполнен ({token, customer}), либо needBotConfirm=true с tgUrl: номер нужно подтвердить в боте
             тем же аккаунтом Telegram, затем повторить вызов.
         '401': { description: "Подпись initData неверна или устарела" }
-        '400': { description: "Номер введён не полностью" }
+        '400':
+          description: "Номер введён не полностью"
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
         '409': { description: Telegram уже привязан к нескольким профилям; требуется проверка администратором }
 
   /api/me:
@@ -458,7 +498,11 @@ paths:
       responses:
         '413': { $ref: '#/components/responses/PayloadTooLarge' }
         '200': { description: OK }
-        '400': { description: Name must contain 2–24 characters }
+        '400':
+          description: Name must contain 2–24 characters
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
         '401': { $ref: '#/components/responses/Unauthorized' }
     delete:
       tags: [Auth]
@@ -533,7 +577,11 @@ paths:
       responses:
         '413': { $ref: '#/components/responses/PayloadTooLarge' }
         '200': { description: Порядок обновлён }
-        '400': { description: Пустой порядок }
+        '400':
+          description: Пустой порядок
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '409': { description: Не все позиции найдены в выбранной секции }
@@ -612,10 +660,18 @@ paths:
                 data: { type: string, maxLength: 5592431, description: Data URL JPEG/PNG/WebP с Base64-файлом до 4 MiB }
       responses:
         '200': { description: Возвращает ok и URL загруженного изображения }
-        '400': { description: 'Некорректный data URL/Base64, MIME не соответствует формату, анимированное изображение или превышены ограничения размеров' }
+        '400':
+          description: 'Некорректный data URL/Base64, MIME не соответствует формату, анимированное изображение или превышены ограничения размеров'
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
-        '413': { description: JSON body или изображение превышают лимит }
+        '413':
+          description: JSON body или изображение превышают лимит
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
         '500': { description: Ошибка сохранения изображения }
 
   /api/dmenu:
@@ -780,7 +836,11 @@ paths:
       responses:
         '413': { $ref: '#/components/responses/PayloadTooLarge' }
         '200': { description: Статус изменён }
-        '400': { description: Неизвестный статус }
+        '400':
+          description: Неизвестный статус
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { description: Заказ не найден }
@@ -808,7 +868,11 @@ paths:
       responses:
         '413': { $ref: '#/components/responses/PayloadTooLarge' }
         '200': { description: Задержка применена }
-        '400': { description: min must be an integer from 1 to 180 }
+        '400':
+          description: min must be an integer from 1 to 180
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { description: Заказ не найден }
@@ -830,7 +894,11 @@ paths:
       responses:
         '413': { $ref: '#/components/responses/PayloadTooLarge' }
         '200': { description: Массовая задержка активных обычных заказов и предзаказов на сегодня; будущие предзаказы не меняются }
-        '400': { description: min must be an integer from 1 to 180 }
+        '400':
+          description: min must be an integer from 1 to 180
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
   /api/staff/stamp:
@@ -863,7 +931,11 @@ paths:
       responses:
         '413': { $ref: '#/components/responses/PayloadTooLarge' }
         '200': { description: Результат операции }
-        '400': { description: Нет доступных подарков }
+        '400':
+          description: Нет доступных подарков
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
   /api/staff/scan:
@@ -918,7 +990,11 @@ paths:
       responses:
         '413': { $ref: '#/components/responses/PayloadTooLarge' }
         '200': { description: Сообщение сохранено }
-        '400': { description: 'Некорректный ключ, контекст или текст' }
+        '400':
+          description: 'Некорректный ключ, контекст или текст'
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '429': { description: Превышен лимит запросов }
@@ -969,7 +1045,11 @@ paths:
       responses:
         '413': { $ref: '#/components/responses/PayloadTooLarge' }
         '200': { description: Сообщение бота сохранено; метаданные треда созданы или обновлены }
-        '400': { description: Некорректный ключ или текст }
+        '400':
+          description: Некорректный ключ или текст
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '429': { description: Превышен лимит запросов }
@@ -1017,7 +1097,11 @@ paths:
       responses:
         '413': { $ref: '#/components/responses/PayloadTooLarge' }
         '200': { description: 'Операция выполнена успешно (ok: true)' }
-        '400': { description: Некорректный ключ треда или сообщение длиной вне диапазона 1–2000 символов }
+        '400':
+          description: Некорректный ключ треда или сообщение длиной вне диапазона 1–2000 символов
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { description: Тред не найден }
@@ -1034,7 +1118,11 @@ paths:
       responses:
         '413': { $ref: '#/components/responses/PayloadTooLarge' }
         '200': { description: 'Операция выполнена успешно (ok: true)' }
-        '400': { description: Некорректный ключ треда }
+        '400':
+          description: Некорректный ключ треда
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { description: Тред не найден }
@@ -1055,7 +1143,11 @@ paths:
       responses:
         '413': { $ref: '#/components/responses/PayloadTooLarge' }
         '200': { description: OK }
-        '400': { description: Некорректный ключ треда }
+        '400':
+          description: Некорректный ключ треда
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { description: Тред не найден }
@@ -1095,7 +1187,11 @@ paths:
       responses:
         '413': { $ref: '#/components/responses/PayloadTooLarge' }
         '200': { description: Подписка сохранена }
-        '400': { description: В объекте sub отсутствует endpoint }
+        '400':
+          description: В объекте sub отсутствует endpoint
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
 
@@ -1125,7 +1221,11 @@ paths:
                 properties:
                   msg:      { type: string }
                   customer: { $ref: '#/components/schemas/Customer' }
-        '400': { description: Ошибка применения }
+        '400':
+          description: Ошибка применения
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { description: Профиль не подтверждён; промокоды недоступны }
         '404': { description: Промокод не найден или выключен }
@@ -1202,7 +1302,11 @@ paths:
       responses:
         '413': { $ref: '#/components/responses/PayloadTooLarge' }
         '200': { description: Промокод создан }
-        '400': { description: Код короче 3 символов после нормализации }
+        '400':
+          description: Код короче 3 символов после нормализации
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '409': { description: Промокод с таким кодом уже существует }
@@ -1258,7 +1362,11 @@ paths:
                 properties:
                   ok: { type: boolean }
                   via: { type: string, enum: [telegram, sms] }
-        '400': { description: Некорректный телефон }
+        '400':
+          description: Некорректный телефон
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
         '404': { description: 'Профиль не найден' }
         '429': { description: Слишком частый запрос }
         '503': { description: Ни один канал доставки не принял код }
@@ -1276,7 +1384,11 @@ paths:
       responses:
         '413': { $ref: '#/components/responses/PayloadTooLarge' }
         '200': { description: 'Возвращает customer' }
-        '400': { description: Некорректный PIN }
+        '400':
+          description: Некорректный PIN
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
         '401': { $ref: '#/components/responses/Unauthorized' }
 
   /api/auth/activate:
@@ -1292,7 +1404,11 @@ paths:
       responses:
         '413': { $ref: '#/components/responses/PayloadTooLarge' }
         '200': { description: 'Возвращает customer' }
-        '400': { description: Код не соответствует требованиям длины и формата }
+        '400':
+          description: Код не соответствует требованиям длины и формата
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '409': { description: Администратор не может понизить свою роль этим маршрутом }
@@ -1398,7 +1514,11 @@ paths:
       responses:
         '413': { $ref: '#/components/responses/PayloadTooLarge' }
         '200': { description: 'Возвращает customer' }
-        '400': { description: Некорректное имя, телефон или PIN; создание профиля отклонено }
+        '400':
+          description: Некорректное имя, телефон или PIN; создание профиля отклонено
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '409': { description: Несколько профилей совпадают по номеру или профиль с номером создаётся параллельно }
@@ -1529,7 +1649,11 @@ paths:
       responses:
         '413': { $ref: '#/components/responses/PayloadTooLarge' }
         '200': { description: 'Операция выполнена успешно (ok: true)' }
-        '400': { description: Пустой token }
+        '400':
+          description: Пустой token
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
         '401': { $ref: '#/components/responses/Unauthorized' }
   /api/push/subs:
     get:
@@ -1556,7 +1680,11 @@ paths:
       responses:
         '413': { $ref: '#/components/responses/PayloadTooLarge' }
         '200': { description: 'Счётчики sent, delivered, failed и errors' }
-        '400': { description: Пустое или состоящее из пробелов поле body }
+        '400':
+          description: Пустое или состоящее из пробелов поле body
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
 
@@ -1592,7 +1720,11 @@ paths:
       responses:
         '413': { $ref: '#/components/responses/PayloadTooLarge' }
         '200': { description: 'Устройство отвязано (ok: true)' }
-        '400': { description: Нужно передать endpoint или token }
+        '400':
+          description: Нужно передать endpoint или token
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
         '401': { $ref: '#/components/responses/Unauthorized' }
 
   /api/push/del:
