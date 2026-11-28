@@ -23,7 +23,7 @@ export default defineConfig({
 
   webServer: process.env.TEST_URL ? undefined : {
     command: 'node server.js',
-    url: `${testUrl}/api/health`,
+    url: `${testUrl}/api/ready`,
     // Do not reuse the developer's server: it does not expose /__test/otp and may
     // be connected to a non-test database. Reuse must be an explicit TEST_URL.
     reuseExistingServer: false,

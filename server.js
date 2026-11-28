@@ -36,6 +36,7 @@ import { item, getMeta, touch } from './server/domain/helpers.js';
 import { menuImageForResponse, menuImageSrcsetForResponse } from './server/utils/menu-image.js';
 
 const app = express();
+let startupState = 'starting';
 
 function menuResponseItem(row) {
   const result = item(row);
@@ -57,6 +58,15 @@ function appKb() {
 app.use(compression({ threshold: 1024 }));
 app.use(securityHeaders);
 app.use(corsMiddleware);
+
+// API traffic waits until required startup work has completed successfully.
+app.use((req, res, next) => {
+  if (req.path.startsWith('/api/') && req.path !== '/api/health' && req.path !== '/api/ready' && startupState !== 'ready') {
+    res.set('Retry-After', '2');
+    return res.status(503).json({ ok: false });
+  }
+  next();
+});
 /* Ф5.20: канонический хост — один origin для SW/кэша/PWA */
 app.use((req, res, next) => {
   if (req.hostname === 'andcoffee.online' || req.hostname === 'www.andcoffee.online') {
@@ -214,7 +224,17 @@ app.use(createTgRouter({ appKb }));
 app.use(pushRouter);
 app.use(statsRouter);
 
+// Liveness: preserve the existing contract while the process is alive.
 app.get('/api/health', (req, res) => res.json({ ok: true }));
+
+// Readiness: the deploy workflow must wait for required startup work.
+app.get('/api/ready', (req, res) => {
+  if (startupState !== 'ready') {
+    res.set('Retry-After', '2');
+    return res.status(503).json({ ok: false });
+  }
+  return res.json({ ok: true });
+});
 app.get('/api/config', (req, res) => res.json({
   tgUsername: TG_BOT_USERNAME,
   smsAuthEnabled: SMS_AUTH_ENABLED
@@ -460,11 +480,19 @@ async function migrateBase64ImagesToWebP() {
     console.log('[migrate] Миграция успешно завершена! JSON теперь весит ~5-8 KB.');
   } catch (err) {
     console.error('[migrate] Ошибка миграции изображений:', err);
+    throw err;
   }
 }
 const server = app.listen(PORT, HOST, async () => {
   console.log(`☕ ЗЕРНО API запущен на ${HOST}:${PORT}`);
-  await migrateBase64ImagesToWebP();
+  startupState = 'migrating';
+  try {
+    await migrateBase64ImagesToWebP();
+    startupState = 'ready';
+  } catch (err) {
+    startupState = 'failed';
+    console.error('[startup] API readiness blocked by migration failure');
+  }
   tgEnsureWebhook();
 });
 

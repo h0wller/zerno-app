@@ -446,7 +446,7 @@ jobs:
 
             ready=0
             for attempt in $(seq 1 80); do
-              if curl -fsS "http://127.0.0.1:$port/api/health" >/dev/null; then
+              if curl -fsS "http://127.0.0.1:$port/api/ready" >/dev/null; then
                 ready=1
                 break
               fi

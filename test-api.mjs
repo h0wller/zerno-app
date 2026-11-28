@@ -4,7 +4,7 @@ const PORT = 3999, BASE = `http://localhost:${PORT}`, DB = 'test-tmp.db';
 if (fs.existsSync(DB)) fs.unlinkSync(DB);
 const srv = spawn('node', ['server.js'], { env: { ...process.env, DB_PATH: DB, PORT: String(PORT), ADMIN_CODE: 'ci-admin-role-code-2026', CASHIER_CODE: 'ci-cashier-role-code-2026', DISPATCH_CODE: 'ci-dispatch-role-code-2026', TG_WEBHOOK_SECRET: '' }, stdio: 'ignore' });
 const wait = ms => new Promise(r => setTimeout(r, ms));
-async function up(){ for(let i=0;i<60;i++){ try{ const r=await fetch(BASE+'/api/health'); if(r.ok) return true; }catch(e){} await wait(200);} return false; }
+async function up(){ for(let i=0;i<60;i++){ try{ const r=await fetch(BASE+'/api/ready'); if(r.ok) return true; }catch(e){} await wait(200);} return false; }
 let pass=0, fail=0;
 const check=(name,cond,extra='')=>{ if(cond){pass++;console.log('✅',name);} else {fail++;console.log('❌',name,extra);} };
 async function api(path,{method='GET',token,body}={}){

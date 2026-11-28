@@ -19,11 +19,14 @@
 
 | Метод и путь | Назначение | Доступ |
 |---|---|---|
-| `GET /api/health` | Health-check | Публичный |
+| `GET /api/health` | Liveness-check: `200 { ok: true }`, если HTTP-процесс отвечает | Публичный |
+| `GET /api/ready` | Readiness-check: `200 { ok: true }` после успешной стартовой миграции; до готовности или при её ошибке — `503 { ok: false }` с `Retry-After: 2` | Публичный |
 | `GET /api/config` | Публичный bootstrap-конфиг | Публичный |
 | `POST /api/clientlog` | Лог клиентских событий; тело до 4 KiB, до 60 запросов/минуту на эффективный IP (`429`, `Retry-After`) | Публичный |
 | `GET /api/tg/diag` | Диагностика Telegram webhook/Bot API | adminGuard |
 | `POST /api/tg/webhook` | Входящий Telegram webhook | Проверка webhook маршрутом |
+
+До готовности приложения все API-маршруты, кроме `/api/health` и `/api/ready`, возвращают `503 { ok: false }` и `Retry-After: 2`. Это состояние сохраняется при ошибке обязательной стартовой миграции; подробности причины остаются только в серверном логе.
 
 ## Авторизация и профиль
 

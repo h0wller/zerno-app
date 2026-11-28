@@ -127,7 +127,7 @@ try {
   if (!context) throw new Error('Chrome did not expose its default browser context');
 
   const page = await context.newPage();
-  await page.goto(origin + '/api/health', { waitUntil: 'domcontentloaded', timeout: 15_000 });
+  await page.goto(origin + '/api/ready', { waitUntil: 'domcontentloaded', timeout: 15_000 });
   await page.evaluate(sessionToken => {
     localStorage.setItem('zt_user', sessionToken);
     localStorage.setItem('zt_brand', 'coffee');

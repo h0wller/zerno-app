@@ -64,7 +64,7 @@ before(async () => {
   while (Date.now() < deadline) {
     if (server.exitCode !== null) throw new Error(`Test server exited (code=${server.exitCode}):\\n${output}`);
     try {
-      const response = await fetch(base + '/api/health');
+      const response = await fetch(base + '/api/ready');
       if (response.ok) return;
     } catch {}
     await new Promise(resolve => setTimeout(resolve, 200));

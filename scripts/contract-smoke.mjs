@@ -3,19 +3,19 @@ import { spawn } from 'node:child_process';
 
 let __ciServer = null;
 async function _ensureServerUp() {
-  const checkHealth = async () => {
+  const checkReady = async () => {
     try {
-      const res = await fetch('http://127.0.0.1:3000/api/health');
+      const res = await fetch('http://127.0.0.1:3000/api/ready');
       if (res.ok) return true;
     } catch (_) {}
     try {
-      const res = await fetch('http://localhost:3000/api/health');
+      const res = await fetch('http://localhost:3000/api/ready');
       if (res.ok) return true;
     } catch (_) {}
     return false;
   };
 
-  if (await checkHealth()) return;
+  if (await checkReady()) return;
 
   console.log('⚡ Сервер не найден на localhost:3000. Запуск server.js...');
   __ciServer = spawn(process.execPath, ['server.js'], {
@@ -46,7 +46,7 @@ async function _ensureServerUp() {
     if (hasExited) {
       throw new Error('server.js аварийно завершился при старте (код ' + exitCode + '):\n' + serverOutput);
     }
-    if (await checkHealth()) {
+    if (await checkReady()) {
       console.log('✅ Сервер запущен в фоне (PID: ' + __ciServer.pid + ')');
       return;
     }
@@ -96,6 +96,7 @@ function expect(name, r, status, fields = []) {
   console.log(`Контракт-смоук → ${BASE}\n`);
 
   expect('GET /api/health', await call('GET', '/api/health'), 200, ['ok']);
+  expect('GET /api/ready', await call('GET', '/api/ready'), 200, ['ok']);
   expect('GET /api/config', await call('GET', '/api/config'), 200, ['tgUsername']);
   expect('GET /api/menu', await call('GET', '/api/menu'), 200, ['items', 'updatedAt']);
   expect('GET /api/dmenu', await call('GET', '/api/dmenu'), 200, ['items']);

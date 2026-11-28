@@ -49,7 +49,7 @@ async function waitForServer() {
       throw new Error('Test server exited (' + child.exitCode + '):\n' + serverOutput);
     }
     try {
-      const health = await fetch(base + '/api/health');
+      const health = await fetch(base + '/api/ready');
       if (health.ok) return;
     } catch {}
     await new Promise((resolve) => setTimeout(resolve, 150));
