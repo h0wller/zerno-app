@@ -116,7 +116,7 @@ for (const size of sizes) {
     assert.deepEqual(actual, expected, `indexed lookup must match full scan at ${size} rows`);
     assert.equal(actual.length, 1, 'the synthetic target must be unique');
 
-    const queryPlan = database.prepare('EXPLAIN QUERY PLAN SELECT id FROM customers WHERE ph10(phone)=?')
+    const queryPlan = database.prepare('EXPLAIN QUERY PLAN SELECT * FROM customers WHERE ph10(phone)=? ORDER BY id')
       .all(targetDigits)
       .map(row => row.detail);
     assert(
