@@ -304,3 +304,42 @@ test('C-09 rejects missing required min and incorrect delay bounds', () => {
   });
   assert.ok(invalidMax.diagnostics.some((item) => item.invariant === 'C-09' && item.file === 'docs/openapi.yaml'));
 });
+
+test('OpenAPI local reference integrity accepts existing JSON pointers', () => {
+  const openapi = {
+    paths: {
+      '/api/example': {
+        get: {
+          responses: {
+            '200': { $ref: '#/components/responses/Ok' },
+          },
+        },
+      },
+    },
+    components: {
+      responses: { Ok: { description: 'OK' } },
+    },
+  };
+  assert.deepEqual(checkOpenApiReferences(openapi), []);
+});
+
+test('OpenAPI local reference integrity reports unresolved JSON pointers', () => {
+  const openapi = {
+    paths: {
+      '/api/example': {
+        post: {
+          requestBody: { $ref: '#/components/requestBodies/Missing' },
+          responses: {
+            '200': { $ref: '#/components/responses/Absent' },
+          },
+        },
+      },
+    },
+    components: { responses: {} },
+  };
+  const diagnostics = checkOpenApiReferences(openapi);
+  assert.equal(diagnostics.length, 2);
+  assert.ok(diagnostics.every((item) => item.code === 'UNRESOLVED_OPENAPI_REF'));
+  assert.match(formatDiagnostic(diagnostics[0]), /components\/requestBodies\/Missing/);
+  assert.match(formatDiagnostic(diagnostics[1]), /components\/responses\/Absent/);
+});
