@@ -105,6 +105,80 @@ function verifyLegacyDuplicates() {
   return matches.length;
 }
 
+function benchmarkHistorySerialization() {
+  const database = new Database(':memory:');
+  try {
+    database.exec(`
+      CREATE TABLE history (
+        id INTEGER PRIMARY KEY,
+        cid INTEGER NOT NULL,
+        ts TEXT NOT NULL,
+        a TEXT NOT NULL,
+        by TEXT NOT NULL
+      );
+      CREATE INDEX idx_bench_history_cid_id ON history(cid, id DESC);
+    `);
+    const insert = database.prepare(
+      'INSERT INTO history (cid, ts, a, by) VALUES (?, ?, ?, ?)'
+    );
+    const customerIds = [101, 102, 103, 104, 105];
+    const seed = database.transaction(() => {
+      for (const cid of customerIds) {
+        for (let index = 0; index < 10; index += 1) {
+          insert.run(cid, '2026-01-01T00:00:00.000Z', `History ${index}`, 'Кассир');
+        }
+      }
+    });
+    seed();
+
+    const perCustomerHistory = database.prepare(
+      'SELECT ts,a,by FROM history WHERE cid=? ORDER BY id DESC LIMIT 10'
+    );
+    const batchedHistory = database.prepare(
+      `SELECT cid,ts,a,by FROM history
+       WHERE cid IN (${customerIds.map(() => '?').join(',')})
+       ORDER BY cid ASC, id DESC`
+    );
+
+    const serializeNPlusOne = () => customerIds.map((id) => ({
+      id,
+      history: perCustomerHistory.all(id)
+    }));
+    const serializeBatched = () => {
+      const grouped = new Map(customerIds.map((id) => [id, []]));
+      for (const row of batchedHistory.all(...customerIds)) {
+        const history = grouped.get(row.cid);
+        if (history.length < 10) {
+          history.push({ ts: row.ts, a: row.a, by: row.by });
+        }
+      }
+      return customerIds.map((id) => ({ id, history: grouped.get(id) }));
+    };
+
+    const nPlusOneResult = serializeNPlusOne();
+    const batchedResult = serializeBatched();
+    assert.deepEqual(
+      batchedResult,
+      nPlusOneResult,
+      'batched history serialization must preserve per-customer rows and ordering'
+    );
+
+    const nPlusOneTiming = measure(serializeNPlusOne, 1000);
+    const batchedTiming = measure(serializeBatched, 1000);
+    return {
+      matched_customers: customerIds.length,
+      history_rows_per_customer: 10,
+      legacy_history_queries: customerIds.length,
+      batched_history_queries: 1,
+      n_plus_one_serialization: nPlusOneTiming,
+      batched_serialization: batchedTiming,
+      p50_speedup: Number((nPlusOneTiming.p50_ms / batchedTiming.p50_ms).toFixed(2))
+    };
+  } finally {
+    database.close();
+  }
+}
+
 const results = [];
 for (const size of sizes) {
   const database = buildDatabase(size);
@@ -149,5 +223,6 @@ console.log(JSON.stringify({
   benchmark: 'F-005 staff customer exact-phone lookup',
   note: 'Synthetic in-memory SQLite microbenchmark; excludes Express, cust() history serialization, network and production storage. The deterministic ph10() UDF is a prototype index only and would need registration on every production connection.',
   legacy_duplicate_matches: legacyDuplicateMatches,
+  history_serialization: benchmarkHistorySerialization(),
   results
 }, null, 2));
