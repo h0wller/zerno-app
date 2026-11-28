@@ -59,7 +59,7 @@ app.use(compression({ threshold: 1024 }));
 app.use(securityHeaders);
 app.use(corsMiddleware);
 
- // API traffic waits until required startup work has completed successfully.
+// API traffic waits until required startup work has completed successfully.
 app.use((req, res, next) => {
   if (req.path.startsWith('/api/') && req.path !== '/api/health' && startupState !== 'ready') {
     res.set('Retry-After', '2');
