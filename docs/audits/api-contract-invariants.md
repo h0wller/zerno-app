@@ -1,6 +1,6 @@
 # API contract guard — F-003 invariant matrix
 
-Baseline: `pizza@736e9d87d5f67a4ba55e2d3b49d7b04114cdbc72`  
+Baseline: `pizza@b380024159e838582088e58d42d30e828eaf8ab9`  
 Audit evidence: [F-003 report](https://github.com/h0wller/zerno-app/blob/audit/openapi-contract-2026-11-26/docs/audits/openapi-contract-audit-2026-11-26.md)
 
 This matrix is deliberately **not a second route registry**. Route/method inventory is extracted from Express registrations at test time. The sentinels below pin audited contract invariants. The status table records what the current automated checks establish on the exact `pizza` baseline; a PASS does not imply complete OpenAPI equivalence.
@@ -20,7 +20,7 @@ This matrix is deliberately **not a second route registry**. Route/method invent
 | C-14 push subscription | **PASS** — handler requires a string endpoint; OpenAPI marks it required | Full Web Push subscription validation |
 | C-17 role guards | **PASS (representative)** — guard markers and BearerAuth are present for the audited admin/stats/dispatch operations | Full route-by-route permissions and brand isolation |
 
-**Verification note (2026-11-28):** the current `pizza` source was verified by CI run [46140677552](https://github.com/h0wller/zerno-app/actions/runs/46140677552), Code Quality & Guardrails. The guard reported 79 production routes, 79 OpenAPI operations and 12 F-003 sentinels, with no diagnostics. This establishes the listed machine-checkable invariants only; it does not establish full schema equivalence or replace the residual checks below.
+**Verification note (2026-11-28):** `pizza@b380024159e838582088e58d42d30e828eaf8ab9` differs from the previously checked `pizza@736e9d87d5f67a4ba55e2d3b49d7b04114cdbc72` only by the test-only merge of PR #368; server routes, OpenAPI and production code are unchanged. The source-equivalent Code Quality & Guardrails run [46140677552](https://github.com/h0wller/zerno-app/actions/runs/46140677552) reported 79 production routes, 79 OpenAPI operations and 12 F-003 sentinels, with no diagnostics. This establishes the listed machine-checkable invariants only; it does not establish full schema equivalence or replace the residual checks below.
 
 ## Automated checks
 
