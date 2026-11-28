@@ -754,10 +754,10 @@ paths:
       responses:
         '200': { description: Статус изменён }
         '400': { description: Неизвестный статус }
+        '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { description: Заказ не найден }
         '409': { description: Недопустимый переход статуса }
-
   /api/orders/{id}/delay:
     post:
       tags: [Orders]
@@ -781,9 +781,9 @@ paths:
       responses:
         '200': { description: Задержка применена }
         '400': { description: min must be an integer from 1 to 180 }
+        '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { description: Заказ не найден }
-
   /api/orders/delay-all:
     post:
       tags: [Orders]
@@ -802,8 +802,8 @@ paths:
       responses:
         '200': { description: Массовая задержка активных обычных заказов и предзаказов на сегодня; будущие предзаказы не меняются }
         '400': { description: min must be an integer from 1 to 180 }
+        '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
-
   /api/staff/stamp:
     post:
       tags: [Staff]
@@ -816,8 +816,9 @@ paths:
             schema: { type: object, required: [id], properties: { id: { type: string } } }
       responses:
         '200': { description: Результат операции }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
         '404': { description: Гость не найден }
-
   /api/staff/redeem:
     post:
       tags: [Staff]
@@ -831,7 +832,8 @@ paths:
       responses:
         '200': { description: Результат операции }
         '400': { description: Нет доступных подарков }
-
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
   /api/staff/scan:
     post:
       tags: [Staff]
@@ -948,8 +950,8 @@ paths:
           schema: { type: string, enum: ['0', '1'] }
       responses:
         '200': { description: 'Список тредов' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
-
   /api/chat/dialog:
     get:
       tags: [Chat]
@@ -962,8 +964,8 @@ paths:
           schema: { type: string, maxLength: 64 }
       responses:
         '200': { description: Массив msgs }
+        '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
-
   /api/chat/reply:
     post:
       tags: [Chat]
@@ -977,8 +979,8 @@ paths:
       responses:
         '200': { description: 'Операция выполнена успешно (ok: true)' }
         '400': { description: Некорректное сообщение }
+        '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
-
   /api/chat/close:
     post:
       tags: [Chat]
@@ -991,8 +993,8 @@ paths:
             schema: { type: object, required: [key], properties: { key: { type: string, maxLength: 64 } } }
       responses:
         '200': { description: 'Операция выполнена успешно (ok: true)' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
-
   /api/chat/open:
     post:
       tags: [Chat]
@@ -1009,8 +1011,8 @@ paths:
                 key: { type: string }
       responses:
         '200': { description: OK }
+        '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
-
   /api/vapid:
     get:
       tags: [Push]
@@ -1128,7 +1130,10 @@ paths:
       tags: [Admin]
       summary: Список промокодов
       security: [{ BearerAuth: [] }]
-      responses: { '200': { description: OK } }
+      responses:
+        '200': { description: OK }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
     post:
       tags: [Admin]
       summary: Создать промокод
@@ -1158,8 +1163,10 @@ paths:
       tags: [Admin]
       summary: Дашборд владельца
       security: [{ BearerAuth: [] }]
-      responses: { '200': { description: OK } }
-
+      responses:
+        '200': { description: OK }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
   /api/stats/redeems:
     get:
       tags: [Admin]
@@ -1246,15 +1253,16 @@ paths:
       security: [{ BearerAuth: [] }]
       responses:
         '200': { description: Возвращает customer с ролью guest }
+        '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { description: Нельзя отключить последнего администратора }
-
   /api/exit:
     post:
       tags: [Auth]
       summary: Отозвать токен текущей сессии
       security: [{ BearerAuth: [] }]
-      responses: { '200': { description: 'Операция выполнена успешно (ok: true)' } }
-
+      responses:
+        '200': { description: 'Операция выполнена успешно (ok: true)' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
   /api/me/notify:
     put:
       tags: [Auth]
@@ -1270,8 +1278,9 @@ paths:
                 tg: { type: boolean }
                 web: { type: boolean }
               additionalProperties: true
-      responses: { '200': { description: 'Возвращает customer' } }
-
+      responses:
+        '200': { description: 'Возвращает customer' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
   /api/staff/activate-guest:
     post:
       tags: [Staff]
@@ -1285,10 +1294,10 @@ paths:
             schema: { type: object, required: [id], properties: { id: { type: string } } }
       responses:
         '200': { description: 'Операция выполнена успешно (ok: true)' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
         '404': { description: Гость не найден }
         '409': { description: Уже активирован }
-        '403': { $ref: '#/components/responses/Forbidden' }
-
   /api/staff/pending:
     get:
       tags: [Staff]
@@ -1297,8 +1306,8 @@ paths:
       security: [{ BearerAuth: [] }]
       responses:
         '200': { description: Массив pending }
+        '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
-
   /api/staff/customers:
     get:
       tags: [Staff]
@@ -1364,8 +1373,10 @@ paths:
           name: scope
           description: 'Единственное реализованное значение фильтра.'
           schema: { type: string, enum: [coffee] }
-      responses: { '200': { description: Массив log } }
-
+      responses:
+        '200': { description: Массив log }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
   /api/delivery/addr:
     get:
       tags: [Menu]
@@ -1397,8 +1408,10 @@ paths:
                 push: { type: boolean }
                 pmName: { type: string }
                 pmOn: { type: boolean }
-      responses: { '200': { description: Акция обновлена } }
-
+      responses:
+        '200': { description: Акция обновлена }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
   /api/promos/{id}/toggle:
     post:
       tags: [Promos]
@@ -1409,8 +1422,10 @@ paths:
           name: id
           required: true
           schema: { type: string }
-      responses: { '200': { description: 'Операция выполнена успешно (ok: true)' } }
-
+      responses:
+        '200': { description: 'Операция выполнена успешно (ok: true)' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
   /api/promos/{id}:
     delete:
       tags: [Promos]
@@ -1421,15 +1436,18 @@ paths:
           name: id
           required: true
           schema: { type: string }
-      responses: { '200': { description: 'Операция выполнена успешно (ok: true)' } }
-
+      responses:
+        '200': { description: 'Операция выполнена успешно (ok: true)' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
   /api/me/free-delivery:
     get:
       tags: [Promos]
       summary: Получить персональный код бесплатной доставки
       security: [{ BearerAuth: [] }]
-      responses: { '200': { description: Возвращает code; значение может быть null } }
-
+      responses:
+        '200': { description: Возвращает code; значение может быть null }
+        '401': { $ref: '#/components/responses/Unauthorized' }
   /api/push/test:
     post:
       tags: [Push]
@@ -1437,8 +1455,8 @@ paths:
       security: [{ BearerAuth: [] }]
       responses:
         '200': { description: Передача на устройство подтверждена; внутренний smoke-запрос возвращает ok=false и skipped=smoke-test без отправки }
+        '401': { $ref: '#/components/responses/Unauthorized' }
         '503': { description: Нет подтверждённой доставки Web Push/FCM }
-
   /api/push/fcm:
     post:
       tags: [Push]
@@ -1452,7 +1470,7 @@ paths:
       responses:
         '200': { description: 'Операция выполнена успешно (ok: true)' }
         '400': { description: Пустой token }
-
+        '401': { $ref: '#/components/responses/Unauthorized' }
   /api/push/subs:
     get:
       tags: [Push]
@@ -1540,8 +1558,10 @@ paths:
         - in: query
           name: days
           schema: { type: integer, minimum: 1, maximum: 30, default: 14 }
-      responses: { '200': { description: 'Статистика today, week и days' } }
-
+      responses:
+        '200': { description: 'Статистика today, week и days' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
   /api/admin/bonuses:
     get:
       tags: [Admin]
@@ -1550,6 +1570,7 @@ paths:
       security: [{ BearerAuth: [] }]
       responses:
         '200': { description: OK }
+        '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
     put:
       tags: [Admin]
@@ -1570,8 +1591,8 @@ paths:
                     install: { $ref: '#/components/schemas/BonusKind' }
       responses:
         '200': { description: OK }
+        '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
-
   /api/bonus/install:
     post:
       tags: [Auth]
