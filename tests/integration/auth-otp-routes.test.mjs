@@ -385,7 +385,7 @@ test('pending guest activates through a one-time Telegram pairing link using the
   assert.match(activationMessage.text, /🎁 Приветственный бонус начислен:/);
   assert.match(activationMessage.text, /бесплатных кофе: <b>1<\/b>/);
   assert.match(activationMessage.text, /Персональная бесплатная первая доставка доступна/);
-  assert.match(activationMessage.text, /автоматически в корзине/);
+  assert.match(activationMessage.text, /подставит его автоматически/);
   const returnMessage = await waitForTelegramMessage(message => (
     String(message.chat_id) === String(chatId) && /Вернитесь в приложение/.test(message.text || '')
   ));
