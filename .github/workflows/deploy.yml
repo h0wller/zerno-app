@@ -42,8 +42,14 @@ jobs:
               npm prune --omit=dev || return 1
               pm2 reload zerno-app || return 1
               for i in $(seq 1 15); do
-                if curl -fsS http://127.0.0.1:3000/api/ready >/dev/null; then
-                  echo "Rollback health check passed"
+                ready_status=$(curl -sS -o /dev/null -w '%{http_code}' http://127.0.0.1:3000/api/ready || true)
+                if [ "$ready_status" = "200" ]; then
+                  echo "Rollback readiness check passed"
+                  return 0
+                fi
+                # The previous revision may predate /api/ready; retain its liveness fallback.
+                if [ "$ready_status" = "404" ] && curl -fsS http://127.0.0.1:3000/api/health >/dev/null; then
+                  echo "Rollback liveness check passed on legacy revision"
                   return 0
                 fi
                 sleep 2
