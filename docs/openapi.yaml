@@ -129,6 +129,21 @@ paths:
   /api/health:
     get:
       tags: [System]
+      summary: Liveness-check
+      description: Returns 200 while the HTTP process is running. It does not guarantee startup migration completion.
+      responses:
+        '200':
+          description: Process is alive
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok]
+                properties: { ok: { type: boolean, enum: [true] } }
+
+  /api/ready:
+    get:
+      tags: [System]
       summary: Readiness-check after required startup migration
       description: >-
         Returns 200 only after startup migration succeeds. While startup is incomplete or the migration failed, returns 503 and a Retry-After header with value 2. Other API routes also return 503 until the server is ready.
