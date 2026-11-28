@@ -61,7 +61,7 @@ app.use(corsMiddleware);
 
 // API traffic waits until required startup work has completed successfully.
 app.use((req, res, next) => {
-  if (req.path.startsWith('/api/') && req.path !== '/api/health' && startupState !== 'ready') {
+  if (req.path.startsWith('/api/') && req.path !== '/api/health' && req.path !== '/api/ready' && startupState !== 'ready') {
     res.set('Retry-After', '2');
     return res.status(503).json({ ok: false });
   }
@@ -224,7 +224,11 @@ app.use(createTgRouter({ appKb }));
 app.use(pushRouter);
 app.use(statsRouter);
 
-app.get('/api/health', (req, res) => {
+// Liveness: preserve the existing contract while the process is alive.
+app.get('/api/health', (req, res) => res.json({ ok: true }));
+
+// Readiness: the deploy workflow must wait for required startup work.
+app.get('/api/ready', (req, res) => {
   if (startupState !== 'ready') {
     res.set('Retry-After', '2');
     return res.status(503).json({ ok: false });
